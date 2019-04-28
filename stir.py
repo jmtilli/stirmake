@@ -30,6 +30,25 @@ def execcmd(cmd):
   else:
     fork_count += 1
 
+def execseries(cmds):
+  global fork_count
+  while fork_count > limit:
+    signal.pause()
+  pid = os.fork()
+  if pid == 0:
+    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+    for cmd in cmds:
+      if os.fork() == 0:
+        os.execvp(cmd[0], cmd)
+        sys.exit(1)
+      else:
+        pid,stat = os.wait()
+        if stat:
+          sys.exit(1)
+    sys.exit(0)
+  else:
+    fork_count += 1
+
 class Rule(object):
   def __init__(self, tgts, deps, cmds, phony=False):
     assert type(tgts) == list
@@ -48,9 +67,11 @@ class Rule(object):
         depchgd = True
     if self.phony:
       print("execphony: " + repr(self.tgts))
-      for cmd in self.cmds: # Problem: sequentialization
-        print("execcmd: " + repr(cmd))
-        execcmd(cmd)
+      print("execseries: " + repr(self.cmds))
+      execseries(self.cmds)
+      #for cmd in self.cmds: # Problem: sequentialization
+      #  print("execcmd: " + repr(cmd))
+      #  execcmd(cmd)
       return True
     if not depchgd:
       tgtseen = False
@@ -75,14 +96,17 @@ class Rule(object):
         depchgd = True
     if depchgd:
       print("exec: " + repr(self.tgts))
-      for cmd in self.cmds: # Problem: sequentialization
-        print("execcmd: " + repr(cmd))
-        execcmd(cmd)
+      print("execseries: " + repr(self.cmds))
+      execseries(self.cmds)
+      #for cmd in self.cmds: # Problem: sequentialization
+      #  print("execcmd: " + repr(cmd))
+      #  execcmd(cmd)
     return depchgd
 
 
 allrule = Rule(["all"], ["a.txt", "b.txt"], [["echo", "foo"]], phony=True)
-rule2 = Rule(["a.txt", "b.txt"], ["c.txt"], [["touch", "a.txt", "b.txt"]])
+#rule2 = Rule(["a.txt", "b.txt"], ["c.txt"], [["touch", "a.txt", "b.txt"]])
+rule2 = Rule(["a.txt", "b.txt"], ["c.txt"], [["touch", "a.txt"], ["touch", "b.txt"]])
 
 rules.append(allrule)
 rules.append(rule2)
