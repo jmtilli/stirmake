@@ -30,6 +30,11 @@ class memblock {
   {
     u.d = d;
   }
+  memblock(std::string *s): type(T_S)
+  {
+    u.s = s;
+    refc = new size_t(1);
+  }
   memblock(std::vector<memblock> *v): type(T_V)
   {
     u.v = v;
@@ -86,6 +91,23 @@ class memblock {
   }
 };
 
+class stringtab {
+  public:
+    std::vector<memblock> blocks;
+    std::map<std::string, size_t> idxs;
+    size_t add(const std::string &s)
+    {
+      if (idxs.find(s) != idxs.end())
+      {
+        return idxs[s];
+      }
+      size_t oldsz = blocks.size();
+      blocks.push_back(new std::string(s));
+      idxs[s] = oldsz;
+      return oldsz;
+    }
+};
+
 enum stirbce_opcode {
   STIRBCE_OPCODE_PUSH_DBL = 1, //
   STIRBCE_OPCODE_CALL_EQ = 5, //
@@ -121,6 +143,8 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_PUSH_NEW_ARRAY = 38,
   STIRBCE_OPCODE_PUSH_NEW_DICT = 39,
   STIRBCE_OPCODE_EXIT = 40,
+  STIRBCE_OPCODE_PUSH_STRINGTAB = 41,
+  STIRBCE_OPCODE_APPEND = 42,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)

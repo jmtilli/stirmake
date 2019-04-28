@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <exception>
+#include <iostream>
 #include "opcodes.h"
 #include "engine.h"
 #include "errno.h"
@@ -77,7 +78,8 @@ int64_t get_i64(std::vector<memblock> &stack)
   return get_dbl(stack);
 }
 
-int engine(const uint8_t *microprogram, size_t microsz)
+int engine(const uint8_t *microprogram, size_t microsz,
+           stringtab &st)
 {
   // 0.53 us / execution
   size_t ip = 0;
@@ -156,7 +158,42 @@ int engine(const uint8_t *microprogram, size_t microsz)
           ret = -EFAULT;
           break;
         }
-        printf("ret, stack size %zu\n", stack.size());
+        printf("ret, stack size %zu w/o retval\n", stack.size());
+        if (mb.type == memblock::T_V)
+        {
+          std::cout << "[ ";
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            memblock mb2 = *it;
+            if (mb2.type == memblock::T_V)
+            {
+              std::cout << "[ ";
+              for (auto it2 = mb2.u.v->begin(); it2 != mb2.u.v->end(); it2++)
+              {
+                memblock mb3 = *it2;
+                if (mb3.type == memblock::T_S)
+                {
+                  std::cout << *mb3.u.s << ", ";
+                }
+                else
+                {
+                  std::cout << "UNKNOWN, ";
+                }
+              }
+              std::cout << "], ";
+            }
+            else
+            {
+              std::cout << "UNKNOWN, ";
+            }
+          }
+          std::cout << "];";
+          std::cout << std::endl;
+        }
+        else
+        {
+          std::cout << "UNKNOWN: " << mb.type << std::endl;
+        }
         ip = jmp;
         stack.push_back(mb);
         break;
@@ -225,6 +262,7 @@ int engine(const uint8_t *microprogram, size_t microsz)
         }
         memblock mb = stack[stack.size() - val - 1];
         stack.push_back(mb);
+        break;
       }
       case STIRBCE_OPCODE_SET_STACK:
       {
@@ -244,6 +282,7 @@ int engine(const uint8_t *microprogram, size_t microsz)
           break;
         }
         stack[stack.size() - val - 1] = mb;
+        break;
       }
       case STIRBCE_OPCODE_PUSH_NEW_ARRAY:
       {
@@ -254,6 +293,30 @@ int engine(const uint8_t *microprogram, size_t microsz)
           break;
         }
         stack.push_back(new std::vector<memblock>());
+        break;
+      }
+      case STIRBCE_OPCODE_PUSH_STRINGTAB:
+      {
+        if (unlikely(stack.size() <= 0))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        val = get_i64(stack);
+        if (unlikely(stack.size() >= stackbound))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        if (unlikely(val >= st.blocks.size()))
+        {
+          printf("stringtab overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(st.blocks.at(val));
         break;
       }
       case STIRBCE_OPCODE_PUSH_NEW_DICT:
@@ -536,6 +599,25 @@ int engine(const uint8_t *microprogram, size_t microsz)
         val2 = get_i64(stack);
         stack.push_back(val >> val2);
         break;
+      case STIRBCE_OPCODE_APPEND:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbit = stack.back(); stack.pop_back();
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        mbar.u.v->push_back(mbit);
+        break;
+      }
       default:
         printf("invalid opcode\n");
         ret = -EILSEQ;
@@ -561,6 +643,13 @@ void store_d(std::vector<uint8_t> &v, double d)
 
 int main(int argc, char **argv)
 {
+  stringtab st;
+  size_t rm = st.add("rm");
+  size_t dashf = st.add("-f");
+  size_t fooa = st.add("foo.a");
+  size_t ar = st.add("ar");
+  size_t rs = st.add("rs");
+  size_t baro = st.add("bar.o");
   std::vector<uint8_t> microprogram;
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
@@ -576,8 +665,98 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_EXIT);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // lists
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // list
+
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 42);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, rm);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, dashf);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, fooa);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY);
+  microprogram.push_back(STIRBCE_OPCODE_SET_STACK);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, ar);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, rs);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, fooa);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, baro);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 2);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+  microprogram.push_back(STIRBCE_OPCODE_SET_STACK);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_POP_MANY);
+
   microprogram.push_back(STIRBCE_OPCODE_RET);
-  engine(&microprogram[0], microprogram.size());
+
+  engine(&microprogram[0], microprogram.size(), st);
 }
