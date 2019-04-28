@@ -81,8 +81,8 @@ class memblock {
           delete u.m;
           break;
       }
+      delete refc;
     }
-    delete refc;
   }
 };
 
