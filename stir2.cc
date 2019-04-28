@@ -5,19 +5,23 @@
 #include <errno.h>
 #include <string.h>
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 
 class Cmd {
   public:
     std::vector<std::string> args;
+    Cmd() {}
     Cmd(std::vector<std::string> v): args(v) {}
 };
 
 int children = 0;
 const int limit = 2;
 
-void fork_child(Cmd cmd)
+std::map<pid_t, Cmd> cmd_by_pid;
+
+pid_t fork_child(Cmd cmd)
 {
   std::vector<char*> args;
   pid_t pid;
@@ -41,6 +45,8 @@ void fork_child(Cmd cmd)
   else
   {
     children++;
+    cmd_by_pid[pid] = cmd;
+    return pid;
   }
 }
 
@@ -89,6 +95,11 @@ int main(int argc, char **argv)
       }
       abort();
     }
+    if (pid < 0)
+    {
+      abort();
+    }
+    cmd_by_pid.erase(pid);
     children--;
     while (children < limit && !cmds.empty())
     {
