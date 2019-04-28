@@ -162,6 +162,7 @@ void do_exec(int ruleid)
         if (stat(it->c_str(), &statbuf) != 0)
         {
           perror("can't stat");
+          fprintf(stderr, "file was: %s\n", it->c_str());
           abort();
         }
         if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
@@ -312,16 +313,51 @@ void mark_executed(int ruleid)
   }
 }
 
+/*
+.PHONY: all
+
+all: l1g.txt
+
+l1g.txt: l2a.txt l2b.txt
+	./touchs1 l1g.txt
+
+l2a.txt l2b.txt: l3c.txt l3d.txt l3e.txt
+	./touchs1 l2a.txt l2b.txt
+
+l3c.txt: l4f.txt
+	./touchs1 l3c.txt
+
+l3d.txt: l4f.txt
+	./touchs1 l3d.txt
+
+l3e.txt: l4f.txt
+	./touchs1 l3e.txt
+ */
+
 int main(int argc, char **argv)
 {
   std::vector<std::string> v_all{"all"};
-  std::vector<std::string> v_ab{"a.txt", "b.txt"};
-  std::vector<std::string> v_c{"c.txt"};
-  std::vector<std::string> arge{"echo", "2"};
-  std::vector<std::string> argt{"touch", "a.txt", "b.txt"};
+  std::vector<std::string> v_l1g{"l1g.txt"};
+  std::vector<std::string> v_l2ab{"l2a.txt", "l2b.txt"};
+  std::vector<std::string> v_l3cde{"l3c.txt", "l3d.txt", "l3e.txt"};
+  std::vector<std::string> v_l3c{"l3c.txt"};
+  std::vector<std::string> v_l3d{"l3d.txt"};
+  std::vector<std::string> v_l3e{"l3e.txt"};
+  std::vector<std::string> v_l4f{"l4f.txt"};
 
-  add_rule(v_all, v_ab, arge, 1);
-  add_rule(v_ab, v_c, argt, 0);
+  std::vector<std::string> argt_l2ab{"./touchs1", "l2a.txt", "l2b.txt"};
+  std::vector<std::string> argt_l3c{"./touchs1", "l3c.txt"};
+  std::vector<std::string> argt_l3d{"./touchs1", "l3d.txt"};
+  std::vector<std::string> argt_l3e{"./touchs1", "l3e.txt"};
+  std::vector<std::string> argt_l1g{"./touchs1", "l1g.txt"};
+  std::vector<std::string> arge_all{"echo", "all"};
+
+  add_rule(v_all, v_l1g, arge_all, 1);
+  add_rule(v_l1g, v_l2ab, argt_l1g, 0);
+  add_rule(v_l2ab, v_l3cde, argt_l2ab, 0);
+  add_rule(v_l3c, v_l4f, argt_l3c, 0);
+  add_rule(v_l3d, v_l4f, argt_l3d, 0);
+  add_rule(v_l3e, v_l4f, argt_l3e, 0);
 
   consider(0);
 
