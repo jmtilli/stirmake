@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import signal
@@ -5,49 +6,26 @@ import signal
 # This file has multi-targets, but not parallelization
 
 global fork_count
-fork_count = 0
-
-def handler(signum, frame):
-  global fork_count
-  assert fork_count > 0
-  fork_count -= 1
-
-signal.signal(signal.SIGCHLD, handler)
+fork_count = asyncio.Semaphore(2)
 
 rules = []
 rules_by_tgt = {}
 
 limit = 2
 
-def execcmd(cmd):
+async def execseries(cmds):
   global fork_count
-  while fork_count > limit:
-    signal.pause()
-  pid = os.fork()
-  if pid == 0:
-    os.execvp(cmd[0], cmd)
-    sys.exit(1)
-  else:
-    fork_count += 1
-
-def execseries(cmds):
-  global fork_count
-  while fork_count > limit:
-    signal.pause()
-  pid = os.fork()
-  if pid == 0:
-    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-    for cmd in cmds:
-      if os.fork() == 0:
-        os.execvp(cmd[0], cmd)
-        sys.exit(1)
-      else:
-        pid,stat = os.wait()
-        if stat:
-          sys.exit(1)
-    sys.exit(0)
-  else:
-    fork_count += 1
+  for cmd in cmds:
+    await fork_count.acquire()
+    try:
+      proc = await asyncio.create_subprocess_exec(cmd[0], *cmd[1:])
+      stdout, stderr = await proc.communicate()
+      if stdout:
+        sys.stdout.write(stdout)
+      if stderr:
+        sys.stderr.write(stderr)
+    finally:
+      fork_count.release()
 
 class Rule(object):
   def __init__(self, tgts, deps, cmds, phony=False):
@@ -60,18 +38,18 @@ class Rule(object):
     self.deps = deps
     self.cmds = cmds
     self.phony = not not phony
-  def evaluate(self):
+  async def evaluate(self):
     depchgd = False
+    promises = []
     for dep in self.deps:
-      if dep in rules_by_tgt and rules_by_tgt[dep].evaluate():
-        depchgd = True
+      if dep in rules_by_tgt:
+        promises.append(rules_by_tgt[dep].evaluate())
+    for promise in promises:
+      await promise
     if self.phony:
       print("execphony: " + repr(self.tgts))
       print("execseries: " + repr(self.cmds))
-      execseries(self.cmds)
-      #for cmd in self.cmds: # Problem: sequentialization
-      #  print("execcmd: " + repr(cmd))
-      #  execcmd(cmd)
+      await execseries(self.cmds)
       return True
     if not depchgd:
       tgtseen = False
@@ -97,10 +75,7 @@ class Rule(object):
     if depchgd:
       print("exec: " + repr(self.tgts))
       print("execseries: " + repr(self.cmds))
-      execseries(self.cmds)
-      #for cmd in self.cmds: # Problem: sequentialization
-      #  print("execcmd: " + repr(cmd))
-      #  execcmd(cmd)
+      await execseries(self.cmds)
     return depchgd
 
 
@@ -114,4 +89,8 @@ rules_by_tgt["all"] = allrule
 rules_by_tgt["a.txt"] = rule2
 rules_by_tgt["b.txt"] = rule2
 
-allrule.evaluate()
+#await allrule.evaluate()
+#asyncio.run(allrule.evaluate())
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(allrule.evaluate())
