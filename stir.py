@@ -1,13 +1,34 @@
 import os
-import subprocess
+import sys
+import signal
 
 # This file has multi-targets, but not parallelization
+
+global fork_count
+fork_count = 0
+
+def handler(signum, frame):
+  global fork_count
+  assert fork_count > 0
+  fork_count -= 1
+
+signal.signal(signal.SIGCHLD, handler)
 
 rules = []
 rules_by_tgt = {}
 
+limit = 2
+
 def execcmd(cmd):
-  subprocess.run(cmd)
+  global fork_count
+  while fork_count > limit:
+    signal.pause()
+  pid = os.fork()
+  if pid == 0:
+    os.execvp(cmd[0], cmd)
+    sys.exit(1)
+  else:
+    fork_count += 1
 
 class Rule(object):
   def __init__(self, tgts, deps, cmds, phony=False):
@@ -27,7 +48,7 @@ class Rule(object):
         depchgd = True
     if self.phony:
       print("execphony: " + repr(self.tgts))
-      for cmd in self.cmds:
+      for cmd in self.cmds: # Problem: sequentialization
         print("execcmd: " + repr(cmd))
         execcmd(cmd)
       return True
@@ -54,7 +75,7 @@ class Rule(object):
         depchgd = True
     if depchgd:
       print("exec: " + repr(self.tgts))
-      for cmd in self.cmds:
+      for cmd in self.cmds: # Problem: sequentialization
         print("execcmd: " + repr(cmd))
         execcmd(cmd)
     return depchgd
