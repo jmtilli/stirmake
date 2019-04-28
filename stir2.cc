@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
 #include <vector>
@@ -16,6 +17,27 @@ class Cmd {
     Cmd() {}
     Cmd(std::vector<std::string> v): args(v) {}
 };
+
+int ts_cmp(struct timespec ta, struct timespec tb)
+{
+  if (ta.tv_sec > tb.tv_sec)
+  {
+    return 1;
+  }
+  if (ta.tv_sec < tb.tv_sec)
+  {
+    return -1;
+  }
+  if (ta.tv_nsec > tb.tv_nsec)
+  {
+    return 1;
+  }
+  if (ta.tv_nsec < tb.tv_nsec)
+  {
+    return -1;
+  }
+  return 0;
+}
 
 class Rule {
   public:
@@ -113,6 +135,84 @@ pid_t fork_child(int ruleid)
   }
 }
 
+void mark_executed(int ruleid);
+
+void do_exec(int ruleid)
+{
+  Rule &r = rules.at(ruleid);
+  if (!r.queued)
+  {
+    int has_to_exec = 0;
+    if (!r.phony && r.deps.size() > 0)
+    {
+      int seen_nonphony = 0;
+      int seen_tgt = 0;
+      struct timespec st_mtim, st_mtimtgt;
+      for (auto it = r.deps.begin(); it != r.deps.end(); it++)
+      {
+        struct stat statbuf;
+        if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+        {
+          if (rules.at(ruleid_by_tgt[*it]).phony)
+          {
+            has_to_exec = 1;
+            continue;
+          }
+        }
+        if (stat(it->c_str(), &statbuf) != 0)
+        {
+          perror("can't stat");
+          abort();
+        }
+        if (!seen_nonphony || ts_cmp(st_mtim, statbuf.st_mtim) > 0)
+        {
+          st_mtim = statbuf.st_mtim;
+        }
+        seen_nonphony = 1;
+      }
+      for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
+      {
+        struct stat statbuf;
+        if (stat(it->c_str(), &statbuf) != 0)
+        {
+          has_to_exec = 1;
+          break;
+        }
+        if (!seen_tgt || ts_cmp(st_mtimtgt, statbuf.st_mtim) < 0)
+        {
+          st_mtimtgt = statbuf.st_mtim;
+        }
+        seen_tgt = 1;
+      }
+      if (!has_to_exec)
+      {
+        if (!seen_tgt)
+        {
+          abort();
+        }
+        if (seen_nonphony && ts_cmp(st_mtimtgt, st_mtim) < 0)
+        {
+          has_to_exec = 1;
+        }
+      }
+    }
+    else if (r.phony)
+    {
+      has_to_exec = 1;
+    }
+    if (has_to_exec)
+    {
+      ruleids_to_run.push_back(ruleid);
+      r.queued = true;
+    }
+    else
+    {
+      r.queued = true;
+      mark_executed(ruleid);
+    }
+  }
+}
+
 void consider(int ruleid)
 {
   Rule &r = rules.at(ruleid);
@@ -149,8 +249,9 @@ void consider(int ruleid)
 */
   if (!toexecute && !r.queued)
   {
-    ruleids_to_run.push_back(ruleid);
-    r.queued = true;
+    do_exec(ruleid);
+    //ruleids_to_run.push_back(ruleid);
+    //r.queued = true;
   }
 /*
   ruleids_to_run.push_back(ruleid);
@@ -183,8 +284,9 @@ void reconsider(int ruleid)
   }
   if (!toexecute && !r.queued)
   {
-    ruleids_to_run.push_back(ruleid);
-    r.queued = true;
+    do_exec(ruleid);
+    //ruleids_to_run.push_back(ruleid);
+    //r.queued = true;
   }
 }
 
