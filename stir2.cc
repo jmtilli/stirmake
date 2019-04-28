@@ -6,6 +6,7 @@
 #include <string.h>
 #include <vector>
 #include <map>
+#include <set>
 #include <string>
 #include <iostream>
 
@@ -16,15 +17,77 @@ class Cmd {
     Cmd(std::vector<std::string> v): args(v) {}
 };
 
+class Rule {
+  public:
+    bool phony;
+    bool executed;
+    bool executing;
+    bool queued;
+    std::vector<std::string> tgts;
+    std::vector<std::string> deps;
+    Cmd cmd;
+    int ruleid;
+
+    Rule(): phony(false), executed(false), executing(false), queued(false) {}
+};
+
 int children = 0;
 const int limit = 2;
 
-std::map<pid_t, Cmd> cmd_by_pid;
+std::vector<Rule> rules;
 
-pid_t fork_child(Cmd cmd)
+std::map<std::string, int> ruleid_by_tgt;
+std::map<std::string, std::set<int>> ruleids_by_dep;
+
+void add_rule(std::vector<std::string> tgts,
+              std::vector<std::string> deps,
+              std::vector<std::string> cmdargs,
+              bool phony)
+{
+  Rule r;
+  Cmd c(cmdargs);
+  r.phony = phony;
+  if (tgts.size() <= 0)
+  {
+    abort();
+  }
+  if (phony && tgts.size() != 1)
+  {
+    abort();
+  }
+  r.tgts = tgts;
+  r.deps = deps;
+  r.cmd = c;
+  r.ruleid = rules.size();
+  rules.push_back(r);
+  for (auto it = tgts.begin(); it != tgts.end(); it++)
+  {
+    if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+    {
+      std::cerr << "duplicate rule" << std::endl;
+      exit(1);
+    }
+    ruleid_by_tgt[*it] = r.ruleid;
+  }
+  for (auto it = deps.begin(); it != deps.end(); it++)
+  {
+    if (ruleids_by_dep.find(*it) == ruleids_by_dep.end())
+    {
+      ruleids_by_dep[*it] = std::set<int>();
+    }
+    ruleids_by_dep[*it].insert(r.ruleid);
+  }
+}
+
+std::vector<int> ruleids_to_run;
+
+std::map<pid_t, int> ruleid_by_pid;
+
+pid_t fork_child(int ruleid)
 {
   std::vector<char*> args;
   pid_t pid;
+  Cmd cmd = rules.at(ruleid).cmd;
 
   pid = fork();
   if (pid < 0)
@@ -45,30 +108,126 @@ pid_t fork_child(Cmd cmd)
   else
   {
     children++;
-    cmd_by_pid[pid] = cmd;
+    ruleid_by_pid[pid] = ruleid;
     return pid;
   }
 }
 
-std::vector<Cmd> cmds;
+void consider(int ruleid)
+{
+  Rule &r = rules.at(ruleid);
+  int toexecute = 0;
+  std::cout << "considering " << r.tgts[0] << std::endl;
+  if (r.executed)
+  {
+    std::cout << "already execed " << r.tgts[0] << std::endl;
+    return;
+  }
+  if (r.executing)
+  {
+    std::cout << "already execing " << r.tgts[0] << std::endl;
+    return;
+  }
+  r.executing = true;
+  for (auto it = r.deps.begin(); it != r.deps.end(); it++)
+  {
+    if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+    {
+      consider(ruleid_by_tgt[*it]);
+      if (!rules.at(ruleid_by_tgt[*it]).executed)
+      {
+        toexecute = 1;
+      }
+    }
+  }
+/*
+  if (r.phony)
+  {
+    r.executed = true;
+    break;
+  }
+*/
+  if (!toexecute && !r.queued)
+  {
+    ruleids_to_run.push_back(ruleid);
+    r.queued = true;
+  }
+/*
+  ruleids_to_run.push_back(ruleid);
+  r.executed = true;
+*/
+}
+
+void reconsider(int ruleid)
+{
+  Rule &r = rules.at(ruleid);
+  int toexecute = 0;
+  std::cout << "reconsidering " << r.tgts[0] << std::endl;
+  if (r.executed)
+  {
+    std::cout << "already execed " << r.tgts[0] << std::endl;
+    return;
+  }
+  if (!r.executing)
+  {
+    abort();
+  }
+  for (auto it = r.deps.begin(); it != r.deps.end(); it++)
+  {
+    int dep = ruleid_by_tgt[*it];
+    if (!rules.at(dep).executed)
+    {
+      toexecute = 1;
+      break;
+    }
+  }
+  if (!toexecute && !r.queued)
+  {
+    ruleids_to_run.push_back(ruleid);
+    r.queued = true;
+  }
+}
+
+void mark_executed(int ruleid)
+{
+  Rule &r = rules.at(ruleid);
+  if (r.executed)
+  {
+    abort();
+  }
+  if (!r.executing)
+  {
+    abort();
+  }
+  r.executed = true;
+  for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
+  {
+    std::set<int> &s = ruleids_by_dep[*it];
+    for (auto it2 = s.begin(); it2 != s.end(); it2++)
+    {
+      reconsider(*it2);
+    }
+  }
+}
 
 int main(int argc, char **argv)
 {
-  std::vector<std::string> args{"sleep", "2"};
-  std::vector<std::string> argp{"echo", "bar", "baz"};
-  Cmd cs(args);
-  Cmd cp(argp);
-  cmds.push_back(cp);
-  cmds.push_back(cs);
-  cmds.push_back(cs);
-  cmds.push_back(cs);
-  cmds.push_back(cs);
+  std::vector<std::string> v_all{"all"};
+  std::vector<std::string> v_ab{"a.txt", "b.txt"};
+  std::vector<std::string> v_c{"c.txt"};
+  std::vector<std::string> arge{"echo", "2"};
+  std::vector<std::string> argt{"touch", "a.txt", "b.txt"};
 
-  while (children < limit && !cmds.empty())
+  add_rule(v_all, v_ab, arge, 1);
+  add_rule(v_ab, v_c, argt, 0);
+
+  consider(0);
+
+  while (children < limit && !ruleids_to_run.empty())
   {
     std::cout << "forking1 child" << std::endl;
-    fork_child(cmds.back());
-    cmds.pop_back();
+    fork_child(ruleids_to_run.back());
+    ruleids_to_run.pop_back();
   }
 
   for (;;)
@@ -99,13 +258,18 @@ int main(int argc, char **argv)
     {
       abort();
     }
-    cmd_by_pid.erase(pid);
+    int ruleid = ruleid_by_pid[pid];
+    if (ruleid_by_pid.erase(pid) != 1)
+    {
+      abort();
+    }
+    mark_executed(ruleid);
     children--;
-    while (children < limit && !cmds.empty())
+    while (children < limit && !ruleids_to_run.empty())
     {
       std::cout << "forking child" << std::endl;
-      fork_child(cmds.back());
-      cmds.pop_back();
+      fork_child(ruleids_to_run.back());
+      ruleids_to_run.pop_back();
     }
   }
   return 0;
