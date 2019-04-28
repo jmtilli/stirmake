@@ -164,7 +164,7 @@ void do_exec(int ruleid)
           perror("can't stat");
           abort();
         }
-        if (!seen_nonphony || ts_cmp(st_mtim, statbuf.st_mtim) > 0)
+        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
         {
           st_mtim = statbuf.st_mtim;
         }
@@ -178,7 +178,7 @@ void do_exec(int ruleid)
           has_to_exec = 1;
           break;
         }
-        if (!seen_tgt || ts_cmp(st_mtimtgt, statbuf.st_mtim) < 0)
+        if (!seen_tgt || ts_cmp(statbuf.st_mtim, st_mtimtgt) < 0)
         {
           st_mtimtgt = statbuf.st_mtim;
         }
