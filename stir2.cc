@@ -388,7 +388,15 @@ int main(int argc, char **argv)
     {
       if (pid < 0 && errno == ECHILD)
       {
-        return 0;
+        if (rules.at(0).executed)
+        {
+          return 0;
+        }
+        else
+        {
+          std::cerr << "can't execute rule 0" << std::endl;
+          abort();
+        }
       }
       abort();
     }
