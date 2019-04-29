@@ -139,6 +139,75 @@ int engine(const uint8_t *microprogram, size_t microsz,
         ip = microsz;
         break;
       }
+      case STIRBCE_OPCODE_RETEX:
+      {
+        printf("retex1, stack size %zu\n", stack.size());
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t cnt = get_i64(stack); // Count of local vars
+        if (cnt < 0 || (size_t)cnt+2 >= stack.size())
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back();
+        stack.pop_back();
+        for (int i = 0; i < cnt; i++)
+        {
+          stack.pop_back(); // Clear local variable block
+        }
+        jmp = get_i64(stack);
+        if (unlikely(jmp < 0 || (size_t)jmp > microsz))
+        {
+          printf("microprogram overflow\n");
+          ret = -EFAULT;
+          break;
+        }
+        printf("retex, stack size %zu w/o retval\n", stack.size());
+        if (mb.type == memblock::T_V)
+        {
+          std::cout << "[ ";
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            memblock mb2 = *it;
+            if (mb2.type == memblock::T_V)
+            {
+              std::cout << "[ ";
+              for (auto it2 = mb2.u.v->begin(); it2 != mb2.u.v->end(); it2++)
+              {
+                memblock mb3 = *it2;
+                if (mb3.type == memblock::T_S)
+                {
+                  std::cout << *mb3.u.s << ", ";
+                }
+                else
+                {
+                  std::cout << "UNKNOWN, ";
+                }
+              }
+              std::cout << "], ";
+            }
+            else
+            {
+              std::cout << "UNKNOWN, ";
+            }
+          }
+          std::cout << "];";
+          std::cout << std::endl;
+        }
+        else
+        {
+          std::cout << "UNKNOWN: " << mb.type << std::endl;
+        }
+        ip = jmp;
+        stack.push_back(mb);
+        break;
+      }
       case STIRBCE_OPCODE_RET:
       {
         printf("ret1, stack size %zu\n", stack.size());
@@ -598,6 +667,75 @@ int engine(const uint8_t *microprogram, size_t microsz,
         val2 = get_i64(stack);
         stack.push_back(val >> val2);
         break;
+      case STIRBCE_OPCODE_LISTLEN:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mbar.u.v->size());
+        break;
+      }
+      case STIRBCE_OPCODE_LISTSET:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbit = stack.back(); stack.pop_back();
+        int64_t nr = get_i64(stack);
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (nr < 0 || (size_t)nr >= mbar.u.v->size())
+        {
+          printf("overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        mbar.u.v->at(nr) = mbit;
+        break;
+      }
+      case STIRBCE_OPCODE_LISTGET:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t nr = get_i64(stack);
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (nr < 0 || (size_t)nr >= mbar.u.v->size())
+        {
+          printf("overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(mbar.u.v->at(nr));
+        break;
+      }
       case STIRBCE_OPCODE_APPEND:
       {
         if (unlikely(stack.size() < 2))
@@ -771,16 +909,10 @@ int main(int argc, char **argv)
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK); // retval
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 2);
-  microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
-  microprogram.push_back(STIRBCE_OPCODE_SET_STACK);
-
-  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
-  microprogram.push_back(STIRBCE_OPCODE_POP_MANY);
-
-  microprogram.push_back(STIRBCE_OPCODE_RET);
+  store_d(microprogram, 2); // cnt
+  microprogram.push_back(STIRBCE_OPCODE_RETEX);
 
   engine(&microprogram[0], microprogram.size(), st);
 }
