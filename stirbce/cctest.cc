@@ -617,6 +617,25 @@ int engine(const uint8_t *microprogram, size_t microsz,
         mbar.u.v->push_back(mbit);
         break;
       }
+      case STIRBCE_OPCODE_STRAPPEND:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbextend = stack.back(); stack.pop_back();
+        memblock mbbase = stack.back(); stack.pop_back();
+        if (mbbase.type != memblock::T_S || mbextend.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(new std::string(*mbbase.u.s + *mbextend.u.s));
+        break;
+      }
       default:
         printf("invalid opcode\n");
         ret = -EILSEQ;
@@ -647,7 +666,9 @@ int main(int argc, char **argv)
   size_t dashf = st.add("-f");
   size_t fooa = st.add("foo.a");
   size_t ar = st.add("ar");
-  size_t rs = st.add("rs");
+  //size_t rs = st.add("rs");
+  size_t r = st.add("r");
+  size_t s = st.add("s");
   size_t baro = st.add("bar.o");
   std::vector<uint8_t> microprogram;
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
@@ -716,8 +737,12 @@ int main(int argc, char **argv)
   store_d(microprogram, 0);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, rs);
+  store_d(microprogram, r);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, s);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_STRAPPEND);
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);

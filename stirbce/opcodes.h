@@ -148,6 +148,7 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_EXIT = 40,
   STIRBCE_OPCODE_PUSH_STRINGTAB = 41,
   STIRBCE_OPCODE_APPEND = 42,
+  STIRBCE_OPCODE_STRAPPEND = 43,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)
