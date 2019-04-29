@@ -66,6 +66,7 @@ class memblock {
   {
     memblock copy(other);
     swap(copy);
+    return *this;
   }
   ~memblock() {
     if (type == T_D)
@@ -85,6 +86,8 @@ class memblock {
         case T_M:
           delete u.m;
           break;
+        default:
+          std::terminate();
       }
       delete refc;
     }

@@ -84,7 +84,6 @@ int engine(const uint8_t *microprogram, size_t microsz,
   // 0.53 us / execution
   size_t ip = 0;
   int ret = 0;
-  int64_t loc;
   int64_t val, val2, condition, jmp;
   const size_t stackbound = 131072;
   std::vector<memblock> stack;
@@ -122,7 +121,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         jmp = get_i64(stack);
-        if (jmp > microsz || jmp < 0)
+        if (jmp < 0 || (size_t)jmp > microsz)
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -152,7 +151,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         memblock mb = stack.back();
         stack.pop_back();
         jmp = get_i64(stack);
-        if (unlikely(jmp > microsz || jmp < 0))
+        if (unlikely(jmp < 0 || (size_t)jmp > microsz))
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -237,7 +236,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         val = get_i64(stack);
-        if (unlikely(stack.size() < val))
+        if (val < 0 || unlikely(stack.size() < (size_t)val))
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
@@ -254,7 +253,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         val = get_i64(stack);
-        if (val < 0 || val >= stack.size())
+        if (val < 0 || (size_t)val >= stack.size())
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
@@ -275,7 +274,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         memblock mb = stack.back();
         stack.pop_back();
         val = get_i64(stack);
-        if (val < 0 || val >= stack.size())
+        if (val < 0 || (size_t)val >= stack.size())
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
@@ -310,7 +309,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
-        if (unlikely(val >= st.blocks.size()))
+        if (unlikely(val < 0 || (size_t)val >= st.blocks.size()))
         {
           printf("stringtab overflow\n");
           ret = -EOVERFLOW;
