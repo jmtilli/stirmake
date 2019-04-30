@@ -111,6 +111,7 @@ struct CSnippet cSnippet = {
 #[^\n]*  /* ignore */;
 
 \n                                { ++yylineno; yycolumn=1; return NEWLINE; }
+\\\n                              { ++yylineno; yycolumn=1; }
 [ \t]+                            /* ignore whitespaces */;
 .            return ERROR_TOK;
 

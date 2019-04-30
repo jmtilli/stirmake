@@ -84,7 +84,8 @@ LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
 all: $TGTS
 	echo ok
 
-$TGTS: c.txt
+$TGTS: \
+c.txt
 	touch a.txt
 	touch b.txt
 
