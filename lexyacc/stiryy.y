@@ -57,12 +57,6 @@ int stiryywrap(yyscan_t scanner)
 %destructor { free ($$.str); } STRING_LITERAL
 %destructor { free ($$); } FREEFORM_TOKEN
 
-%token PERCENTC_LITERAL
-%token STATEINCLUDE
-%token PARSERINCLUDE
-%token INITINCLUDE
-%token HDRINCLUDE
-%token BYTESSIZETYPE
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
 %token OPEN_BRACE
@@ -72,18 +66,8 @@ int stiryywrap(yyscan_t scanner)
 
 %token SHELL_COMMAND
 
-%token TOKEN
-%token ACTION
-%token PRIO
-%token DIRECTIVE
-%token NOFASTPATH
-%token SHORTCUTTING
-%token MAIN
-
-%token BYTES
 %token NEWLINE
 
-%token PARSERNAME
 %token EQUALS
 %token PLUSEQUALS
 %token COLON
@@ -94,11 +78,7 @@ int stiryywrap(yyscan_t scanner)
 %token FREEFORM_TOKEN
 %token LT
 %token GT
-%token PIPE
 %token MINUS
-%token CB
-%token COND
-%token I
 %token AT
 %token FUNCTION
 %token ENDFUNCTION

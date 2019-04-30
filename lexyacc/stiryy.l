@@ -20,8 +20,6 @@
 %}
 
 %option reentrant bison-bridge bison-locations
-%x PERCENTCCOMMENTS
-%x PERCENTC
 %%
 
 %{
@@ -31,25 +29,6 @@ struct CSnippet cSnippet = {
   .capacity = 0,
 };
 %}
-
-i         return I;
-bytessizetype return BYTESSIZETYPE;
-stateinclude return STATEINCLUDE;
-parserinclude return PARSERINCLUDE;
-initinclude return INITINCLUDE;
-hdrinclude return HDRINCLUDE;
-action    return ACTION;
-token     return TOKEN;
-directive return DIRECTIVE;
-nofastpath return NOFASTPATH;
-shortcutting return SHORTCUTTING;
-main      return MAIN;
-bytes     return BYTES;
-prio      return PRIO;
-cb        return CB;
-parsername return PARSERNAME;
-cond      return COND;
-
 
 @         return AT;
 @delayvar return DELAYVAR;
@@ -85,7 +64,6 @@ cond      return COND;
 ,         return COMMA;
 =         return EQUALS;
 \+=         return PLUSEQUALS;
-\|        return PIPE;
 \<        return LT;
 \>        return GT;
 [(]       return OPEN_PAREN;
@@ -131,25 +109,6 @@ cond      return COND;
 \"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
 \'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
 #[^\n]*  /* ignore */;
-
-"%{"             { BEGIN(PERCENTC); cSnippet.capacity = 0; cSnippet.len = 0; cSnippet.data = NULL; }
-<PERCENTC>"/*"          BEGIN(PERCENTCCOMMENTS);
-<PERCENTC>\/\/.*        /* ignore single-line comments */;
-<PERCENTCCOMMENTS>"*/"  BEGIN(PERCENTC);
-<PERCENTCCOMMENTS>"/*"  return ERROR_TOK;
-<PERCENTCCOMMENTS><<EOF>> return ERROR_TOK;
-<PERCENTCCOMMENTS>.     ;
-<PERCENTCCOMMENTS>"\n"  { ++yylineno; yycolumn=1; }
-<PERCENTC>%\}           {
-                     BEGIN(INITIAL);
-                     yylval->s = cSnippet.data;
-                     cSnippet.data = NULL;
-                     cSnippet.capacity = 0;
-                     cSnippet.len = 0;
-                     return PERCENTC_LITERAL;
-                 }
-<PERCENTC>.             { csadd(&cSnippet, yytext[0]); }
-<PERCENTC>"\n"          { csadd(&cSnippet, yytext[0]); ++yylineno; yycolumn=1; }
 
 \n                                { ++yylineno; yycolumn=1; return NEWLINE; }
 [ \t]+                            /* ignore whitespaces */;
