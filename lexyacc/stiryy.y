@@ -111,6 +111,13 @@ int stiryywrap(yyscan_t scanner)
 %token RULE_PHONY
 %token RULE_ORDINARY
 
+%token IF
+%token ENDIF
+%token WHILE
+%token ENDWHILE
+%token BREAK
+%token CONTINUE
+
 
 %token ERROR_TOK
 
@@ -165,8 +172,16 @@ bodylines:
 statement:
   lvalue EQUALS expr NEWLINE
 | RETURN expr NEWLINE
+| BREAK NEWLINE
+| CONTINUE NEWLINE
 | ADD_RULE OPEN_PAREN expr CLOSE_PAREN NEWLINE
 | expr NEWLINE
+| IF OPEN_PAREN expr CLOSE_PAREN NEWLINE
+  bodylines
+  ENDIF NEWLINE
+| WHILE OPEN_PAREN expr CLOSE_PAREN NEWLINE
+  bodylines
+  ENDWHILE NEWLINE
 ;
 
 lvalue:

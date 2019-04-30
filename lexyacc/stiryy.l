@@ -53,6 +53,12 @@ struct CSnippet cSnippet = {
 @lexo   return LEXO;
 @immo   return IMMO;
 @loc   return LOC;
+@if   return IF;
+@endif   return ENDIF;
+@while return WHILE;
+@endwhile return ENDWHILE;
+@break return BREAK;
+@continue return CONTINUE;
 @return  return RETURN;
 @append   return APPEND;
 @appendList   return APPEND_LIST;
