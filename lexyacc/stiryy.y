@@ -37,6 +37,7 @@ int stiryywrap(yyscan_t scanner)
 
 %union {
   int i;
+  double d;
   char *s;
   struct escaped_string str;
   struct {
@@ -73,7 +74,7 @@ int stiryywrap(yyscan_t scanner)
 %token COLON
 %token COMMA
 %token STRING_LITERAL
-%token INT_LITERAL
+%token NUMBER
 %token VARREF_LITERAL
 %token FREEFORM_TOKEN
 %token LT
@@ -111,6 +112,8 @@ int stiryywrap(yyscan_t scanner)
 %token RULE_DIST
 %token RULE_PHONY
 %token RULE_ORDINARY
+%token PRINT
+
 
 %token IF
 %token ENDIF
@@ -128,6 +131,7 @@ int stiryywrap(yyscan_t scanner)
 %type<s> FREEFORM_TOKEN
 %type<s> VARREF_LITERAL
 %type<s> SHELL_COMMAND
+%type<d> NUMBER
 
 %%
 
@@ -135,6 +139,10 @@ stirrules:
 | stirrules stirrule
 | stirrules NEWLINE
 | stirrules assignrule
+| stirrules PRINT NUMBER NEWLINE
+{
+  printf("%g\n", $3);
+}
 | stirrules FILEINCLUDE STRING_LITERAL NEWLINE
 {
   free($3.str);

@@ -31,6 +31,7 @@ struct CSnippet cSnippet = {
 %}
 
 @         return AT;
+@print    return PRINT;
 @delayvar return DELAYVAR;
 @delaylistexpand return DELAYLISTEXPAND;
 @delayexpr return DELAYEXPR;
@@ -123,6 +124,10 @@ struct CSnippet cSnippet = {
   yylval->s = strdup(yytext+2);
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
+}
+[-+]?[0-9]+(.[0-9]+)?([eE][-+]?[0-9]+)? {
+  yylval->d = atof(yytext);
+  return NUMBER;
 }
 [A-Za-z0-9_.][A-Za-z0-9_.-/]* {
   yylval->s = strdup(yytext);
