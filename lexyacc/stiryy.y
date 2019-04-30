@@ -87,6 +87,7 @@ int stiryywrap(yyscan_t scanner)
 %token COMMA
 %token STRING_LITERAL
 %token INT_LITERAL
+%token VARREF_LITERAL
 %token FREEFORM_TOKEN
 %token LT
 %token GT
@@ -95,12 +96,14 @@ int stiryywrap(yyscan_t scanner)
 %token CB
 %token COND
 %token I
+%token AT
 
 
 %token ERROR_TOK
 
 %type<str> STRING_LITERAL
 %type<s> FREEFORM_TOKEN
+%type<s> VARREF_LITERAL
 %type<s> SHELL_COMMAND
 
 %%
@@ -113,10 +116,14 @@ stirrules:
 
 assignrule:
   FREEFORM_TOKEN EQUALS value
+{
+  printf("Assigning to %s\n", $1);
+}
 ;
 
 value:
   STRING_LITERAL
+| VARREF_LITERAL
 | dict
 | list
 ;
@@ -147,9 +154,13 @@ maybe_valuelist:
 ;
 
 valuelist:
-  value
-| valuelist COMMA value
+  valuelistentry
+| valuelist COMMA valuelistentry
 ;
+
+valuelistentry:
+  AT VARREF_LITERAL
+| value;
 
 stirrule:
   targetspec COLON depspec NEWLINE
@@ -173,6 +184,10 @@ targetspec:
 {
   printf("targetlist\n");
 }
+| VARREF_LITERAL
+{
+  printf("targetref\n");
+}
 ;
   
 depspec:
@@ -180,6 +195,10 @@ depspec:
 | list
 {
   printf("deplist\n");
+}
+| VARREF_LITERAL
+{
+  printf("depref\n");
 }
 ;
   

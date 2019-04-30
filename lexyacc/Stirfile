@@ -1,7 +1,12 @@
-all: a.txt b.txt
+CC="cc"
+CFLAGS=["-Wall", "-Wextra"]
+CCCMD=[$CC, @$CFLAGS]
+TGTS=["a.txt", "b.txt"]
+
+all: $TGTS
 	echo ok
 
-a.txt b.txt: c.txt
+$TGTS: c.txt
 	touch a.txt
 	touch b.txt
 

@@ -51,6 +51,7 @@ parsername return PARSERNAME;
 cond      return COND;
 
 
+@         return AT;
 :         return COLON;
 ,         return COMMA;
 =         return EQUALS;
@@ -69,7 +70,11 @@ cond      return COND;
 }
 
 
-[^"' \t\n%:{}\[\]][^ \t\n:]* {
+[$][^ \t\n@:\[\]=,]* {
+  yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
+[^"' \t\n%:={}\[\]$,@][^ \t\n:=,@]* {
   yylval->s = strdup(yytext);
   return FREEFORM_TOKEN;
 }
