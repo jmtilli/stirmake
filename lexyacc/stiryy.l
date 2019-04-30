@@ -70,11 +70,11 @@ cond      return COND;
 }
 
 
-[$][^ \t\n@:\[\]=,]* {
+[$][A-Za-z0-9_.-/]+ {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-[^"' \t\n%:={}\[\]$,@][^ \t\n:=,@]* {
+[A-Za-z0-9_.-/]+ {
   yylval->s = strdup(yytext);
   return FREEFORM_TOKEN;
 }
