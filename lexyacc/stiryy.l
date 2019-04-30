@@ -69,7 +69,13 @@ struct CSnippet cSnippet = {
 :         return COLON;
 ,         return COMMA;
 =         return EQUALS;
+&& return LOGICAL_AND;
+\|\| return LOGICAL_OR;
+!= return NE;
+== return EQ;
 \+=         return PLUSEQUALS;
+\<\< return SHL;
+\>\> return SHR;
 \<        return LT;
 \>        return GT;
 [(]       return OPEN_PAREN;
@@ -78,7 +84,18 @@ struct CSnippet cSnippet = {
 []]       return CLOSE_BRACKET;
 [{]       return OPEN_BRACE;
 [}]       return CLOSE_BRACE;
--         return MINUS;
+\/ return DIV;
+\* return MUL;
+\+ return ADD;
+- return SUB;
+& return BITWISE_AND;
+\| return BITWISE_OR;
+~ return BITWISE_NOT;
+\^ return BITWISE_XOR;
+! return LOGICAL_NOT;
+% return MOD;
+\>= return GE;
+\<= return LE;
 
 \t[^\n]* {
   yylval->s = strdup(yytext+1);
@@ -107,7 +124,7 @@ struct CSnippet cSnippet = {
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
-[A-Za-z0-9_.-/]+ {
+[A-Za-z0-9_.][A-Za-z0-9_.-/]* {
   yylval->s = strdup(yytext);
   return FREEFORM_TOKEN;
 }

@@ -78,7 +78,8 @@ int stiryywrap(yyscan_t scanner)
 %token FREEFORM_TOKEN
 %token LT
 %token GT
-%token MINUS
+%token LE
+%token GE
 %token AT
 %token FUNCTION
 %token ENDFUNCTION
@@ -117,6 +118,8 @@ int stiryywrap(yyscan_t scanner)
 %token ENDWHILE
 %token BREAK
 %token CONTINUE
+
+%token DIV MUL ADD SUB SHL SHR NE EQ LOGICAL_AND LOGICAL_OR LOGICAL_NOT MOD BITWISE_AND BITWISE_OR BITWISE_NOT BITWISE_XOR
 
 
 %token ERROR_TOK
@@ -215,7 +218,74 @@ value:
 | DELAYEXPR OPEN_PAREN expr CLOSE_PAREN
 ;
 
-expr:
+expr: expr11;
+
+expr1:
+  expr0
+| LOGICAL_NOT expr1
+| BITWISE_NOT expr1
+| ADD expr1
+| SUB expr1
+;
+
+expr2:
+  expr1
+| expr2 MUL expr1
+| expr2 DIV expr1
+| expr2 MOD expr1
+;
+
+expr3:
+  expr2
+| expr3 ADD expr2
+| expr3 SUB expr2
+;
+
+expr4:
+  expr3
+| expr4 SHL expr3
+| expr4 SHR expr3
+;
+
+expr5:
+  expr4
+| expr5 LT expr4
+| expr5 LE expr4
+| expr5 GT expr4
+| expr5 GE expr4
+;
+
+expr6:
+  expr5
+| expr6 EQ expr5
+| expr6 NE expr5
+;
+
+expr7:
+  expr6
+| expr7 BITWISE_AND expr6
+;
+
+expr8:
+  expr7
+| expr8 BITWISE_XOR expr7
+;
+
+expr9:
+  expr8
+| expr9 BITWISE_OR expr8
+;
+
+expr10:
+  expr9
+| expr10 LOGICAL_AND expr9
+
+expr11:
+  expr10
+| expr11 LOGICAL_OR expr10
+
+
+expr0:
   OPEN_PAREN expr CLOSE_PAREN maybe_bracketexprlist
 | dict maybe_bracketexprlist
 | list maybe_bracketexprlist
