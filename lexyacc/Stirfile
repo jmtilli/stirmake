@@ -1,7 +1,47 @@
-CC="cc"
-CFLAGS=["-Wall", "-Wextra"]
-CCCMD=[$CC, @$CFLAGS]
-TGTS=["a.txt", "b.txt"]
+CC = "cc"
+CFLAGS = ["-Wall", "-Wextra"]
+CCCMD = [$CC, @$CFLAGS]
+TGTS = ["a.txt", "b.txt"]
+
+CC = "cc"
+CFLAGS = []
+CCCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-c", "-o", @delayvar($@), @delayvar($<)]]
+CCLDCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-o", @delayvar($@), @delaylistexpand($^)]]
+DEPCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-MM", "-MP", "-MF", @delayvar($@), "-MT", @delayvar($@), "-MT", @delayexpr(@sufsubone($@, ".d", ".o")), @delayvar($<)]]
+ARCMDS = [["rm", "-f", @delayvar($@)], ["ar", "rs", @delayvar($@), @delaylistexpand(@suffilter($^, ".o"))]]
+
+SUBDIRS = ['mod0', 'mod1', 'mod2', 'mod3']
+
+@phonyrule: 'all': $(SUBDIRS)
+
+@fileinclude 'opts.mk'
+@dirinclude $(SUBDIRS)
+
+SRC = ['mod3_main.c', 'mod3.c']
+OBJ = @sufsub($(SRC), ".c", ".o")
+DEP = @sufsub($(SRC), ".c", ".d")
+CFLAGS += ["-I$(DIRMOD0)", "-I$(DIRMOD2)"]
+LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
+
+@phonyrule: 'all': 'libmod3.a' 'mod3'
+
+@distrule: 'mod3': 'mod3_main.o' 'libmod3.a' $(LIBS)
+	$(CCLDCMDS[])
+
+@distrule: 'mod3.a': 'mod3.o'
+	$(ARCMDS[])
+
+@patrule: $(OBJ): '%.o': '%.c' '%.d'
+	$(CCCMDS[])
+
+@patrule: $(DEP): '%.d': '%.c'
+	$(DEPCMDS[])
+
+@cdepincludescurdir $(DEP)
+
+
+
+
 
 all: $TGTS
 	echo ok
@@ -12,3 +52,4 @@ $TGTS: c.txt
 
 ["c.txt"]: ['d.txt']
 	touch c.txt
+

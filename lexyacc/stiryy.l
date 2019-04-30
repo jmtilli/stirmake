@@ -52,12 +52,27 @@ cond      return COND;
 
 
 @         return AT;
+@delayvar return DELAYVAR;
+@delaylistexpand return DELAYLISTEXPAND;
+@delayexpr return DELAYEXPR;
+@sufsubone return SUFSUBONE;
+@sufsub return SUFSUB;
+@suffilter return SUFFILTER;
+@phonyrule return PHONYRULE;
+@distrule return DISTRULE;
+@patrule return PATRULE;
+@fileinclude return FILEINCLUDE;
+@dirinclude return DIRINCLUDE;
+@cdepincludescurdir return CDEPINCLUDESCURDIR;
 :         return COLON;
 ,         return COMMA;
 =         return EQUALS;
+\+=         return PLUSEQUALS;
 \|        return PIPE;
 \<        return LT;
 \>        return GT;
+[(]       return OPEN_PAREN;
+[)]       return CLOSE_PAREN;
 [[]       return OPEN_BRACKET;
 []]       return CLOSE_BRACKET;
 [{]       return OPEN_BRACE;
@@ -70,8 +85,25 @@ cond      return COND;
 }
 
 
+[$]^ {
+  yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
+[$]< {
+  yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
+[$]@ {
+  yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
 [$][A-Za-z0-9_.-/]+ {
   yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
+[$][(][A-Za-z0-9_.-/]+[)] {
+  yylval->s = strdup(yytext+2);
+  yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
 [A-Za-z0-9_.-/]+ {

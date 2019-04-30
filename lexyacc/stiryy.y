@@ -67,6 +67,8 @@ int stiryywrap(yyscan_t scanner)
 %token CLOSE_BRACKET
 %token OPEN_BRACE
 %token CLOSE_BRACE
+%token OPEN_PAREN
+%token CLOSE_PAREN
 
 %token SHELL_COMMAND
 
@@ -83,6 +85,7 @@ int stiryywrap(yyscan_t scanner)
 
 %token PARSERNAME
 %token EQUALS
+%token PLUSEQUALS
 %token COLON
 %token COMMA
 %token STRING_LITERAL
@@ -98,6 +101,19 @@ int stiryywrap(yyscan_t scanner)
 %token I
 %token AT
 
+%token DELAYVAR
+%token DELAYEXPR
+%token DELAYLISTEXPAND
+%token SUFFILTER
+%token SUFSUBONE
+%token SUFSUB
+%token PHONYRULE
+%token DISTRULE
+%token PATRULE
+%token FILEINCLUDE
+%token DIRINCLUDE
+%token CDEPINCLUDESCURDIR
+
 
 %token ERROR_TOK
 
@@ -112,12 +128,31 @@ stirrules:
 | stirrules stirrule
 | stirrules NEWLINE
 | stirrules assignrule
+| stirrules FILEINCLUDE STRING_LITERAL
+{
+  free($3.str);
+}
+| stirrules FILEINCLUDE VARREF_LITERAL
+| stirrules DIRINCLUDE STRING_LITERAL
+{
+  free($3.str);
+}
+| stirrules DIRINCLUDE VARREF_LITERAL
+| stirrules CDEPINCLUDESCURDIR VARREF_LITERAL
+| stirrules CDEPINCLUDESCURDIR STRING_LITERAL
+{
+  free($3.str);
+}
 ;
 
 assignrule:
-  FREEFORM_TOKEN EQUALS value
+  FREEFORM_TOKEN EQUALS expr
 {
   printf("Assigning to %s\n", $1);
+}
+| FREEFORM_TOKEN PLUSEQUALS expr
+{
+  printf("Plus-assigning to %s\n", $1);
 }
 ;
 
@@ -126,6 +161,31 @@ value:
 | VARREF_LITERAL
 | dict
 | list
+| DELAYVAR OPEN_PAREN VARREF_LITERAL CLOSE_PAREN
+| DELAYLISTEXPAND OPEN_PAREN expr CLOSE_PAREN
+| DELAYEXPR OPEN_PAREN expr CLOSE_PAREN
+;
+
+expr:
+  OPEN_PAREN expr CLOSE_PAREN
+| dict
+| list
+| VARREF_LITERAL
+| STRING_LITERAL
+| SUFSUBONE OPEN_PAREN expr COMMA STRING_LITERAL COMMA STRING_LITERAL CLOSE_PAREN
+{
+  free($5.str);
+  free($7.str);
+}
+| SUFSUB OPEN_PAREN expr COMMA STRING_LITERAL COMMA STRING_LITERAL CLOSE_PAREN
+{
+  free($5.str);
+  free($7.str);
+}
+| SUFFILTER OPEN_PAREN expr COMMA STRING_LITERAL CLOSE_PAREN
+{
+  free($5.str);
+}
 ;
 
 list:
@@ -163,8 +223,10 @@ valuelistentry:
 | value;
 
 stirrule:
-  targetspec COLON depspec NEWLINE
-  shell_commands
+  targetspec COLON depspec NEWLINE shell_commands
+| PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
+| DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
+| PATRULE COLON targetspec COLON targetspec COLON depspec NEWLINE shell_commands
 ;
 
 shell_commands:
@@ -184,10 +246,6 @@ targetspec:
 {
   printf("targetlist\n");
 }
-| VARREF_LITERAL
-{
-  printf("targetref\n");
-}
 ;
   
 depspec:
@@ -195,10 +253,6 @@ depspec:
 | list
 {
   printf("deplist\n");
-}
-| VARREF_LITERAL
-{
-  printf("depref\n");
 }
 ;
   
@@ -208,9 +262,25 @@ targets:
 {
   printf("target1 %s\n", $1);
 }
+| STRING_LITERAL
+{
+  printf("target1 %s\n", $1.str);
+}
+| VARREF_LITERAL
+{
+  printf("target1ref\n");
+}
 | targets FREEFORM_TOKEN
 {
   printf("target %s\n", $2);
+}
+| targets STRING_LITERAL
+{
+  printf("target %s\n", $2.str);
+}
+| targets VARREF_LITERAL
+{
+  printf("targetref\n");
 }
 ;
 
@@ -218,5 +288,13 @@ deps:
 | deps FREEFORM_TOKEN
 {
   printf("dep %s\n", $2);
+}
+| deps STRING_LITERAL
+{
+  printf("dep %s\n", $2.str);
+}
+| deps VARREF_LITERAL
+{
+  printf("depref\n");
 }
 ;
