@@ -145,18 +145,18 @@ stirrules:
 | stirrules stirrule
 | stirrules NEWLINE
 | stirrules assignrule
-| stirrules FILEINCLUDE STRING_LITERAL
+| stirrules FILEINCLUDE STRING_LITERAL NEWLINE
 {
   free($3.str);
 }
-| stirrules FILEINCLUDE VARREF_LITERAL
-| stirrules DIRINCLUDE STRING_LITERAL
+| stirrules FILEINCLUDE VARREF_LITERAL NEWLINE
+| stirrules DIRINCLUDE STRING_LITERAL NEWLINE
 {
   free($3.str);
 }
-| stirrules DIRINCLUDE VARREF_LITERAL
-| stirrules CDEPINCLUDESCURDIR VARREF_LITERAL
-| stirrules CDEPINCLUDESCURDIR STRING_LITERAL
+| stirrules DIRINCLUDE VARREF_LITERAL NEWLINE
+| stirrules CDEPINCLUDESCURDIR VARREF_LITERAL NEWLINE
+| stirrules CDEPINCLUDESCURDIR STRING_LITERAL NEWLINE
 {
   free($3.str);
 }
@@ -190,19 +190,21 @@ statement:
 ;
 
 lvalue:
-  VARREF_LITERAL
-| VARREF_LITERAL OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{
-  free($3.str);
-}
+  VARREF_LITERAL maybe_bracketexprlist
+| DYN OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+| LEX OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+;
+
+maybe_bracketexprlist:
+| maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
 ;
 
 assignrule:
-  FREEFORM_TOKEN EQUALS expr
+  FREEFORM_TOKEN EQUALS expr NEWLINE
 {
   printf("Assigning to %s\n", $1);
 }
-| FREEFORM_TOKEN PLUSEQUALS expr
+| FREEFORM_TOKEN PLUSEQUALS expr NEWLINE
 {
   printf("Plus-assigning to %s\n", $1);
 }
@@ -219,25 +221,16 @@ value:
 ;
 
 expr:
-  OPEN_PAREN expr CLOSE_PAREN
-| dict
-| list
-| VARREF_LITERAL
+  OPEN_PAREN expr CLOSE_PAREN maybe_bracketexprlist
+| dict maybe_bracketexprlist
+| list maybe_bracketexprlist
 | STRING_LITERAL
-| DYN OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
-| LEX OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
-| IMM OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
-| DYNO OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
-| LEXO OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
-| IMMO OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
-| LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
-{ free($3.str); }
+| lvalue
+| IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+| DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+| LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+| IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+| LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFSUB OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
