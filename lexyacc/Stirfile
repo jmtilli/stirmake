@@ -64,16 +64,16 @@ LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
 @phonyrule: 'all': 'libmod3.a' 'mod3'
 
 @distrule: 'mod3': 'mod3_main.o' 'libmod3.a' $(LIBS)
-	$(CCLDCMDS[])
+@	$(CCLDCMDS)
 
 @distrule: 'mod3.a': 'mod3.o'
-	$(ARCMDS[])
+@	$(ARCMDS)
 
 @patrule: $(OBJ): '%.o': '%.c' '%.d'
-	$(CCCMDS[])
+@	$(CCCMDS)
 
 @patrule: $(DEP): '%.d': '%.c'
-	$(DEPCMDS[])
+@	$(DEPCMDS)
 
 @cdepincludescurdir $(DEP)
 

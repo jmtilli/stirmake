@@ -66,6 +66,7 @@ int stiryywrap(yyscan_t scanner)
 %token CLOSE_PAREN
 
 %token SHELL_COMMAND
+%token ATTAB
 
 %token NEWLINE
 
@@ -363,6 +364,10 @@ shell_command:
   SHELL_COMMAND NEWLINE
 {
   printf("\tshell %s\n", $1);
+}
+| ATTAB expr NEWLINE
+{
+  printf("\tshell expr\n");
 }
 ;
 

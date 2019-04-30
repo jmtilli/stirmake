@@ -102,6 +102,7 @@ struct CSnippet cSnippet = {
   yylval->s = strdup(yytext+1);
   return SHELL_COMMAND;
 }
+@\t return ATTAB;
 
 
 [$]^ {
