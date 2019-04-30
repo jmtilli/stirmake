@@ -78,6 +78,16 @@ int64_t get_i64(std::vector<memblock> &stack)
   return get_dbl(stack);
 }
 
+memblock &
+get_stackloc(int64_t stackloc, size_t bp, std::vector<memblock> &stack)
+{
+  if (stackloc >= 0)
+  {
+    return stack.at(bp + stackloc);
+  }
+  return stack.at(stack.size() + stackloc);
+}
+
 int engine(const uint8_t *microprogram, size_t microsz,
            stringtab &st)
 {
@@ -85,6 +95,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
   size_t ip = 0;
   int ret = 0;
   int64_t val, val2, condition, jmp;
+  size_t bp;
   const size_t stackbound = 131072;
   std::vector<memblock> stack;
 
