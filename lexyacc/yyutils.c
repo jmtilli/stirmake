@@ -137,6 +137,83 @@ struct escaped_string yy_escape_string(char *orig)
   return resultstruct;
 }
 
+struct escaped_string yy_escape_string_single(char *orig)
+{
+  char *buf = NULL;
+  char *result = NULL;
+  struct escaped_string resultstruct;
+  size_t j = 0;
+  size_t capacity = 0;
+  size_t i = 1;
+  while (orig[i] != '\'')
+  {
+    if (j >= capacity)
+    {
+      char *buf2;
+      capacity = 2*capacity+10;
+      buf2 = realloc(buf, capacity);
+      if (buf2 == NULL)
+      {
+        free(buf);
+        resultstruct.str = NULL;
+        return resultstruct;
+      }
+      buf = buf2;
+    }
+    if (orig[i] != '\\')
+    {
+      buf[j++] = orig[i++];
+    }
+    else if (orig[i+1] == 'x')
+    {
+      char hexbuf[3] = {0};
+      hexbuf[0] = orig[i+2];
+      hexbuf[1] = orig[i+3];
+      buf[j++] = strtol(hexbuf, NULL, 16);
+      i += 4;
+    }
+    else if (orig[i+1] == 't')
+    {
+      buf[j++] = '\t';
+      i += 2;
+    }
+    else if (orig[i+1] == 'r')
+    {
+      buf[j++] = '\r';
+      i += 2;
+    }
+    else if (orig[i+1] == 'n')
+    {
+      buf[j++] = '\n';
+      i += 2;
+    }
+    else
+    {
+      buf[j++] = orig[i+1];
+      i += 2;
+    }
+  }
+  if (j >= capacity)
+  {
+    char *buf2;
+    capacity = 2*capacity+10;
+    buf2 = realloc(buf, capacity);
+    if (buf2 == NULL)
+    {
+      free(buf);
+      resultstruct.str = NULL;
+      return resultstruct;
+    }
+    buf = buf2;
+  }
+  resultstruct.sz = j;
+  buf[j++] = '\0';
+  result = memdup(buf, j);
+  resultstruct.str = result;
+  free(buf);
+  return resultstruct;
+}
+
 uint32_t yy_get_ip(char *orig)
 {
   struct in_addr addr;

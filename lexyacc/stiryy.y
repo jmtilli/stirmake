@@ -63,6 +63,10 @@ int stiryywrap(yyscan_t scanner)
 %token INITINCLUDE
 %token HDRINCLUDE
 %token BYTESSIZETYPE
+%token OPEN_BRACKET
+%token CLOSE_BRACKET
+%token OPEN_BRACE
+%token CLOSE_BRACE
 
 %token SHELL_COMMAND
 
@@ -104,10 +108,51 @@ int stiryywrap(yyscan_t scanner)
 stirrules:
 | stirrules stirrule
 | stirrules NEWLINE
+| stirrules assignrule
+;
+
+assignrule:
+  FREEFORM_TOKEN EQUALS value
+;
+
+value:
+  STRING_LITERAL
+| dict
+| list
+;
+
+list:
+OPEN_BRACKET maybe_valuelist CLOSE_BRACKET
+;
+
+dict:
+OPEN_BRACE maybe_dictlist CLOSE_BRACE
+;
+
+maybe_dictlist:
+| dictlist
+;
+
+dictlist:
+  dictentry
+| dictlist COMMA dictentry
+;
+
+dictentry:
+  STRING_LITERAL COLON value
+;
+
+maybe_valuelist:
+| valuelist
+;
+
+valuelist:
+  value
+| valuelist COMMA value
 ;
 
 stirrule:
-  targets COLON deps NEWLINE
+  targetspec COLON depspec NEWLINE
   shell_commands
 ;
 
@@ -118,9 +163,26 @@ shell_commands:
 shell_command:
   SHELL_COMMAND NEWLINE
 {
-  printf("shell %s\n", $1);
+  printf("\tshell %s\n", $1);
 }
 ;
+
+targetspec:
+  targets
+| list
+{
+  printf("targetlist\n");
+}
+;
+  
+depspec:
+  deps
+| list
+{
+  printf("deplist\n");
+}
+;
+  
 
 targets:
   FREEFORM_TOKEN

@@ -57,6 +57,10 @@ cond      return COND;
 \|        return PIPE;
 \<        return LT;
 \>        return GT;
+[[]       return OPEN_BRACKET;
+[]]       return CLOSE_BRACKET;
+[{]       return OPEN_BRACE;
+[}]       return CLOSE_BRACE;
 -         return MINUS;
 
 \t[^\n]* {
@@ -65,12 +69,13 @@ cond      return COND;
 }
 
 
-[^" \t\n%:][^ \t\n:]* {
+[^"' \t\n%:{}\[\]][^ \t\n:]* {
   yylval->s = strdup(yytext);
   return FREEFORM_TOKEN;
 }
 
 \"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
+\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
 
 "%{"             { BEGIN(PERCENTC); cSnippet.capacity = 0; cSnippet.len = 0; cSnippet.data = NULL; }
 <PERCENTC>"/*"          BEGIN(PERCENTCCOMMENTS);
