@@ -1,0 +1,9 @@
+all: a.txt b.txt
+	echo ok
+
+a.txt b.txt: c.txt
+	touch a.txt
+	touch b.txt
+
+c.txt: d.txt
+	touch c.txt
