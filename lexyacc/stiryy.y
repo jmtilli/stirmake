@@ -100,6 +100,9 @@ int stiryywrap(yyscan_t scanner)
 %token COND
 %token I
 %token AT
+%token FUNCTION
+%token ENDFUNCTION
+%token LOCVAR
 
 %token DELAYVAR
 %token DELAYEXPR
@@ -113,6 +116,20 @@ int stiryywrap(yyscan_t scanner)
 %token FILEINCLUDE
 %token DIRINCLUDE
 %token CDEPINCLUDESCURDIR
+%token DYNO
+%token LEXO
+%token IMMO
+%token DYN
+%token LEX
+%token IMM
+%token LOC
+%token APPEND
+%token APPEND_LIST
+%token RETURN
+%token ADD_RULE
+%token RULE_DIST
+%token RULE_PHONY
+%token RULE_ORDINARY
 
 
 %token ERROR_TOK
@@ -140,6 +157,41 @@ stirrules:
 | stirrules DIRINCLUDE VARREF_LITERAL
 | stirrules CDEPINCLUDESCURDIR VARREF_LITERAL
 | stirrules CDEPINCLUDESCURDIR STRING_LITERAL
+{
+  free($3.str);
+}
+| stirrules FUNCTION FREEFORM_TOKEN OPEN_PAREN CLOSE_PAREN NEWLINE
+{ free($3); }
+  funlines
+  ENDFUNCTION NEWLINE
+;
+
+funlines:
+  locvarlines
+  bodylines
+;
+
+locvarlines:
+| locvarlines LOCVAR FREEFORM_TOKEN EQUALS expr NEWLINE
+{
+  free($3);
+}
+;
+
+bodylines:
+| bodylines statement
+;
+
+statement:
+  lvalue EQUALS expr NEWLINE
+| RETURN expr NEWLINE
+| ADD_RULE OPEN_PAREN expr CLOSE_PAREN NEWLINE
+| expr NEWLINE
+;
+
+lvalue:
+  VARREF_LITERAL
+| VARREF_LITERAL OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
 {
   free($3.str);
 }
@@ -172,9 +224,28 @@ expr:
 | list
 | VARREF_LITERAL
 | STRING_LITERAL
+| DYN OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
+| LEX OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
+| IMM OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
+| DYNO OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
+| LEXO OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
+| IMMO OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
+| LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET
+{ free($3.str); }
 | SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFSUB OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
+| APPEND OPEN_PAREN expr COMMA expr CLOSE_PAREN
+| APPEND_LIST OPEN_PAREN expr COMMA expr CLOSE_PAREN
+| RULE_DIST
+| RULE_PHONY
+| RULE_ORDINARY
 ;
 
 list:

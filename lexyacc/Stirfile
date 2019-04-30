@@ -1,3 +1,39 @@
+# This is a comment
+
+@function ARCMDS()
+  @locvar lists = []
+  @locvar list = []
+  @append($list, "rm")
+  @append($list, "-f")
+  @append($list, @dyno["@"])
+  @append($lists, $list)
+  $list = []
+  @append($list, "ar")
+  @append($list, "rs")
+  @append($list, @dyno["@"])
+  @appendList($list, @suffilter(@dyno["^"], ".o"))
+  @append($lists, $list)
+  @return $lists
+@endfunction
+
+@function addrule()
+  @locvar deplist = []
+  @locvar tgtlist = []
+  @locvar cmd = []
+  @locvar cmdlist = []
+  @locvar rulelist = {}
+  @append($cmd, "echo")
+  @append($cmd, "foo")
+  @append($cmdlist, $cmd)
+  @append($tgtlist, "foo")
+  $rulelist["type"] = @RULE_DIST # alternatives: RULE_PHONY, 0
+  $rulelist["deps"] = $deplist
+  $rulelist["tgts"] = $tgtlist
+  $rulelist["cmds"] = $cmdlist
+  @addRule(@loc["rulelist"])
+@endfunction
+
+
 CC = "cc"
 CFLAGS = ["-Wall", "-Wextra"]
 CCCMD = [$CC, @$CFLAGS]

@@ -64,6 +64,23 @@ cond      return COND;
 @fileinclude return FILEINCLUDE;
 @dirinclude return DIRINCLUDE;
 @cdepincludescurdir return CDEPINCLUDESCURDIR;
+@function return FUNCTION;
+@endfunction return ENDFUNCTION;
+@locvar   return LOCVAR;
+@dyn   return DYN;
+@lex   return LEX;
+@imm   return IMM;
+@dyno   return DYNO;
+@lexo   return LEXO;
+@immo   return IMMO;
+@loc   return LOC;
+@return  return RETURN;
+@append   return APPEND;
+@appendList   return APPEND_LIST;
+@addRule   return ADD_RULE;
+@RULE_DIST   return RULE_DIST;
+@RULE_PHONY   return RULE_PHONY;
+@RULE_ORDINARY   return RULE_ORDINARY;
 :         return COLON;
 ,         return COMMA;
 =         return EQUALS;
@@ -113,6 +130,7 @@ cond      return COND;
 
 \"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
 \'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
+#[^\n]*  /* ignore */;
 
 "%{"             { BEGIN(PERCENTC); cSnippet.capacity = 0; cSnippet.len = 0; cSnippet.data = NULL; }
 <PERCENTC>"/*"          BEGIN(PERCENTCCOMMENTS);
@@ -135,7 +153,6 @@ cond      return COND;
 
 \n                                { ++yylineno; yycolumn=1; return NEWLINE; }
 [ \t]+                            /* ignore whitespaces */;
-\/\/.*                            /* ignore single-line comments */;
 .            return ERROR_TOK;
 
 
