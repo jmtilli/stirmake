@@ -31,8 +31,11 @@
   $rulelist["tgts"] = $tgtlist
   $rulelist["cmds"] = $cmdlist
   @addRule(@loc["rulelist"])
-  @dyn["bar"] = @dyn["baz"]["barf"]
-  @lex["foo"] = "y"
+  @addRule($rulelist) # equivalent
+  @D$bar = @D$baz["barf"]
+  @dyn["bar"] = @dyn["baz"]["barf"] # equivalent
+  @L$foo = "y"
+  @lex["foo"] = "y" # equivalent
 @endfunction
 
 
