@@ -24,7 +24,7 @@
 %%
   int last_newline_true = 1;
 
-(\\[^\n]|[^ \t\n!:(\\#$=])[^ \t\n!:(\\#$=]*(\\(.|\n)[^ \t\n!:(\\#$=]*)* {
+(\\[^\n]|[^ \t\n!:(\\#$=;])[^ \t\n!:(\\#$=;]*(\\(.|\n)[^ \t\n!:(\\#$=;]*)* {
   /*
     Ok, the past regexp might require some explanation.
 
@@ -42,6 +42,7 @@
          (8) hash sign as it's the comment start character
          (9) dollar as it's used for variables
         (10) equality sign as it's variable assignment operator
+        (11) semicolon as it begins a shell command inline with the rule
 
     Then we may have any number of permitted characters. After that, we may have
     escaped characters including newline and permitted characters in any
