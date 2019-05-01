@@ -134,7 +134,14 @@ struct CSnippet cSnippet = {
   yylval->d = atof(yytext);
   return NUMBER;
 }
-[A-Za-z0-9_.][A-Za-z0-9_./]* {
+[A-Za-z0-9_.]([A-Za-z0-9_./]*[A-Za-z0-9_.])? {
+  /*
+   * Note this is slightly imperfect. 6/2 which ought to be an
+   * expression evaluating to 3 is handled instead as a free-form
+   * token. We can't avoid that as we want to support slashes in
+   * file names. The solution for the user is to type (6)/(2) or
+   * 6 / 2 or anything else. Very similar to the ">>" problem in C++.
+   */
   yylval->s = strdup(yytext);
   return FREEFORM_TOKEN;
 }
