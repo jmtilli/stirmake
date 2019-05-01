@@ -12,7 +12,7 @@
 class memblock {
  public:
   enum {
-    T_D, T_S, T_V, T_M
+    T_D, T_S, T_V, T_M, T_F
   } type;
   union {
     double d;
@@ -27,6 +27,10 @@ class memblock {
     u.d = 0;
   }
   memblock(double d): type(T_D)
+  {
+    u.d = d;
+  }
+  memblock(double d, bool isfn): type(isfn ? T_F : T_D)
   {
     u.d = d;
   }
@@ -50,7 +54,7 @@ class memblock {
     type = other.type;
     u = other.u;
     refc = other.refc;
-    if (type == T_D)
+    if (type == T_D || type == T_F)
     {
       return;
     }
@@ -69,7 +73,7 @@ class memblock {
     return *this;
   }
   ~memblock() {
-    if (type == T_D)
+    if (type == T_D || type == T_F)
     {
       return;
     }
@@ -153,6 +157,7 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_LISTGET = 45,
   STIRBCE_OPCODE_LISTSET = 46,
   STIRBCE_OPCODE_RETEX = 47,
+  STIRBCE_OPCODE_FUN_JMP_ADDR = 48,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)

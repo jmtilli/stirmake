@@ -766,6 +766,25 @@ int engine(const uint8_t *microprogram, size_t microsz,
         mbar.u.v->push_back(mbit);
         break;
       }
+      case STIRBCE_OPCODE_FUN_JMP_ADDR:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbit = stack.back(); stack.pop_back();
+        if (mbit.type != memblock::T_F)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(0.0)); // FIXME implement
+        std::terminate();
+        break;
+      }
       case STIRBCE_OPCODE_STRAPPEND:
       {
         if (unlikely(stack.size() < 2))
