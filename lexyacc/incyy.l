@@ -24,7 +24,7 @@
 %%
   int last_newline_true = 1;
 
-(\\[^\n]|[^ \t\n!:(\\#$=])[^ \t\n!:(\\#$=]*(\\[.\n][^ \t\n!:(\\#$=]*)* {
+(\\[^\n]|[^ \t\n!:(\\#$=])[^ \t\n!:(\\#$=]*(\\(.|\n)[^ \t\n!:(\\#$=]*)* {
   /*
     Ok, the past regexp might require some explanation.
 
