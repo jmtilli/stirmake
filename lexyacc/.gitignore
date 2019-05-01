@@ -7,3 +7,10 @@
 /intermediatestore/
 /STIRYY.LEX.INTERMEDIATE
 /STIRYY.TAB.INTERMEDIATE
+/INCYY.LEX.INTERMEDIATE
+/INCYY.TAB.INTERMEDIATE
+/inc
+/incyy.lex.c
+/incyy.lex.h
+/incyy.tab.c
+/incyy.tab.h
