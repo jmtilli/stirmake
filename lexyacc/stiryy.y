@@ -203,9 +203,12 @@ statement:
 ;
 
 lvalue:
-  varref maybe_bracketexprlist
-| DYN OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
-| LEX OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+  varref
+| varref maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
+| DYN OPEN_BRACKET expr CLOSE_BRACKET
+| DYN OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
+| LEX OPEN_BRACKET expr CLOSE_BRACKET
+| LEX OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
 | OPEN_PAREN expr CLOSE_PAREN maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
 ;
 
