@@ -20,6 +20,8 @@
 %}
 
 %option reentrant bison-bridge bison-locations
+%x SHELL
+
 %%
 
 %{
@@ -104,10 +106,6 @@ struct CSnippet cSnippet = {
 \>= return GE;
 \<= return LE;
 
-\t[^\n]* {
-  yylval->s = strdup(yytext+1);
-  return SHELL_COMMAND;
-}
 @\t return ATTAB;
 
 
@@ -147,7 +145,42 @@ struct CSnippet cSnippet = {
 
 \n                                { ++yylineno; yycolumn=1; return NEWLINE; }
 \\\n                              { ++yylineno; yycolumn=1; }
-[ \t]+                            /* ignore whitespaces */;
+\t {
+  if (yycolumn == 2)
+  {
+    BEGIN(SHELL);
+  }
+  else
+  {
+    // ignore
+  }
+}
+<SHELL>[^\n]+(\\\n[^\n]*)* {
+  yylval->s = strdup(yytext);
+  size_t len = strlen(yylval->s);
+  size_t idx;
+  yycolumn = 2;
+  for (idx = 0; idx < len; idx++)
+  {
+    if (yylval->s[idx] == '\n')
+    {
+      ++yylineno;
+      yycolumn=1;
+    }
+    else
+    {
+      ++yycolumn;
+    }
+  }
+  return SHELL_COMMAND;
+}
+<SHELL>\n {
+  ++yylineno;
+  yycolumn=1;
+  BEGIN(INITIAL);
+  return NEWLINE;
+}
+[ \t]                            /* ignore whitespaces */;
 .            return ERROR_TOK;
 
 
