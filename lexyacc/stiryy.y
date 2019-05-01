@@ -105,6 +105,12 @@ int stiryywrap(yyscan_t scanner)
 %token DYN
 %token LEX
 %token IMM
+%token D
+%token L
+%token I
+%token DO
+%token LO
+%token IO
 %token LOC
 %token APPEND
 %token APPEND_LIST
@@ -148,17 +154,17 @@ stirrules:
 {
   free($3.str);
 }
-| stirrules FILEINCLUDE VARREF_LITERAL NEWLINE
+| stirrules FILEINCLUDE varref NEWLINE
 | stirrules DIRINCLUDE STRING_LITERAL NEWLINE
 {
   free($3.str);
 }
-| stirrules DIRINCLUDE VARREF_LITERAL NEWLINE
-| stirrules CDEPINCLUDESCURDIR VARREF_LITERAL NEWLINE
+| stirrules DIRINCLUDE varref NEWLINE
 | stirrules CDEPINCLUDESCURDIR STRING_LITERAL NEWLINE
 {
   free($3.str);
 }
+| stirrules CDEPINCLUDESCURDIR varref NEWLINE
 | stirrules FUNCTION FREEFORM_TOKEN OPEN_PAREN CLOSE_PAREN NEWLINE
 { free($3); }
   funlines
@@ -197,9 +203,10 @@ statement:
 ;
 
 lvalue:
-  VARREF_LITERAL maybe_bracketexprlist
+  varref maybe_bracketexprlist
 | DYN OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | LEX OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
+| OPEN_PAREN expr CLOSE_PAREN maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
 ;
 
 maybe_bracketexprlist:
@@ -219,12 +226,22 @@ assignrule:
 
 value:
   STRING_LITERAL
-| VARREF_LITERAL
+| varref
 | dict
 | list
-| DELAYVAR OPEN_PAREN VARREF_LITERAL CLOSE_PAREN
+| DELAYVAR OPEN_PAREN varref CLOSE_PAREN
 | DELAYLISTEXPAND OPEN_PAREN expr CLOSE_PAREN
 | DELAYEXPR OPEN_PAREN expr CLOSE_PAREN
+;
+
+varref:
+  VARREF_LITERAL
+| DO VARREF_LITERAL
+| LO VARREF_LITERAL
+| IO VARREF_LITERAL
+| D VARREF_LITERAL
+| L VARREF_LITERAL
+| I VARREF_LITERAL
 ;
 
 expr: expr11;
@@ -295,7 +312,7 @@ expr11:
 
 
 expr0:
-  OPEN_PAREN expr CLOSE_PAREN maybe_bracketexprlist
+  OPEN_PAREN expr CLOSE_PAREN
 | dict maybe_bracketexprlist
 | list maybe_bracketexprlist
 | STRING_LITERAL
@@ -346,7 +363,7 @@ valuelist:
 ;
 
 valuelistentry:
-  AT VARREF_LITERAL
+  AT varref
 | value;
 
 stirrule:

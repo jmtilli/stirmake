@@ -47,6 +47,12 @@ struct CSnippet cSnippet = {
 @function return FUNCTION;
 @endfunction return ENDFUNCTION;
 @locvar   return LOCVAR;
+@D     return D;
+@L     return L;
+@I     return I;
+@DO     return DO;
+@LO     return LO;
+@IO     return IO;
 @dyn   return DYN;
 @lex   return LEX;
 @imm   return IMM;
