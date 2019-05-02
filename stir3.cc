@@ -404,7 +404,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < limit - 1; i++)
   {
-    write(self_pipe_fd[1], ".", 1);
+    write(jobserver_fd[1], ".", 1);
   }
 
   struct sigaction sa;
