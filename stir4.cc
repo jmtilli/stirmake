@@ -102,6 +102,37 @@ std::vector<Rule> rules;
 std::map<std::string, int> ruleid_by_tgt;
 std::map<std::string, std::set<int>> ruleids_by_dep;
 
+
+
+
+void depth_first(int cur, std::set<int> &parents)
+{
+  if (parents.find(cur) != parents.end())
+  {
+    std::cerr << "cycle found" << std::endl;
+    for (auto it = parents.begin(); it != parents.end(); it++)
+    {
+      std::cerr << " rule in cycle: " << rules[*it] << std::endl;
+    }
+    exit(1);
+  }
+  parents.insert(cur);
+  for (auto it = rules[cur].deps.begin(); it != rules[cur].deps.end(); it++)
+  {
+    if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+    {
+      depth_first(ruleid_by_tgt[*it], parents);
+    }
+  }
+  parents.erase(cur);
+}
+void depth_first(int cur)
+{
+  std::set<int> parents;
+  depth_first(0, parents);
+}
+
+
 std::map<std::string, std::pair<bool, std::set<std::string> > > add_deps;
 
 void add_dep(std::vector<std::string> tgts,
@@ -502,7 +533,11 @@ int main(int argc, char **argv)
   add_rule(v_l3e, v_l4f, argt_l3e, 0);
   add_dep(v_l2a, v_l3e, 0);
 
+  //add_dep(v_l3e, v_l1g, 0); // offending rule
+
   process_additional_deps();
+
+  depth_first(0);
 
   if (pipe(self_pipe_fd) != 0)
   {
