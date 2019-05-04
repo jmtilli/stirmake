@@ -104,9 +104,20 @@ std::map<std::string, int> ruleid_by_tgt;
 std::map<std::string, std::set<int>> ruleids_by_dep;
 
 
-void depth_first(int cur, std::set<int> &parents, int &cntr)
+void better_cycle_detect(int cur, std::set<int> &parents, std::set<int> &no_cycles, int &cntr)
 {
   cntr++;
+  if (no_cycles.find(cur) != no_cycles.end())
+  {
+    return;
+  }
+/*
+  if (rules[cur].deps.size() == 0)
+  {
+    no_cycles.insert(cur);
+    return;
+  }
+*/
   if (parents.find(cur) != parents.end())
   {
     std::cerr << "cycle found" << std::endl;
@@ -116,29 +127,25 @@ void depth_first(int cur, std::set<int> &parents, int &cntr)
     }
     exit(1);
   }
-#if 0
-  for (auto it = parents.begin(); it != parents.end(); it++)
-  {
-    std::cout << " ";
-  }
-  std::cout << cur << std::endl;
-#endif
   parents.insert(cur);
   for (auto it = rules[cur].deps.begin(); it != rules[cur].deps.end(); it++)
   {
     if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
     {
-      depth_first(ruleid_by_tgt[*it], parents, cntr);
+      better_cycle_detect(ruleid_by_tgt[*it], parents, no_cycles, cntr);
     }
   }
   parents.erase(cur);
+  no_cycles.insert(cur);
 }
-void depth_first(int cur)
+
+void better_cycle_detect(int cur)
 {
+  std::set<int> no_cycles;
   std::set<int> parents;
   int cntr = 0;
-  depth_first(cur, parents, cntr);
-  //std::cout << "CNTR " << cntr << std::endl;
+  better_cycle_detect(cur, parents, no_cycles, cntr);
+  std::cout << "BETTER CNTR " << cntr << std::endl;
 }
 
 
@@ -521,7 +528,7 @@ void pathological_test(void)
   int rule;
   std::vector<std::string> v_rules;
   std::string rulestr;
-  for (rule = 0; rule < 20; rule++)
+  for (rule = 0; rule < 3000; rule++)
   {
     std::ostringstream oss;
     std::vector<std::string> v_rule;
@@ -532,9 +539,9 @@ void pathological_test(void)
     v_rules.push_back(rulestr);
   }
   process_additional_deps();
-  std::cout << "starting DFS" << std::endl;
-  depth_first(ruleid_by_tgt[rulestr]);
-  std::cout << "ending DFS" << std::endl;
+  std::cout << "starting DFS2" << std::endl;
+  better_cycle_detect(ruleid_by_tgt[rulestr]);
+  std::cout << "ending DFS2" << std::endl;
   exit(0);
 }
 
@@ -572,7 +579,7 @@ int main(int argc, char **argv)
 
   process_additional_deps();
 
-  depth_first(0);
+  better_cycle_detect(0);
 
   if (pipe(self_pipe_fd) != 0)
   {
