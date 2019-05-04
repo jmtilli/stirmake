@@ -112,13 +112,6 @@ void better_cycle_detect(int cur, std::vector<bool> &parents, std::vector<bool> 
   {
     return;
   }
-/*
-  if (rules[cur].deps.size() == 0)
-  {
-    no_cycles.insert(cur);
-    return;
-  }
-*/
   if (parents[cur])
   {
     std::cerr << "cycle found" << std::endl;
