@@ -443,7 +443,8 @@ void reconsider(int ruleid)
   }
   if (!r.executing)
   {
-    abort();
+    std::cout << "rule not executing " << r << std::endl;
+    return;
   }
   for (auto it = r.deps.begin(); it != r.deps.end(); it++)
   {
