@@ -1,4 +1,7 @@
 *.o
+*.d
+*.s
+*.a
 /stir
 /stiryy.lex.c
 /stiryy.lex.h

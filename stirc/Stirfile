@@ -1,6 +1,6 @@
 firstrule: ipfrag/comboperf.o
 
-@cdepincludescurdir "depfile.d"
+@cdepincludescurdir "depfile.dep"
 
 # This is a comment
 
