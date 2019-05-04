@@ -668,6 +668,7 @@ int main(int argc, char **argv)
           it2 = it->second.erase(it2);
         }
       }
+      it->second.rehash(it->second.size());
       it++;
     }
     else
@@ -687,6 +688,7 @@ int main(int argc, char **argv)
       it = ruleid_by_tgt.erase(it);
     }
   }
+  ruleid_by_tgt.rehash(ruleid_by_tgt.size());
 
   if (pipe(self_pipe_fd) != 0)
   {
