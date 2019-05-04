@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "yyutils.h"
+#include "incyyutils.h"
 #include "incyy.h"
 
 int main(int argc, char **argv)
