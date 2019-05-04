@@ -58,6 +58,41 @@ class Rule {
 
     Rule(): phony(false), executed(false), executing(false), queued(false) {}
 };
+std::ostream &operator<<(std::ostream &o, const Rule &r)
+{
+  bool first = true;
+  o << "Rule(";
+  o << r.ruleid;
+  o << ",[";
+  for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
+  {
+    if (first)
+    {
+      first = false;
+    }
+    else
+    {
+      o << ",";
+    }
+    o << *it;
+  }
+  first = true;
+  o << "],[";
+  for (auto it = r.deps.begin(); it != r.deps.end(); it++)
+  {
+    if (first)
+    {
+      first = false;
+    }
+    else
+    {
+      o << ",";
+    }
+    o << *it;
+  }
+  o << "])";
+  return o;
+}
 
 int children = 0;
 const int limit = 2;
@@ -229,15 +264,15 @@ void consider(int ruleid)
 {
   Rule &r = rules.at(ruleid);
   int toexecute = 0;
-  std::cout << "considering " << r.tgts[0] << std::endl;
+  std::cout << "considering " << r << std::endl;
   if (r.executed)
   {
-    std::cout << "already execed " << r.tgts[0] << std::endl;
+    std::cout << "already execed " << r << std::endl;
     return;
   }
   if (r.executing)
   {
-    std::cout << "already execing " << r.tgts[0] << std::endl;
+    std::cout << "already execing " << r << std::endl;
     return;
   }
   r.executing = true;
@@ -248,6 +283,7 @@ void consider(int ruleid)
       consider(ruleid_by_tgt[*it]);
       if (!rules.at(ruleid_by_tgt[*it]).executed)
       {
+        std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
         toexecute = 1;
       }
     }
@@ -275,10 +311,10 @@ void reconsider(int ruleid)
 {
   Rule &r = rules.at(ruleid);
   int toexecute = 0;
-  std::cout << "reconsidering " << r.tgts[0] << std::endl;
+  std::cout << "reconsidering " << r << std::endl;
   if (r.executed)
   {
-    std::cout << "already execed " << r.tgts[0] << std::endl;
+    std::cout << "already execed " << r << std::endl;
     return;
   }
   if (!r.executing)
@@ -290,6 +326,7 @@ void reconsider(int ruleid)
     int dep = ruleid_by_tgt[*it];
     if (!rules.at(dep).executed)
     {
+      std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
       toexecute = 1;
       break;
     }
