@@ -1,6 +1,9 @@
+beforefirstrule: longdepall
+
 firstrule: ipfrag/comboperf.o
 
 @cdepincludescurdir "depfile.dep"
+@cdepincludescurdir "longdepfile.dep"
 
 # This is a comment
 

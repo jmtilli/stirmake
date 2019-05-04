@@ -83,7 +83,7 @@ targets:
 }
 | targets FREEFORM_TOKEN
 {
-  printf("target %s\n", $2);
+  //printf("target %s\n", $2);
   incyy_set_tgt(incyy, $2);
   free($2);
 }
@@ -92,7 +92,7 @@ targets:
 deps:
 | deps FREEFORM_TOKEN
 {
-  printf("dep %s\n", $2);
+  //printf("dep %s\n", $2);
   incyy_set_dep(incyy, $2);
   free($2);
 }

@@ -20,6 +20,8 @@
 #include "yyutils.h"
 #include "incyyutils.h"
 
+int debug = 0;
+
 int self_pipe_fd[2];
 
 int jobserver_fd[2];
@@ -312,7 +314,10 @@ void mark_executed(int ruleid);
 void do_exec(int ruleid)
 {
   Rule &r = rules.at(ruleid);
-  std::cout << "do_exec " << ruleid << std::endl;
+  if (debug)
+  {
+    std::cout << "do_exec " << ruleid << std::endl;
+  }
   if (!r.queued)
   {
     int has_to_exec = 0;
@@ -334,9 +339,11 @@ void do_exec(int ruleid)
         }
         if (stat(it->c_str(), &statbuf) != 0)
         {
-          perror("can't stat");
-          fprintf(stderr, "file was: %s\n", it->c_str());
-          abort();
+          has_to_exec = 1;
+          break;
+          //perror("can't stat");
+          //fprintf(stderr, "file was: %s\n", it->c_str());
+          //abort();
         }
         if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
         {
@@ -374,15 +381,21 @@ void do_exec(int ruleid)
     {
       has_to_exec = 1;
     }
-    if (has_to_exec)
+    if (has_to_exec && r.cmd.args.size() > 0)
     {
-      std::cout << "do_exec: has_to_exec " << ruleid << std::endl;
+      if (debug)
+      {
+        std::cout << "do_exec: has_to_exec " << ruleid << std::endl;
+      }
       ruleids_to_run.push_back(ruleid);
       r.queued = true;
     }
     else
     {
-      std::cout << "do_exec: mark_executed " << ruleid << std::endl;
+      if (debug)
+      {
+        std::cout << "do_exec: mark_executed " << ruleid << std::endl;
+      }
       r.queued = true;
       mark_executed(ruleid);
     }
@@ -393,15 +406,24 @@ void consider(int ruleid)
 {
   Rule &r = rules.at(ruleid);
   int toexecute = 0;
-  std::cout << "considering " << r << std::endl;
+  if (debug)
+  {
+    std::cout << "considering " << r << std::endl;
+  }
   if (r.executed)
   {
-    std::cout << "already execed " << r << std::endl;
+    if (debug)
+    {
+      std::cout << "already execed " << r << std::endl;
+    }
     return;
   }
   if (r.executing)
   {
-    std::cout << "already execing " << r << std::endl;
+    if (debug)
+    {
+      std::cout << "already execing " << r << std::endl;
+    }
     return;
   }
   r.executing = true;
@@ -412,7 +434,10 @@ void consider(int ruleid)
       consider(ruleid_by_tgt[*it]);
       if (!rules.at(ruleid_by_tgt[*it]).executed)
       {
-        std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
+        if (debug)
+        {
+          std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
+        }
         toexecute = 1;
       }
     }
@@ -440,15 +465,24 @@ void reconsider(int ruleid)
 {
   Rule &r = rules.at(ruleid);
   int toexecute = 0;
-  std::cout << "reconsidering " << r << std::endl;
+  if (debug)
+  {
+    std::cout << "reconsidering " << r << std::endl;
+  }
   if (r.executed)
   {
-    std::cout << "already execed " << r << std::endl;
+    if (debug)
+    {
+      std::cout << "already execed " << r << std::endl;
+    }
     return;
   }
   if (!r.executing)
   {
-    std::cout << "rule not executing " << r << std::endl;
+    if (debug)
+    {
+      std::cout << "rule not executing " << r << std::endl;
+    }
     return;
   }
   for (auto it = r.deps.begin(); it != r.deps.end(); it++)
@@ -456,7 +490,10 @@ void reconsider(int ruleid)
     int dep = ruleid_by_tgt[*it];
     if (!rules.at(dep).executed)
     {
-      std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
+      if (debug)
+      {
+        std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
+      }
       toexecute = 1;
       break;
     }
@@ -619,7 +656,10 @@ int main(int argc, char **argv)
     std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
     if (tgt.size() > 0) // FIXME chg to if (1)
     {
-      std::cout << "ADDING RULE" << std::endl;
+      if (debug)
+      {
+        std::cout << "ADDING RULE" << std::endl;
+      }
       add_rule(tgt, dep, cmd, 0);
     }
   }
