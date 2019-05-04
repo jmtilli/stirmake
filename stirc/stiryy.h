@@ -91,10 +91,23 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
 static inline void stiryy_free(struct stiryy *stiryy)
 {
   size_t i;
+  size_t j;
   for (i = 0; i < stiryy->rulesz; i++)
   {
+    for (j = 0; j < stiryy->rules[i].depsz; j++)
+    {
+      free(stiryy->rules[i].deps[j]);
+    }
+    for (j = 0; j < stiryy->rules[i].targetsz; j++)
+    {
+      free(stiryy->rules[i].targets[j]);
+    }
     free(stiryy->rules[i].deps);
     free(stiryy->rules[i].targets);
+  }
+  for (i = 0; i < stiryy->cdepincludesz; i++)
+  {
+    free(stiryy->cdepincludes[i]);
   }
   free(stiryy->rules);
   free(stiryy->cdepincludes);

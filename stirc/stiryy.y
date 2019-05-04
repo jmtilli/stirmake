@@ -57,6 +57,8 @@ int stiryywrap(yyscan_t scanner)
 
 %destructor { free ($$.str); } STRING_LITERAL
 %destructor { free ($$); } FREEFORM_TOKEN
+%destructor { free ($$); } VARREF_LITERAL
+%destructor { free ($$); } SHELL_COMMAND
 
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
@@ -221,15 +223,20 @@ assignrule:
   FREEFORM_TOKEN EQUALS expr NEWLINE
 {
   printf("Assigning to %s\n", $1);
+  free($1);
 }
 | FREEFORM_TOKEN PLUSEQUALS expr NEWLINE
 {
   printf("Plus-assigning to %s\n", $1);
+  free($1);
 }
 ;
 
 value:
   STRING_LITERAL
+{
+  free($1.str);
+}
 | varref
 | dict
 | list
@@ -240,12 +247,33 @@ value:
 
 varref:
   VARREF_LITERAL
+{
+  free($1);
+}
 | DO VARREF_LITERAL
+{
+  free($2);
+}
 | LO VARREF_LITERAL
+{
+  free($2);
+}
 | IO VARREF_LITERAL
+{
+  free($2);
+}
 | D VARREF_LITERAL
+{
+  free($2);
+}
 | L VARREF_LITERAL
+{
+  free($2);
+}
 | I VARREF_LITERAL
+{
+  free($2);
+}
 ;
 
 expr: expr11;
@@ -321,6 +349,9 @@ expr0:
 | dict maybe_bracketexprlist
 | list maybe_bracketexprlist
 | STRING_LITERAL
+{
+  free($1.str);
+}
 | lvalue
 | lvalue OPEN_PAREN maybe_arglist CLOSE_PAREN
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
@@ -371,6 +402,9 @@ dictlist:
 
 dictentry:
   STRING_LITERAL COLON value
+{
+  free($1.str);
+}
 ;
 
 maybe_valuelist:
@@ -401,6 +435,7 @@ shell_command:
   SHELL_COMMAND NEWLINE
 {
   printf("\tshell %s\n", $1);
+  free($1);
 }
 | ATTAB expr NEWLINE
 {
@@ -431,31 +466,37 @@ targets:
   printf("target1 %s\n", $1);
   stiryy_emplace_rule(stiryy);
   stiryy_set_tgt(stiryy, $1);
+  free($1);
 }
 | STRING_LITERAL
 {
   printf("target1 %s\n", $1.str);
   stiryy_emplace_rule(stiryy);
   stiryy_set_tgt(stiryy, $1.str);
+  free($1.str);
 }
 | VARREF_LITERAL
 {
   stiryy_emplace_rule(stiryy);
   printf("target1ref\n");
+  free($1);
 }
 | targets FREEFORM_TOKEN
 {
   printf("target %s\n", $2);
   stiryy_set_tgt(stiryy, $2);
+  free($2);
 }
 | targets STRING_LITERAL
 {
   printf("target %s\n", $2.str);
   stiryy_set_tgt(stiryy, $2.str);
+  free($2.str);
 }
 | targets VARREF_LITERAL
 {
   printf("targetref\n");
+  free($2);
 }
 ;
 
@@ -464,14 +505,17 @@ deps:
 {
   printf("dep %s\n", $2);
   stiryy_set_dep(stiryy, $2);
+  free($2);
 }
 | deps STRING_LITERAL
 {
   printf("dep %s\n", $2.str);
   stiryy_set_dep(stiryy, $2.str);
+  free($2.str);
 }
 | deps VARREF_LITERAL
 {
   printf("depref\n");
+  free($2);
 }
 ;

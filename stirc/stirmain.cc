@@ -636,7 +636,9 @@ int main(int argc, char **argv)
       add_dep(tgt, dep, 0);
     }
     fclose(f);
+    incyy_free(&incyy);
   }
+  stiryy_free(&stiryy);
 
   //add_dep(v_l3e, v_l1g, 0); // offending rule
 

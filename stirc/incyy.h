@@ -71,8 +71,17 @@ static inline void incyy_emplace_rule(struct incyy *incyy)
 static inline void incyy_free(struct incyy *incyy)
 {
   size_t i;
+  size_t j;
   for (i = 0; i < incyy->rulesz; i++)
   {
+    for (j = 0; j < incyy->rules[i].depsz; j++)
+    {
+      free(incyy->rules[i].deps[j]);
+    }
+    for (j = 0; j < incyy->rules[i].targetsz; j++)
+    {
+      free(incyy->rules[i].targets[j]);
+    }
     free(incyy->rules[i].deps);
     free(incyy->rules[i].targets);
   }
