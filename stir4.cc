@@ -13,6 +13,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <chrono>
 
 int self_pipe_fd[2];
 
@@ -540,8 +541,11 @@ void pathological_test(void)
   }
   process_additional_deps();
   std::cout << "starting DFS2" << std::endl;
+  auto cl1 = std::chrono::steady_clock::now();
   better_cycle_detect(ruleid_by_tgt[rulestr]);
-  std::cout << "ending DFS2" << std::endl;
+  auto cl2 = std::chrono::steady_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(cl2 - cl1);
+  std::cout << "ending DFS2 in " << ms.count() << " ms" << std::endl;
   exit(0);
 }
 
