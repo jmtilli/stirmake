@@ -1,0 +1,3 @@
+firstrule: all
+
+@cdepincludescurdir "longdep2.dep"

@@ -1,0 +1,3 @@
+beforefirstrule: longdepall
+
+@cdepincludescurdir "longdepfile.dep"
