@@ -10,6 +10,8 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -53,8 +55,8 @@ class Rule {
     bool executed;
     bool executing;
     bool queued;
-    std::set<std::string> tgts;
-    std::set<std::string> deps;
+    std::unordered_set<std::string> tgts;
+    std::unordered_set<std::string> deps;
     Cmd cmd;
     int ruleid;
 
@@ -101,8 +103,8 @@ const int limit = 2;
 
 std::vector<Rule> rules;
 
-std::map<std::string, int> ruleid_by_tgt;
-std::map<std::string, std::set<int>> ruleids_by_dep;
+std::unordered_map<std::string, int> ruleid_by_tgt;
+std::unordered_map<std::string, std::unordered_set<int>> ruleids_by_dep;
 
 
 void better_cycle_detect(int cur, std::vector<bool> &parents, std::vector<bool> &no_cycles, int &cntr)
@@ -146,7 +148,7 @@ void better_cycle_detect(int cur)
 }
 
 
-std::map<std::string, std::pair<bool, std::set<std::string> > > add_deps;
+std::unordered_map<std::string, std::pair<bool, std::unordered_set<std::string> > > add_deps;
 
 void add_dep(const std::vector<std::string> &tgts,
              const std::vector<std::string> &deps,
@@ -156,7 +158,7 @@ void add_dep(const std::vector<std::string> &tgts,
   {
     if (add_deps.find(*tgt) == add_deps.end())
     {
-      add_deps[*tgt] = std::make_pair(false, std::set<std::string>());
+      add_deps[*tgt] = std::make_pair(false, std::unordered_set<std::string>());
     }
     if (phony)
     {
@@ -187,7 +189,7 @@ void process_additional_deps(void)
       {
         if (ruleids_by_dep.find(*it2) == ruleids_by_dep.end())
         {
-          ruleids_by_dep[*it2] = std::set<int>();
+          ruleids_by_dep[*it2] = std::unordered_set<int>();
         }
         ruleids_by_dep[*it2].insert(r.ruleid);
         //std::cout << " dep: " << *it2 << std::endl;
@@ -209,7 +211,7 @@ void process_additional_deps(void)
     {
       if (ruleids_by_dep.find(*it2) == ruleids_by_dep.end())
       {
-        ruleids_by_dep[*it2] = std::set<int>();
+        ruleids_by_dep[*it2] = std::unordered_set<int>();
       }
       ruleids_by_dep[*it2].insert(r.ruleid);
     }
@@ -252,7 +254,7 @@ void add_rule(const std::vector<std::string> &tgts,
   {
     if (ruleids_by_dep.find(*it) == ruleids_by_dep.end())
     {
-      ruleids_by_dep[*it] = std::set<int>();
+      ruleids_by_dep[*it] = std::unordered_set<int>();
     }
     ruleids_by_dep[*it].insert(r.ruleid);
   }
@@ -260,7 +262,7 @@ void add_rule(const std::vector<std::string> &tgts,
 
 std::vector<int> ruleids_to_run;
 
-std::map<pid_t, int> ruleid_by_pid;
+std::unordered_map<pid_t, int> ruleid_by_pid;
 
 pid_t fork_child(int ruleid)
 {
@@ -472,7 +474,7 @@ void mark_executed(int ruleid)
   r.executed = true;
   for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
   {
-    std::set<int> &s = ruleids_by_dep[*it];
+    std::unordered_set<int> &s = ruleids_by_dep[*it];
     for (auto it2 = s.begin(); it2 != s.end(); it2++)
     {
       reconsider(*it2);
