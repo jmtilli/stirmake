@@ -23,7 +23,7 @@ class Cmd {
   public:
     std::vector<std::string> args;
     Cmd() {}
-    Cmd(std::vector<std::string> v): args(v) {}
+    Cmd(const std::vector<std::string> &v): args(v) {}
 };
 
 int ts_cmp(struct timespec ta, struct timespec tb)
@@ -105,10 +105,10 @@ std::map<std::string, int> ruleid_by_tgt;
 std::map<std::string, std::set<int>> ruleids_by_dep;
 
 
-void better_cycle_detect(int cur, std::set<int> &parents, std::set<int> &no_cycles, int &cntr)
+void better_cycle_detect(int cur, std::vector<bool> &parents, std::vector<bool> &no_cycles, int &cntr)
 {
   cntr++;
-  if (no_cycles.find(cur) != no_cycles.end())
+  if (no_cycles[cur])
   {
     return;
   }
@@ -119,16 +119,19 @@ void better_cycle_detect(int cur, std::set<int> &parents, std::set<int> &no_cycl
     return;
   }
 */
-  if (parents.find(cur) != parents.end())
+  if (parents[cur])
   {
     std::cerr << "cycle found" << std::endl;
-    for (auto it = parents.begin(); it != parents.end(); it++)
+    for (size_t i = 0; i < rules.size(); i++)
     {
-      std::cerr << " rule in cycle: " << rules[*it] << std::endl;
+      if (parents[i])
+      {
+        std::cerr << " rule in cycle: " << rules[i] << std::endl;
+      }
     }
     exit(1);
   }
-  parents.insert(cur);
+  parents[cur] = true;
   for (auto it = rules[cur].deps.begin(); it != rules[cur].deps.end(); it++)
   {
     if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
@@ -136,14 +139,14 @@ void better_cycle_detect(int cur, std::set<int> &parents, std::set<int> &no_cycl
       better_cycle_detect(ruleid_by_tgt[*it], parents, no_cycles, cntr);
     }
   }
-  parents.erase(cur);
-  no_cycles.insert(cur);
+  parents[cur] = false;
+  no_cycles[cur] = true;
 }
 
 void better_cycle_detect(int cur)
 {
-  std::set<int> no_cycles;
-  std::set<int> parents;
+  std::vector<bool> no_cycles(rules.size());
+  std::vector<bool> parents(rules.size());
   int cntr = 0;
   better_cycle_detect(cur, parents, no_cycles, cntr);
   std::cout << "BETTER CNTR " << cntr << std::endl;
@@ -152,8 +155,8 @@ void better_cycle_detect(int cur)
 
 std::map<std::string, std::pair<bool, std::set<std::string> > > add_deps;
 
-void add_dep(std::vector<std::string> tgts,
-             std::vector<std::string> deps,
+void add_dep(const std::vector<std::string> &tgts,
+             const std::vector<std::string> &deps,
              bool phony)
 {
   for (auto tgt = tgts.begin(); tgt != tgts.end(); tgt++)
@@ -220,9 +223,9 @@ void process_additional_deps(void)
   }
 }
 
-void add_rule(std::vector<std::string> tgts,
-              std::vector<std::string> deps,
-              std::vector<std::string> cmdargs,
+void add_rule(const std::vector<std::string> &tgts,
+              const std::vector<std::string> &deps,
+              const std::vector<std::string> &cmdargs,
               bool phony)
 {
   Rule r;
