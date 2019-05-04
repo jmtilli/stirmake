@@ -28,6 +28,8 @@ int self_pipe_fd[2];
 
 int jobserver_fd[2];
 
+std::unordered_map<std::string, int> ruleid_by_tgt;
+
 class Cmd {
   public:
     std::vector<std::string> args;
@@ -64,10 +66,19 @@ class Rule {
     bool queued;
     std::unordered_set<std::string> tgts;
     std::unordered_set<std::string> deps;
+    std::unordered_set<int> deps_remain;
     Cmd cmd;
     int ruleid;
 
     Rule(): phony(false), executed(false), executing(false), queued(false) {}
+
+    void calc_deps_remain(void)
+    {
+      for (auto it = deps.begin(); it != deps.end(); it++)
+      {
+        deps_remain.insert(ruleid_by_tgt[*it]);
+      }
+    }
 };
 std::ostream &operator<<(std::ostream &o, const Rule &r)
 {
@@ -110,7 +121,6 @@ const int limit = 2;
 
 std::vector<Rule> rules;
 
-std::unordered_map<std::string, int> ruleid_by_tgt;
 std::unordered_map<std::string, std::unordered_set<int>> ruleids_by_dep;
 
 
@@ -468,7 +478,7 @@ void consider(int ruleid)
 */
 }
 
-void reconsider(int ruleid)
+void reconsider(int ruleid, int ruleid_executed)
 {
   Rule &r = rules.at(ruleid);
   int toexecute = 0;
@@ -492,6 +502,12 @@ void reconsider(int ruleid)
     }
     return;
   }
+  r.deps_remain.erase(ruleid_executed);
+  if (r.deps_remain.size() > 0)
+  {
+    toexecute = 1;
+  }
+#if 0
   for (auto it = r.deps.begin(); it != r.deps.end(); it++)
   {
     int dep = ruleid_by_tgt[*it];
@@ -505,6 +521,7 @@ void reconsider(int ruleid)
       break;
     }
   }
+#endif
   if (!toexecute && !r.queued)
   {
     do_exec(ruleid);
@@ -534,7 +551,7 @@ void mark_executed(int ruleid)
     std::unordered_set<int> &s = ruleids_by_dep[*it];
     for (auto it2 = s.begin(); it2 != s.end(); it2++)
     {
-      reconsider(*it2);
+      reconsider(*it2, ruleid);
     }
   }
 }
@@ -721,6 +738,11 @@ int main(int argc, char **argv)
   process_additional_deps();
 
   std::vector<bool> no_cycles = better_cycle_detect(0);
+
+  for (auto it = rules.begin(); it != rules.end(); it++)
+  {
+    it->calc_deps_remain();
+  }
 
   // Delete unreachable rules from ruleids_by_dep
 #if 1
