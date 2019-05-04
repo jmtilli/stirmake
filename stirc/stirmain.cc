@@ -141,13 +141,14 @@ void better_cycle_detect(int cur, std::vector<bool> &parents, std::vector<bool> 
   no_cycles[cur] = true;
 }
 
-void better_cycle_detect(int cur)
+std::vector<bool> better_cycle_detect(int cur)
 {
   std::vector<bool> no_cycles(rules.size());
   std::vector<bool> parents(rules.size());
   int cntr = 0;
   better_cycle_detect(cur, parents, no_cycles, cntr);
   std::cout << "BETTER CNTR " << cntr << std::endl;
+  return no_cycles;
 }
 
 
@@ -649,7 +650,43 @@ int main(int argc, char **argv)
 
   process_additional_deps();
 
-  better_cycle_detect(0);
+  std::vector<bool> no_cycles = better_cycle_detect(0);
+
+  // Delete unreachable rules from ruleids_by_dep
+  for (auto it = ruleids_by_dep.begin(); it != ruleids_by_dep.end(); )
+  {
+    if (no_cycles[ruleid_by_tgt[it->first]])
+    {
+      for (auto it2 = it->second.begin(); it2 != it->second.end(); )
+      {
+        if (no_cycles[*it2])
+        {
+          it2++;
+        }
+        else
+        {
+          it2 = it->second.erase(it2);
+        }
+      }
+      it++;
+    }
+    else
+    {
+      it = ruleids_by_dep.erase(it);
+    }
+  }
+  // Delete unreachable rules from ruleid_by_tgt
+  for (auto it = ruleid_by_tgt.begin(); it != ruleid_by_tgt.end(); )
+  {
+    if (no_cycles[it->second])
+    {
+      it++;
+    }
+    else
+    {
+      it = ruleid_by_tgt.erase(it);
+    }
+  }
 
   if (pipe(self_pipe_fd) != 0)
   {
