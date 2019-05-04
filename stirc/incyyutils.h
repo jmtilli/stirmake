@@ -1,13 +1,13 @@
 #ifndef _INCYYUTILS_H_
 #define _INCYYUTILS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include <stdint.h>
 #include "incyy.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void incyydoparse(FILE *filein, struct incyy *incyy);
 

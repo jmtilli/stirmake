@@ -1,13 +1,14 @@
 #ifndef _YYUTILS_H_
 #define _YYUTILS_H_
 
+#include <stdio.h>
+#include <stdint.h>
+#include "stiryy.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdio.h>
-#include <stdint.h>
-#include "stiryy.h"
 
 void stiryydoparse(FILE *filein, struct stiryy *stiryy);
 

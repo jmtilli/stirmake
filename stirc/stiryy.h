@@ -9,6 +9,10 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct escaped_string {
   size_t sz;
   char *str;
@@ -113,5 +117,9 @@ static inline void stiryy_free(struct stiryy *stiryy)
   free(stiryy->cdepincludes);
   memset(stiryy, 0, sizeof(*stiryy));
 }
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif

@@ -9,6 +9,10 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct incyyrule {
   char **deps;
   size_t depsz;
@@ -88,5 +92,9 @@ static inline void incyy_free(struct incyy *incyy)
   free(incyy->rules);
   memset(incyy, 0, sizeof(*incyy));
 }
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif
