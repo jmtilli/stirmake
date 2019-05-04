@@ -12,6 +12,7 @@
 #include <set>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 int self_pipe_fd[2];
 
@@ -103,10 +104,9 @@ std::map<std::string, int> ruleid_by_tgt;
 std::map<std::string, std::set<int>> ruleids_by_dep;
 
 
-
-
-void depth_first(int cur, std::set<int> &parents)
+void depth_first(int cur, std::set<int> &parents, int &cntr)
 {
+  cntr++;
   if (parents.find(cur) != parents.end())
   {
     std::cerr << "cycle found" << std::endl;
@@ -116,12 +116,19 @@ void depth_first(int cur, std::set<int> &parents)
     }
     exit(1);
   }
+#if 0
+  for (auto it = parents.begin(); it != parents.end(); it++)
+  {
+    std::cout << " ";
+  }
+  std::cout << cur << std::endl;
+#endif
   parents.insert(cur);
   for (auto it = rules[cur].deps.begin(); it != rules[cur].deps.end(); it++)
   {
     if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
     {
-      depth_first(ruleid_by_tgt[*it], parents);
+      depth_first(ruleid_by_tgt[*it], parents, cntr);
     }
   }
   parents.erase(cur);
@@ -129,7 +136,9 @@ void depth_first(int cur, std::set<int> &parents)
 void depth_first(int cur)
 {
   std::set<int> parents;
-  depth_first(0, parents);
+  int cntr = 0;
+  depth_first(cur, parents, cntr);
+  //std::cout << "CNTR " << cntr << std::endl;
 }
 
 
@@ -164,7 +173,7 @@ void process_additional_deps(void)
     {
       Rule r;
       r.ruleid = rules.size();
-      std::cout << "adding tgt " << it->first << std::endl;
+      //std::cout << "adding tgt " << it->first << std::endl;
       ruleid_by_tgt[it->first] = r.ruleid;
       r.tgts.insert(it->first);
       std::copy(it->second.second.begin(), it->second.second.end(),
@@ -177,8 +186,10 @@ void process_additional_deps(void)
           ruleids_by_dep[*it2] = std::set<int>();
         }
         ruleids_by_dep[*it2].insert(r.ruleid);
+        //std::cout << " dep: " << *it2 << std::endl;
       }
       rules.push_back(r);
+      //std::cout << "added Rule: " << r << std::endl;
       continue;
     }
     Rule &r = rules[ruleid_by_tgt[it->first]];
@@ -186,10 +197,10 @@ void process_additional_deps(void)
     {
       r.phony = true;
     }
-    std::cout << "modifying rule " << r << std::endl;
+    //std::cout << "modifying rule " << r << std::endl;
     std::copy(it->second.second.begin(), it->second.second.end(),
               std::inserter(r.deps, r.deps.begin()));
-    std::cout << "modified rule " << r << std::endl;
+    //std::cout << "modified rule " << r << std::endl;
     for (auto it2 = r.deps.begin(); it2 != r.deps.end(); it2++)
     {
       if (ruleids_by_dep.find(*it2) == ruleids_by_dep.end())
@@ -505,6 +516,28 @@ void sigchld_handler(int x)
   write(self_pipe_fd[1], ".", 1);
 }
 
+void pathological_test(void)
+{
+  int rule;
+  std::vector<std::string> v_rules;
+  std::string rulestr;
+  for (rule = 0; rule < 20; rule++)
+  {
+    std::ostringstream oss;
+    std::vector<std::string> v_rule;
+    oss << rule;
+    rulestr = oss.str();
+    v_rule.push_back(rulestr);
+    add_dep(v_rule, v_rules, 0);
+    v_rules.push_back(rulestr);
+  }
+  process_additional_deps();
+  std::cout << "starting DFS" << std::endl;
+  depth_first(ruleid_by_tgt[rulestr]);
+  std::cout << "ending DFS" << std::endl;
+  exit(0);
+}
+
 int main(int argc, char **argv)
 {
   std::vector<std::string> v_all{"all"};
@@ -524,6 +557,8 @@ int main(int argc, char **argv)
   std::vector<std::string> argt_l3e{"./touchs1", "l3e.txt"};
   std::vector<std::string> argt_l1g{"./touchs1", "l1g.txt"};
   std::vector<std::string> arge_all{"echo", "all"};
+
+  //pathological_test();
 
   add_rule(v_all, v_l1g, arge_all, 1);
   add_rule(v_l1g, v_l2ab, argt_l1g, 0);
