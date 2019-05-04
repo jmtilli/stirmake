@@ -167,6 +167,7 @@ void add_dep(const std::vector<std::string> &tgts,
     {
       add_deps[*tgt].first = true;
     }
+    add_deps[*tgt].second.rehash(deps.size());
     for (auto dep = deps.begin(); dep != deps.end(); dep++)
     {
       add_deps[*tgt].second.insert(*dep);
@@ -185,6 +186,7 @@ void process_additional_deps(void)
       //std::cout << "adding tgt " << it->first << std::endl;
       ruleid_by_tgt[it->first] = r.ruleid;
       r.tgts.insert(it->first);
+      r.deps.rehash(r.deps.size() + it->second.second.size());
       std::copy(it->second.second.begin(), it->second.second.end(),
                 std::inserter(r.deps, r.deps.begin()));
       r.phony = it->second.first;
@@ -237,6 +239,8 @@ void add_rule(const std::vector<std::string> &tgts,
   {
     abort();
   }
+  r.tgts.rehash(tgts.size());
+  r.deps.rehash(deps.size());
   std::copy(tgts.begin(), tgts.end(), std::inserter(r.tgts, r.tgts.begin()));
   std::copy(deps.begin(), deps.end(), std::inserter(r.deps, r.deps.begin()));
   //r.tgts = tgts;
@@ -604,6 +608,7 @@ int main(int argc, char **argv)
   stiryydoparse(f, &stiryy);
   fclose(f);
 
+  ruleid_by_tgt.rehash(stiryy.rulesz);
   for (auto it = stiryy.rules; it != stiryy.rules + stiryy.rulesz; it++)
   {
     std::vector<std::string> tgt;
