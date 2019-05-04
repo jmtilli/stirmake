@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
@@ -329,13 +331,18 @@ void do_exec(int ruleid)
       for (auto it = r.deps.begin(); it != r.deps.end(); it++)
       {
         struct stat statbuf;
+        //std::cout << "it " << *it << std::endl;
         if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
         {
+          //std::cout << "ruleid by tgt: " << *it << std::endl;
+          //std::cout << "ruleid by tgt- " << ruleid_by_tgt[*it] << std::endl;
           if (rules.at(ruleid_by_tgt[*it]).phony)
           {
             has_to_exec = 1;
+            //std::cout << "phony" << std::endl;
             continue;
           }
+          //std::cout << "nonphony" << std::endl;
         }
         if (stat(it->c_str(), &statbuf) != 0)
         {
@@ -606,6 +613,27 @@ void pathological_test(void)
   exit(0);
 }
 
+void stack_conf(void)
+{
+  const rlim_t stackSize = 16 * 1024 * 1024;
+  struct rlimit rl;
+  int result;
+  result = getrlimit(RLIMIT_STACK, &rl);
+  if (result != 0)
+  {
+    std::terminate();
+  }
+  if (rl.rlim_cur < stackSize)
+  {
+    rl.rlim_cur = stackSize;
+    result = setrlimit(RLIMIT_STACK, &rl);
+    if (result != 0)
+    {
+      std::terminate();
+    }
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -645,6 +673,8 @@ int main(int argc, char **argv)
   }
   stiryydoparse(f, &stiryy);
   fclose(f);
+
+  stack_conf();
 
   ruleid_by_tgt.rehash(stiryy.rulesz);
   for (auto it = stiryy.rules; it != stiryy.rules + stiryy.rulesz; it++)
@@ -693,6 +723,7 @@ int main(int argc, char **argv)
   std::vector<bool> no_cycles = better_cycle_detect(0);
 
   // Delete unreachable rules from ruleids_by_dep
+#if 1
   for (auto it = ruleids_by_dep.begin(); it != ruleids_by_dep.end(); )
   {
     if (no_cycles[ruleid_by_tgt[it->first]])
@@ -729,6 +760,7 @@ int main(int argc, char **argv)
     }
   }
   ruleid_by_tgt.rehash(ruleid_by_tgt.size());
+#endif
 
   if (pipe(self_pipe_fd) != 0)
   {
