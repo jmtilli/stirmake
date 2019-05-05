@@ -15,6 +15,7 @@ int main(int argc, char **argv)
   size_t luaidx = st.add("return Stir.makelexcall(\"foo\", 54321, 222)");
   size_t lua2idx = st.add("return Stir.getlexval(\"bar\")");
   size_t lua3idx = st.add("return Stir.getlexval(\"baz\")");
+  size_t baridx = st.add("bar");
 
   std::map<std::string, memblock> m;
   m["a"] = 1.0;
@@ -61,18 +62,32 @@ int main(int argc, char **argv)
   store_d(microprogram, luaidx);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
   microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN);
   microprogram.push_back(STIRBCE_OPCODE_DUMP);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, lua2idx);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
   microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN);
   microprogram.push_back(STIRBCE_OPCODE_DUMP);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, lua3idx);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
   microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN);
+  microprogram.push_back(STIRBCE_OPCODE_DUMP);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, baridx);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_GETSCOPE_DYN);
+  microprogram.push_back(STIRBCE_OPCODE_SCOPEVAR);
+  microprogram.push_back(STIRBCE_OPCODE_CALL_IF_FUN); // this is necessary now
   microprogram.push_back(STIRBCE_OPCODE_DUMP);
 
   microprogram.push_back(STIRBCE_OPCODE_EXIT);

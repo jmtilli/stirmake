@@ -256,6 +256,17 @@ static uint64_t load_u64(uint64_t *s, uint64_t sp, const uint8_t *v, uint64_t vs
 }
 #endif
 
+int64_t get_funaddr(std::vector<memblock> &stack)
+{
+  memblock mb = stack.back();
+  stack.pop_back();
+  if (mb.type != memblock::T_F)
+  {
+    std::terminate();
+  }
+  return mb.u.d;
+}
+
 double get_dbl(std::vector<memblock> &stack)
 {
   memblock mb = stack.back();
@@ -356,6 +367,53 @@ int engine(const uint8_t *microprogram, size_t microsz,
         stack.push_back(lua);
         break;
       }
+      case STIRBCE_OPCODE_CALL_IF_FUN:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        if (stack.back().type == memblock::T_F)
+        {
+          jmp = get_funaddr(stack);
+          if (jmp < 0 || (size_t)jmp + 9 > microsz) // FIXME off-by-one?
+          {
+            printf("microprogram overflow\n");
+            ret = -EFAULT;
+            break;
+          }
+          printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz);
+          printf("instr %d\n", microprogram[jmp]);
+          if (microprogram[jmp] != STIRBCE_OPCODE_FUN_HEADER)
+          {
+            printf("not a function\n");
+            ret = -EINVAL;
+            break;
+          }
+          uint64_t u64 = 
+                        ((((uint64_t)microprogram[jmp+1])<<56) |
+                        (((uint64_t)microprogram[jmp+2])<<48) |
+                        (((uint64_t)microprogram[jmp+3])<<40) |
+                        (((uint64_t)microprogram[jmp+4])<<32) |
+                        (((uint64_t)microprogram[jmp+5])<<24) |
+                        (((uint64_t)microprogram[jmp+6])<<16) |
+                        (((uint64_t)microprogram[jmp+7])<<8) |
+                                    microprogram[jmp+8]);
+          double dbl;
+          memcpy(&dbl, &u64, 8);
+          if (dbl != (double)0.0)
+          {
+            printf("function argument count not correct %g %g\n", dbl, (double)0.0);
+            ret = -EINVAL;
+            break;
+          }
+          stack.push_back(ip);
+          ip = jmp + 9;
+        }
+        break;
+      }
       case STIRBCE_OPCODE_CALL:
       {
         int64_t argcnt;
@@ -372,7 +430,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EINVAL;
           break;
         }
-        jmp = get_i64(stack);
+        jmp = get_funaddr(stack);
         if (jmp < 0 || (size_t)jmp + 9 > microsz) // FIXME off-by-one?
         {
           printf("microprogram overflow\n");

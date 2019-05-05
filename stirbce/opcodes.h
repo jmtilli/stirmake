@@ -433,6 +433,7 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_GETSCOPE_DYN = 57, // get dynamic scope
   STIRBCE_OPCODE_GETSCOPE_LEX = 58, // get lexical scope by id
   STIRBCE_OPCODE_SCOPEVAR = 59, // var from scope
+  STIRBCE_OPCODE_CALL_IF_FUN = 60,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)
