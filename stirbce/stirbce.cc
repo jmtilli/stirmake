@@ -90,12 +90,80 @@ int lua_makelexcall(lua_State *lua) {
 
   return 1;
 }
+int lua_getlexval(lua_State *lua) {
+  if (lua_gettop(lua) == 0)
+  {
+    std::terminate();
+  }
+  const char *str = luaL_checkstring(lua, 1);
+  int args = lua_gettop(lua) - 1;
+  if (args != 0)
+  {
+    std::terminate();
+  }
+  std::cout << "getval" << std::endl;
+  std::cout << "looking up " << str << std::endl;
+  memblock sc = get_lexscope_by_lua(lua);
+  memblock symbol = scopy(sc).recursive_lookup(str);
+  std::vector<memblock> stack;
+  std::cout << "symbol type " << symbol.type << std::endl;
+  std::tuple<const uint8_t*, size_t, stringtab*> p = get_microprogram_by_lua(lua);
+  const uint8_t *microprogram = std::get<0>(p);
+  const size_t microsz = std::get<1>(p);
+  stringtab *st = std::get<2>(p);
+
+  if (symbol.type == memblock::T_F)
+  {
+    size_t ip = symbol.u.d;
+    std::cout << "symbol ip " << ip << std::endl;
+    if (microprogram[ip] != STIRBCE_OPCODE_FUN_HEADER)
+    {
+      std::terminate();
+    }
+    uint64_t u64 = (((unsigned long long)microprogram[ip+1])<<56) |
+      (((unsigned long long)microprogram[ip+2])<<48) |
+      (((unsigned long long)microprogram[ip+3])<<40) |
+      (((unsigned long long)microprogram[ip+4])<<32) |
+      (((unsigned long long)microprogram[ip+5])<<24) |
+      (((unsigned long long)microprogram[ip+6])<<16) |
+      (((unsigned long long)microprogram[ip+7])<<8) |
+      (((unsigned long long)microprogram[ip+8])<<0);
+    double d;
+    memcpy(&d, &u64, 8);
+    if (d != (double)0.0)
+    {
+      std::cerr << "arg count mismatch: " << d << " vs " << 0.0 << std::endl;
+      std::terminate();
+    }
+    stack.push_back(-1); // return address
+    engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
+    if (stack.size() != 1)
+    {
+      std::terminate();
+    }
+  }
+  else
+  {
+    stack.push_back(symbol);
+  }
+
+  //stack.push_back(get_scope());
+
+  memblock rv = stack.back(); stack.pop_back();
+
+  rv.push_lua(lua);
+
+  std::cout << "getval exit" << std::endl;
+
+  return 1;
+}
 
 
 int luaopen_stir(lua_State *lua)
 {
         static const luaL_Reg stir_lib[] = {
                 {"makelexcall", lua_makelexcall},
+                {"getlexval", lua_getlexval},
                 {NULL, NULL}};
 
         luaL_newlib(lua, stir_lib);
@@ -366,14 +434,14 @@ int engine(const uint8_t *microprogram, size_t microsz,
         printf("retex1, stack size %zu\n", stack.size());
         if (unlikely(stack.size() < 2))
         {
-          printf("stack underflow\n");
+          printf("stack underflow1\n");
           ret = -EOVERFLOW;
           break;
         }
         int64_t cnt = get_i64(stack); // Count of local vars
-        if (cnt < 0 || (size_t)cnt+2 >= stack.size())
+        if (cnt < 0 || (size_t)cnt+2 > stack.size())
         {
-          printf("stack underflow\n");
+          printf("stack underflow2 %lld\n", (long long)cnt);
           ret = -EOVERFLOW;
           break;
         }
