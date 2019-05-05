@@ -8,6 +8,100 @@
 #include "errno.h"
 #include "stirbce.h"
 
+std::map<lua_State*, memblock> scopes_lex;
+std::map<lua_State*, std::tuple<const uint8_t*, size_t, stringtab*> > microprograms;
+memblock scope_global_dyn;
+
+scope &scopy(const memblock &mb)
+{
+  if (mb.type != memblock::T_SC)
+  {
+    std::terminate();
+  }
+  return *mb.u.sc;
+}
+
+int lua_makelexcall(lua_State *lua) {
+  if (lua_gettop(lua) == 0)
+  {
+    std::terminate();
+  }
+  const char *str = luaL_checkstring(lua, 1);
+  int args = lua_gettop(lua) - 1;
+  std::cout << "makecall" << std::endl;
+  std::cout << "looking up " << str << std::endl;
+  memblock sc = get_lexscope_by_lua(lua);
+  memblock symbol = scopy(sc).recursive_lookup(str);
+  std::vector<memblock> stack;
+  std::cout << "symbol type " << symbol.type << std::endl;
+  size_t ip = symbol.u.d;
+  std::cout << "symbol ip " << ip << std::endl;
+  std::tuple<const uint8_t*, size_t, stringtab*> p = get_microprogram_by_lua(lua);
+  const uint8_t *microprogram = std::get<0>(p);
+  const size_t microsz = std::get<1>(p);
+  stringtab *st = std::get<2>(p);
+
+
+  for (int i = 0; i < args; i++)
+  {
+    std::cout << "pushing arg" << std::endl;
+    stack.push_back(memblock(lua, 2 + i));
+  }
+  //stack.push_back(get_scope());
+  if (microprogram[ip] != STIRBCE_OPCODE_FUN_HEADER)
+  {
+    std::terminate();
+  }
+  uint64_t u64 = (((unsigned long long)microprogram[ip+1])<<56) |
+    (((unsigned long long)microprogram[ip+2])<<48) |
+    (((unsigned long long)microprogram[ip+3])<<40) |
+    (((unsigned long long)microprogram[ip+4])<<32) |
+    (((unsigned long long)microprogram[ip+5])<<24) |
+    (((unsigned long long)microprogram[ip+6])<<16) |
+    (((unsigned long long)microprogram[ip+7])<<8) |
+    (((unsigned long long)microprogram[ip+8])<<0);
+  double d;
+  memcpy(&d, &u64, 8);
+  if (d != (double)args)
+  {
+    std::cerr << "arg count mismatch: " << d << " vs " << args << std::endl;
+    std::terminate();
+  }
+
+
+  stack.push_back(-1); // return address
+  engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
+
+  if (stack.size() != (size_t)args + 1)
+  {
+    std::terminate();
+  }
+
+  memblock rv = stack.back(); stack.pop_back();
+  for (int i = 0; i < args; i++)
+  {
+    std::cout << "popping arg" << std::endl;
+    stack.pop_back();
+  }
+
+  rv.push_lua(lua);
+
+  std::cout << "makecall exit" << std::endl;
+
+  return 1;
+}
+
+
+int luaopen_stir(lua_State *lua)
+{
+        static const luaL_Reg stir_lib[] = {
+                {"makelexcall", lua_makelexcall},
+                {NULL, NULL}};
+
+        luaL_newlib(lua, stir_lib);
+        return 1;
+}
+
 memblock::~memblock()
 {
   if (type == T_D || type == T_F || type == T_N || type == T_B)
@@ -500,7 +594,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
-        stack.push_back(new std::vector<memblock>());
+        stack.push_back(memblock(new std::vector<memblock>()));
         break;
       }
       case STIRBCE_OPCODE_PUSH_STRINGTAB:
@@ -535,7 +629,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
-        stack.push_back(new std::map<std::string, memblock>());
+        stack.push_back(memblock(new std::map<std::string, memblock>()));
         break;
       }
       case STIRBCE_OPCODE_PUSH_DBL:
@@ -1047,7 +1141,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EINVAL;
           break;
         }
-        stack.push_back(new std::string(*mbbase.u.s + *mbextend.u.s));
+        stack.push_back(memblock(new std::string(*mbbase.u.s + *mbextend.u.s)));
         break;
       }
       default:

@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <tuple>
 
 extern "C" {
 #include <lua.h>
@@ -36,9 +37,9 @@ class memblock {
   {
     u.d = 0;
   }
-  memblock(bool b): type(T_B), refc(NULL)
+  explicit memblock(bool b): type(T_B), refc(NULL)
   {
-    u.d = b;
+    u.d = b ? 1.0 : 0.0;
   }
   memblock(unsigned ui): type(T_D), refc(NULL)
   {
@@ -64,22 +65,23 @@ class memblock {
   {
     u.d = d;
   }
-  memblock(scope *sc): type(T_SC)
+  explicit memblock(scope *sc): type(T_SC)
   {
+    std::cout << "MEMBLOCK FOR SCOPE" << std::endl;
     u.sc = sc;
     refc = new size_t(1);
   }
-  memblock(std::string *s): type(T_S)
+  explicit memblock(std::string *s): type(T_S)
   {
     u.s = s;
     refc = new size_t(1);
   }
-  memblock(std::vector<memblock> *v): type(T_V)
+  explicit memblock(std::vector<memblock> *v): type(T_V)
   {
     u.v = v;
     refc = new size_t(1);
   }
-  memblock(std::map<std::string, memblock> *m): type(T_M)
+  explicit memblock(std::map<std::string, memblock> *m): type(T_M)
   {
     u.m = m;
     refc = new size_t(1);
@@ -278,14 +280,61 @@ class memblock {
   }
 };
 
+extern std::map<lua_State*, memblock> scopes_lex;
+extern memblock scope_global_dyn;
+static inline memblock &get_lexscope_by_lua(lua_State *lua)
+{
+  if (scopes_lex.find(lua) == scopes_lex.end())
+  {
+    std::terminate();
+  }
+  memblock &mb = scopes_lex[lua];
+  return mb;
+}
+static inline scope &get_dynscope(void)
+{
+  memblock &mb = scope_global_dyn;
+  if (mb.type != memblock::T_SC)
+  {
+    std::terminate();
+  }
+  return *mb.u.sc;
+}
+
+int luaopen_stir(lua_State *lua);
+
 class scope {
   public:
     scope *parent;
     bool holey;
     std::map<std::string, memblock> vars;
+    lua_State *lua;
 
-    scope(): parent(NULL), holey(true) {}
-    scope(scope *parent, bool holey = false): parent(parent), holey(holey) {}
+    scope(): parent(NULL), holey(true), lua(nullptr) {
+      lua = luaL_newstate();
+      luaL_openlibs(lua);
+      lua_pushcfunction(lua, luaopen_stir);
+      lua_pushstring(lua, "Stir");
+      lua_call(lua, 1, 1);
+      lua_pushvalue(lua, -1);
+      lua_setglobal(lua, "Stir");
+      lua_pop(lua, 1);
+    }
+    scope(scope *parent, bool holey = false): parent(parent), holey(holey) {
+      lua = luaL_newstate();
+      luaL_openlibs(lua);
+      lua_pushcfunction(lua, luaopen_stir);
+      lua_pushstring(lua, "Stir");
+      lua_call(lua, 1, 1);
+      lua_pushvalue(lua, -1);
+      lua_setglobal(lua, "Stir");
+      lua_pop(lua, 1);
+    }
+    ~scope() {
+      lua_close(lua);
+    }
+    scope(const scope &other) = delete;
+    scope &operator=(const scope &other) = delete;
 
     memblock recursive_lookup(const std::string &name)
     {
@@ -313,11 +362,22 @@ class stringtab {
         return idxs[s];
       }
       size_t oldsz = blocks.size();
-      blocks.push_back(new std::string(s));
+      blocks.push_back(memblock(new std::string(s)));
       idxs[s] = oldsz;
       return oldsz;
     }
 };
+
+extern std::map<lua_State*, std::tuple<const uint8_t*, size_t, stringtab*> > microprograms;
+
+static inline std::tuple<const uint8_t*, size_t, stringtab*> get_microprogram_by_lua(lua_State *lua)
+{
+  if (microprograms.find(lua) == microprograms.end())
+  {
+    std::terminate();
+  }
+  return microprograms[lua];
+}
 
 enum stirbce_opcode {
   STIRBCE_OPCODE_PUSH_DBL = 1, // followed by double
