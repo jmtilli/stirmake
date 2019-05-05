@@ -68,5 +68,5 @@ int main(int argc, char **argv)
 
   microprogram.push_back(STIRBCE_OPCODE_RET);
 
-  engine(&microprogram[0], microprogram.size(), st);
+  engine(&microprogram[0], microprogram.size(), st, NULL);
 }

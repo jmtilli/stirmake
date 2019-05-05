@@ -1,9 +1,13 @@
 #include "opcodes.h"
+#include "stirbce.h"
 
 int main(int argc, char **argv)
 {
   lua_State *lua = luaL_newstate();
   luaL_openlibs(lua);
+  stringtab st;
+  size_t luaidx = st.add("return {{2+3*4}}");
+  std::vector<uint8_t> microprogram;
 
   std::map<std::string, memblock> m;
   m["a"] = 1.0;
@@ -38,6 +42,13 @@ int main(int argc, char **argv)
   {
     std::terminate();
   }
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, luaidx);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
+  microprogram.push_back(STIRBCE_OPCODE_DUMP);
+  engine(&microprogram[0], microprogram.size(), st, lua);
   lua_close(lua);
   return 0;
 }

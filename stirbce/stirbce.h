@@ -20,7 +20,7 @@ memblock &
 get_stackloc(int64_t stackloc, size_t bp, std::vector<memblock> &stack);
 
 int engine(const uint8_t *microprogram, size_t microsz,
-           stringtab &st);
+           stringtab &st, lua_State *lua);
 
 void store_d(std::vector<uint8_t> &v, double d);
 

@@ -122,6 +122,44 @@ class memblock {
       delete refc;
     }
   }
+  void dump(void)
+  {
+    switch (type)
+    {
+      case T_S:
+        std::cout << "\"" << *u.s << "\"";
+        break;
+      case T_D:
+        std::cout << u.d;
+        break;
+      case T_V:
+        std::cout << "[";
+        for (size_t i = 0; i != u.v->size(); i++)
+        {
+          u.v->at(i).dump();
+          std::cout << ", ";
+        }
+        std::cout << "]";
+        break;
+      case T_B:
+        std::cout << (u.d ? "true" : "false");
+        break;
+      case T_N:
+        std::cout << "nil";
+        break;
+      case T_M:
+        for (auto it = u.m->begin(); it != u.m->end(); it++)
+        {
+          std::cout << "\"" << *u.s << "\": ";
+          it->second.dump();
+          std::cout << ", ";
+        }
+        break;
+      case T_F:
+        std::cerr << "fn" << std::endl;
+        std::terminate(); // FIXME better error handling
+    }
+  }
   void push_lua(lua_State *lua)
   {
     switch (type)
@@ -313,6 +351,9 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_BOOLEANIFY = 51,
   STIRBCE_OPCODE_PUSH_TRUE = 52,
   STIRBCE_OPCODE_PUSH_FALSE = 53,
+  STIRBCE_OPCODE_LUAPUSH = 54,
+  STIRBCE_OPCODE_LUAEVAL = 55,
+  STIRBCE_OPCODE_DUMP = 56,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)

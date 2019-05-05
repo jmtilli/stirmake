@@ -90,7 +90,7 @@ get_stackloc(int64_t stackloc, size_t bp, std::vector<memblock> &stack)
 }
 
 int engine(const uint8_t *microprogram, size_t microsz,
-           stringtab &st)
+           stringtab &st, lua_State *lua)
 {
   // 0.53 us / execution
   size_t ip = 0;
@@ -124,6 +124,48 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         ip += jmp;
         break;
+      case STIRBCE_OPCODE_LUAPUSH:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack[stack.size() - 1].push_lua(lua);
+        break;
+      }
+      case STIRBCE_OPCODE_LUAEVAL:
+      {
+        int top = lua_gettop(lua);
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back();
+        stack.pop_back();
+        if (mb.type != memblock::T_S)
+        {
+          printf("not a string\n");
+          ret = -EINVAL;
+          break;
+        }
+        luaL_dostring(lua, mb.u.s->c_str());
+        if (lua_gettop(lua) == top)
+        {
+          lua_pushnil(lua);
+        }
+        else if (lua_gettop(lua) != top + 1)
+        {
+          printf("lua multi-return not supported\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(lua);
+        break;
+      }
       case STIRBCE_OPCODE_CALL:
       {
         int64_t argcnt;
@@ -180,6 +222,21 @@ int engine(const uint8_t *microprogram, size_t microsz,
       {
         printf("exit, stack size %zu\n", stack.size());
         ip = microsz;
+        break;
+      }
+      case STIRBCE_OPCODE_DUMP:
+      {
+        printf("dump, stack size %zu\n", stack.size());
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back();
+        stack.pop_back();
+        mb.dump();
+        std::cout << std::endl;
         break;
       }
       case STIRBCE_OPCODE_RETEX:
