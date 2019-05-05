@@ -131,5 +131,7 @@ int main(int argc, char **argv)
   store_d(microprogram, 2); // cnt
   microprogram.push_back(STIRBCE_OPCODE_RETEX);
 
-  engine(&microprogram[0], microprogram.size(), st, NULL);
+  memblock sc(new scope());
+
+  engine(&microprogram[0], microprogram.size(), st, NULL, sc);
 }

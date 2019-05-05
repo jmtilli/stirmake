@@ -16,13 +16,16 @@ extern "C" {
 #include <lualib.h>
 };
 
+class scope;
+
 class memblock {
  public:
   enum {
-    T_D, T_S, T_V, T_M, T_F, T_N, T_B
+    T_D, T_S, T_V, T_M, T_F, T_N, T_B, T_SC
   } type;
   union {
     double d;
+    scope *sc;
     std::string *s;
     std::vector<memblock> *v;
     std::map<std::string, memblock> *m;
@@ -60,6 +63,11 @@ class memblock {
   memblock(double d, bool isfn): type(isfn ? T_F : T_D), refc(NULL)
   {
     u.d = d;
+  }
+  memblock(scope *sc): type(T_SC)
+  {
+    u.sc = sc;
+    refc = new size_t(1);
   }
   memblock(std::string *s): type(T_S)
   {
@@ -99,37 +107,16 @@ class memblock {
     swap(copy);
     return *this;
   }
-  ~memblock() {
-    if (type == T_D || type == T_F || type == T_N || type == T_B)
-    {
-      return;
-    }
-    if (--*refc == 0)
-    {
-      switch (type)
-      {
-        case T_S:
-          delete u.s;
-          break;
-        case T_V:
-          delete u.v;
-          break;
-        case T_M:
-          delete u.m;
-          break;
-        default:
-          std::cerr << "def" << std::endl;
-          std::terminate();
-      }
-      delete refc;
-    }
-  }
+  ~memblock();
   void dump(void)
   {
     switch (type)
     {
       case T_S:
         std::cout << "\"" << *u.s << "\"";
+        break;
+      case T_SC:
+        std::cout << "scope";
         break;
       case T_D:
         std::cout << u.d;
@@ -196,6 +183,9 @@ class memblock {
           lua_settable(lua, -3);
         }
         break;
+      case T_SC:
+        std::cerr << "sc" << std::endl;
+        std::terminate(); // FIXME better error handling
       case T_F:
         std::cerr << "fn" << std::endl;
         std::terminate(); // FIXME better error handling
@@ -288,6 +278,30 @@ class memblock {
   }
 };
 
+class scope {
+  public:
+    scope *parent;
+    bool holey;
+    std::map<std::string, memblock> vars;
+
+    scope(): parent(NULL), holey(true) {}
+    scope(scope *parent, bool holey = false): parent(parent), holey(holey) {}
+
+    memblock recursive_lookup(const std::string &name)
+    {
+      if (vars.find(name) != vars.end())
+      {
+        return vars[name];
+      }
+      if (parent && !holey)
+      {
+        return parent->recursive_lookup(name);
+      }
+      std::cerr << "var " << name << " not found" << std::endl;
+      std::terminate();
+    }
+};
+
 class stringtab {
   public:
     std::vector<memblock> blocks;
@@ -356,6 +370,9 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_LUAPUSH = 54,
   STIRBCE_OPCODE_LUAEVAL = 55,
   STIRBCE_OPCODE_DUMP = 56,
+  STIRBCE_OPCODE_GETSCOPE_DYN = 57, // get dynamic scope
+  STIRBCE_OPCODE_GETSCOPE_LEX = 58, // get lexical scope by id
+  STIRBCE_OPCODE_SCOPEVAR = 59, // var from scope
 };
 
 static inline const char *hr_opcode(uint8_t opcode)

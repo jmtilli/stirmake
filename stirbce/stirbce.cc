@@ -8,6 +8,36 @@
 #include "errno.h"
 #include "stirbce.h"
 
+memblock::~memblock()
+{
+  if (type == T_D || type == T_F || type == T_N || type == T_B)
+  {
+    return;
+  }
+  if (--*refc == 0)
+  {
+    switch (type)
+    {
+      case T_SC:
+        delete u.sc;
+        break;
+      case T_S:
+        delete u.s;
+        break;
+      case T_V:
+        delete u.v;
+        break;
+      case T_M:
+        delete u.m;
+        break;
+      default:
+        std::cerr << "def" << std::endl;
+        std::terminate();
+    }
+    delete refc;
+  }
+}
+
 #define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
 
@@ -90,17 +120,15 @@ get_stackloc(int64_t stackloc, size_t bp, std::vector<memblock> &stack)
 }
 
 int engine(const uint8_t *microprogram, size_t microsz,
-           stringtab &st, lua_State *lua)
+           stringtab &st, lua_State *lua, memblock scope,
+           std::vector<memblock> &stack, size_t ip)
 {
   // 0.53 us / execution
-  size_t ip = 0;
   int ret = 0;
   int64_t val, val2, condition, jmp;
   size_t bp;
   const size_t stackbound = 131072;
-  std::vector<memblock> stack;
 
-  ip = 0;
   ret = -EAGAIN;
   while (ret == -EAGAIN && ip < microsz)
   {
@@ -262,9 +290,13 @@ int engine(const uint8_t *microprogram, size_t microsz,
           stack.pop_back(); // Clear local variable block
         }
         jmp = get_i64(stack);
+        if (jmp == -1)
+        {
+          jmp = microsz;
+        }
         if (unlikely(jmp < 0 || (size_t)jmp > microsz))
         {
-          printf("microprogram overflow\n");
+          printf("microprogram overflow: jmp %lld\n", (long long)jmp);
           ret = -EFAULT;
           break;
         }
@@ -300,6 +332,10 @@ int engine(const uint8_t *microprogram, size_t microsz,
           std::cout << "];";
           std::cout << std::endl;
         }
+        else if (mb.type == memblock::T_D)
+        {
+          std::cout << "double: " << mb.u.d << std::endl;
+        }
         else
         {
           std::cout << "UNKNOWN: " << mb.type << std::endl;
@@ -320,6 +356,10 @@ int engine(const uint8_t *microprogram, size_t microsz,
         memblock mb = stack.back();
         stack.pop_back();
         jmp = get_i64(stack);
+        if (jmp == -1)
+        {
+          jmp = microsz;
+        }
         if (unlikely(jmp < 0 || (size_t)jmp > microsz))
         {
           printf("microprogram overflow\n");
@@ -934,6 +974,42 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack.push_back(memblock(get_dbl(stack) ? true : false));
+        break;
+      }
+      case STIRBCE_OPCODE_GETSCOPE_DYN:
+      {
+        if (unlikely(stack.size() >= stackbound))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(scope);
+        break;
+      }
+      case STIRBCE_OPCODE_SCOPEVAR:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbsc = stack.back(); stack.pop_back();
+        memblock mbs = stack.back(); stack.pop_back();
+        if (mbsc.type != memblock::T_SC)
+        {
+          printf("arg not scope\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (mbs.type != memblock::T_S)
+        {
+          printf("arg not str\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mbsc.u.sc->recursive_lookup(*mbs.u.s));
         break;
       }
       case STIRBCE_OPCODE_FUN_JMP_ADDR:
