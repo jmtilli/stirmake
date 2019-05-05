@@ -435,6 +435,9 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_SCOPEVAR = 59, // var from scope
   STIRBCE_OPCODE_CALL_IF_FUN = 60,
   STIRBCE_OPCODE_SCOPEVAR_SET = 61, // var to scope
+  STIRBCE_OPCODE_DICTLEN = 62,
+  STIRBCE_OPCODE_DICTGET = 63,
+  STIRBCE_OPCODE_DICTSET = 64,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)

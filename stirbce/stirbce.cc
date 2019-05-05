@@ -1064,6 +1064,71 @@ int engine(const uint8_t *microprogram, size_t microsz,
         val2 = get_i64(stack);
         stack.push_back(val >> val2);
         break;
+
+      case STIRBCE_OPCODE_DICTLEN:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_M)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mbar.u.m->size());
+        break;
+      }
+      case STIRBCE_OPCODE_DICTSET:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbit = stack.back(); stack.pop_back();
+        memblock str = stack.back(); stack.pop_back();
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_M || str.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        (*mbar.u.m)[*str.u.s] = mbit;
+        break;
+      }
+      case STIRBCE_OPCODE_DICTGET:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock str = stack.back(); stack.pop_back();
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_M || str.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (mbar.u.m->find(*str.u.s) == mbar.u.m->end())
+        {
+          stack.push_back(memblock());
+          break;
+        }
+        stack.push_back((*mbar.u.m)[*str.u.s]);
+        break;
+      }
+
+
       case STIRBCE_OPCODE_LISTLEN:
       {
         if (unlikely(stack.size() < 1))
@@ -1084,7 +1149,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
       }
       case STIRBCE_OPCODE_LISTSET:
       {
-        if (unlikely(stack.size() < 2))
+        if (unlikely(stack.size() < 3))
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
