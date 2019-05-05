@@ -10,9 +10,11 @@
 #include <map>
 #include <iostream>
 
+extern "C" {
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+};
 
 class memblock {
  public:
@@ -228,7 +230,7 @@ class memblock {
       }
       case LUA_TTABLE:
       {
-        size_t len = lua_rawlen(lua, -1); // was lua_objlen
+        size_t len = lua_objlen(lua, -1); // in newer versions, lua_rawlen
         refc = new size_t(1);
         if (len)
         {

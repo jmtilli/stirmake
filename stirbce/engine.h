@@ -3,9 +3,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
+extern "C" {
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+};
 
 int engine(const uint8_t *microprogram, size_t microsz, class stringtab &st, lua_State *lua);
 
