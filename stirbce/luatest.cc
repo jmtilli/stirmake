@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
 
   stringtab st;
-  size_t luaidx = st.add("return Stir.makecall(\"foo\", 54321)");
+  size_t luaidx = st.add("return Stir.makecall(\"foo\", 54321, 222)");
 
   std::map<std::string, memblock> m;
   m["a"] = 1.0;
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
   size_t funidx = microprogram.size();
 
   microprogram.push_back(STIRBCE_OPCODE_FUN_HEADER);
-  store_d(microprogram, 1);
+  store_d(microprogram, 2); // 2 args
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
