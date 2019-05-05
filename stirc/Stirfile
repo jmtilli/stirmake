@@ -1,9 +1,9 @@
-beforefirstrule: longdepall
+# beforefirstrule: longdepall
 
 firstrule: ipfrag/comboperf.o
 
 @cdepincludescurdir "depfile.dep"
-@cdepincludescurdir "longdepfile.dep"
+# @cdepincludescurdir "longdepfile.dep"
 
 # This is a comment
 
@@ -12,14 +12,14 @@ firstrule: ipfrag/comboperf.o
   @locvar list = []
   @append($list, "rm")
   @append($list, "-f")
-  @append($list, @dyno["@"])
-  @append($lists, $list)
+  @append($list, @dyno["@"]<>)
+  @append($lists, $list<>)
   $list = []
   @append($list, "ar")
   @append($list, "rs")
-  @append($list, @dyno["@"])
-  @appendList($list, @suffilter(@dyno["^"], ".o"))
-  @append($lists, $list)
+  @append($list, @dyno["@"]<>)
+  @appendList($list, (@suffilter(@dyno["^"], ".o"))<>)
+  @append($lists, $list<>)
   @return $lists
 @endfunction
 

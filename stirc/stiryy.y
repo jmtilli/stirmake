@@ -83,6 +83,7 @@ int stiryywrap(yyscan_t scanner)
 %token NUMBER
 %token VARREF_LITERAL
 %token FREEFORM_TOKEN
+%token MAYBE_CALL
 %token LT
 %token GT
 %token LE
@@ -350,6 +351,7 @@ expr11:
 expr0:
   OPEN_PAREN expr CLOSE_PAREN
 | OPEN_PAREN expr CLOSE_PAREN OPEN_PAREN maybe_arglist CLOSE_PAREN
+| OPEN_PAREN expr CLOSE_PAREN MAYBE_CALL
 | dict maybe_bracketexprlist
 | list maybe_bracketexprlist
 | STRING_LITERAL
@@ -358,16 +360,22 @@ expr0:
 }
 | lvalue
 | lvalue OPEN_PAREN maybe_arglist CLOSE_PAREN
+| lvalue MAYBE_CALL
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
+| IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
+| DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
+| LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
+| IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 | LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
+| LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 | SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFSUB OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN

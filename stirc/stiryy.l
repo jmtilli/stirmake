@@ -106,6 +106,7 @@ struct CSnippet luaSnippet = {
 % return MOD;
 \>= return GE;
 \<= return LE;
+\<\> return MAYBE_CALL;
 
 @\t return ATTAB;
 
