@@ -13,6 +13,8 @@ int main(int argc, char **argv)
   scopes_lex[sc->lua] = scmb;
 
   size_t luaidx = st.add("return Stir.makelexcall(\"foo\", 54321, 222)");
+  size_t lua2idx = st.add("return Stir.getlexval(\"bar\")");
+  size_t lua3idx = st.add("return Stir.getlexval(\"baz\")");
 
   std::map<std::string, memblock> m;
   m["a"] = 1.0;
@@ -60,6 +62,19 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
   microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
   microprogram.push_back(STIRBCE_OPCODE_DUMP);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, lua2idx);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
+  microprogram.push_back(STIRBCE_OPCODE_DUMP);
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, lua3idx);
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
+  microprogram.push_back(STIRBCE_OPCODE_LUAEVAL);
+  microprogram.push_back(STIRBCE_OPCODE_DUMP);
+
   microprogram.push_back(STIRBCE_OPCODE_EXIT);
 
   size_t funidx = microprogram.size();
@@ -77,11 +92,22 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0); // cnt of local variables
   microprogram.push_back(STIRBCE_OPCODE_RETEX);
-  // At this point, stack should be:
-  // [arg, retaddr, retval, cnt of local variables], size 4
+
+  size_t fun2idx = microprogram.size();
+
+  microprogram.push_back(STIRBCE_OPCODE_FUN_HEADER);
+  store_d(microprogram, 0); // 0 args
+
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 12346); // retval
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0); // cnt of local variables
+  microprogram.push_back(STIRBCE_OPCODE_RETEX);
 
   scope_global_dyn = scmb;
   sc->vars["foo"] = memblock(funidx, true);
+  sc->vars["bar"] = memblock(fun2idx, true);
+  sc->vars["baz"] = memblock(12347);
 
   microprograms[sc->lua] = std::make_tuple(&microprogram[0], microprogram.size(), &st);
 
