@@ -18,6 +18,43 @@ struct escaped_string {
   char *str;
 };
 
+struct CSnippet {
+  char *data;
+  size_t len;
+  size_t capacity;
+};
+
+static inline void csadd(struct CSnippet *cs, char ch)
+{
+  if (cs->len + 2 >= cs->capacity)
+  {
+    size_t new_capacity = cs->capacity * 2 + 2;
+    cs->data = (char*)realloc(cs->data, new_capacity);
+    cs->capacity = new_capacity;
+  }
+  cs->data[cs->len] = ch;
+  cs->data[cs->len + 1] = '\0';
+  cs->len++;
+}
+
+static inline void csaddstr(struct CSnippet *cs, char *str)
+{
+  size_t len = strlen(str);
+  if (cs->len + len + 1 >= cs->capacity)
+  {
+    size_t new_capacity = cs->capacity * 2 + 2;
+    if (new_capacity < cs->len + len + 1)
+    {
+      new_capacity = cs->len + len + 1;
+    }
+    cs->data = (char*)realloc(cs->data, new_capacity);
+    cs->capacity = new_capacity;
+  }
+  memcpy(cs->data + cs->len, str, len);
+  cs->len += len;
+  cs->data[cs->len] = '\0';
+}
+
 struct stiryyrule {
   char **deps;
   size_t depsz;

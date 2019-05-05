@@ -59,7 +59,10 @@ int stiryywrap(yyscan_t scanner)
 %destructor { free ($$); } FREEFORM_TOKEN
 %destructor { free ($$); } VARREF_LITERAL
 %destructor { free ($$); } SHELL_COMMAND
+%destructor { free ($$); } PERCENTLUA_LITERAL
 
+
+%token PERCENTLUA_LITERAL
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
 %token OPEN_BRACE
@@ -138,6 +141,7 @@ int stiryywrap(yyscan_t scanner)
 
 %type<str> STRING_LITERAL
 %type<s> FREEFORM_TOKEN
+%type<s> PERCENTLUA_LITERAL
 %type<s> VARREF_LITERAL
 %type<s> SHELL_COMMAND
 %type<d> NUMBER

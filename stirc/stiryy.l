@@ -21,8 +21,17 @@
 
 %option reentrant bison-bridge bison-locations
 %x SHELL
+%x PERCENTLUA
 
 %%
+
+%{
+struct CSnippet luaSnippet = {
+  .data = NULL,
+  .len = 0,
+  .capacity = 0,
+};
+%}
 
 @         return AT;
 @print    return PRINT;
@@ -141,6 +150,18 @@
 \"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
 \'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
 #[^\n]*  /* ignore */;
+
+"%lua{"             { BEGIN(PERCENTLUA); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
+<PERCENTLUA>%\}  {
+                     BEGIN(INITIAL);
+                     yylval->s = luaSnippet.data;
+                     luaSnippet.data = NULL;
+                     luaSnippet.capacity = 0;
+                     luaSnippet.len = 0;
+                     return PERCENTLUA_LITERAL;
+                 }
+<PERCENTLUA>.             { csadd(&luaSnippet, yytext[0]); }
+<PERCENTLUA>"\n"          { csadd(&luaSnippet, yytext[0]); ++yylineno; yycolumn=1; }
 
 \n                                { ++yylineno; yycolumn=1; return NEWLINE; }
 \\\n                              { ++yylineno; yycolumn=1; }
