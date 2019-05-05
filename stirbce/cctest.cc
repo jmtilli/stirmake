@@ -27,13 +27,19 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 3);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 10 + 4*8);
+  store_d(microprogram, 11 + 5*8); // jmp address
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 3); // arg count
   microprogram.push_back(STIRBCE_OPCODE_CALL);
   microprogram.push_back(STIRBCE_OPCODE_POP); // retval
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_EXIT);
+
+  microprogram.push_back(STIRBCE_OPCODE_FUN_HEADER);
+  store_d(microprogram, 3);
+
   microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // lists
   microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // list
 

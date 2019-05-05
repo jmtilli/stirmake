@@ -126,14 +126,22 @@ int engine(const uint8_t *microprogram, size_t microsz,
         break;
       case STIRBCE_OPCODE_CALL:
       {
-        if (unlikely(stack.size() < 1))
+        int64_t argcnt;
+        if (unlikely(stack.size() < 2))
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
           break;
         }
+        argcnt = get_i64(stack);
+        if (argcnt < 0)
+        {
+          printf("negative argument count\n");
+          ret = -EINVAL;
+          break;
+        }
         jmp = get_i64(stack);
-        if (jmp < 0 || (size_t)jmp > microsz)
+        if (jmp < 0 || (size_t)jmp + 9 > microsz) // FIXME off-by-one?
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -141,8 +149,31 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz);
         printf("instr %d\n", microprogram[jmp]);
+        if (microprogram[jmp] != STIRBCE_OPCODE_FUN_HEADER)
+        {
+          printf("not a function\n");
+          ret = -EINVAL;
+          break;
+        }
+        uint64_t u64 = 
+                      ((((uint64_t)microprogram[jmp+1])<<56) |
+                      (((uint64_t)microprogram[jmp+2])<<48) |
+                      (((uint64_t)microprogram[jmp+3])<<40) |
+                      (((uint64_t)microprogram[jmp+4])<<32) |
+                      (((uint64_t)microprogram[jmp+5])<<24) |
+                      (((uint64_t)microprogram[jmp+6])<<16) |
+                      (((uint64_t)microprogram[jmp+7])<<8) |
+                                  microprogram[jmp+8]);
+        double dbl;
+        memcpy(&dbl, &u64, 8);
+        if (dbl != (double)argcnt)
+        {
+          printf("function argument count not correct %g %g\n", dbl, (double)argcnt);
+          ret = -EINVAL;
+          break;
+        }
         stack.push_back(ip);
-        ip = jmp;
+        ip = jmp + 9;
         break;
       }
       case STIRBCE_OPCODE_EXIT:
@@ -436,6 +467,43 @@ int engine(const uint8_t *microprogram, size_t microsz,
         double dbl;
         memcpy(&dbl, &u64, 8);
         stack.push_back(dbl);
+        ip += 8;
+        break;
+      }
+      case STIRBCE_OPCODE_FUN_HEADER:
+      {
+        printf("ran into function without being called\n");
+        ret = -EFAULT;
+        break;
+        if (unlikely(ip+8 >= microsz))
+        {
+          printf("microprogram overflow\n");
+          ret = -EFAULT;
+          break;
+        }
+        if (unlikely(stack.size() >= stackbound))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        uint64_t u64 = 
+                      ((((uint64_t)microprogram[ip+0])<<56) |
+                      (((uint64_t)microprogram[ip+1])<<48) |
+                      (((uint64_t)microprogram[ip+2])<<40) |
+                      (((uint64_t)microprogram[ip+3])<<32) |
+                      (((uint64_t)microprogram[ip+4])<<24) |
+                      (((uint64_t)microprogram[ip+5])<<16) |
+                      (((uint64_t)microprogram[ip+6])<<8) |
+                                  microprogram[ip+7]);
+        double dbl;
+        memcpy(&dbl, &u64, 8);
+        if ((double)(unsigned)dbl != dbl)
+        {
+          printf("function argument count not an integer\n");
+          ret = -EINVAL;
+          break;
+        }
         ip += 8;
         break;
       }

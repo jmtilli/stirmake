@@ -16,10 +16,15 @@ int main(int argc, char **argv)
   std::vector<uint8_t> microprogram;
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 4 + 1*8);
+  store_d(microprogram, 5 + 2*8); // jmp offset
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0); // arg cnt
   microprogram.push_back(STIRBCE_OPCODE_CALL);
   microprogram.push_back(STIRBCE_OPCODE_POP);
   microprogram.push_back(STIRBCE_OPCODE_EXIT);
+
+  microprogram.push_back(STIRBCE_OPCODE_FUN_HEADER);
+  store_d(microprogram, 0);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // lists
 

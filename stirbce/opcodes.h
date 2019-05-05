@@ -116,7 +116,7 @@ class stringtab {
 };
 
 enum stirbce_opcode {
-  STIRBCE_OPCODE_PUSH_DBL = 1, //
+  STIRBCE_OPCODE_PUSH_DBL = 1, // followed by double
   STIRBCE_OPCODE_CALL_EQ = 5, //
   STIRBCE_OPCODE_CALL_NE = 6, //
   STIRBCE_OPCODE_CALL_LOGICAL_AND = 7, //
@@ -158,6 +158,7 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_LISTSET = 46,
   STIRBCE_OPCODE_RETEX = 47,
   STIRBCE_OPCODE_FUN_JMP_ADDR = 48,
+  STIRBCE_OPCODE_FUN_HEADER = 49, // followed by double
 };
 
 static inline const char *hr_opcode(uint8_t opcode)
