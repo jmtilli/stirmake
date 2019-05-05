@@ -20,6 +20,7 @@
 #include <fstream>
 #include <chrono>
 #include "yyutils.h"
+#include "opcodes.h"
 #include "incyyutils.h"
 
 int debug = 0;
@@ -651,8 +652,34 @@ void stack_conf(void)
   }
 }
 
+stringtab st;
+std::vector<memblock> all_scopes;
+std::vector<memblock> scope_stack;
+
+extern "C"
+size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
+{
+  std::string str(symbol, symlen);
+  return st.add(str);
+}
+
+extern "C"
+void stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc)
+{
+  memblock &mb = scope_stack.back();
+  if (mb.type != memblock::T_SC)
+  {
+    std::terminate();
+  }
+  scope *sc = mb.u.sc;
+  std::string str(symbol);
+  sc->vars[str] = memblock(funloc, true);
+}
+
 int main(int argc, char **argv)
 {
+  all_scopes.push_back(memblock(new scope()));
+  scope_stack.push_back(all_scopes.back());
 #if 0
   std::vector<std::string> v_all{"all"};
   std::vector<std::string> v_l1g{"l1g.txt"};

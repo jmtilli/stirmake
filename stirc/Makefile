@@ -5,7 +5,7 @@ all: stir inc stirmain
 SRC_LIB := yyutils.c incyyutils.c
 SRC := $(SRC_LIB) stir.c inc.c
 
-SRC_CPP_LIB :=
+SRC_CPP_LIB := stirbce.cc
 SRC_CPP := $(SRC_CPP_LIB) stirmain.cc
 
 LEX_LIB := stiryy.l incyy.l
@@ -51,21 +51,26 @@ DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
 all: stirmain stir inc
 
+#LUAINC:=/usr/include/lua5.3
+#LUALIB:=/usr/lib/x86_64-linux-gnu/liblua5.3.a
+LUAINC:=/usr/include/luajit-2.1
+LUALIB:=/usr/lib/x86_64-linux-gnu/libluajit-5.1.a
+
 CC=gcc
 CPP=g++
-CFLAGS=-O3 -Wall -g
-CPPFLAGS=-O3 -Wall -g
+CFLAGS=-O3 -Wall -g -I$(LUAINC)
+CPPFLAGS=-O3 -Wall -g -I$(LUAINC)
 
-stirmain: stirmain.o libstirmake.a Makefile
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^)
+stirmain: stirmain.o libstirmake.a Makefile $(LUALIB)
+	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
-stir: stir.o libstirmake.a Makefile
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^)
+stir: stir.o libstirmake.a Makefile $(LUALIB)
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
-inc: inc.o libstirmake.a Makefile
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^)
+inc: inc.o libstirmake.a Makefile $(LUALIB)
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
-libstirmake.a: $(OBJ_LIB) $(OBJGEN_LIB) Makefile
+libstirmake.a: $(OBJ_LIB) $(OBJGEN_LIB) $(OBJ_CPP_LIB) Makefile
 	rm -f $@
 	ar rvs $@ $(filter %.o,$^)
 

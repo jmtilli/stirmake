@@ -16,7 +16,8 @@ int main(int argc, char **argv)
   std::vector<uint8_t> microprogram;
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 5 + 2*8); // jmp offset
+  store_d(microprogram, 6 + 2*8); // jmp offset
+  microprogram.push_back(STIRBCE_OPCODE_FUNIFY);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0); // arg cnt
   microprogram.push_back(STIRBCE_OPCODE_CALL);
@@ -30,41 +31,49 @@ int main(int argc, char **argv)
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // list
 
+/*
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+*/
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, a);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
-  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND_MAINTAIN);
 
+/*
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
-  microprogram.push_back(STIRBCE_OPCODE_APPEND);
-  microprogram.push_back(STIRBCE_OPCODE_POP);
+*/
+  microprogram.push_back(STIRBCE_OPCODE_APPEND_MAINTAIN);
+  //microprogram.push_back(STIRBCE_OPCODE_POP);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // list
 
+/*
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
+*/
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, b);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STRINGTAB);
-  microprogram.push_back(STIRBCE_OPCODE_APPEND);
+  microprogram.push_back(STIRBCE_OPCODE_APPEND_MAINTAIN);
 
+/*
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 1);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
-  microprogram.push_back(STIRBCE_OPCODE_APPEND);
-  microprogram.push_back(STIRBCE_OPCODE_POP);
+*/
+  microprogram.push_back(STIRBCE_OPCODE_APPEND_MAINTAIN);
+  //microprogram.push_back(STIRBCE_OPCODE_POP);
 
   microprogram.push_back(STIRBCE_OPCODE_RET);
 

@@ -15,6 +15,7 @@ typedef void *yyscan_t;
 #include "yyutils.h"
 #include "stiryy.tab.h"
 #include "stiryy.lex.h"
+#include "opcodesonly.h"
 #include <arpa/inet.h>
 
 void stiryyerror(YYLTYPE *yylloc, yyscan_t scanner, struct stiryy *stiryy, const char *str)
@@ -146,6 +147,8 @@ int stiryywrap(yyscan_t scanner)
 %type<s> VARREF_LITERAL
 %type<s> SHELL_COMMAND
 %type<d> NUMBER
+%type<d> value
+%type<d> valuelistentry
 
 %%
 
@@ -225,10 +228,18 @@ maybe_bracketexprlist:
 ;
 
 assignrule:
-  FREEFORM_TOKEN EQUALS expr NEWLINE
+  FREEFORM_TOKEN EQUALS
+{
+  size_t funloc = stiryy->bytesz;
+  stiryy_add_fun_sym(stiryy, $1, funloc);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_HEADER);
+  stiryy_add_double(stiryy, 0);
+}
+expr NEWLINE
 {
   printf("Assigning to %s\n", $1);
   free($1);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_RET);
 }
 | FREEFORM_TOKEN PLUSEQUALS expr NEWLINE
 {
@@ -240,14 +251,37 @@ assignrule:
 value:
   STRING_LITERAL
 {
+  size_t symid = symbol_add(stiryy, $1.str, $1.sz);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
+  stiryy_add_double(stiryy, symid);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_STRINGTAB);
   free($1.str);
+  $$ = 0;
 }
 | varref
+{
+  $$ = 0;
+}
 | dict
+{
+  $$ = 0;
+}
 | list
+{
+  $$ = 0;
+}
 | DELAYVAR OPEN_PAREN varref CLOSE_PAREN
+{
+  $$ = 0;
+}
 | DELAYLISTEXPAND OPEN_PAREN expr CLOSE_PAREN
+{
+  $$ = 1;
+}
 | DELAYEXPR OPEN_PAREN expr CLOSE_PAREN
+{
+  $$ = 0;
+}
 ;
 
 varref:
@@ -396,7 +430,12 @@ expr
 ;
 
 list:
-OPEN_BRACKET maybe_valuelist CLOSE_BRACKET
+OPEN_BRACKET
+{
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_NEW_ARRAY);
+}
+maybe_valuelist
+CLOSE_BRACKET
 ;
 
 dict:
@@ -425,12 +464,39 @@ maybe_valuelist:
 
 valuelist:
   valuelistentry
-| valuelist COMMA valuelistentry
+{
+  if ($1)
+  {
+    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPENDALL_MAINTAIN);
+  }
+  else
+  {
+    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPEND_MAINTAIN);
+  }
+}
+| valuelist COMMA
+  valuelistentry
+{
+  if ($3)
+  {
+    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPENDALL_MAINTAIN);
+  }
+  else
+  {
+    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPEND_MAINTAIN);
+  }
+}
 ;
 
 valuelistentry:
   AT varref
-| value;
+{
+  $$ = 0;
+}
+| value
+{
+  $$ = $1;
+};
 
 stirrule:
   targetspec COLON depspec NEWLINE shell_commands

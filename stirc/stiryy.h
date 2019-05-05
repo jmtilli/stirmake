@@ -65,6 +65,10 @@ struct stiryyrule {
 };
 
 struct stiryy {
+  void *baton;
+  uint8_t *bytecode;
+  size_t bytecapacity;
+  size_t bytesz;
   struct stiryyrule *rules;
   size_t rulesz;
   size_t rulecapacity;
@@ -72,6 +76,35 @@ struct stiryy {
   size_t cdepincludesz;
   size_t cdepincludecapacity;
 };
+
+size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
+void stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t loc);
+
+static inline void stiryy_add_byte(struct stiryy *stiryy, uint8_t byte)
+{
+  size_t newcapacity;
+  if (stiryy->bytesz >= stiryy->bytecapacity)
+  {
+    newcapacity = 2*stiryy->bytecapacity + 1;
+    stiryy->bytecode = (uint8_t*)realloc(stiryy->bytecode, sizeof(*stiryy->bytecode)*newcapacity);
+    stiryy->bytecapacity = newcapacity;
+  }
+  stiryy->bytecode[stiryy->bytesz++] = byte; 
+}
+
+static inline void stiryy_add_double(struct stiryy *stiryy, double dbl)
+{
+  uint64_t val;
+  memcpy(&val, &dbl, 8);
+  stiryy_add_byte(stiryy, val>>56);
+  stiryy_add_byte(stiryy, val>>48);
+  stiryy_add_byte(stiryy, val>>40);
+  stiryy_add_byte(stiryy, val>>32);
+  stiryy_add_byte(stiryy, val>>24);
+  stiryy_add_byte(stiryy, val>>16);
+  stiryy_add_byte(stiryy, val>>8);
+  stiryy_add_byte(stiryy, val);
+}
 
 static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
 {
@@ -150,6 +183,7 @@ static inline void stiryy_free(struct stiryy *stiryy)
   {
     free(stiryy->cdepincludes[i]);
   }
+  free(stiryy->bytecode);
   free(stiryy->rules);
   free(stiryy->cdepincludes);
   memset(stiryy, 0, sizeof(*stiryy));
