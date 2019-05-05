@@ -38,4 +38,6 @@ int main(int argc, char **argv)
   {
     std::terminate();
   }
+  lua_close(lua);
+  return 0;
 }
