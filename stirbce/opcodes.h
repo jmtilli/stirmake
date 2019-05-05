@@ -8,6 +8,11 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <iostream>
+
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
 class memblock {
  public:
@@ -91,9 +96,124 @@ class memblock {
           delete u.m;
           break;
         default:
+          std::cerr << "def" << std::endl;
           std::terminate();
       }
       delete refc;
+    }
+  }
+  void push_lua(lua_State *lua)
+  {
+    switch (type)
+    {
+      case T_S:
+        lua_pushlstring(lua, u.s->data(), u.s->length());
+        break;
+      case T_D:
+        lua_pushnumber(lua, u.d);
+        break;
+      case T_V:
+        lua_newtable(lua);
+        for (size_t i = 0; i != u.v->size(); i++)
+        {
+          lua_pushnumber(lua, i + 1);
+          u.v->at(i).push_lua(lua);
+          lua_settable(lua, -3);
+        }
+        break;
+      case T_M:
+        lua_newtable(lua);
+        for (auto it = u.m->begin(); it != u.m->end(); it++)
+        {
+          lua_pushlstring(lua, it->first.data(), it->first.length());
+          it->second.push_lua(lua);
+          lua_settable(lua, -3);
+        }
+        break;
+      case T_F:
+        std::cerr << "fn" << std::endl;
+        std::terminate(); // FIXME better error handling
+    }
+  }
+  memblock(lua_State *lua, int idx = -1)
+  {
+    int t = lua_type(lua, idx);
+    switch (t) {
+      case LUA_TSTRING:
+      {
+        const char *s;
+        size_t l;
+        type = T_S;
+        s = lua_tolstring(lua, idx, &l);
+        u.s = new std::string(s, l);
+        refc = new size_t(1);
+        break;
+      }
+      case LUA_TBOOLEAN: // XXX or should we terminate instead?
+      {
+        type = T_D;
+        u.d = lua_toboolean(lua, idx) ? 1.0 : 0.0;
+        break;
+      }
+      case LUA_TNUMBER:
+      {
+        type = T_D;
+        u.d = lua_tonumber(lua, idx);
+        break;
+      }
+      case LUA_TTABLE:
+      {
+        size_t len = lua_rawlen(lua, -1); // was lua_objlen
+        refc = new size_t(1);
+        if (len)
+        {
+          type = T_V;
+          u.v = new std::vector<memblock>();
+          for (size_t i = 0; i < len; i++)
+          {
+            lua_pushnumber(lua, i + 1);
+            lua_gettable(lua, idx - 1);
+            u.v->push_back(memblock(lua));
+            lua_pop(lua, 1);
+          }
+        }
+        else
+        {
+          type = T_M;
+          u.m = new std::map<std::string, memblock>();
+          lua_pushnil(lua);
+          while (lua_next(lua, idx - 1) != 0)
+          {
+            size_t l;
+            const char *s = lua_tolstring(lua, -2, &l);
+            std::string str(s, l);
+            (*u.m)[str] = memblock(lua);
+            lua_pop(lua, 1);
+          }
+          if (u.m->empty()) // Exception: empty table is always an array
+          {
+            delete u.m;
+            type = T_V;
+            u.v = new std::vector<memblock>();
+          }
+        }
+        break;
+      }
+      case LUA_TNIL:
+        std::cerr << "nil" << std::endl;
+        std::terminate(); // FIXME better error handling
+      case LUA_TFUNCTION:
+        std::cerr << "func" << std::endl;
+        std::terminate(); // FIXME better error handling
+      case LUA_TUSERDATA:
+        std::cerr << "ud" << std::endl;
+        std::terminate(); // FIXME better error handling
+      case LUA_TTHREAD:
+        std::cerr << "thr" << std::endl;
+        std::terminate(); // FIXME better error handling
+      case LUA_TLIGHTUSERDATA:
+        std::cerr << "lud" << std::endl;
+        std::terminate(); // FIXME better error handling
     }
   }
 };
