@@ -68,7 +68,7 @@ double get_dbl(std::vector<memblock> &stack)
 {
   memblock mb = stack.back();
   stack.pop_back();
-  if (mb.type != memblock::T_D)
+  if (mb.type != memblock::T_D && mb.type != memblock::T_B)
   {
     std::terminate();
   }
@@ -833,6 +833,50 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         mbar.u.v->push_back(mbit);
+        break;
+      }
+      case STIRBCE_OPCODE_PUSH_NIL:
+      {
+        if (unlikely(stack.size() >= stackbound))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(memblock());
+        break;
+      }
+      case STIRBCE_OPCODE_PUSH_TRUE:
+      {
+        if (unlikely(stack.size() >= stackbound))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(memblock(true));
+        break;
+      }
+      case STIRBCE_OPCODE_PUSH_FALSE:
+      {
+        if (unlikely(stack.size() >= stackbound))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(memblock(false));
+        break;
+      }
+      case STIRBCE_OPCODE_BOOLEANIFY:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(memblock(get_dbl(stack) ? true : false));
         break;
       }
       case STIRBCE_OPCODE_FUN_JMP_ADDR:

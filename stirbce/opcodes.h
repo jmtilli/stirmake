@@ -17,7 +17,7 @@
 class memblock {
  public:
   enum {
-    T_D, T_S, T_V, T_M, T_F
+    T_D, T_S, T_V, T_M, T_F, T_N, T_B
   } type;
   union {
     double d;
@@ -27,15 +27,35 @@ class memblock {
   } u;
   size_t *refc;
 
-  memblock(): type(T_D)
+  memblock(): type(T_N), refc(NULL)
   {
     u.d = 0;
   }
-  memblock(double d): type(T_D)
+  memblock(bool b): type(T_B), refc(NULL)
+  {
+    u.d = b;
+  }
+  memblock(unsigned ui): type(T_D), refc(NULL)
+  {
+    u.d = ui;
+  }
+  memblock(int i): type(T_D), refc(NULL)
+  {
+    u.d = i;
+  }
+  memblock(long unsigned ui): type(T_D), refc(NULL)
+  {
+    u.d = ui;
+  }
+  memblock(long int i): type(T_D), refc(NULL)
+  {
+    u.d = i;
+  }
+  memblock(double d): type(T_D), refc(NULL)
   {
     u.d = d;
   }
-  memblock(double d, bool isfn): type(isfn ? T_F : T_D)
+  memblock(double d, bool isfn): type(isfn ? T_F : T_D), refc(NULL)
   {
     u.d = d;
   }
@@ -59,7 +79,7 @@ class memblock {
     type = other.type;
     u = other.u;
     refc = other.refc;
-    if (type == T_D || type == T_F)
+    if (type == T_D || type == T_F || type == T_N || type == T_B)
     {
       return;
     }
@@ -78,7 +98,7 @@ class memblock {
     return *this;
   }
   ~memblock() {
-    if (type == T_D || type == T_F)
+    if (type == T_D || type == T_F || type == T_N || type == T_B)
     {
       return;
     }
@@ -121,6 +141,12 @@ class memblock {
           lua_settable(lua, -3);
         }
         break;
+      case T_B:
+        lua_pushboolean(lua, u.d ? 1 : 0);
+        break;
+      case T_N:
+        lua_pushnil(lua);
+        break;
       case T_M:
         lua_newtable(lua);
         for (auto it = u.m->begin(); it != u.m->end(); it++)
@@ -138,6 +164,7 @@ class memblock {
   memblock(lua_State *lua, int idx = -1)
   {
     int t = lua_type(lua, idx);
+    refc = NULL;
     switch (t) {
       case LUA_TSTRING:
       {
@@ -149,9 +176,9 @@ class memblock {
         refc = new size_t(1);
         break;
       }
-      case LUA_TBOOLEAN: // XXX or should we terminate instead?
+      case LUA_TBOOLEAN:
       {
-        type = T_D;
+        type = T_B;
         u.d = lua_toboolean(lua, idx) ? 1.0 : 0.0;
         break;
       }
@@ -200,8 +227,11 @@ class memblock {
         break;
       }
       case LUA_TNIL:
-        std::cerr << "nil" << std::endl;
-        std::terminate(); // FIXME better error handling
+      {
+        type = T_N;
+        u.d = 0;
+        break;
+      }
       case LUA_TFUNCTION:
         std::cerr << "func" << std::endl;
         std::terminate(); // FIXME better error handling
@@ -279,6 +309,10 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_RETEX = 47,
   STIRBCE_OPCODE_FUN_JMP_ADDR = 48,
   STIRBCE_OPCODE_FUN_HEADER = 49, // followed by double
+  STIRBCE_OPCODE_PUSH_NIL = 50,
+  STIRBCE_OPCODE_BOOLEANIFY = 51,
+  STIRBCE_OPCODE_PUSH_TRUE = 52,
+  STIRBCE_OPCODE_PUSH_FALSE = 53,
 };
 
 static inline const char *hr_opcode(uint8_t opcode)
