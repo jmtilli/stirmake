@@ -1215,6 +1215,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
+        // RFE swap order?
         memblock mbsc = stack.back(); stack.pop_back();
         memblock mbs = stack.back(); stack.pop_back();
         if (mbsc.type != memblock::T_SC)
@@ -1268,6 +1269,32 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack.push_back(memblock(new std::string(*mbbase.u.s + *mbextend.u.s)));
+        break;
+      }
+      case STIRBCE_OPCODE_SCOPEVAR_SET:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbval = stack.back(); stack.pop_back();
+        memblock mbs = stack.back(); stack.pop_back();
+        memblock mbsc = stack.back(); stack.pop_back();
+        if (mbsc.type != memblock::T_SC)
+        {
+          printf("arg not scope\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (mbs.type != memblock::T_S)
+        {
+          printf("arg not str\n");
+          ret = -EINVAL;
+          break;
+        }
+        mbsc.u.sc->vars[*mbs.u.s] = mbval;
         break;
       }
       default:
