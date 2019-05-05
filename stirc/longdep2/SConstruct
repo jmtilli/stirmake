@@ -1,0 +1,5 @@
+env = Environment()
+env.Program(target = 'app', source = 'app.c')
+env.Depends('app', 'h30000.h')
+for n in range(30000):
+  env.Depends('h%d.h' % (n+1,), 'h%d.h' % (n,))

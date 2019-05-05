@@ -1,0 +1,5 @@
+env = Environment()
+env.Program(target = 'app', source = 'app.c')
+env.Depends('app', 'h2999.h')
+for n in range(3000):
+  env.Depends('h%d.h' % (n,), ["h%d.h"%(n,) for n in range(n)])
