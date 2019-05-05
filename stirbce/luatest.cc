@@ -32,6 +32,23 @@ int lua_makecall(lua_State *lua) {
   {
     std::terminate();
   }
+  uint64_t u64 = (((unsigned long long)microprogram[ip+1])<<56) |
+    (((unsigned long long)microprogram[ip+2])<<48) |
+    (((unsigned long long)microprogram[ip+3])<<40) |
+    (((unsigned long long)microprogram[ip+4])<<32) |
+    (((unsigned long long)microprogram[ip+5])<<24) |
+    (((unsigned long long)microprogram[ip+6])<<16) |
+    (((unsigned long long)microprogram[ip+7])<<8) |
+    (((unsigned long long)microprogram[ip+8])<<0);
+  double d;
+  memcpy(&d, &u64, 8);
+  if (d != (double)args)
+  {
+    std::cerr << "arg count mismatch: " << d << " vs " << args << std::endl;
+    std::terminate();
+  }
+
+  
   stack.push_back(-1); // return address
   engine(&microprogram[0], microprogram.size(), st, lua, scope_global, stack, ip+9);
 
