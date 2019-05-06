@@ -38,11 +38,11 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_FUN_HEADER);
   store_d(microprogram, 3);
 
-  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // lists
-  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // list
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // lists [5]
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY); // list [6]
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, rm);
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, dashf);
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, fooa);
@@ -66,20 +66,20 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
+  store_d(microprogram, 5);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6); // 0..2 == args, 3,4 == registers, 5,6 == local vars
   microprogram.push_back(STIRBCE_OPCODE_PUSH_NEW_ARRAY);
   microprogram.push_back(STIRBCE_OPCODE_SET_STACK);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, ar);
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, r);
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, fooa);
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 0);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, baro);
@@ -115,15 +115,15 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
+  store_d(microprogram, 5);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
+  store_d(microprogram, 6);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_APPEND);
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
+  store_d(microprogram, 5);
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK); // retval
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 3); // argcnt

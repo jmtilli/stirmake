@@ -307,7 +307,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
   int ret = 0;
   int64_t val, val2, condition, jmp;
   uint16_t opcode = 0;
-  size_t bp = stack.size();
+  size_t bp = 0;
   const size_t stackbound = 131072;
 
   ret = -EAGAIN;
@@ -424,7 +424,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
-        stack[stack.size() - 1].push_lua(lua);
+        stack.back().push_lua(lua);
         break;
       }
       case STIRBCE_OPCODE_LUAEVAL:
@@ -862,13 +862,21 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         val = get_i64(stack);
+        if (val < 0)
+        {
+          val = stack.size() + val;
+        }
+        else
+        {
+          val = bp + val;
+        }
         if (val < 0 || (size_t)val >= stack.size())
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
           break;
         }
-        memblock mb = stack[stack.size() - val - 1];
+        memblock mb = stack[val];
         stack.push_back(mb);
         break;
       }
@@ -883,13 +891,21 @@ int engine(const uint8_t *microprogram, size_t microsz,
         memblock mb = stack.back();
         stack.pop_back();
         val = get_i64(stack);
+        if (val < 0)
+        {
+          val = stack.size() + val;
+        }
+        else
+        {
+          val = bp + val;
+        }
         if (val < 0 || (size_t)val >= stack.size())
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
           break;
         }
-        stack[stack.size() - val - 1] = mb;
+        stack[val] = mb;
         break;
       }
       case STIRBCE_OPCODE_PUSH_NEW_ARRAY:
@@ -1604,13 +1620,13 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
-        if (stack[stack.size() - 1].type != memblock::T_D)
+        if (stack.back().type != memblock::T_D)
         {
           printf("not a double\n");
           ret = -EINVAL;
           break;
         }
-        stack[stack.size() - 1].type = memblock::T_F;
+        stack.back().type = memblock::T_F;
         break;
       }
       case STIRBCE_OPCODE_BOOLEANIFY:
