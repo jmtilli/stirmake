@@ -129,7 +129,7 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_ABSPATH = 117,
   STIRBCE_OPCODE_MEMFILE_IOPEN = 118,
   STIRBCE_OPCODE_STRSET = 119,
-  STIRBCE_OPCODE_STRSTRIP = 120,
+  STIRBCE_OPCODE_STRSTRIP = 120, // specify strip charset as string to this!!!!
   STIRBCE_OPCODE_STRWORD = 121, // specify delim to this!!!!
   STIRBCE_OPCODE_STRWORDLIST = 122, // specify delim to this!!!!
   STIRBCE_OPCODE_STRWORDCNT = 123, // specify delim to this!!!!
