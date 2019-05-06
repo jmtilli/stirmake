@@ -176,10 +176,21 @@ stirrules:
   free($3.str);
 }
 | stirrules CDEPINCLUDESCURDIR varref NEWLINE
-| stirrules FUNCTION FREEFORM_TOKEN OPEN_PAREN CLOSE_PAREN NEWLINE
+| stirrules FUNCTION FREEFORM_TOKEN OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
 { free($3); }
   funlines
   ENDFUNCTION NEWLINE
+;
+
+maybe_parlist:
+| parlist
+;
+
+parlist:
+FREEFORM_TOKEN
+{ free($1); }
+| parlist COMMA FREEFORM_TOKEN
+{ free($3); }
 ;
 
 funlines:
