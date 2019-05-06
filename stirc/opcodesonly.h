@@ -138,5 +138,6 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_PATH_SUFFIX = 126,
   STIRBCE_OPCODE_PATH_BASENAME = 127,
 };
+// FIXME hypot?
 
 #endif
