@@ -301,15 +301,87 @@ int engine(const uint8_t *microprogram, size_t microsz,
   // 0.53 us / execution
   int ret = 0;
   int64_t val, val2, condition, jmp;
+  uint16_t opcode = 0;
   size_t bp = stack.size();
   const size_t stackbound = 131072;
 
   ret = -EAGAIN;
   while (ret == -EAGAIN && ip < microsz)
   {
-    uint8_t instr = microprogram[ip++];
-    printf("ip %zu instr %d\n", ip-1, (int)instr);
-    switch (instr)
+    uint8_t ophi = microprogram[ip++];
+    if (likely(ophi < 128))
+    {
+      opcode = ophi;
+    }
+    else if (unlikely((ophi & 0xC0) == 0x80))
+    {
+      printf("illegal byte sequence\n");
+      ret = -EILSEQ;
+      break;
+    }
+    else if (likely((ophi & 0xE0) == 0xC0))
+    {
+      uint8_t oplo;
+      if (unlikely(ip >= microsz))
+      {
+        printf("microcode overflow\n");
+        ret = -EOVERFLOW;
+        break;
+      }
+      oplo = microprogram[ip++];
+      if (unlikely((oplo & 0xC0) != 0x80))
+      {
+        printf("illegal byte sequence\n");
+        ret = -EILSEQ;
+        break;
+      }
+      opcode = ((ophi&0x1F) << 6) | (oplo & 0x3F);
+      if (unlikely(opcode < 128))
+      {
+        printf("illegal byte sequence\n");
+        ret = -EILSEQ;
+        break;
+      }
+    }
+    else if (likely((ophi & 0xF0) == 0xE0))
+    {
+      uint8_t opmid, oplo;
+      if (unlikely(ip >= microsz))
+      {
+        printf("microcode overflow\n");
+        ret = -EOVERFLOW;
+        break;
+      }
+      opmid = microprogram[ip++];
+      if (unlikely((opmid & 0xC0) != 0x80))
+      {
+        printf("illegal byte sequence\n");
+        ret = -EILSEQ;
+        break;
+      }
+      oplo = microprogram[ip++];
+      if (unlikely((oplo & 0xC0) != 0x80))
+      {
+        printf("illegal byte sequence\n");
+        ret = -EILSEQ;
+        break;
+      }
+      opcode = ((ophi&0xF) << 12) | ((opmid&0x3F) << 6) | (oplo & 0x3F);
+      if (unlikely(opcode <= 0x7FF))
+      {
+        printf("illegal byte sequence\n");
+        ret = -EILSEQ;
+        break;
+      }
+    }
+    else
+    {
+      printf("illegal byte sequence\n");
+      ret = -EILSEQ;
+      break;
+    }
+    printf("ip %zu instr %d\n", ip-1, (int)opcode);
+    switch (opcode)
     {
       case STIRBCE_OPCODE_TYPE:
       {
