@@ -665,8 +665,9 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 }
 
 extern "C"
-void stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc)
+size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc)
 {
+  size_t old = (size_t)-1;
   memblock &mb = scope_stack.back();
   if (mb.type != memblock::T_SC)
   {
@@ -674,7 +675,13 @@ void stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc
   }
   scope *sc = mb.u.sc;
   std::string str(symbol);
+  if (sc->vars.find(str) != sc->vars.end() &&
+      sc->vars[str].type == memblock::T_F)
+  {
+    old = sc->vars[str].u.d;
+  }
   sc->vars[str] = memblock(funloc, true);
+  return old;
 }
 
 int main(int argc, char **argv)

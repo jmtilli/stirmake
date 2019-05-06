@@ -7,7 +7,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
   abort();
 }
-void stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc)
+size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc)
 {
   abort();
 }

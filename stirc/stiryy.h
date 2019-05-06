@@ -78,7 +78,7 @@ struct stiryy {
 };
 
 size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
-void stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t loc);
+size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t loc);
 
 static inline void stiryy_add_byte(struct stiryy *stiryy, uint8_t byte)
 {

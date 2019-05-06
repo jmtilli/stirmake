@@ -45,7 +45,8 @@ firstrule: ipfrag/comboperf.o
   @lex["foo"] = "y" # equivalent
 @endfunction
 
-MYFLAGS = [["-Wall", "-Wextra"], ["foo", "bar"]]
+MYFLAGS = [["-Wall", "-Wextra"]]
+MYFLAGS += [["foo", "bar"]]
 
 CC = "cc"
 CFLAGS = ["-Wall", "-Wextra"]
