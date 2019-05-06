@@ -110,7 +110,7 @@ enum stirbce_opcode {
   STIRBCE_OPCODE_OUT = 100, // warn or info, depending on arg
   // add rule or deps
   STIRBCE_OPCODE_RULE_ADD = 101,
-  STIRBCE_OPCODE_DEPS_ADD = 102,
+  STIRBCE_OPCODE_DEPS_ADD = 102, // FIXME could this be variant of RULE_ADD?
   STIRBCE_OPCODE_DICTHAS = 103,
   STIRBCE_OPCODE_SCOPE_HAS = 104,
   STIRBCE_OPCODE_SUFSUBONE = 105,
