@@ -21,6 +21,7 @@
 #include <chrono>
 #include "yyutils.h"
 #include "opcodes.h"
+#include "engine.h"
 #include "incyyutils.h"
 
 int debug = 0;
@@ -711,12 +712,30 @@ int main(int argc, char **argv)
 #endif
   FILE *f = fopen("Stirfile", "r");
   struct stiryy stiryy = {};
+
   if (!f)
   {
     std::terminate();
   }
   stiryydoparse(f, &stiryy);
   fclose(f);
+
+  std::vector<memblock> stack;
+
+  stack.push_back(-1);
+  stack.push_back(-1);
+  size_t ip = scope_stack.back().u.sc->vars["MYFLAGS"].u.d + 9;
+  std::cout << "to become ip: " << ip << std::endl;
+
+  engine(stiryy.bytecode, stiryy.bytesz, st,
+         scope_stack.back().u.sc->lua, scope_stack.back(),
+         stack, ip);
+
+  std::cout << "STACK SIZE: " << stack.size() << std::endl;
+  std::cout << "DUMP: ";
+  stack.back().dump();
+  std::cout << std::endl;
+  exit(0);
 
   stack_conf();
 
