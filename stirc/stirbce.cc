@@ -73,17 +73,12 @@ int lua_makelexcall(lua_State *lua) {
   stack.push_back(-1); // return address
   engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
 
-  if (stack.size() != (size_t)args + 1)
+  if (stack.size() != (size_t)1)
   {
     std::terminate();
   }
 
   memblock rv = stack.back(); stack.pop_back();
-  for (int i = 0; i < args; i++)
-  {
-    std::cout << "popping arg" << std::endl;
-    stack.pop_back();
-  }
 
   rv.push_lua(lua);
 
@@ -575,6 +570,89 @@ int engine(const uint8_t *microprogram, size_t microsz,
         stack.pop_back();
         mb.dump();
         std::cout << std::endl;
+        break;
+      }
+      case STIRBCE_OPCODE_RETEX2:
+      {
+        printf("retex2/1, stack size %zu\n", stack.size());
+        if (unlikely(stack.size() < 5))
+        {
+          printf("stack underflow1\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t cnt = get_i64(stack); // Count of local vars
+        int64_t cntarg = get_i64(stack); // Count of args
+        if (cnt < 0 || (size_t)(cntarg+cnt)+3 > stack.size())
+        {
+          printf("stack underflow2 %lld\n", (long long)cnt);
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back();
+        stack.pop_back();
+        for (int i = 0; i < cnt; i++)
+        {
+          stack.pop_back(); // Clear local variable block
+        }
+        jmp = get_i64(stack);
+        if (jmp == -1)
+        {
+          jmp = microsz;
+        }
+        if (unlikely(jmp < 0 || (size_t)jmp > microsz))
+        {
+          printf("microprogram overflow: jmp %lld\n", (long long)jmp);
+          ret = -EFAULT;
+          break;
+        }
+        bp = get_i64(stack);
+        printf("retex2/0, stack size %zu w/o retval\n", stack.size());
+        if (mb.type == memblock::T_V)
+        {
+          std::cout << "[ ";
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            memblock mb2 = *it;
+            if (mb2.type == memblock::T_V)
+            {
+              std::cout << "[ ";
+              for (auto it2 = mb2.u.v->begin(); it2 != mb2.u.v->end(); it2++)
+              {
+                memblock mb3 = *it2;
+                if (mb3.type == memblock::T_S)
+                {
+                  std::cout << *mb3.u.s << ", ";
+                }
+                else
+                {
+                  std::cout << "UNKNOWN, ";
+                }
+              }
+              std::cout << "], ";
+            }
+            else
+            {
+              std::cout << "UNKNOWN, ";
+            }
+          }
+          std::cout << "];";
+          std::cout << std::endl;
+        }
+        else if (mb.type == memblock::T_D)
+        {
+          std::cout << "double: " << mb.u.d << std::endl;
+        }
+        else
+        {
+          std::cout << "UNKNOWN: " << mb.type << std::endl;
+        }
+        ip = jmp;
+        for (int i = 0; i < cntarg; i++)
+        {
+          stack.pop_back(); // Clear args
+        }
+        stack.push_back(mb);
         break;
       }
       case STIRBCE_OPCODE_RETEX:

@@ -105,8 +105,10 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 12345); // retval
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 2); // cnt of arguments
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0); // cnt of local variables
-  microprogram.push_back(STIRBCE_OPCODE_RETEX);
+  microprogram.push_back(STIRBCE_OPCODE_RETEX2);
 
   size_t fun2idx = microprogram.size();
 
@@ -116,8 +118,10 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 12346); // retval
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
+  store_d(microprogram, 0); // cnt of arguments
+  microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0); // cnt of local variables
-  microprogram.push_back(STIRBCE_OPCODE_RETEX);
+  microprogram.push_back(STIRBCE_OPCODE_RETEX2);
 
   scope_global_dyn = scmb;
   sc->vars["foo"] = memblock(funidx, true);
