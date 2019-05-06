@@ -23,7 +23,7 @@ class scope;
 class memblock {
  public:
   enum {
-    T_D, T_S, T_V, T_M, T_F, T_N, T_B, T_SC
+    T_D, T_S, T_V, T_M, T_F, T_N, T_B, T_SC, T_REG
   } type;
   union {
     double d;
@@ -66,6 +66,14 @@ class memblock {
   {
     u.d = d;
   }
+  memblock(double d, bool isfn, bool isreg): type(isreg ? T_REG : T_D), refc(NULL)
+  {
+    if (isfn && isreg)
+    {
+      std::terminate();
+    }
+    u.d = d;
+  }
   explicit memblock(scope *sc): type(T_SC)
   {
     std::cout << "MEMBLOCK FOR SCOPE" << std::endl;
@@ -92,7 +100,7 @@ class memblock {
     type = other.type;
     u = other.u;
     refc = other.refc;
-    if (type == T_D || type == T_F || type == T_N || type == T_B)
+    if (type == T_D || type == T_F || type == T_N || type == T_B || type == T_REG)
     {
       return;
     }
@@ -150,6 +158,9 @@ class memblock {
       case T_F:
         std::cerr << "fn" << std::endl;
         std::terminate(); // FIXME better error handling
+      case T_REG:
+        std::cerr << "reg" << std::endl;
+        std::terminate(); // FIXME better error handling
     }
   }
   void push_lua(lua_State *lua)
@@ -191,6 +202,9 @@ class memblock {
         std::terminate(); // FIXME better error handling
       case T_F:
         std::cerr << "fn" << std::endl;
+        std::terminate(); // FIXME better error handling
+      case T_REG:
+        std::cerr << "reg" << std::endl;
         std::terminate(); // FIXME better error handling
     }
   }

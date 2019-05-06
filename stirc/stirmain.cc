@@ -731,8 +731,8 @@ int main(int argc, char **argv)
 
   std::vector<memblock> stack;
 
-  stack.push_back(-1);
-  stack.push_back(-1);
+  stack.push_back(memblock(-1, false, true));
+  stack.push_back(memblock(-1, false, true));
   size_t ip = scope_stack.back().u.sc->vars["MYFLAGS"].u.d + 9;
   std::cout << "to become ip: " << ip << std::endl;
 

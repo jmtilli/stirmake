@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   store_d(microprogram, 2); // 2 args
 
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
-  store_d(microprogram, 1);
+  store_d(microprogram, 2); // 0 == ip, 1 == bp, 2 == last arg
   microprogram.push_back(STIRBCE_OPCODE_PUSH_STACK);
   microprogram.push_back(STIRBCE_OPCODE_DUMP);
 

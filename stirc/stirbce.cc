@@ -69,8 +69,8 @@ int lua_makelexcall(lua_State *lua) {
   }
 
 
-  stack.push_back(-1); // base pointer
-  stack.push_back(-1); // return address
+  stack.push_back(memblock(-1, false, true)); // base pointer
+  stack.push_back(memblock(-1, false, true)); // return address
   engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
 
   if (stack.size() != (size_t)1)
@@ -131,8 +131,8 @@ int lua_getlexval(lua_State *lua) {
       std::cerr << "arg count mismatch: " << d << " vs " << 0.0 << std::endl;
       std::terminate();
     }
-    stack.push_back(-1); // base pointer
-    stack.push_back(-1); // return address
+    stack.push_back(memblock(-1, false, true)); // base pointer
+    stack.push_back(memblock(-1, false, true)); // return address
     engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
     if (stack.size() != 1)
     {
@@ -169,7 +169,7 @@ int luaopen_stir(lua_State *lua)
 
 memblock::~memblock()
 {
-  if (type == T_D || type == T_F || type == T_N || type == T_B)
+  if (type == T_D || type == T_F || type == T_N || type == T_B || type == T_REG)
   {
     return;
   }
@@ -258,6 +258,16 @@ int64_t get_funaddr(std::vector<memblock> &stack)
   memblock mb = stack.back();
   stack.pop_back();
   if (mb.type != memblock::T_F)
+  {
+    std::terminate();
+  }
+  return mb.u.d;
+}
+int64_t get_reg(std::vector<memblock> &stack)
+{
+  memblock mb = stack.back();
+  stack.pop_back();
+  if (mb.type != memblock::T_REG)
   {
     std::terminate();
   }
@@ -490,9 +500,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
             ret = -EINVAL;
             break;
           }
-          stack.push_back(bp);
-          stack.push_back(ip);
-          bp = stack.size();
+          stack.push_back(memblock(bp, false, true));
+          stack.push_back(memblock(ip, false, true));
+          bp = stack.size() - 2 - 0; // 0 arguments, 2 pushed registers in stack
           ip = jmp + 9;
         }
         break;
@@ -545,9 +555,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EINVAL;
           break;
         }
-        stack.push_back(bp);
-        stack.push_back(ip);
-        bp = stack.size();
+        stack.push_back(memblock(bp, false, true));
+        stack.push_back(memblock(ip, false, true));
+        bp = stack.size() - 2 - argcnt;
         ip = jmp + 9;
         break;
       }
@@ -595,7 +605,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         {
           stack.pop_back(); // Clear local variable block
         }
-        jmp = get_i64(stack);
+        jmp = get_reg(stack);
         if (jmp == -1)
         {
           jmp = microsz;
@@ -606,7 +616,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EFAULT;
           break;
         }
-        bp = get_i64(stack);
+        bp = get_reg(stack);
         printf("retex2/0, stack size %zu w/o retval\n", stack.size());
         if (mb.type == memblock::T_V)
         {
@@ -677,7 +687,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         {
           stack.pop_back(); // Clear local variable block
         }
-        jmp = get_i64(stack);
+        jmp = get_reg(stack);
         if (jmp == -1)
         {
           jmp = microsz;
@@ -688,7 +698,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EFAULT;
           break;
         }
-        bp = get_i64(stack);
+        bp = get_reg(stack);
         printf("retex, stack size %zu w/o retval\n", stack.size());
         if (mb.type == memblock::T_V)
         {
@@ -744,7 +754,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         memblock mb = stack.back();
         stack.pop_back();
-        jmp = get_i64(stack);
+        jmp = get_reg(stack);
         if (jmp == -1)
         {
           jmp = microsz;
@@ -755,7 +765,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EFAULT;
           break;
         }
-        bp = get_i64(stack);
+        bp = get_reg(stack);
         printf("ret, stack size %zu w/o retval\n", stack.size());
         if (mb.type == memblock::T_V)
         {
