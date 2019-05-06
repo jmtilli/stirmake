@@ -434,9 +434,18 @@ expr0:
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
-| LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
-| LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
-| LOC OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
+| LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist
+{
+  free($3.str);
+}
+| LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
+{
+  free($3.str);
+}
+| LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
+{
+  free($3.str);
+}
 | SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFSUB OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
