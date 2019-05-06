@@ -21,7 +21,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 0); // arg cnt
   microprogram.push_back(STIRBCE_OPCODE_CALL);
-  microprogram.push_back(STIRBCE_OPCODE_POP);
+  microprogram.push_back(STIRBCE_OPCODE_DUMP);
   microprogram.push_back(STIRBCE_OPCODE_EXIT);
 
   microprogram.push_back(STIRBCE_OPCODE_FUN_HEADER);

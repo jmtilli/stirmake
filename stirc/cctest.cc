@@ -32,7 +32,7 @@ int main(int argc, char **argv)
   microprogram.push_back(STIRBCE_OPCODE_PUSH_DBL);
   store_d(microprogram, 3); // arg count
   microprogram.push_back(STIRBCE_OPCODE_CALL);
-  microprogram.push_back(STIRBCE_OPCODE_POP); // retval
+  microprogram.push_back(STIRBCE_OPCODE_DUMP); // retval
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
   microprogram.push_back(STIRBCE_OPCODE_POP); // arg
