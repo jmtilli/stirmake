@@ -665,84 +665,6 @@ int engine(const uint8_t *microprogram, size_t microsz,
         stack.push_back(mb);
         break;
       }
-      case STIRBCE_OPCODE_RETEX:
-      {
-        printf("retex1, stack size %zu\n", stack.size());
-        if (unlikely(stack.size() < 4))
-        {
-          printf("stack underflow1\n");
-          ret = -EOVERFLOW;
-          break;
-        }
-        int64_t cnt = get_i64(stack); // Count of local vars
-        if (cnt < 0 || (size_t)cnt+3 > stack.size())
-        {
-          printf("stack underflow2 %lld\n", (long long)cnt);
-          ret = -EOVERFLOW;
-          break;
-        }
-        memblock mb = stack.back();
-        stack.pop_back();
-        for (int i = 0; i < cnt; i++)
-        {
-          stack.pop_back(); // Clear local variable block
-        }
-        jmp = get_reg(stack);
-        if (jmp == -1)
-        {
-          jmp = microsz;
-        }
-        if (unlikely(jmp < 0 || (size_t)jmp > microsz))
-        {
-          printf("microprogram overflow: jmp %lld\n", (long long)jmp);
-          ret = -EFAULT;
-          break;
-        }
-        bp = get_reg(stack);
-        printf("retex, stack size %zu w/o retval\n", stack.size());
-        if (mb.type == memblock::T_V)
-        {
-          std::cout << "[ ";
-          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
-          {
-            memblock mb2 = *it;
-            if (mb2.type == memblock::T_V)
-            {
-              std::cout << "[ ";
-              for (auto it2 = mb2.u.v->begin(); it2 != mb2.u.v->end(); it2++)
-              {
-                memblock mb3 = *it2;
-                if (mb3.type == memblock::T_S)
-                {
-                  std::cout << *mb3.u.s << ", ";
-                }
-                else
-                {
-                  std::cout << "UNKNOWN, ";
-                }
-              }
-              std::cout << "], ";
-            }
-            else
-            {
-              std::cout << "UNKNOWN, ";
-            }
-          }
-          std::cout << "];";
-          std::cout << std::endl;
-        }
-        else if (mb.type == memblock::T_D)
-        {
-          std::cout << "double: " << mb.u.d << std::endl;
-        }
-        else
-        {
-          std::cout << "UNKNOWN: " << mb.type << std::endl;
-        }
-        ip = jmp;
-        stack.push_back(mb);
-        break;
-      }
       case STIRBCE_OPCODE_RET:
       {
         printf("ret1, stack size %zu\n", stack.size());
@@ -1639,17 +1561,6 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack.back().type = memblock::T_F;
-        break;
-      }
-      case STIRBCE_OPCODE_BOOLEANIFY:
-      {
-        if (unlikely(stack.size() < 1))
-        {
-          printf("stack underflow\n");
-          ret = -EOVERFLOW;
-          break;
-        }
-        stack.push_back(memblock(get_dbl(stack) ? true : false));
         break;
       }
       case STIRBCE_OPCODE_GETSCOPE_DYN:
