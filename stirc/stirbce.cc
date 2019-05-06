@@ -69,6 +69,7 @@ int lua_makelexcall(lua_State *lua) {
   }
 
 
+  stack.push_back(-1); // base pointer
   stack.push_back(-1); // return address
   engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
 
@@ -135,6 +136,7 @@ int lua_getlexval(lua_State *lua) {
       std::cerr << "arg count mismatch: " << d << " vs " << 0.0 << std::endl;
       std::terminate();
     }
+    stack.push_back(-1); // base pointer
     stack.push_back(-1); // return address
     engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
     if (stack.size() != 1)
@@ -299,7 +301,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
   // 0.53 us / execution
   int ret = 0;
   int64_t val, val2, condition, jmp;
-  size_t bp;
+  size_t bp = stack.size();
   const size_t stackbound = 131072;
 
   ret = -EAGAIN;
@@ -369,7 +371,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
       }
       case STIRBCE_OPCODE_CALL_IF_FUN:
       {
-        if (unlikely(stack.size() < 1))
+        if (unlikely(stack.size() < 1 || stack.size() >= stackbound))
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
@@ -409,7 +411,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
             ret = -EINVAL;
             break;
           }
+          stack.push_back(bp);
           stack.push_back(ip);
+          bp = stack.size();
           ip = jmp + 9;
         }
         break;
@@ -462,7 +466,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EINVAL;
           break;
         }
+        stack.push_back(bp);
         stack.push_back(ip);
+        bp = stack.size();
         ip = jmp + 9;
         break;
       }
@@ -490,14 +496,14 @@ int engine(const uint8_t *microprogram, size_t microsz,
       case STIRBCE_OPCODE_RETEX:
       {
         printf("retex1, stack size %zu\n", stack.size());
-        if (unlikely(stack.size() < 2))
+        if (unlikely(stack.size() < 4))
         {
           printf("stack underflow1\n");
           ret = -EOVERFLOW;
           break;
         }
         int64_t cnt = get_i64(stack); // Count of local vars
-        if (cnt < 0 || (size_t)cnt+2 > stack.size())
+        if (cnt < 0 || (size_t)cnt+3 > stack.size())
         {
           printf("stack underflow2 %lld\n", (long long)cnt);
           ret = -EOVERFLOW;
@@ -520,6 +526,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EFAULT;
           break;
         }
+        bp = get_i64(stack);
         printf("retex, stack size %zu w/o retval\n", stack.size());
         if (mb.type == memblock::T_V)
         {
@@ -567,7 +574,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
       case STIRBCE_OPCODE_RET:
       {
         printf("ret1, stack size %zu\n", stack.size());
-        if (unlikely(stack.size() < 2))
+        if (unlikely(stack.size() < 3))
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
@@ -586,6 +593,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EFAULT;
           break;
         }
+        bp = get_i64(stack);
         printf("ret, stack size %zu w/o retval\n", stack.size());
         if (mb.type == memblock::T_V)
         {
