@@ -311,6 +311,18 @@ int engine(const uint8_t *microprogram, size_t microsz,
     printf("ip %zu instr %d\n", ip-1, (int)instr);
     switch (instr)
     {
+      case STIRBCE_OPCODE_TYPE:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        stack.push_back((double)(int)mb.type);
+        break;
+      }
       case STIRBCE_OPCODE_JMP:
         if (unlikely(stack.size() < 1))
         {
@@ -1091,6 +1103,25 @@ int engine(const uint8_t *microprogram, size_t microsz,
         stack.push_back(mbar.u.m->size());
         break;
       }
+      case STIRBCE_OPCODE_DICTDEL:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock str = stack.back(); stack.pop_back();
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_M || str.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        mbar.u.m->erase(*str.u.s);
+        break;
+      }
       case STIRBCE_OPCODE_DICTSET:
       {
         if (unlikely(stack.size() < 3))
@@ -1109,6 +1140,58 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         (*mbar.u.m)[*str.u.s] = mbit;
+        break;
+      }
+      case STIRBCE_OPCODE_DICTNEXT_SAFE:
+      {
+        if (unlikely(stack.size() < 2 || stack.size() >= stackbound))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock str = stack.back(); stack.pop_back(); // lastkey
+        memblock mbar = stack.back();
+        if (mbar.type != memblock::T_M)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (str.type == memblock::T_N)
+        {
+          auto it = mbar.u.m->begin();
+          if (it != mbar.u.m->end())
+          {
+            stack.push_back(memblock(new std::string(it->first))); // key
+            stack.push_back(it->second); // value
+          }
+          else
+          {
+            stack.push_back(memblock()); // key
+            stack.push_back(memblock()); // value
+          }
+        }
+        else if (str.type == memblock::T_S)
+        {
+          auto it = mbar.u.m->upper_bound(*str.u.s);
+          if (it != mbar.u.m->end())
+          {
+            stack.push_back(memblock(new std::string(it->first))); // key
+            stack.push_back(it->second); // value
+          }
+          else
+          {
+            stack.push_back(memblock()); // key
+            stack.push_back(memblock()); // value
+          }
+        }
+        else
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
         break;
       }
       case STIRBCE_OPCODE_DICTGET:
@@ -1235,6 +1318,25 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack.push_back(mbar.u.v->at(nr));
+        break;
+      }
+      case STIRBCE_OPCODE_LISTPOP:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mbar.u.v->back());
+        mbar.u.v->pop_back();
         break;
       }
       case STIRBCE_OPCODE_APPEND_MAINTAIN:
@@ -1435,6 +1537,96 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack.push_back(memblock(new std::string(*mbbase.u.s + *mbextend.u.s)));
+        break;
+      }
+      case STIRBCE_OPCODE_STRSUB:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t a = get_i64(stack);
+        int64_t b = get_i64(stack);
+        memblock mbbase = stack.back(); stack.pop_back();
+        if (mbbase.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (b < a ||
+            a < 0 || (size_t)a > mbbase.u.s->length() ||
+            b < 0 || (size_t)b > mbbase.u.s->length())
+        {
+          printf("string index error\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(new std::string(mbbase.u.s->substr(a, b-a))));
+        break;
+      }
+      case STIRBCE_OPCODE_STR_FROMCHR:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t a = get_i64(stack);
+        if (a < 0 || a > 255)
+        {
+          printf("string index error\n");
+          ret = -EINVAL;
+          break;
+        }
+        char buf[2] = {(char)(unsigned char)a, 0};
+        stack.push_back(memblock(new std::string(buf, 1)));
+        break;
+      }
+      case STIRBCE_OPCODE_STRGET:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t a = get_i64(stack);
+        memblock mbbase = stack.back(); stack.pop_back();
+        if (mbbase.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (a < 0 || (size_t)a >= mbbase.u.s->length())
+        {
+          printf("string index error\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock((double)(unsigned char)(*mbbase.u.s)[a]));
+        break;
+      }
+      case STIRBCE_OPCODE_STRLEN:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbbase = stack.back(); stack.pop_back();
+        if (mbbase.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mbbase.u.s->length());
         break;
       }
       case STIRBCE_OPCODE_SCOPEVAR_SET:
