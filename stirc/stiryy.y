@@ -256,6 +256,8 @@ expr NEWLINE
   stiryy_add_double(stiryy, oldloc);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_STRINGTAB);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_CALL_IF_FUN);
+  // FIXME what if it's not a list?
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_DUP_NONRECURSIVE);
 /*
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUNIFY);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);

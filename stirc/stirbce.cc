@@ -1181,6 +1181,37 @@ int engine(const uint8_t *microprogram, size_t microsz,
         mbar.u.v->at(nr) = mbit;
         break;
       }
+      case STIRBCE_OPCODE_DUP_NONRECURSIVE:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V && mbar.type != memblock::T_M)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (mbar.type == memblock::T_V)
+        {
+          memblock mbar2(new std::vector<memblock>());
+          std::copy(mbar.u.v->begin(), mbar.u.v->end(), std::back_inserter(*mbar2.u.v));
+          stack.push_back(mbar2);
+        }
+        else if (mbar.type == memblock::T_M)
+        {
+          std::terminate(); // FIXME implement
+        }
+        else
+        {
+          std::terminate();
+        }
+        break;
+      }
       case STIRBCE_OPCODE_LISTGET:
       {
         if (unlikely(stack.size() < 2))
