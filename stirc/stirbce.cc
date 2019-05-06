@@ -876,6 +876,12 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
+        if ((size_t)val < bp)
+        {
+          printf("trying to access stack under bp\n");
+          ret = -EPERM;
+          break;
+        }
         memblock mb = stack[val];
         stack.push_back(mb);
         break;
@@ -903,6 +909,12 @@ int engine(const uint8_t *microprogram, size_t microsz,
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
+          break;
+        }
+        if ((size_t)val < bp)
+        {
+          printf("trying to access stack under bp\n");
+          ret = -EPERM;
           break;
         }
         stack[val] = mb;
