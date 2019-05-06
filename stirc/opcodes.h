@@ -356,6 +356,12 @@ class stringtab {
   public:
     std::vector<memblock> blocks;
     std::map<std::string, size_t> idxs;
+    size_t addNonString(memblock mb)
+    {
+      size_t oldsz = blocks.size();
+      blocks.push_back(mb);
+      return oldsz;
+    }
     size_t add(const std::string &s)
     {
       if (idxs.find(s) != idxs.end())

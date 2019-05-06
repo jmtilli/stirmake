@@ -675,10 +675,12 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funl
   }
   scope *sc = mb.u.sc;
   std::string str(symbol);
-  if (sc->vars.find(str) != sc->vars.end() &&
-      sc->vars[str].type == memblock::T_F)
+  if (sc->vars.find(str) != sc->vars.end()
+      //&& sc->vars[str].type == memblock::T_F
+     )
   {
-    old = sc->vars[str].u.d;
+    old = st.addNonString(sc->vars[str]);
+    //old = sc->vars[str].u.d;
   }
   sc->vars[str] = memblock(funloc, true);
   return old;

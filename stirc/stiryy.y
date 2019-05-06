@@ -245,7 +245,6 @@ expr NEWLINE
 {
   size_t funloc = stiryy->bytesz;
   size_t oldloc = stiryy_add_fun_sym(stiryy, $1, funloc);
-  // FIXME what if it's not function?
   if (oldloc == (size_t)-1)
   {
     printf("Can't find old symbol function\n");
@@ -255,10 +254,14 @@ expr NEWLINE
   stiryy_add_double(stiryy, 0);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
   stiryy_add_double(stiryy, oldloc);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_STRINGTAB);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_CALL_IF_FUN);
+/*
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUNIFY);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
   stiryy_add_double(stiryy, 0); // arg cnt
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_CALL);
+*/
 }
 expr NEWLINE
 {
