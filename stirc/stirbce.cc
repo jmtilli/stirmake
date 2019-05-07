@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <math.h>
 #include "opcodes.h"
 #include "engine.h"
@@ -336,6 +337,227 @@ class WordIterator {
       return res;
     }
 };
+
+std::string strfmt(const std::string &fmt, std::vector<memblock> argsrev)
+{
+  std::ostringstream ress;
+  size_t curpos = 0;
+  for (;;)
+  {
+    size_t newposstart = fmt.find("%", curpos);
+    std::ostringstream tmpss;
+    std::ostringstream tmpss2;
+    long int w = -1;
+    long int prec = -1;
+    if (newposstart == std::string::npos)
+    {
+      ress << fmt.substr(curpos);
+      break;
+    }
+    ress << fmt.substr(curpos, newposstart - curpos);
+    curpos = newposstart;
+    if (curpos >= fmt.size() - 1)
+    {
+      throw std::invalid_argument("invalid format string");
+    }
+    if (argsrev.empty())
+    {
+      throw std::invalid_argument("too few arguments");
+    }
+    curpos++;
+    if (isdigit(fmt[curpos]))
+    {
+      char *endptr;
+      w = strtol(&fmt[curpos], &endptr, 10);
+      curpos += (endptr - &fmt[curpos]);
+    }
+    if (fmt[curpos] == '.')
+    {
+      curpos++;
+      if (!isdigit(fmt[curpos]))
+      {
+        throw std::invalid_argument("invalid format string");
+      }
+      char *endptr;
+      prec = strtol(&fmt[curpos], &endptr, 10);
+      curpos += (endptr - &fmt[curpos]);
+    }
+    // FIXME verify sanity of format
+    switch (fmt[curpos])
+    {
+      case 'E':
+        tmpss << std::uppercase;
+      case 'e':
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        tmpss << std::scientific;
+        if (prec >= 0)
+        {
+          tmpss << std::setprecision(prec);
+        }
+        tmpss << argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss.str();
+        break;
+      case 'f':
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        tmpss << std::fixed;
+        if (prec >= 0)
+        {
+          tmpss << std::setprecision(prec);
+        }
+        tmpss << argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss.str();
+        break;
+      case 'g':
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setprecision(prec);
+        }
+        tmpss << argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss.str();
+        break;
+      case 'd':
+      case 'i':
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setfill('0') << std::setw(prec);
+        }
+        tmpss << (int64_t)argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss.str();
+        break;
+      case 'c':
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setfill(' ') << std::setw(prec);
+        }
+        tmpss << (char)argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss2.str();
+        break;
+      case 'X': // hex uppercase
+        tmpss << std::uppercase;
+      case 'x': // hex
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setfill('0') << std::setw(prec);
+        }
+        tmpss << std::hex << (uint64_t)argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss2.str();
+        break;
+      case 'o': // octal
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setfill('0') << std::setw(prec);
+        }
+        tmpss << std::oct << (uint64_t)argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss2.str();
+        break;
+      case 'u':
+        if (argsrev.back().type != memblock::T_D)
+        {
+          throw std::invalid_argument("arg not numeric");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setfill('0') << std::setw(prec);
+        }
+        tmpss << (uint64_t)argsrev.back().u.d;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss2.str();
+        break;
+      case 's':
+        if (argsrev.back().type != memblock::T_S)
+        {
+          throw std::invalid_argument("arg not string");
+        }
+        if (prec >= 0)
+        {
+          tmpss << std::setfill('0') << std::setw(prec);
+        }
+        tmpss << *argsrev.back().u.s;
+        if (w >= 0)
+        {
+          tmpss2 << std::setw(w);
+        }
+        tmpss2 << tmpss.str();
+        ress << tmpss2.str();
+        break;
+      case 'a':
+        throw std::invalid_argument("unsupported %%a format, TODO implement");
+      case 'A':
+        throw std::invalid_argument("unsupported %%A format, TODO implement");
+      case 'q':
+        throw std::invalid_argument("unsupported %%q format, TODO implement");
+      default:
+        throw std::invalid_argument("unsupported format type");
+    }
+    argsrev.pop_back();
+  }
+  return ress.str();
+}
 
 std::string strreplace(const std::string &haystack, const std::string &needle, const std::string &replacement)
 {
@@ -744,6 +966,38 @@ int engine(lua_State *lua, memblock scope,
           bp = stack.size() - 2 - 0; // 0 arguments, 2 pushed registers in stack
           ip = jmp + 9;
         }
+        break;
+      }
+      case STIRBCE_OPCODE_STRFMT:
+      {
+        int64_t varargcnt;
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        varargcnt = get_i64(stack);
+        if (varargcnt < 0)
+        {
+          printf("negative argument count\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (unlikely(stack.size() < 1 + (size_t)varargcnt))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::vector<memblock> argsrev;
+        for (int64_t idx = 0; idx < varargcnt; idx++)
+        {
+          argsrev.push_back(stack.back());
+          stack.pop_back();
+        }
+        std::string fmtstr = get_str(stack);
+        stack.push_back(memblock(new std::string(strfmt(fmtstr, argsrev))));
         break;
       }
       case STIRBCE_OPCODE_CALL:
