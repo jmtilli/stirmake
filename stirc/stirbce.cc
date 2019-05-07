@@ -337,6 +337,55 @@ class WordIterator {
     }
 };
 
+std::string path_simplify(const std::string &base)
+{
+  bool isabs = false;
+  std::vector<std::string> components;
+  std::string res;
+  if (base.length() == 0)
+  {
+    throw std::invalid_argument("invalid path");
+  }
+  if (base[0] == '/')
+  {
+    isabs = true;
+  }
+  for (auto it = WordIterator(base, "/"); !it.end(); it++)
+  {
+    if (*it == ".")
+    {
+      continue;
+    }
+    if (*it == "..")
+    {
+      if (components.size() > 0 && components.back() != "..")
+      {
+        components.pop_back();
+      }
+      else if (!isabs)
+      {
+        components.push_back(*it);
+      }
+      continue;
+    }
+    components.push_back(*it);
+  }
+  if (isabs)
+  {
+    res += "/";
+  }
+  for (auto it = components.begin(); it != components.end(); it++)
+  {
+    if (it != components.begin())
+    {
+      res += "/";
+    }
+    res += *it;
+  }
+  return res;
+}
+
+
 size_t wordcnt(const std::string &base, const std::string &sep)
 {
   size_t ret = 0;
@@ -2431,6 +2480,24 @@ int engine(lua_State *lua, memblock scope,
           break;
         }
         stack.push_back(wordcnt(*mborig.u.s, *mbspec.u.s));
+        break;
+      }
+      case STIRBCE_OPCODE_PATH_SIMPLIFY:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mborig = stack.back(); stack.pop_back();
+        if (mborig.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(new std::string(path_simplify(*mborig.u.s))));
         break;
       }
       case STIRBCE_OPCODE_STRWORD:
