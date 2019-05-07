@@ -337,6 +337,25 @@ class WordIterator {
     }
 };
 
+std::string strreplace(const std::string &haystack, const std::string &needle, const std::string &replacement)
+{
+  std::ostringstream ress;
+  size_t curpos = 0;
+  for (;;)
+  {
+    size_t newposstart = haystack.find(needle, curpos);
+    if (newposstart == std::string::npos)
+    {
+      ress << haystack.substr(curpos);
+      break;
+    }
+    ress << haystack.substr(curpos, newposstart - curpos);
+    ress << replacement;
+    curpos = newposstart + needle.length();
+  }
+  return ress.str();
+}
+
 std::string path_simplify(const std::string &base)
 {
   bool isabs = false;
@@ -2461,6 +2480,26 @@ int engine(lua_State *lua, memblock scope,
           oss << *mbstr.u.s;
         }
         stack.push_back(memblock(new std::string(oss.str())));
+        break;
+      }
+      case STIRBCE_OPCODE_STRGSUB:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbreplace = stack.back(); stack.pop_back();
+        memblock mbfind = stack.back(); stack.pop_back();
+        memblock mborig = stack.back(); stack.pop_back();
+        if (mbfind.type != memblock::T_S || mborig.type != memblock::T_S || mbreplace.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(new std::string(strreplace(*mborig.u.s, *mbfind.u.s, *mbreplace.u.s))));
         break;
       }
       case STIRBCE_OPCODE_STRWORDCNT:
