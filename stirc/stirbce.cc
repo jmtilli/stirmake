@@ -291,6 +291,19 @@ bool endswith(const std::string &s1, std::string os)
   }
   return true;
 }
+std::string strstrip(const std::string &orig, const std::string &specials)
+{
+  size_t pos2 = orig.find_last_not_of(" \t");
+  size_t pos1 = orig.find_first_not_of(" \t");
+  if (pos2 != std::string::npos && pos1 != std::string::npos)
+  {
+    return orig.substr(0, pos2+1).substr(pos1);
+  }
+  else
+  {
+    return "";
+  }
+}
 double mystrstr(const std::string &haystack, const std::string &needle)
 {
   size_t off;
@@ -2329,6 +2342,25 @@ int engine(const uint8_t *microprogram, size_t microsz,
           oss << *mbstr.u.s;
         }
         stack.push_back(memblock(new std::string(oss.str())));
+        break;
+      }
+      case STIRBCE_OPCODE_STRSTRIP:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbspec = stack.back(); stack.pop_back();
+        memblock mborig = stack.back(); stack.pop_back();
+        if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(new std::string(strstrip(*mborig.u.s, *mbspec.u.s))));
         break;
       }
       case STIRBCE_OPCODE_STRSTR:
