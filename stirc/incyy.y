@@ -1,3 +1,4 @@
+/*
 %code requires {
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #define YY_TYPEDEF_YY_SCANNER_T
@@ -8,8 +9,14 @@ typedef void *yyscan_t;
 }
 
 %define api.prefix {incyy}
+*/
 
 %{
+
+/*
+#define YYSTYPE INCYYSTYPE
+#define YYLTYPE INCYYLTYPE
+*/
 
 #include "incyy.h"
 #include "yyutils.h"
@@ -17,9 +24,12 @@ typedef void *yyscan_t;
 #include "incyy.lex.h"
 #include <arpa/inet.h>
 
-void incyyerror(YYLTYPE *yylloc, yyscan_t scanner, struct incyy *incyy, const char *str)
+void incyyerror(/*YYLTYPE *yylloc, */yyscan_t scanner, struct incyy *incyy, const char *str)
 {
-        fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
+        //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
+        // FIXME we need better location info!
+        fprintf(stderr, "inc error: %s at line %d\n", str, incyyget_lineno(scanner));
+	abort();
 }
 
 int incyywrap(yyscan_t scanner)
@@ -33,25 +43,35 @@ int incyywrap(yyscan_t scanner)
 %lex-param {yyscan_t scanner}
 %parse-param {yyscan_t scanner}
 %parse-param {struct incyy *incyy}
+/*
 %locations
+*/
 
 %union {
   char *s;
   struct escaped_string str;
 }
 
+/*
 %destructor { free ($$); } FREEFORM_TOKEN
+*/
 
 %token NEWLINE
 
 %token COLON
-%token FREEFORM_TOKEN
+%token <s> FREEFORM_TOKEN
 
 %token ERROR_TOK
 
+/*
 %type<s> FREEFORM_TOKEN
+*/
+
+%start st
 
 %%
+
+st: incrules ;
 
 incrules:
 | incrules incrule

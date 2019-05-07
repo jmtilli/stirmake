@@ -1,3 +1,4 @@
+/*
 %code requires {
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #define YY_TYPEDEF_YY_SCANNER_T
@@ -8,8 +9,14 @@ typedef void *yyscan_t;
 }
 
 %define api.prefix {stiryy}
+*/
 
 %{
+
+/*
+#define YYSTYPE STIRYYSTYPE
+#define YYLTYPE STIRYYLTYPE
+*/
 
 #include "stiryy.h"
 #include "yyutils.h"
@@ -18,9 +25,11 @@ typedef void *yyscan_t;
 #include "opcodesonly.h"
 #include <arpa/inet.h>
 
-void stiryyerror(YYLTYPE *yylloc, yyscan_t scanner, struct stiryy *stiryy, const char *str)
+void stiryyerror(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, const char *str)
 {
-        fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
+        //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
+        // FIXME we need better location info!
+        fprintf(stderr, "stir error: %s at line %d col %d\n", str, stiryyget_lineno(scanner), stiryyget_column(scanner));
 }
 
 int stiryywrap(yyscan_t scanner)
@@ -34,7 +43,7 @@ int stiryywrap(yyscan_t scanner)
 %lex-param {yyscan_t scanner}
 %parse-param {yyscan_t scanner}
 %parse-param {struct stiryy *stiryy}
-%locations
+/* %locations */
 
 %union {
   int i;
@@ -56,14 +65,16 @@ int stiryywrap(yyscan_t scanner)
   } tokenopts;
 }
 
+/*
 %destructor { free ($$.str); } STRING_LITERAL
 %destructor { free ($$); } FREEFORM_TOKEN
 %destructor { free ($$); } VARREF_LITERAL
 %destructor { free ($$); } SHELL_COMMAND
 %destructor { free ($$); } PERCENTLUA_LITERAL
+*/
 
 
-%token PERCENTLUA_LITERAL
+%token <s> PERCENTLUA_LITERAL
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
 %token OPEN_BRACE
@@ -71,7 +82,7 @@ int stiryywrap(yyscan_t scanner)
 %token OPEN_PAREN
 %token CLOSE_PAREN
 
-%token SHELL_COMMAND
+%token <s> SHELL_COMMAND
 %token ATTAB
 
 %token NEWLINE
@@ -84,10 +95,10 @@ int stiryywrap(yyscan_t scanner)
 %token QMCOLONEQUALS
 %token COLON
 %token COMMA
-%token STRING_LITERAL
-%token NUMBER
-%token VARREF_LITERAL
-%token FREEFORM_TOKEN
+%token <str> STRING_LITERAL
+%token <d> NUMBER
+%token <s> VARREF_LITERAL
+%token <s> FREEFORM_TOKEN
 %token MAYBE_CALL
 %token LT
 %token GT
@@ -145,17 +156,15 @@ int stiryywrap(yyscan_t scanner)
 
 %token ERROR_TOK
 
-%type<str> STRING_LITERAL
-%type<s> FREEFORM_TOKEN
-%type<s> PERCENTLUA_LITERAL
-%type<s> VARREF_LITERAL
-%type<s> SHELL_COMMAND
-%type<d> NUMBER
 %type<d> value
 %type<d> valuelistentry
 %type<d> maybeqmequals
 
+%start st
+
 %%
+
+st: stirrules;
 
 stirrules:
 | stirrules stirrule

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "incyy.h"
+#include "stiryy.h"
 
 #ifdef __cplusplus
 extern "C" {

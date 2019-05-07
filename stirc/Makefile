@@ -121,7 +121,8 @@ STIRYY.LEX.INTERMEDIATE: stiryy.l Makefile
 	touch STIRYY.LEX.INTERMEDIATE
 STIRYY.TAB.INTERMEDIATE: stiryy.y Makefile
 	mkdir -p intermediatestore
-	bison --defines=intermediatestore/stiryy.tab.h --output=intermediatestore/stiryy.tab.c stiryy.y
+	byacc -d -p stiryy -b stiryy stiryy.y
+	mv stiryy.tab.[ch] intermediatestore/
 	touch STIRYY.TAB.INTERMEDIATE
 stiryy.lex.c: STIRYY.LEX.INTERMEDIATE Makefile
 	cp intermediatestore/stiryy.lex.c .
@@ -143,7 +144,8 @@ INCYY.LEX.INTERMEDIATE: incyy.l Makefile
 	touch INCYY.LEX.INTERMEDIATE
 INCYY.TAB.INTERMEDIATE: incyy.y Makefile
 	mkdir -p intermediatestore
-	bison --defines=intermediatestore/incyy.tab.h --output=intermediatestore/incyy.tab.c incyy.y
+	byacc -d -p incyy -b incyy incyy.y
+	mv incyy.tab.[ch] intermediatestore/
 	touch INCYY.TAB.INTERMEDIATE
 incyy.lex.c: INCYY.LEX.INTERMEDIATE Makefile
 	cp intermediatestore/incyy.lex.c .

@@ -10,16 +10,21 @@
 #include "yyutils.h"
 #include "incyy.tab.h"
 
+/*
 #define YYSTYPE INCYYSTYPE
 #define YYLTYPE INCYYLTYPE
+*/
 
+/*
 #define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno; \
   yylloc->first_column = yycolumn; yylloc->last_column = yycolumn+yyleng-1; \
   yycolumn += yyleng;
+*/
+#define YY_USER_ACTION yycolumn += yyleng;
 
 %}
 
-%option reentrant bison-bridge bison-locations
+%option reentrant bison-bridge
 
 %%
   int last_newline_true = 1;
@@ -89,6 +94,8 @@
     }
   }
   *cp++ = '\0';
+
+  printf("Returning free-form token\n");
 
   return FREEFORM_TOKEN;
 }

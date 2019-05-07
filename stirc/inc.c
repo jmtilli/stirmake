@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-  FILE *f = fopen("depfile.d", "r");
+  FILE *f = fopen("depfile.dep", "r");
   struct incyy incyy = {};
   if (!f)
   {
