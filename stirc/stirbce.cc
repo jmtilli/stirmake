@@ -1402,7 +1402,8 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         else if (mbar.type == memblock::T_M)
         {
-          std::terminate(); // FIXME implement
+          memblock mbd2(new std::map<std::string, memblock>(*mbar.u.m));
+          stack.push_back(mbd2);
         }
         else
         {
