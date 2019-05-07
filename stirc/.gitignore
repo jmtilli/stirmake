@@ -21,3 +21,5 @@
 /arraytest
 /luatest
 /cctest
+/streamtest
+/globtest

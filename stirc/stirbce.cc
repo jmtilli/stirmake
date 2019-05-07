@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <memory>
 #include <math.h>
+#include <glob.h>
 #include "opcodes.h"
 #include "engine.h"
 #include "errno.h"
@@ -2879,6 +2880,33 @@ int engine(lua_State *lua, memblock scope,
           break;
         }
         stack.push_back(memblock(new std::string(wordget(*mborig.u.s, *mbspec.u.s, wordidx))));
+        break;
+      }
+      case STIRBCE_OPCODE_GLOB:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mborig = stack.back(); stack.pop_back();
+        memblock mbar(new std::vector<memblock>());
+        if (mborig.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        glob_t globbuf;
+        globbuf.gl_offs = 0;
+        glob(mborig.u.s->c_str(), 0, NULL, &globbuf);
+        for (size_t i = 0; i < globbuf.gl_pathc; i++)
+        {
+          mbar.u.v->push_back(memblock(new std::string(globbuf.gl_pathv[i])));
+        }
+        globfree(&globbuf);
+        stack.push_back(mbar);
         break;
       }
       case STIRBCE_OPCODE_STRWORDLIST:
