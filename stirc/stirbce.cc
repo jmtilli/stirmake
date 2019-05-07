@@ -3134,22 +3134,44 @@ int engine(lua_State *lua, memblock scope,
         std::unique_ptr<std::iostream> ptr;
         int64_t mode = get_i64(stack);
         std::string name = get_str(stack);
-        if (mode == 0)
+        std::ios_base::openmode cppmode;
+        if ((mode&3) == 1)
         {
-          ptr.reset(new std::fstream(name.c_str(), std::ios_base::in));
+          cppmode = std::ios_base::in;
         }
-        else if (mode == 1)
+        else if ((mode&3) == 2)
         {
-          ptr.reset(new std::fstream(name.c_str(), std::ios_base::out));
+          cppmode = std::ios_base::out;
         }
-        else if (mode == 2)
+        else if ((mode&3) == 3)
         {
-          ptr.reset(new std::fstream(name.c_str(), std::ios_base::in | std::ios_base::out));
+          cppmode = std::ios_base::in | std::ios_base::out;
         }
         else
         {
           std::terminate();
         }
+        if (mode&(1<<2))
+        {
+          if ((mode&3) == 1)
+          {
+            printf("can't append to read-only file\n");
+            ret = -EOVERFLOW;
+            break;
+          }
+          cppmode |= std::ios_base::app;
+        }
+        if (mode&(1<<3))
+        {
+          if ((mode&3) == 1)
+          {
+            printf("can't truncate read-only file\n");
+            ret = -EOVERFLOW;
+            break;
+          }
+          cppmode |= std::ios_base::trunc;
+        }
+        ptr.reset(new std::fstream(name.c_str(), cppmode));
         if (!ptr->good())
         {
           printf("can't open file\n");
