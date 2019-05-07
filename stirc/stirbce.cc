@@ -183,6 +183,9 @@ memblock::~memblock()
   {
     switch (type)
     {
+      case T_IOS:
+        delete u.ios;
+        break;
       case T_SC:
         delete u.sc;
         break;
