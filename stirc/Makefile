@@ -115,45 +115,35 @@ stiryy.lex.o: stiryy.tab.h stiryy.lex.h
 stiryy.tab.d: stiryy.tab.h stiryy.lex.h
 stiryy.tab.o: stiryy.tab.h stiryy.lex.h
 
-STIRYY.LEX.INTERMEDIATE: stiryy.l Makefile
-	mkdir -p intermediatestore
-	flex --outfile=intermediatestore/stiryy.lex.c --header-file=intermediatestore/stiryy.lex.h stiryy.l
-	touch STIRYY.LEX.INTERMEDIATE
-STIRYY.TAB.INTERMEDIATE: stiryy.y Makefile
-	mkdir -p intermediatestore
-	byacc -d -p stiryy -b stiryy stiryy.y
-	mv stiryy.tab.[ch] intermediatestore/
-	touch STIRYY.TAB.INTERMEDIATE
-stiryy.lex.c: STIRYY.LEX.INTERMEDIATE Makefile
-	cp intermediatestore/stiryy.lex.c .
-stiryy.lex.h: STIRYY.LEX.INTERMEDIATE Makefile
-	cp intermediatestore/stiryy.lex.h .
-stiryy.tab.c: STIRYY.TAB.INTERMEDIATE Makefile
-	cp intermediatestore/stiryy.tab.c .
-stiryy.tab.h: STIRYY.TAB.INTERMEDIATE Makefile
-	cp intermediatestore/stiryy.tab.h .
+stiryy.lex.c: stiryy.l Makefile
+	flex --outfile=stiryy.lex.c --header-file=/dev/null stiryy.l
+stiryy.lex.h: stiryy.l Makefile
+	flex --outfile=/dev/null --header-file=stiryy.lex.h stiryy.l
+stiryy.tab.c: stiryy.y Makefile
+	byacc -d -p stiryy -b stiryy -o .tmp.stiryy.tab.c stiryy.y
+	rm .tmp.stiryy.tab.h
+	mv .tmp.stiryy.tab.c stiryy.tab.c
+stiryy.tab.h: stiryy.y Makefile
+	byacc -d -p stiryy -b stiryy -o .tmp.stiryy.tab.c stiryy.y
+	rm .tmp.stiryy.tab.c
+	mv .tmp.stiryy.tab.h stiryy.tab.h
 
 incyy.lex.d: incyy.tab.h incyy.lex.h
 incyy.lex.o: incyy.tab.h incyy.lex.h
 incyy.tab.d: incyy.tab.h incyy.lex.h
 incyy.tab.o: incyy.tab.h incyy.lex.h
 
-INCYY.LEX.INTERMEDIATE: incyy.l Makefile
-	mkdir -p intermediatestore
-	flex --outfile=intermediatestore/incyy.lex.c --header-file=intermediatestore/incyy.lex.h incyy.l
-	touch INCYY.LEX.INTERMEDIATE
-INCYY.TAB.INTERMEDIATE: incyy.y Makefile
-	mkdir -p intermediatestore
-	byacc -d -p incyy -b incyy incyy.y
-	mv incyy.tab.[ch] intermediatestore/
-	touch INCYY.TAB.INTERMEDIATE
-incyy.lex.c: INCYY.LEX.INTERMEDIATE Makefile
-	cp intermediatestore/incyy.lex.c .
-incyy.lex.h: INCYY.LEX.INTERMEDIATE Makefile
-	cp intermediatestore/incyy.lex.h .
-incyy.tab.c: INCYY.TAB.INTERMEDIATE Makefile
-	cp intermediatestore/incyy.tab.c .
-incyy.tab.h: INCYY.TAB.INTERMEDIATE Makefile
-	cp intermediatestore/incyy.tab.h .
+incyy.lex.c: incyy.l Makefile
+	flex --outfile=incyy.lex.c --header-file=/dev/null incyy.l
+incyy.lex.h: incyy.l Makefile
+	flex --outfile=/dev/null --header-file=incyy.lex.h incyy.l
+incyy.tab.c: incyy.y Makefile
+	byacc -d -p incyy -b incyy -o .tmp.incyy.tab.c incyy.y
+	rm .tmp.incyy.tab.h
+	mv .tmp.incyy.tab.c incyy.tab.c
+incyy.tab.h: incyy.y Makefile
+	byacc -d -p incyy -b incyy -o .tmp.incyy.tab.c incyy.y
+	rm .tmp.incyy.tab.c
+	mv .tmp.incyy.tab.h incyy.tab.h
 
 -include *.d
