@@ -291,6 +291,77 @@ bool endswith(const std::string &s1, std::string os)
   }
   return true;
 }
+
+class WordIterator {
+  public:
+    std::string base;
+    std::string sep;
+    size_t idx;
+
+    WordIterator(std::string base, std::string sep):
+      base(base), sep(sep), idx(0)
+    {
+      idx = base.find_first_not_of(sep, idx);
+    }
+
+    std::string operator*(void)
+    {
+      size_t idx2 = base.find_first_of(sep, idx);
+      if (idx2 == std::string::npos)
+      {
+        return base.substr(idx);
+      }
+      return base.substr(idx, idx2 - idx);
+    }
+
+    bool end()
+    {
+      return idx == std::string::npos;
+    }
+
+    const WordIterator &operator++(void) // prefix
+    {
+      idx = base.find_first_of(sep, idx);
+      if (idx == std::string::npos)
+      {
+        return *this;
+      }
+      idx = base.find_first_not_of(sep, idx);
+      return *this;
+    }
+    WordIterator operator++(int) // postfix
+    {
+      WordIterator res(*this);
+      ++(*this);
+      return res;
+    }
+};
+
+size_t wordcnt(const std::string &base, const std::string &sep)
+{
+  size_t ret = 0;
+  for (auto it = WordIterator(base, sep); !it.end(); it++)
+  {
+    ret++;
+  }
+  return ret;
+}
+std::string wordget(const std::string &base, const std::string &sep, size_t word)
+{
+  size_t ret = 0;
+  for (auto it = WordIterator(base, sep); !it.end(); it++)
+  {
+    if (ret == word)
+    {
+      return *it;
+    }
+    ret++;
+  }
+  throw std::out_of_range("word index");
+}
+
+
+
 std::string strstrip(const std::string &orig, const std::string &specials)
 {
   size_t pos2 = orig.find_last_not_of(" \t");
@@ -2341,6 +2412,69 @@ int engine(lua_State *lua, memblock scope,
           oss << *mbstr.u.s;
         }
         stack.push_back(memblock(new std::string(oss.str())));
+        break;
+      }
+      case STIRBCE_OPCODE_STRWORDCNT:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbspec = stack.back(); stack.pop_back();
+        memblock mborig = stack.back(); stack.pop_back();
+        if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(wordcnt(*mborig.u.s, *mbspec.u.s));
+        break;
+      }
+      case STIRBCE_OPCODE_STRWORD:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t wordidx = get_i64(stack);
+        memblock mbspec = stack.back(); stack.pop_back();
+        memblock mborig = stack.back(); stack.pop_back();
+        if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S || wordidx < 0)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(new std::string(wordget(*mborig.u.s, *mbspec.u.s, wordidx))));
+        break;
+      }
+      case STIRBCE_OPCODE_STRWORDLIST:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbspec = stack.back(); stack.pop_back();
+        memblock mborig = stack.back(); stack.pop_back();
+        memblock mbar(new std::vector<memblock>());
+        if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        for (auto it = WordIterator(*mborig.u.s, *mbspec.u.s); !it.end(); it++)
+        {
+          mbar.u.v->push_back(memblock(new std::string(*it)));
+        }
+        stack.push_back(mbar);
         break;
       }
       case STIRBCE_OPCODE_STRSTRIP:
