@@ -386,7 +386,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
       break;
     }
     printf("ip %zu instr %d\n", ip-1, (int)opcode);
-    switch (opcode)
+    switch ((enum stirbce_opcode)opcode)
     {
       case STIRBCE_OPCODE_TYPE:
       {
@@ -1365,6 +1365,11 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EINVAL;
           break;
         }
+        // negative indexing
+        if (nr < 0)
+        {
+          nr += mbar.u.v->size();
+        }
         if (nr < 0 || (size_t)nr >= mbar.u.v->size())
         {
           printf("overflow\n");
@@ -1405,6 +1410,52 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         break;
       }
+      case STIRBCE_OPCODE_LISTSPLICE:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t end = get_i64(stack);
+        int64_t start = get_i64(stack);
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        // negative indexing, RFE support NaN
+        if (start < 0)
+        {
+          start += mbar.u.v->size();
+        }
+        if (end < 0)
+        {
+          end += mbar.u.v->size();
+        }
+        if (start < 0 || (size_t)start > mbar.u.v->size())
+        {
+          printf("overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        if (end < 0 || (size_t)end > mbar.u.v->size())
+        {
+          printf("overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbar2 = memblock(new std::vector<memblock>());
+        for (size_t i = start; i < (size_t)end; i++)
+        {
+          mbar2.u.v->push_back(mbar.u.v->at(i));
+        }
+        stack.push_back(mbar2);
+        break;
+      }
       case STIRBCE_OPCODE_LISTGET:
       {
         if (unlikely(stack.size() < 2))
@@ -1420,6 +1471,11 @@ int engine(const uint8_t *microprogram, size_t microsz,
           printf("invalid type\n");
           ret = -EINVAL;
           break;
+        }
+        // negative indexing
+        if (nr < 0)
+        {
+          nr += mbar.u.v->size();
         }
         if (nr < 0 || (size_t)nr >= mbar.u.v->size())
         {
@@ -1754,10 +1810,12 @@ int engine(const uint8_t *microprogram, size_t microsz,
         mbsc.u.sc->vars[*mbs.u.s] = mbval;
         break;
       }
+#if 1
       default:
         printf("invalid opcode\n");
         ret = -EILSEQ;
         break;
+#endif
     }
   }
   return ret;
