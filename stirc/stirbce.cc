@@ -1536,6 +1536,68 @@ int engine(lua_State *lua, memblock scope,
         stack.push_back(memblock(new std::string(s)));
         break;
       }
+      case STIRBCE_OPCODE_ABSPATH:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack);
+        char *res = realpath(".", NULL);
+        if (res == NULL)
+        {
+          fprintf(stderr, "Current directory cannot be looked up\n");
+          perror("realpath failed");
+          if (errno == EAGAIN)
+          {
+            ret = -EINVAL;
+          }
+          else
+          {
+            ret = -errno;
+          }
+          break;
+        }
+        std::string s2(res);
+        free(res);
+        if (s2.length() == 0)
+        {
+          std::terminate();
+        }
+        stack.push_back(memblock(new std::string(path_simplify(s2 + "/" + s))));
+        break;
+      }
+      case STIRBCE_OPCODE_REALPATH:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack);
+        char *res = realpath(s.c_str(), NULL);
+        if (res == NULL)
+        {
+          fprintf(stderr, "File %s cannot be looked up\n", s.c_str());
+          perror("realpath failed");
+          if (errno == EAGAIN)
+          {
+            ret = -EINVAL;
+          }
+          else
+          {
+            ret = -errno;
+          }
+          break;
+        }
+        std::string s2(res);
+        free(res);
+        stack.push_back(memblock(new std::string(s2)));
+        break;
+      }
       case STIRBCE_OPCODE_STR_REVERSE:
       {
         if (unlikely(stack.size() < 1))
