@@ -277,6 +277,39 @@ int64_t get_reg(std::vector<memblock> &stack)
   return mb.u.d;
 }
 
+std::string sufsub(const std::string &s1, std::string os, std::string ns)
+{
+  size_t off;
+  if (s1.size() < os.size())
+  {
+    std::terminate(); // FIXME error handling
+  }
+  off = s1.size() - os.size();
+  if (s1.substr(off) != os)
+  {
+    std::terminate(); // FIXME error handling
+  }
+  return s1.substr(0, off) + ns;
+}
+std::string pathnotdir(const std::string &s1)
+{
+  size_t off = s1.rfind('/');
+  if (off == std::string::npos)
+  {
+    return s1;
+  }
+  return s1.substr(off + 1);
+}
+std::string pathdir(const std::string &s1)
+{
+  size_t off = s1.rfind('/');
+  if (off == std::string::npos)
+  {
+    return "./";
+  }
+  return s1.substr(0, off + 1);
+}
+
 std::string get_str(std::vector<memblock> &stack)
 {
   memblock mb = stack.back();
@@ -578,6 +611,119 @@ int engine(const uint8_t *microprogram, size_t microsz,
       {
         printf("exit, stack size %zu\n", stack.size());
         ip = microsz;
+        break;
+      }
+      case STIRBCE_OPCODE_SUFSUB:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string ns = get_str(stack);
+        std::string os = get_str(stack);
+        memblock mb = stack.back(); stack.pop_back();
+        memblock mb2;
+        if (mb.type == memblock::T_S)
+        {
+          mb2 = memblock(memblock(new std::string(sufsub(*mb.u.s, os, ns))));
+        }
+        else if (mb.type == memblock::T_V)
+        {
+          mb2 = memblock(memblock(new std::vector<memblock>()));
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            if (it->type != memblock::T_S)
+            {
+              printf("pathdir: list not only strings\n");
+              ret = -EINVAL;
+              break;
+            }
+            mb2.u.v->push_back(memblock(new std::string(sufsub(*it->u.s, os, ns))));
+          }
+        }
+        else
+        {
+          printf("pathdir: neither vector nor string\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mb2);
+        break;
+      }
+      case STIRBCE_OPCODE_PATH_NOTDIR:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        memblock mb2;
+        if (mb.type == memblock::T_S)
+        {
+          mb2 = memblock(memblock(new std::string(pathnotdir(*mb.u.s))));
+        }
+        else if (mb.type == memblock::T_V)
+        {
+          mb2 = memblock(memblock(new std::vector<memblock>()));
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            if (it->type != memblock::T_S)
+            {
+              printf("pathdir: list not only strings\n");
+              ret = -EINVAL;
+              break;
+            }
+            mb2.u.v->push_back(memblock(new std::string(pathnotdir(*it->u.s))));
+          }
+        }
+        else
+        {
+          printf("pathdir: neither vector nor string\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mb2);
+        break;
+      }
+      case STIRBCE_OPCODE_PATH_DIR:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        memblock mb2;
+        if (mb.type == memblock::T_S)
+        {
+          mb2 = memblock(memblock(new std::string(pathdir(*mb.u.s))));
+        }
+        else if (mb.type == memblock::T_V)
+        {
+          mb2 = memblock(memblock(new std::vector<memblock>()));
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            if (it->type != memblock::T_S)
+            {
+              printf("pathdir: list not only strings\n");
+              ret = -EINVAL;
+              break;
+            }
+            mb2.u.v->push_back(memblock(new std::string(pathdir(*it->u.s))));
+          }
+        }
+        else
+        {
+          printf("pathdir: neither vector nor string\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mb2);
         break;
       }
       case STIRBCE_OPCODE_OUT:
