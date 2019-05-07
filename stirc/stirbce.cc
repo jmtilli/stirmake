@@ -1733,6 +1733,13 @@ int engine(lua_State *lua, memblock scope,
         ip += 8;
         break;
       }
+      case STIRBCE_OPCODE_FUN_TRAILER:
+      {
+        printf("ran into function trailer, forgotten return?\n");
+        ret = -EFAULT;
+        ip -= 1;
+        break;
+      }
       case STIRBCE_OPCODE_FUN_HEADER:
       {
         printf("ran into function without being called\n");
