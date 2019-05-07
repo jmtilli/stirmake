@@ -277,6 +277,30 @@ int64_t get_reg(std::vector<memblock> &stack)
   return mb.u.d;
 }
 
+bool endswith(const std::string &s1, std::string os)
+{
+  size_t off;
+  if (s1.size() < os.size())
+  {
+    return false;
+  }
+  off = s1.size() - os.size();
+  if (s1.substr(off) != os)
+  {
+    return false;
+  }
+  return true;
+}
+double mystrstr(const std::string &haystack, const std::string &needle)
+{
+  size_t off;
+  off = haystack.find(needle);
+  if (off == std::string::npos)
+  {
+    return -1;
+  }
+  return off;
+}
 std::string sufsub(const std::string &s1, std::string os, std::string ns)
 {
   size_t off;
@@ -290,6 +314,24 @@ std::string sufsub(const std::string &s1, std::string os, std::string ns)
     std::terminate(); // FIXME error handling
   }
   return s1.substr(0, off) + ns;
+}
+std::string pathsuffix(const std::string &s1)
+{
+  size_t off = s1.rfind('.');
+  if (off == std::string::npos)
+  {
+    return "";
+  }
+  return s1.substr(off);
+}
+std::string pathbasename(const std::string &s1)
+{
+  size_t off = s1.rfind('.');
+  if (off == std::string::npos)
+  {
+    return s1;
+  }
+  return s1.substr(0, off);
 }
 std::string pathnotdir(const std::string &s1)
 {
@@ -641,6 +683,118 @@ int engine(const uint8_t *microprogram, size_t microsz,
               break;
             }
             mb2.u.v->push_back(memblock(new std::string(sufsub(*it->u.s, os, ns))));
+          }
+        }
+        else
+        {
+          printf("pathdir: neither vector nor string\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mb2);
+        break;
+      }
+      case STIRBCE_OPCODE_SUFFILTER:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int reverse = get_dbl(stack) ? 1 : 0;
+        std::string suf = get_str(stack);
+        memblock mb = stack.back(); stack.pop_back();
+        memblock mb2;
+        if (mb.type == memblock::T_V)
+        {
+          mb2 = memblock(memblock(new std::vector<memblock>()));
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            if (it->type != memblock::T_S)
+            {
+              printf("pathdir: list not only strings\n");
+              ret = -EINVAL;
+              break;
+            }
+            if (!!endswith(*it->u.s, suf) == !!reverse)
+            {
+              mb2.u.v->push_back(*it);
+            }
+          }
+        }
+        else
+        {
+          printf("suffilter: arg not vector\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mb2);
+        break;
+      }
+      case STIRBCE_OPCODE_PATH_SUFFIX:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        memblock mb2;
+        if (mb.type == memblock::T_S)
+        {
+          mb2 = memblock(memblock(new std::string(pathsuffix(*mb.u.s))));
+        }
+        else if (mb.type == memblock::T_V)
+        {
+          mb2 = memblock(memblock(new std::vector<memblock>()));
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            if (it->type != memblock::T_S)
+            {
+              printf("pathdir: list not only strings\n");
+              ret = -EINVAL;
+              break;
+            }
+            mb2.u.v->push_back(memblock(new std::string(pathsuffix(*it->u.s))));
+          }
+        }
+        else
+        {
+          printf("pathdir: neither vector nor string\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mb2);
+        break;
+      }
+      case STIRBCE_OPCODE_PATH_BASENAME:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        memblock mb2;
+        if (mb.type == memblock::T_S)
+        {
+          mb2 = memblock(memblock(new std::string(pathbasename(*mb.u.s))));
+        }
+        else if (mb.type == memblock::T_V)
+        {
+          mb2 = memblock(memblock(new std::vector<memblock>()));
+          for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+          {
+            if (it->type != memblock::T_S)
+            {
+              printf("pathdir: list not only strings\n");
+              ret = -EINVAL;
+              break;
+            }
+            mb2.u.v->push_back(memblock(new std::string(pathbasename(*it->u.s))));
           }
         }
         else
@@ -1032,6 +1186,19 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack[val] = mb;
+        break;
+      }
+      case STIRBCE_OPCODE_SCOPE_NEW:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        bool holey = get_dbl(stack) ? 1 : 0;
+        bool parentlex = get_dbl(stack) ? 1 : 0;
+        stack.push_back(memblock(new class scope(parentlex ? scope : scope_global_dyn, holey))); // TODO rename arg
         break;
       }
       case STIRBCE_OPCODE_PUSH_NEW_ARRAY:
@@ -2138,6 +2305,49 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         stack.push_back(memblock(0.0)); // FIXME implement
         std::terminate();
+        break;
+      }
+      case STIRBCE_OPCODE_STRREP:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t ival = get_i64(stack);
+        memblock mbstr = stack.back(); stack.pop_back();
+        if (mbstr.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        std::ostringstream oss;
+        for (int64_t it = 0; it < ival; it++)
+        {
+          oss << *mbstr.u.s;
+        }
+        stack.push_back(memblock(new std::string(oss.str())));
+        break;
+      }
+      case STIRBCE_OPCODE_STRSTR:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbneedle = stack.back(); stack.pop_back();
+        memblock mbhaystack = stack.back(); stack.pop_back();
+        if (mbneedle.type != memblock::T_S || mbhaystack.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mystrstr(*mbhaystack.u.s, *mbneedle.u.s));
         break;
       }
       case STIRBCE_OPCODE_STRAPPEND:

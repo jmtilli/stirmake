@@ -320,12 +320,13 @@ int luaopen_stir(lua_State *lua);
 
 class scope {
   public:
-    scope *parent;
+    //scope *parent;
+    memblock parent;
     bool holey;
     std::map<std::string, memblock> vars;
     lua_State *lua;
 
-    scope(): parent(NULL), holey(true), lua(nullptr) {
+    scope(): parent(), holey(true), lua(nullptr) {
       lua = luaL_newstate();
       luaL_openlibs(lua);
       lua_pushcfunction(lua, luaopen_stir);
@@ -335,7 +336,11 @@ class scope {
       lua_setglobal(lua, "Stir");
       lua_pop(lua, 1);
     }
-    scope(scope *parent, bool holey = false): parent(parent), holey(holey) {
+    scope(memblock parent, bool holey = false): parent(parent), holey(holey) {
+      if (parent.type != memblock::T_SC)
+      {
+        std::terminate();
+      }
       lua = luaL_newstate();
       luaL_openlibs(lua);
       lua_pushcfunction(lua, luaopen_stir);
@@ -357,9 +362,9 @@ class scope {
       {
         return true;
       }
-      if (parent && !holey)
+      if (parent.type == memblock::T_SC && !holey)
       {
-        return parent->recursive_has(name);
+        return parent.u.sc->recursive_has(name);
       }
       return false;
     }
@@ -369,9 +374,9 @@ class scope {
       {
         return vars[name];
       }
-      if (parent && !holey)
+      if (parent.type == memblock::T_SC && !holey)
       {
-        return parent->recursive_lookup(name);
+        return parent.u.sc->recursive_lookup(name);
       }
       std::cerr << "var " << name << " not found" << std::endl;
       std::terminate();

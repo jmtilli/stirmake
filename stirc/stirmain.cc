@@ -654,7 +654,7 @@ void stack_conf(void)
 }
 
 stringtab st;
-std::vector<memblock> all_scopes;
+std::vector<memblock> all_scopes; // FIXME needed?
 std::vector<memblock> scope_stack;
 
 extern "C"
