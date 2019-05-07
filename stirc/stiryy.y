@@ -78,6 +78,10 @@ int stiryywrap(yyscan_t scanner)
 
 %token EQUALS
 %token PLUSEQUALS
+%token QMEQUALS
+%token COLONEQUALS
+%token PLUSCOLONEQUALS
+%token QMCOLONEQUALS
 %token COLON
 %token COMMA
 %token STRING_LITERAL
@@ -239,7 +243,31 @@ maybe_bracketexprlist:
 ;
 
 assignrule:
-  FREEFORM_TOKEN EQUALS
+FREEFORM_TOKEN QMEQUALS expr NEWLINE
+{
+  free($1);
+  printf("not implemented yet\n");
+  YYABORT;
+}
+| FREEFORM_TOKEN QMCOLONEQUALS expr NEWLINE
+{
+  free($1);
+  printf("not implemented yet\n");
+  YYABORT;
+}
+| FREEFORM_TOKEN COLONEQUALS expr NEWLINE
+{
+  free($1);
+  printf("not implemented yet\n");
+  YYABORT;
+}
+| FREEFORM_TOKEN PLUSCOLONEQUALS expr NEWLINE
+{
+  free($1);
+  printf("not implemented yet\n");
+  YYABORT;
+}
+| FREEFORM_TOKEN EQUALS
 {
   size_t funloc = stiryy->bytesz;
   stiryy_add_fun_sym(stiryy, $1, funloc);
