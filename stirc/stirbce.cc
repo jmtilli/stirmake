@@ -3210,7 +3210,7 @@ int engine(lua_State *lua, memblock scope,
       }
       case STIRBCE_OPCODE_FILE_SEEK_TELL:
       {
-        if (unlikely(stack.size() < 1))
+        if (unlikely(stack.size() < 3))
         {
           printf("stack overflow\n");
           ret = -EOVERFLOW;
@@ -3234,17 +3234,17 @@ int engine(lua_State *lua, memblock scope,
         if (whence == -1)
         {
           stream.u.ios->ios->seekg(amt, std::ios_base::end); // RFE correct?
-          stream.u.ios->ios->seekp(amt, std::ios_base::end); // RFE correct?
+          //stream.u.ios->ios->seekp(amt, std::ios_base::end); // RFE correct?
         }
         else if (whence == 1)
         {
           stream.u.ios->ios->seekg(amt, std::ios_base::beg); // RFE correct?
-          stream.u.ios->ios->seekp(amt, std::ios_base::beg); // RFE correct?
+          //stream.u.ios->ios->seekp(amt, std::ios_base::beg); // RFE correct?
         }
         else if (whence == 0)
         {
           stream.u.ios->ios->seekg(amt, std::ios_base::cur); // RFE correct?
-          stream.u.ios->ios->seekp(amt, std::ios_base::cur); // RFE correct?
+          //stream.u.ios->ios->seekp(amt, std::ios_base::cur); // RFE correct?
         }
         else
         {
@@ -3284,7 +3284,7 @@ int engine(lua_State *lua, memblock scope,
           ret = -EINVAL;
           break;
         }
-        stream.u.ios->ios->seekg(out.size(), std::ios_base::cur); // RFE correct?
+        //stream.u.ios->ios->seekg(out.size(), std::ios_base::cur); // RFE correct?
         stream.u.ios->ios->clear();
         break;
       }
@@ -3365,7 +3365,7 @@ int engine(lua_State *lua, memblock scope,
           act_len = oss.str().size();
           stack.push_back(memblock(new std::string(oss.str())));
         }
-        if (!delim_nan) // delim set
+        else if (!delim_nan) // delim set
         {
           std::string str;
           getline(*stream.u.ios->ios, str, delim_ch);
@@ -3381,13 +3381,18 @@ int engine(lua_State *lua, memblock scope,
           act_len = buf.size();
           stack.push_back(memblock(new std::string(&buf[0], buf.size())));
         }
+        if ((stream.u.ios->ios->fail() || stream.u.ios->ios->eof()) &&
+            !stream.u.ios->ios->bad())
+        {
+          stream.u.ios->ios->clear();
+        }
         if (stream.u.ios->ios->fail())
         {
           printf("stream in error\n");
           ret = -EINVAL;
           break;
         }
-        stream.u.ios->ios->seekp(act_len, std::ios_base::cur); // RFE correct?
+        //stream.u.ios->ios->seekp(act_len, std::ios_base::cur); // RFE correct?
         stream.u.ios->ios->clear();
         break;
       }
