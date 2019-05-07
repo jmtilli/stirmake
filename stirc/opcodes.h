@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <sstream>
 #include <tuple>
 #include "opcodesonly.h"
 
@@ -26,10 +27,32 @@ extern size_t microsz_global;
 
 class scope;
 
+class ioswrapper {
+  public:
+    std::iostream *ios;
+
+    explicit ioswrapper(std::iostream *ios): ios(ios) {}
+    ~ioswrapper(void) {
+      if (ios)
+      {
+        delete ios;
+      }
+    }
+
+    ioswrapper(const ioswrapper &wr) = delete;
+    ioswrapper &operator=(const ioswrapper &wr) = delete;
+
+    void close()
+    {
+      delete ios;
+      ios = NULL;
+    }
+};
+
 class memblock {
  public:
   enum {
-    T_D, T_S, T_V, T_M, T_F, T_N, T_B, T_SC, T_REG
+    T_D, T_S, T_V, T_M, T_F, T_N, T_B, T_SC, T_REG, T_IOS
   } type;
   union {
     double d;
@@ -37,6 +60,7 @@ class memblock {
     std::string *s;
     std::vector<memblock> *v;
     std::map<std::string, memblock> *m;
+    ioswrapper *ios;
   } u;
   size_t *refc;
 
@@ -96,6 +120,11 @@ class memblock {
     u.v = v;
     refc = new size_t(1);
   }
+  explicit memblock(ioswrapper *ios): type(T_IOS)
+  {
+    u.ios = ios;
+    refc = new size_t(1);
+  }
   explicit memblock(std::map<std::string, memblock> *m): type(T_M)
   {
     u.m = m;
@@ -134,6 +163,9 @@ class memblock {
         break;
       case T_SC:
         std::cout << "scope";
+        break;
+      case T_IOS:
+        std::cout << "iostream";
         break;
       case T_D:
         std::cout << u.d;
@@ -205,6 +237,9 @@ class memblock {
         break;
       case T_SC:
         std::cerr << "sc" << std::endl;
+        std::terminate(); // FIXME better error handling
+      case T_IOS:
+        std::cerr << "iostream" << std::endl;
         std::terminate(); // FIXME better error handling
       case T_F:
         std::cerr << "fn" << std::endl;

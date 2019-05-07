@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
+#include <memory>
 #include <math.h>
 #include "opcodes.h"
 #include "engine.h"
@@ -1751,6 +1753,7 @@ int engine(lua_State *lua, memblock scope,
           case memblock::T_N: oss << "null"; break;
           case memblock::T_S: oss << mb.u.s; break;
           case memblock::T_SC: oss << "scope: " << (void*)(mb.u.sc); break;
+          case memblock::T_IOS: oss << "iostream: " << (void*)(mb.u.ios); break;
           case memblock::T_REG: oss << "register: " << mb.u.d; break;
           default: oss << "UNKNOWN"; break;
         }
@@ -3115,6 +3118,287 @@ int engine(lua_State *lua, memblock scope,
           break;
         }
         stack.push_back(mbbase.u.s->length());
+        break;
+      }
+      case STIRBCE_OPCODE_FILE_OPEN:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::unique_ptr<std::iostream> ptr;
+        int64_t mode = get_i64(stack);
+        std::string name = get_str(stack);
+        if (mode == 0)
+        {
+          ptr.reset(new std::fstream(name.c_str(), std::ios_base::in));
+        }
+        else if (mode == 1)
+        {
+          ptr.reset(new std::fstream(name.c_str(), std::ios_base::out));
+        }
+        else if (mode == 2)
+        {
+          ptr.reset(new std::fstream(name.c_str(), std::ios_base::in | std::ios_base::out));
+        }
+        else
+        {
+          std::terminate();
+        }
+        if (!ptr->good())
+        {
+          printf("can't open file\n");
+          ret = -EIO;
+          break;
+        }
+        memblock mb(new ioswrapper(ptr.release()));
+        stack.push_back(mb);
+        break;
+      }
+      case STIRBCE_OPCODE_FILE_CLOSE:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock stream = stack.back(); stack.pop_back();
+        if (stream.type != memblock::T_IOS)
+        {
+          printf("arg not stream\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (stream.u.ios->ios == NULL)
+        {
+          printf("stream already closed\n");
+          ret = -EINVAL;
+          break;
+        }
+        stream.u.ios->close();
+        break;
+      }
+      case STIRBCE_OPCODE_FILE_FLUSH:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock stream = stack.back(); stack.pop_back();
+        if (stream.type != memblock::T_IOS)
+        {
+          printf("arg not stream\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (stream.u.ios->ios == NULL)
+        {
+          printf("stream closed\n");
+          ret = -EINVAL;
+          break;
+        }
+        stream.u.ios->ios->flush();
+        break;
+      }
+      case STIRBCE_OPCODE_FILE_SEEK_TELL:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t whence = get_i64(stack);
+        int64_t amt = get_i64(stack);
+        memblock stream = stack.back(); stack.pop_back();
+        if (stream.type != memblock::T_IOS)
+        {
+          printf("arg not stream\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (stream.u.ios->ios == NULL)
+        {
+          printf("stream closed\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (whence == -1)
+        {
+          stream.u.ios->ios->seekg(amt, std::ios_base::end); // RFE correct?
+          stream.u.ios->ios->seekp(amt, std::ios_base::end); // RFE correct?
+        }
+        else if (whence == 1)
+        {
+          stream.u.ios->ios->seekg(amt, std::ios_base::beg); // RFE correct?
+          stream.u.ios->ios->seekp(amt, std::ios_base::beg); // RFE correct?
+        }
+        else if (whence == 0)
+        {
+          stream.u.ios->ios->seekg(amt, std::ios_base::cur); // RFE correct?
+          stream.u.ios->ios->seekp(amt, std::ios_base::cur); // RFE correct?
+        }
+        else
+        {
+          std::terminate();
+        }
+        // FIXME errors
+        stack.push_back((double)stream.u.ios->ios->tellg());
+        stream.u.ios->ios->clear();
+        break;
+      }
+      case STIRBCE_OPCODE_FILE_WRITE:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string out = get_str(stack);
+        memblock stream = stack.back(); stack.pop_back();
+        if (stream.type != memblock::T_IOS)
+        {
+          printf("arg not stream\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (stream.u.ios->ios == NULL)
+        {
+          printf("stream closed\n");
+          ret = -EINVAL;
+          break;
+        }
+        (*stream.u.ios->ios) << out;
+        if (stream.u.ios->ios->fail())
+        {
+          printf("stream out error\n");
+          ret = -EINVAL;
+          break;
+        }
+        stream.u.ios->ios->seekg(out.size(), std::ios_base::cur); // RFE correct?
+        stream.u.ios->ios->clear();
+        break;
+      }
+      case STIRBCE_OPCODE_FILE_GET:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        double delim = get_dbl(stack);
+        double maxcnt = get_dbl(stack);
+        size_t toget = 0;
+        char delim_ch = 0;
+        int delim_nan = 0;
+        int maxcnt_inf = 0;
+        memblock stream = stack.back(); stack.pop_back();
+        if (stream.type != memblock::T_IOS)
+        {
+          printf("arg not stream\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (stream.u.ios->ios == NULL)
+        {
+          printf("stream closed\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (isnan(delim))
+        {
+          delim_nan = 1;
+        }
+        else
+        {
+          delim_ch = (char)(unsigned char)delim;
+          if ((double)(unsigned char)delim_ch != delim)
+          {
+              std::terminate();
+          }
+        }
+        if (isinf(maxcnt))
+        {
+          if (maxcnt < 0)
+          {
+            std::terminate();
+          }
+          maxcnt_inf = 1;
+        }
+        else if (!isfinite(maxcnt) || maxcnt < 0)
+        {
+          std::terminate();
+        }
+        else
+        {
+          toget = maxcnt;
+          if ((double)toget != maxcnt)
+          {
+              std::terminate();
+          }
+        }
+        if (!delim_nan && !maxcnt_inf) // delim set && maxcnt set
+        {
+          std::terminate(); // Not supported yet, TODO: restricted getline
+        }
+        size_t act_len = 0;
+        if (delim_nan && maxcnt_inf) // delim not set && maxcnt not set
+        {
+          std::ostringstream oss;
+          std::vector<char> buf;
+          buf.resize(32768);
+          while (stream.u.ios->ios->good())
+          {
+            stream.u.ios->ios->read(&buf[0], buf.size());
+            oss.write(&buf[0], stream.u.ios->ios->gcount());
+          }
+          act_len = oss.str().size();
+          stack.push_back(memblock(new std::string(oss.str())));
+        }
+        if (!delim_nan) // delim set
+        {
+          std::string str;
+          getline(*stream.u.ios->ios, str, delim_ch);
+          act_len = str.size();
+          stack.push_back(memblock(new std::string(str)));
+        }
+        else // maxcnt set
+        {
+          std::vector<char> buf;
+          buf.resize(toget);
+          stream.u.ios->ios->read(&buf[0], toget);
+          buf.resize(stream.u.ios->ios->gcount());
+          act_len = buf.size();
+          stack.push_back(memblock(new std::string(&buf[0], buf.size())));
+        }
+        if (stream.u.ios->ios->fail())
+        {
+          printf("stream in error\n");
+          ret = -EINVAL;
+          break;
+        }
+        stream.u.ios->ios->seekp(act_len, std::ios_base::cur); // RFE correct?
+        stream.u.ios->ios->clear();
+        break;
+      }
+      case STIRBCE_OPCODE_MEMFILE_IOPEN:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack overflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string str = get_str(stack);
+        std::unique_ptr<std::iostream> ptr(new std::stringstream(str, std::ios_base::in));
+        stack.push_back(memblock(ptr.release()));
         break;
       }
       case STIRBCE_OPCODE_SCOPEVAR_SET:
