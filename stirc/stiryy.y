@@ -153,6 +153,7 @@ int stiryywrap(yyscan_t scanner)
 %type<d> NUMBER
 %type<d> value
 %type<d> valuelistentry
+%type<d> maybeqmequals
 
 %%
 
@@ -242,14 +243,10 @@ maybe_bracketexprlist:
 | maybe_bracketexprlist OPEN_BRACKET expr CLOSE_BRACKET
 ;
 
+maybeqmequals: EQUALS {$$ = 0;} | QMEQUALS {$$ = 1;} ;
+
 assignrule:
-FREEFORM_TOKEN QMEQUALS expr NEWLINE
-{
-  free($1);
-  printf("not implemented yet\n");
-  YYABORT;
-}
-| FREEFORM_TOKEN QMCOLONEQUALS expr NEWLINE
+FREEFORM_TOKEN QMCOLONEQUALS expr NEWLINE
 {
   free($1);
   printf("not implemented yet\n");
@@ -267,23 +264,25 @@ FREEFORM_TOKEN QMEQUALS expr NEWLINE
   printf("not implemented yet\n");
   YYABORT;
 }
-| FREEFORM_TOKEN EQUALS
+| FREEFORM_TOKEN maybeqmequals
 {
   size_t funloc = stiryy->bytesz;
-  stiryy_add_fun_sym(stiryy, $1, funloc);
+  stiryy_add_fun_sym(stiryy, $1, $2, funloc);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_HEADER);
   stiryy_add_double(stiryy, 0);
 }
 expr NEWLINE
 {
   printf("Assigning to %s\n", $1);
-  free($1);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_RET);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_TRAILER);
+  stiryy_add_double(stiryy, symbol_add(stiryy, $1, strlen($1)));
+  free($1);
 }
 | FREEFORM_TOKEN PLUSEQUALS
 {
   size_t funloc = stiryy->bytesz;
-  size_t oldloc = stiryy_add_fun_sym(stiryy, $1, funloc);
+  size_t oldloc = stiryy_add_fun_sym(stiryy, $1, 0, funloc);
   if (oldloc == (size_t)-1)
   {
     printf("Can't find old symbol function\n");
@@ -307,10 +306,12 @@ expr NEWLINE
 expr NEWLINE
 {
   printf("Plus-assigning to %s\n", $1);
-  free($1);
   // FIXME what if it's not a list?
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPENDALL_MAINTAIN);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_RET);
+  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_TRAILER);
+  stiryy_add_double(stiryy, symbol_add(stiryy, $1, strlen($1)));
+  free($1);
 }
 ;
 

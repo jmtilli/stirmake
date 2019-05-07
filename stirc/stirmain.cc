@@ -665,7 +665,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 }
 
 extern "C"
-size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funloc)
+size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
   size_t old = (size_t)-1;
   memblock &mb = scope_stack.back();
@@ -680,9 +680,13 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, size_t funl
      )
   {
     old = st.addNonString(sc->vars[str]);
+    if (maybe)
+    {
+      return old;
+    }
     //old = sc->vars[str].u.d;
   }
-  sc->vars[str] = memblock(funloc, true);
+  sc->vars[str] = memblock(loc, true);
   return old;
 }
 
