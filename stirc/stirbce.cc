@@ -767,8 +767,54 @@ get_stackloc(int64_t stackloc, size_t bp, std::vector<memblock> &stack)
   return stack.at(stack.size() + stackloc);
 }
 
+std::string fun_stringify(size_t ip)
+{
+  while (ip < microsz_global && microprogram_global[ip] != STIRBCE_OPCODE_FUN_TRAILER)
+  {
+    if (microprogram_global[ip] == STIRBCE_OPCODE_PUSH_DBL)
+    {
+      ip += 9;
+    }
+    else if (microprogram_global[ip] == STIRBCE_OPCODE_FUN_HEADER)
+    {
+      return "forgotten trailer 1";
+    }
+    else
+    {
+      ip++;
+    }
+  }
+  if (microprogram_global[ip] != STIRBCE_OPCODE_FUN_TRAILER || ip+9 > microsz_global)
+  {
+    return "forgotten trailer 2";
+  }
+  uint64_t u64 = 
+                ((((uint64_t)microprogram_global[ip+1])<<56) |
+                (((uint64_t)microprogram_global[ip+2])<<48) |
+                (((uint64_t)microprogram_global[ip+3])<<40) |
+                (((uint64_t)microprogram_global[ip+4])<<32) |
+                (((uint64_t)microprogram_global[ip+5])<<24) |
+                (((uint64_t)microprogram_global[ip+6])<<16) |
+                (((uint64_t)microprogram_global[ip+7])<<8) |
+                            microprogram_global[ip+8]);
+  double dbl;
+  size_t idx;
+  memcpy(&dbl, &u64, 8);
+  idx = dbl;
+  if (idx >= st_global->blocks.size())
+  {
+    return "invalid trailer 1";
+  }
+  memblock &mb = st_global->blocks.at(idx);
+  if (mb.type != memblock::T_S)
+  {
+    return "invalid trailer 2";
+  }
+  return *mb.u.s;
+}
+
 int engine(lua_State *lua, memblock scope,
-           std::vector<memblock> &stack, size_t ip)
+           std::vector<memblock> &stack, std::vector<std::string> &backtrace, size_t ip)
 {
   // 0.53 us / execution
   int ret = 0;
@@ -3493,6 +3539,24 @@ int engine(lua_State *lua, memblock scope,
 #endif
     }
   }
+#if 1 // Some code for creating backtrace for debugging, needs stringification
+  if (ret != -EAGAIN)
+  {
+    backtrace.push_back(fun_stringify(ip));
+    while (stack.size() >= 2)
+    {
+      if (stack[stack.size() - 1].type == memblock::T_REG &&
+          stack[stack.size() - 2].type == memblock::T_REG)
+      {
+        backtrace.push_back(fun_stringify(stack[stack.size() - 1].u.d));
+        stack.pop_back();
+        stack.pop_back();
+        continue;
+      }
+      stack.pop_back();
+    }
+  }
+#endif
   return ret;
 }
 
