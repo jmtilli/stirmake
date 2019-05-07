@@ -351,6 +351,18 @@ class scope {
     scope(const scope &other) = delete;
     scope &operator=(const scope &other) = delete;
 
+    bool recursive_has(const std::string &name)
+    {
+      if (vars.find(name) != vars.end())
+      {
+        return true;
+      }
+      if (parent && !holey)
+      {
+        return parent->recursive_has(name);
+      }
+      return false;
+    }
     memblock recursive_lookup(const std::string &name)
     {
       if (vars.find(name) != vars.end())

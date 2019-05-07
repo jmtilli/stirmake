@@ -2,7 +2,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <exception>
+#include <algorithm>
 #include <iostream>
+#include <sstream>
+#include <math.h>
 #include "opcodes.h"
 #include "engine.h"
 #include "errno.h"
@@ -274,6 +277,16 @@ int64_t get_reg(std::vector<memblock> &stack)
   return mb.u.d;
 }
 
+std::string get_str(std::vector<memblock> &stack)
+{
+  memblock mb = stack.back();
+  stack.pop_back();
+  if (mb.type != memblock::T_S)
+  {
+    std::terminate();
+  }
+  return *mb.u.s;
+}
 double get_dbl(std::vector<memblock> &stack)
 {
   memblock mb = stack.back();
@@ -565,6 +578,39 @@ int engine(const uint8_t *microprogram, size_t microsz,
       {
         printf("exit, stack size %zu\n", stack.size());
         ip = microsz;
+        break;
+      }
+      case STIRBCE_OPCODE_OUT:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string str = get_str(stack);
+        val = get_dbl(stack);
+        if (val)
+        {
+          std::cerr << str << std::endl;
+        }
+        else
+        {
+          std::cout << str << std::endl;
+        }
+        break;
+      }
+      case STIRBCE_OPCODE_ERROR:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string str = get_str(stack);
+        std::cerr << str << std::endl;
+        ret = -EINTR;
         break;
       }
       case STIRBCE_OPCODE_DUMP:
@@ -954,6 +1000,104 @@ int engine(const uint8_t *microprogram, size_t microsz,
         ip += 8;
         break;
       }
+      case STIRBCE_OPCODE_STR_UPPER:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack);
+        std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+        stack.push_back(memblock(new std::string(s)));
+        break;
+      }
+      case STIRBCE_OPCODE_TOSTRING:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        std::ostringstream oss;
+        switch (mb.type)
+        {
+          case memblock::T_D: oss << mb.u.d; break;
+          case memblock::T_B: oss << (mb.u.d ? "true" : "false"); break;
+          case memblock::T_F: oss << "function: " << mb.u.d; break;
+          case memblock::T_V: oss << "vector: " << (void*)(mb.u.v); break;
+          case memblock::T_M: oss << "map: " << (void*)(mb.u.m); break;
+          case memblock::T_N: oss << "null"; break;
+          case memblock::T_S: oss << mb.u.s; break;
+          case memblock::T_SC: oss << "scope: " << (void*)(mb.u.sc); break;
+          case memblock::T_REG: oss << "register: " << mb.u.d; break;
+          default: oss << "UNKNOWN"; break;
+        }
+        stack.push_back(memblock(new std::string(oss.str())));
+        break;
+      }
+      case STIRBCE_OPCODE_TONUMBER:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack); // FIXME if it's already number?
+        size_t idx = 0;
+        double dval = std::stod(s, &idx);
+        if (idx != s.length() || s.length() == 0)
+        {
+          printf("string not a number\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(dval);
+        break;
+      }
+      case STIRBCE_OPCODE_STR_LOWER:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack);
+        std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+        stack.push_back(memblock(new std::string(s)));
+        break;
+      }
+      case STIRBCE_OPCODE_STR_REVERSE:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack);
+        std::reverse(s.begin(), s.end());
+        stack.push_back(memblock(new std::string(s)));
+        break;
+      }
+      case STIRBCE_OPCODE_STR_EQ:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        std::string s = get_str(stack);
+        std::string s2 = get_str(stack);
+        stack.push_back(!!(val == val2));
+        break;
+      }
       case STIRBCE_OPCODE_CALL_EQ:
         if (unlikely(stack.size() < 2))
         {
@@ -984,6 +1128,142 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         val = get_i64(stack);
         stack.push_back(~val);
+        break;
+      case STIRBCE_OPCODE_SQRT:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(sqrt(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_LOG:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(log(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_EXP:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(exp(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_TAN:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(tan(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_SIN:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(sin(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_COS:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(cos(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_ATAN:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(atan(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_ASIN:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(asin(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_ACOS:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(acos(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_CEIL:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(ceil(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_FLOOR:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(floor(get_dbl(stack)));
+        break;
+      case STIRBCE_OPCODE_FP_CLASSIFY:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        switch (fpclassify(get_dbl(stack)))
+        {
+          case FP_ZERO:
+            stack.push_back(0);
+            break;
+          case FP_NAN:
+            stack.push_back(1);
+            break;
+          case FP_SUBNORMAL:
+            stack.push_back(2);
+            break;
+          case FP_NORMAL:
+            stack.push_back(3);
+            break;
+          case FP_INFINITE:
+            stack.push_back(4); // FIXME #define constants for these
+            break;
+          default:
+            std::terminate();
+        }
+        break;
+      case STIRBCE_OPCODE_ABS:
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        stack.push_back(abs(get_dbl(stack)));
         break;
       case STIRBCE_OPCODE_CALL_UNARY_MINUS:
         if (unlikely(stack.size() < 1))
@@ -1302,6 +1582,44 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EINVAL;
           break;
         }
+        break;
+      }
+      case STIRBCE_OPCODE_SCOPE_HAS:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock str = stack.back(); stack.pop_back();
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_SC || str.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(mbar.u.sc->recursive_has(*str.u.s));
+        break;
+      }
+      case STIRBCE_OPCODE_DICTHAS:
+      {
+        if (unlikely(stack.size() < 2))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock str = stack.back(); stack.pop_back();
+        memblock mbar = stack.back(); stack.pop_back();
+        if (mbar.type != memblock::T_M || str.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        stack.push_back(memblock(mbar.u.m->find(*str.u.s) != mbar.u.m->end()));
         break;
       }
       case STIRBCE_OPCODE_DICTGET:
@@ -1742,6 +2060,40 @@ int engine(const uint8_t *microprogram, size_t microsz,
         stack.push_back(memblock(new std::string(buf, 1)));
         break;
       }
+      case STIRBCE_OPCODE_STRSET:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        int64_t ch = get_i64(stack);
+        int64_t a = get_i64(stack);
+        memblock mbbase = stack.back(); stack.pop_back();
+        if (mbbase.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (ch < 0 || ch >= 256)
+        {
+          printf("char value error\n");
+          ret = -EINVAL;
+          break;
+        }
+        if (a < 0 || (size_t)a >= mbbase.u.s->length())
+        {
+          printf("string index error\n");
+          ret = -EINVAL;
+          break;
+        }
+        std::string copy(*mbbase.u.s);
+        copy[a] = (char)(unsigned char)ch;
+        stack.push_back(memblock(new std::string(copy)));
+        break;
+      }
       case STIRBCE_OPCODE_STRGET:
       {
         if (unlikely(stack.size() < 2))
@@ -1765,6 +2117,43 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         stack.push_back(memblock((double)(unsigned char)(*mbbase.u.s)[a]));
+        break;
+      }
+      case STIRBCE_OPCODE_STRLISTJOIN:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbbase = stack.back(); stack.pop_back();
+        std::string joiner = get_str(stack);
+        std::ostringstream oss;
+        if (mbbase.type != memblock::T_V)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        for (auto it = mbbase.u.v->begin(); it != mbbase.u.v->end(); it++)
+        {
+          if (it != mbbase.u.v->begin())
+          {
+            oss << joiner;
+          }
+          if (it->type != memblock::T_S)
+          {
+            printf("invalid type\n");
+            ret = -EINVAL;
+            break;
+          }
+          oss << it->u.s;
+        }
+        if (ret != -EAGAIN)
+        {
+          stack.push_back(memblock(new std::string(oss.str())));
+        }
         break;
       }
       case STIRBCE_OPCODE_STRLEN:
