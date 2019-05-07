@@ -45,9 +45,12 @@ DEP_CPP := $(patsubst %.cc,%.d,$(SRC_CPP))
 DEPGEN_LIB := $(patsubst %.c,%.d,$(GEN_LIB))
 DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
-.PHONY: all
+.PHONY: all wc
 
 all: stirmain stir inc arraytest luatest cctest streamtest globtest bttest
+
+wc:
+	wc -l $(LEX) $(YACC) $(SRC_CPP) $(SRC) $(filter-out %.lex.h %.tab.h,$(wildcard *.h))
 
 #LUAINC:=/usr/include/lua5.3
 #LUALIB:=/usr/lib/x86_64-linux-gnu/liblua5.3.a
