@@ -134,5 +134,8 @@ int main(int argc, char **argv)
 
   memblock sc(new scope());
 
-  engine(&microprogram[0], microprogram.size(), st, NULL, sc);
+  microprogram_global = &microprogram[0];
+  microsz_global = microprogram.size();
+  st_global = &st;
+  engine(NULL, sc);
 }

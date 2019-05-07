@@ -12,8 +12,10 @@
 #include "stirbce.h"
 
 std::map<lua_State*, memblock> scopes_lex;
-std::map<lua_State*, std::tuple<const uint8_t*, size_t, stringtab*> > microprograms;
 memblock scope_global_dyn;
+stringtab *st_global;
+const uint8_t *microprogram_global;
+size_t microsz_global;
 
 scope &scopy(const memblock &mb)
 {
@@ -39,10 +41,9 @@ int lua_makelexcall(lua_State *lua) {
   std::cout << "symbol type " << symbol.type << std::endl;
   size_t ip = symbol.u.d;
   std::cout << "symbol ip " << ip << std::endl;
-  std::tuple<const uint8_t*, size_t, stringtab*> p = get_microprogram_by_lua(lua);
-  const uint8_t *microprogram = std::get<0>(p);
-  const size_t microsz = std::get<1>(p);
-  stringtab *st = std::get<2>(p);
+  const uint8_t *microprogram = microprogram_global;
+  const size_t microsz = microsz_global;
+  stringtab *st = st_global;
 
 
   for (int i = 0; i < args; i++)
@@ -74,7 +75,7 @@ int lua_makelexcall(lua_State *lua) {
 
   stack.push_back(memblock(-1, false, true)); // base pointer
   stack.push_back(memblock(-1, false, true)); // return address
-  engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
+  engine(lua, sc, stack, ip+9);
 
   if (stack.size() != (size_t)1)
   {
@@ -106,10 +107,9 @@ int lua_getlexval(lua_State *lua) {
   memblock symbol = scopy(sc).recursive_lookup(str);
   std::vector<memblock> stack;
   std::cout << "symbol type " << symbol.type << std::endl;
-  std::tuple<const uint8_t*, size_t, stringtab*> p = get_microprogram_by_lua(lua);
-  const uint8_t *microprogram = std::get<0>(p);
-  const size_t microsz = std::get<1>(p);
-  stringtab *st = std::get<2>(p);
+  const uint8_t *microprogram = microprogram_global;
+  const size_t microsz = microsz_global;
+  stringtab *st = st_global;
 
   if (symbol.type == memblock::T_F)
   {
@@ -136,7 +136,7 @@ int lua_getlexval(lua_State *lua) {
     }
     stack.push_back(memblock(-1, false, true)); // base pointer
     stack.push_back(memblock(-1, false, true)); // return address
-    engine(&microprogram[0], microsz, *st, lua, sc, stack, ip+9);
+    engine(lua, sc, stack, ip+9);
     if (stack.size() != 1)
     {
       std::terminate();
@@ -400,8 +400,7 @@ get_stackloc(int64_t stackloc, size_t bp, std::vector<memblock> &stack)
   return stack.at(stack.size() + stackloc);
 }
 
-int engine(const uint8_t *microprogram, size_t microsz,
-           stringtab &st, lua_State *lua, memblock scope,
+int engine(lua_State *lua, memblock scope,
            std::vector<memblock> &stack, size_t ip)
 {
   // 0.53 us / execution
@@ -412,9 +411,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
   const size_t stackbound = 131072;
 
   ret = -EAGAIN;
-  while (ret == -EAGAIN && ip < microsz)
+  while (ret == -EAGAIN && ip < microsz_global)
   {
-    uint8_t ophi = microprogram[ip++];
+    uint8_t ophi = microprogram_global[ip++];
     if (likely(ophi < 128))
     {
       opcode = ophi;
@@ -428,13 +427,13 @@ int engine(const uint8_t *microprogram, size_t microsz,
     else if (likely((ophi & 0xE0) == 0xC0))
     {
       uint8_t oplo;
-      if (unlikely(ip >= microsz))
+      if (unlikely(ip >= microsz_global))
       {
         printf("microcode overflow\n");
         ret = -EOVERFLOW;
         break;
       }
-      oplo = microprogram[ip++];
+      oplo = microprogram_global[ip++];
       if (unlikely((oplo & 0xC0) != 0x80))
       {
         printf("illegal byte sequence\n");
@@ -452,20 +451,20 @@ int engine(const uint8_t *microprogram, size_t microsz,
     else if (likely((ophi & 0xF0) == 0xE0))
     {
       uint8_t opmid, oplo;
-      if (unlikely(ip >= microsz))
+      if (unlikely(ip >= microsz_global))
       {
         printf("microcode overflow\n");
         ret = -EOVERFLOW;
         break;
       }
-      opmid = microprogram[ip++];
+      opmid = microprogram_global[ip++];
       if (unlikely((opmid & 0xC0) != 0x80))
       {
         printf("illegal byte sequence\n");
         ret = -EILSEQ;
         break;
       }
-      oplo = microprogram[ip++];
+      oplo = microprogram_global[ip++];
       if (unlikely((oplo & 0xC0) != 0x80))
       {
         printf("illegal byte sequence\n");
@@ -509,7 +508,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         jmp = get_i64(stack);
-        if (unlikely(ip + jmp > microsz))
+        if (unlikely(ip + jmp > microsz_global))
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -570,29 +569,29 @@ int engine(const uint8_t *microprogram, size_t microsz,
         if (stack.back().type == memblock::T_F)
         {
           jmp = get_funaddr(stack);
-          if (jmp < 0 || (size_t)jmp + 9 > microsz) // FIXME off-by-one?
+          if (jmp < 0 || (size_t)jmp + 9 > microsz_global) // FIXME off-by-one?
           {
             printf("microprogram overflow\n");
             ret = -EFAULT;
             break;
           }
-          printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz);
-          printf("instr %d\n", microprogram[jmp]);
-          if (microprogram[jmp] != STIRBCE_OPCODE_FUN_HEADER)
+          printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz_global);
+          printf("instr %d\n", microprogram_global[jmp]);
+          if (microprogram_global[jmp] != STIRBCE_OPCODE_FUN_HEADER)
           {
             printf("not a function\n");
             ret = -EINVAL;
             break;
           }
           uint64_t u64 = 
-                        ((((uint64_t)microprogram[jmp+1])<<56) |
-                        (((uint64_t)microprogram[jmp+2])<<48) |
-                        (((uint64_t)microprogram[jmp+3])<<40) |
-                        (((uint64_t)microprogram[jmp+4])<<32) |
-                        (((uint64_t)microprogram[jmp+5])<<24) |
-                        (((uint64_t)microprogram[jmp+6])<<16) |
-                        (((uint64_t)microprogram[jmp+7])<<8) |
-                                    microprogram[jmp+8]);
+                        ((((uint64_t)microprogram_global[jmp+1])<<56) |
+                        (((uint64_t)microprogram_global[jmp+2])<<48) |
+                        (((uint64_t)microprogram_global[jmp+3])<<40) |
+                        (((uint64_t)microprogram_global[jmp+4])<<32) |
+                        (((uint64_t)microprogram_global[jmp+5])<<24) |
+                        (((uint64_t)microprogram_global[jmp+6])<<16) |
+                        (((uint64_t)microprogram_global[jmp+7])<<8) |
+                                    microprogram_global[jmp+8]);
           double dbl;
           memcpy(&dbl, &u64, 8);
           if (dbl != (double)0.0)
@@ -625,29 +624,29 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         jmp = get_funaddr(stack);
-        if (jmp < 0 || (size_t)jmp + 9 > microsz) // FIXME off-by-one?
+        if (jmp < 0 || (size_t)jmp + 9 > microsz_global) // FIXME off-by-one?
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
           break;
         }
-        printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz);
-        printf("instr %d\n", microprogram[jmp]);
-        if (microprogram[jmp] != STIRBCE_OPCODE_FUN_HEADER)
+        printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz_global);
+        printf("instr %d\n", microprogram_global[jmp]);
+        if (microprogram_global[jmp] != STIRBCE_OPCODE_FUN_HEADER)
         {
           printf("not a function\n");
           ret = -EINVAL;
           break;
         }
         uint64_t u64 = 
-                      ((((uint64_t)microprogram[jmp+1])<<56) |
-                      (((uint64_t)microprogram[jmp+2])<<48) |
-                      (((uint64_t)microprogram[jmp+3])<<40) |
-                      (((uint64_t)microprogram[jmp+4])<<32) |
-                      (((uint64_t)microprogram[jmp+5])<<24) |
-                      (((uint64_t)microprogram[jmp+6])<<16) |
-                      (((uint64_t)microprogram[jmp+7])<<8) |
-                                  microprogram[jmp+8]);
+                      ((((uint64_t)microprogram_global[jmp+1])<<56) |
+                      (((uint64_t)microprogram_global[jmp+2])<<48) |
+                      (((uint64_t)microprogram_global[jmp+3])<<40) |
+                      (((uint64_t)microprogram_global[jmp+4])<<32) |
+                      (((uint64_t)microprogram_global[jmp+5])<<24) |
+                      (((uint64_t)microprogram_global[jmp+6])<<16) |
+                      (((uint64_t)microprogram_global[jmp+7])<<8) |
+                                  microprogram_global[jmp+8]);
         double dbl;
         memcpy(&dbl, &u64, 8);
         if (dbl != (double)argcnt)
@@ -665,7 +664,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
       case STIRBCE_OPCODE_EXIT:
       {
         printf("exit, stack size %zu\n", stack.size());
-        ip = microsz;
+        ip = microsz_global;
         break;
       }
       case STIRBCE_OPCODE_SUFSUB:
@@ -967,9 +966,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
         jmp = get_reg(stack);
         if (jmp == -1)
         {
-          jmp = microsz;
+          jmp = microsz_global;
         }
-        if (unlikely(jmp < 0 || (size_t)jmp > microsz))
+        if (unlikely(jmp < 0 || (size_t)jmp > microsz_global))
         {
           printf("microprogram overflow: jmp %lld\n", (long long)jmp);
           ret = -EFAULT;
@@ -1038,9 +1037,9 @@ int engine(const uint8_t *microprogram, size_t microsz,
         jmp = get_reg(stack);
         if (jmp == -1)
         {
-          jmp = microsz;
+          jmp = microsz_global;
         }
-        if (unlikely(jmp < 0 || (size_t)jmp > microsz))
+        if (unlikely(jmp < 0 || (size_t)jmp > microsz_global))
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -1096,7 +1095,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         }
         jmp = get_i64(stack);
         condition = get_i64(stack);
-        if (unlikely(ip + jmp > microsz))
+        if (unlikely(ip + jmp > microsz_global))
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -1240,13 +1239,13 @@ int engine(const uint8_t *microprogram, size_t microsz,
           ret = -EOVERFLOW;
           break;
         }
-        if (unlikely(val < 0 || (size_t)val >= st.blocks.size()))
+        if (unlikely(val < 0 || (size_t)val >= st_global->blocks.size()))
         {
           printf("stringtab overflow\n");
           ret = -EOVERFLOW;
           break;
         }
-        stack.push_back(st.blocks.at(val));
+        stack.push_back(st_global->blocks.at(val));
         break;
       }
       case STIRBCE_OPCODE_PUSH_NEW_DICT:
@@ -1262,7 +1261,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
       }
       case STIRBCE_OPCODE_PUSH_DBL:
       {
-        if (unlikely(ip+8 >= microsz))
+        if (unlikely(ip+8 >= microsz_global))
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -1275,14 +1274,14 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         uint64_t u64 = 
-                      ((((uint64_t)microprogram[ip+0])<<56) |
-                      (((uint64_t)microprogram[ip+1])<<48) |
-                      (((uint64_t)microprogram[ip+2])<<40) |
-                      (((uint64_t)microprogram[ip+3])<<32) |
-                      (((uint64_t)microprogram[ip+4])<<24) |
-                      (((uint64_t)microprogram[ip+5])<<16) |
-                      (((uint64_t)microprogram[ip+6])<<8) |
-                                  microprogram[ip+7]);
+                      ((((uint64_t)microprogram_global[ip+0])<<56) |
+                      (((uint64_t)microprogram_global[ip+1])<<48) |
+                      (((uint64_t)microprogram_global[ip+2])<<40) |
+                      (((uint64_t)microprogram_global[ip+3])<<32) |
+                      (((uint64_t)microprogram_global[ip+4])<<24) |
+                      (((uint64_t)microprogram_global[ip+5])<<16) |
+                      (((uint64_t)microprogram_global[ip+6])<<8) |
+                                  microprogram_global[ip+7]);
         double dbl;
         memcpy(&dbl, &u64, 8);
         stack.push_back(dbl);
@@ -1294,7 +1293,7 @@ int engine(const uint8_t *microprogram, size_t microsz,
         printf("ran into function without being called\n");
         ret = -EFAULT;
         break;
-        if (unlikely(ip+8 >= microsz))
+        if (unlikely(ip+8 >= microsz_global))
         {
           printf("microprogram overflow\n");
           ret = -EFAULT;
@@ -1307,14 +1306,14 @@ int engine(const uint8_t *microprogram, size_t microsz,
           break;
         }
         uint64_t u64 = 
-                      ((((uint64_t)microprogram[ip+0])<<56) |
-                      (((uint64_t)microprogram[ip+1])<<48) |
-                      (((uint64_t)microprogram[ip+2])<<40) |
-                      (((uint64_t)microprogram[ip+3])<<32) |
-                      (((uint64_t)microprogram[ip+4])<<24) |
-                      (((uint64_t)microprogram[ip+5])<<16) |
-                      (((uint64_t)microprogram[ip+6])<<8) |
-                                  microprogram[ip+7]);
+                      ((((uint64_t)microprogram_global[ip+0])<<56) |
+                      (((uint64_t)microprogram_global[ip+1])<<48) |
+                      (((uint64_t)microprogram_global[ip+2])<<40) |
+                      (((uint64_t)microprogram_global[ip+3])<<32) |
+                      (((uint64_t)microprogram_global[ip+4])<<24) |
+                      (((uint64_t)microprogram_global[ip+5])<<16) |
+                      (((uint64_t)microprogram_global[ip+6])<<8) |
+                                  microprogram_global[ip+7]);
         double dbl;
         memcpy(&dbl, &u64, 8);
         if ((double)(unsigned)dbl != dbl)

@@ -18,6 +18,12 @@ extern "C" {
 #include <lualib.h>
 };
 
+class stringtab;
+
+extern stringtab *st_global;
+extern const uint8_t *microprogram_global;
+extern size_t microsz_global;
+
 class scope;
 
 class memblock {
@@ -405,17 +411,6 @@ class stringtab {
       return oldsz;
     }
 };
-
-extern std::map<lua_State*, std::tuple<const uint8_t*, size_t, stringtab*> > microprograms;
-
-static inline std::tuple<const uint8_t*, size_t, stringtab*> get_microprogram_by_lua(lua_State *lua)
-{
-  if (microprograms.find(lua) == microprograms.end())
-  {
-    std::terminate();
-  }
-  return microprograms[lua];
-}
 
 static inline const char *hr_opcode(uint8_t opcode)
 {

@@ -736,8 +736,10 @@ int main(int argc, char **argv)
   size_t ip = scope_stack.back().u.sc->vars["MYFLAGS"].u.d + 9;
   std::cout << "to become ip: " << ip << std::endl;
 
-  engine(stiryy.bytecode, stiryy.bytesz, st,
-         scope_stack.back().u.sc->lua, scope_stack.back(),
+  microprogram_global = stiryy.bytecode;
+  microsz_global = stiryy.bytesz;
+  st_global = &st;
+  engine(scope_stack.back().u.sc->lua, scope_stack.back(),
          stack, ip);
 
   std::cout << "STACK SIZE: " << stack.size() << std::endl;

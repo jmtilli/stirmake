@@ -128,9 +128,11 @@ int main(int argc, char **argv)
   sc->vars["bar"] = memblock(fun2idx, true);
   sc->vars["baz"] = memblock(12347);
 
-  microprograms[sc->lua] = std::make_tuple(&microprogram[0], microprogram.size(), &st);
+  microprogram_global = &microprogram[0];
+  microsz_global = microprogram.size();
+  st_global = &st;
 
-  engine(&microprogram[0], microprogram.size(), st, lua, scmb);
+  engine(lua, scmb);
 
   return 0;
 }
