@@ -1,12 +1,10 @@
-all: stir inc stirmain
-
 .SUFFIXES:
 
 SRC_LIB := yyutils.c incyyutils.c
 SRC := $(SRC_LIB) stir.c inc.c
 
 SRC_CPP_LIB := stirbce.cc
-SRC_CPP := $(SRC_CPP_LIB) stirmain.cc arraytest.cc luatest.cc cctest.cc
+SRC_CPP := $(SRC_CPP_LIB) stirmain.cc arraytest.cc luatest.cc cctest.cc streamtest.cc
 
 LEX_LIB := stiryy.l incyy.l
 LEX := $(LEX_LIB)
@@ -49,7 +47,7 @@ DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
 .PHONY: all
 
-all: stirmain stir inc arraytest luatest cctest
+all: stirmain stir inc arraytest luatest cctest streamtest
 
 #LUAINC:=/usr/include/lua5.3
 #LUALIB:=/usr/lib/x86_64-linux-gnu/liblua5.3.a
@@ -65,6 +63,9 @@ stirmain: stirmain.o libstirmake.a Makefile $(LUALIB)
 	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
 arraytest: arraytest.o libstirmake.a Makefile $(LUALIB)
+	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+
+streamtest: streamtest.o libstirmake.a Makefile $(LUALIB)
 	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
 luatest: luatest.o libstirmake.a Makefile $(LUALIB)
