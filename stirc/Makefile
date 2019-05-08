@@ -4,7 +4,7 @@ SRC_LIB := yyutils.c incyyutils.c
 SRC := $(SRC_LIB) stir.c inc.c
 
 SRC_CPP_LIB := stirbce.cc
-SRC_CPP := $(SRC_CPP_LIB) stirmain.cc arraytest.cc luatest.cc cctest.cc streamtest.cc globtest.cc bttest.cc
+SRC_CPP := $(SRC_CPP_LIB) stirmain.cc arraytest.cc luatest.cc cctest.cc streamtest.cc globtest.cc bttest.cc jsontest.cc
 
 LEX_LIB := stiryy.l incyy.l
 LEX := $(LEX_LIB)
@@ -47,7 +47,7 @@ DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
 .PHONY: all wc
 
-all: stirmain stir inc arraytest luatest cctest streamtest globtest bttest
+all: stirmain stir inc arraytest luatest cctest streamtest globtest bttest jsontest
 
 wc:
 	wc -l $(LEX) $(YACC) $(SRC_CPP) $(SRC) $(filter-out %.lex.h %.tab.h,$(wildcard *.h))
@@ -75,6 +75,9 @@ globtest: globtest.o libstirmake.a Makefile $(LUALIB)
 	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
 bttest: bttest.o libstirmake.a Makefile $(LUALIB)
+	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+
+jsontest: jsontest.o libstirmake.a Makefile $(LUALIB)
 	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
 luatest: luatest.o libstirmake.a Makefile $(LUALIB)

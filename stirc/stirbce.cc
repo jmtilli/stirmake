@@ -813,6 +813,98 @@ std::string fun_stringify(size_t ip)
   return *mb.u.s;
 }
 
+void stringescape(const std::string &str, std::ostream &oss)
+{
+  oss << "\"";
+  for (auto it = str.begin(); it != str.end(); it++)
+  {
+    char ch = *it;
+    if (ch == '\\')
+      oss << "\\\\";
+    else if (ch == '\n')
+      oss << "\\n";
+    else if (ch == '\r')
+      oss << "\\r";
+    else if (ch == '\t')
+      oss << "\\t";
+    else if (ch == '\b')
+      oss << "\\b";
+    else if (ch == '\f')
+      oss << "\\f";
+    else if (ch == '"')
+      oss << "\\\"";
+    else if ((unsigned char)ch <= 0x0F)
+      oss << "\\u000" << std::hex << (int)(unsigned char)ch << std::dec;
+    else if ((unsigned char)ch <= 0x1F)
+      oss << "\\u001" << std::hex << (int)(unsigned char)(ch-0x10) << std::dec;
+    else
+      oss << ch;
+  }
+  oss << str;
+  oss << "\"";
+}
+
+void tojson(memblock mb, std::ostream &oss)
+{
+  switch (mb.type)
+  {
+    case memblock::T_S:
+      stringescape(*mb.u.s, oss);
+      break;
+    case memblock::T_N:
+      oss << "null";
+      break;
+    case memblock::T_B:
+      oss << (mb.u.d ? "true" : "false");
+      break;
+    case memblock::T_D:
+      if ((double)(int64_t)mb.u.d == mb.u.d)
+      {
+        oss << (int64_t)mb.u.d;
+      }
+      else
+      {
+        oss << std::setprecision(20) << mb.u.d;
+      }
+      break;
+    case memblock::T_V:
+      oss << "[";
+      for (auto it = mb.u.v->begin(); it != mb.u.v->end(); it++)
+      {
+        if (it != mb.u.v->begin())
+        {
+          oss << ",";
+        }
+        tojson(*it, oss);
+      }
+      oss << "]";
+      break;
+    case memblock::T_M:
+      oss << "{";
+      for (auto it = mb.u.m->begin(); it != mb.u.m->end(); it++)
+      {
+        if (it != mb.u.m->begin())
+        {
+          oss << ",";
+        }
+        stringescape(it->first, oss);
+        oss << ":";
+        tojson(it->second, oss);
+      }
+      oss << "}";
+      break;
+    default:
+      throw std::invalid_argument("can't serialize to JSON");
+  }
+}
+
+std::string tojson(memblock mb)
+{
+  std::ostringstream oss;
+  tojson(mb, oss);
+  return oss.str();
+}
+
 int engine(lua_State *lua, memblock scope,
            std::vector<memblock> &stack, std::vector<std::string> &backtrace, size_t ip)
 {
@@ -1187,6 +1279,18 @@ int engine(lua_State *lua, memblock scope,
           break;
         }
         stack.push_back(mb2);
+        break;
+      }
+      case STIRBCE_OPCODE_JSON_ENCODE:
+      {
+        if (unlikely(stack.size() < 1))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mb = stack.back(); stack.pop_back();
+        stack.push_back(memblock(new std::string(tojson(mb))));
         break;
       }
       case STIRBCE_OPCODE_PATH_SUFFIX:
@@ -1850,66 +1954,62 @@ int engine(lua_State *lua, memblock scope,
         stack.push_back(memblock(new std::string(s)));
         break;
       }
-      case STIRBCE_OPCODE_ABSPATH:
+      case STIRBCE_OPCODE_PATH_ABSOLUTIFY:
       {
-        if (unlikely(stack.size() < 1))
+        if (unlikely(stack.size() < 2))
         {
           printf("stack underflow\n");
           ret = -EOVERFLOW;
           break;
         }
+        int64_t i = get_i64(stack);
         std::string s = get_str(stack);
-        char *res = realpath(".", NULL);
-        if (res == NULL)
+        if (i) // boolean value: follow symlinks
         {
-          fprintf(stderr, "Current directory cannot be looked up\n");
-          perror("realpath failed");
-          if (errno == EAGAIN)
+          char *res = realpath(s.c_str(), NULL);
+          if (res == NULL)
           {
-            ret = -EINVAL;
+            fprintf(stderr, "File %s cannot be looked up\n", s.c_str());
+            perror("realpath failed");
+            if (errno == EAGAIN)
+            {
+              ret = -EINVAL;
+            }
+            else
+            {
+              ret = -errno;
+            }
+            break;
           }
-          else
-          {
-            ret = -errno;
-          }
-          break;
+          std::string s2(res);
+          free(res);
+          stack.push_back(memblock(new std::string(s2)));
         }
-        std::string s2(res);
-        free(res);
-        if (s2.length() == 0)
+        else
         {
-          std::terminate();
-        }
-        stack.push_back(memblock(new std::string(path_simplify(s2 + "/" + s))));
-        break;
-      }
-      case STIRBCE_OPCODE_REALPATH:
-      {
-        if (unlikely(stack.size() < 1))
-        {
-          printf("stack underflow\n");
-          ret = -EOVERFLOW;
-          break;
-        }
-        std::string s = get_str(stack);
-        char *res = realpath(s.c_str(), NULL);
-        if (res == NULL)
-        {
-          fprintf(stderr, "File %s cannot be looked up\n", s.c_str());
-          perror("realpath failed");
-          if (errno == EAGAIN)
+          char *res = realpath(".", NULL);
+          if (res == NULL)
           {
-            ret = -EINVAL;
+            fprintf(stderr, "Current directory cannot be looked up\n");
+            perror("realpath failed");
+            if (errno == EAGAIN)
+            {
+              ret = -EINVAL;
+            }
+            else
+            {
+              ret = -errno;
+            }
+            break;
           }
-          else
+          std::string s2(res);
+          free(res);
+          if (s2.length() == 0)
           {
-            ret = -errno;
+            std::terminate();
           }
-          break;
+          stack.push_back(memblock(new std::string(path_simplify(s2 + "/" + s))));
         }
-        std::string s2(res);
-        free(res);
-        stack.push_back(memblock(new std::string(s2)));
         break;
       }
       case STIRBCE_OPCODE_STR_REVERSE:
@@ -2350,6 +2450,26 @@ int engine(lua_State *lua, memblock scope,
           break;
         }
         mbar.u.m->erase(*str.u.s);
+        break;
+      }
+      case STIRBCE_OPCODE_DICTSET_MAINTAIN:
+      {
+        if (unlikely(stack.size() < 3))
+        {
+          printf("stack underflow\n");
+          ret = -EOVERFLOW;
+          break;
+        }
+        memblock mbit = stack.back(); stack.pop_back();
+        memblock str = stack.back(); stack.pop_back();
+        memblock mbar = stack.back();
+        if (mbar.type != memblock::T_M || str.type != memblock::T_S)
+        {
+          printf("invalid type\n");
+          ret = -EINVAL;
+          break;
+        }
+        (*mbar.u.m)[*str.u.s] = mbit;
         break;
       }
       case STIRBCE_OPCODE_DICTSET:
