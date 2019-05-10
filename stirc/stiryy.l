@@ -55,6 +55,7 @@ struct CSnippet luaSnippet = {
 @function return FUNCTION;
 @endfunction return ENDFUNCTION;
 @locvar   return LOCVAR;
+@recdep   return RECDEP;
 @D     return D;
 @L     return L;
 @I     return I;

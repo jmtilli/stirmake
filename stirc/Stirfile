@@ -1,6 +1,6 @@
 # beforefirstrule: longdepall
 
-firstrule: ipfrag/comboperf.o
+firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
 
 @cdepincludescurdir "depfile.dep"
 # @cdepincludescurdir "longdepfile.dep"

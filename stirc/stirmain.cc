@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <vector>
 #include <map>
@@ -60,6 +61,33 @@ int ts_cmp(struct timespec ta, struct timespec tb)
   return 0;
 }
 
+class Dep {
+  public:
+    std::string name;
+    bool recursive;
+
+    Dep(std::string name, bool recursive = false):
+      name(name), recursive(recursive)
+    {
+    }
+
+    bool operator==(const Dep &that) const
+    {
+      return this->name == that.name;
+    }
+};
+
+namespace std {
+    template <>
+        class hash<Dep>{
+        public :
+            size_t operator()(const Dep &dep ) const
+            {
+                return hash<string>()(dep.name);
+            }
+    };
+};
+
 class Rule {
   public:
     bool phony;
@@ -67,7 +95,7 @@ class Rule {
     bool executing;
     bool queued;
     std::unordered_set<std::string> tgts;
-    std::unordered_set<std::string> deps;
+    std::unordered_set<Dep> deps;
     std::unordered_set<int> deps_remain;
     Cmd cmd;
     int ruleid;
@@ -78,7 +106,10 @@ class Rule {
     {
       for (auto it = deps.begin(); it != deps.end(); it++)
       {
-        deps_remain.insert(ruleid_by_tgt[*it]);
+        if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
+        {
+          deps_remain.insert(ruleid_by_tgt[it->name]);
+        }
       }
     }
 };
@@ -112,7 +143,7 @@ std::ostream &operator<<(std::ostream &o, const Rule &r)
     {
       o << ",";
     }
-    o << *it;
+    o << it->name;
   }
   o << "])";
   return o;
@@ -148,9 +179,9 @@ void better_cycle_detect(int cur, std::vector<bool> &parents, std::vector<bool> 
   parents[cur] = true;
   for (auto it = rules[cur].deps.begin(); it != rules[cur].deps.end(); it++)
   {
-    if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+    if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
     {
-      better_cycle_detect(ruleid_by_tgt[*it], parents, no_cycles, cntr);
+      better_cycle_detect(ruleid_by_tgt[it->name], parents, no_cycles, cntr);
     }
   }
   parents[cur] = false;
@@ -209,11 +240,11 @@ void process_additional_deps(void)
       r.phony = it->second.first;
       for (auto it2 = r.deps.begin(); it2 != r.deps.end(); it2++)
       {
-        if (ruleids_by_dep.find(*it2) == ruleids_by_dep.end())
+        if (ruleids_by_dep.find(it2->name) == ruleids_by_dep.end())
         {
-          ruleids_by_dep[*it2] = std::unordered_set<int>();
+          ruleids_by_dep[it2->name] = std::unordered_set<int>();
         }
-        ruleids_by_dep[*it2].insert(r.ruleid);
+        ruleids_by_dep[it2->name].insert(r.ruleid);
         //std::cout << " dep: " << *it2 << std::endl;
       }
       rules.push_back(r);
@@ -231,17 +262,17 @@ void process_additional_deps(void)
     //std::cout << "modified rule " << r << std::endl;
     for (auto it2 = r.deps.begin(); it2 != r.deps.end(); it2++)
     {
-      if (ruleids_by_dep.find(*it2) == ruleids_by_dep.end())
+      if (ruleids_by_dep.find(it2->name) == ruleids_by_dep.end())
       {
-        ruleids_by_dep[*it2] = std::unordered_set<int>();
+        ruleids_by_dep[it2->name] = std::unordered_set<int>();
       }
-      ruleids_by_dep[*it2].insert(r.ruleid);
+      ruleids_by_dep[it2->name].insert(r.ruleid);
     }
   }
 }
 
 void add_rule(const std::vector<std::string> &tgts,
-              const std::vector<std::string> &deps,
+              const std::vector<Dep> &deps,
               const std::vector<std::string> &cmdargs,
               bool phony)
 {
@@ -276,11 +307,11 @@ void add_rule(const std::vector<std::string> &tgts,
   }
   for (auto it = deps.begin(); it != deps.end(); it++)
   {
-    if (ruleids_by_dep.find(*it) == ruleids_by_dep.end())
+    if (ruleids_by_dep.find(it->name) == ruleids_by_dep.end())
     {
-      ruleids_by_dep[*it] = std::unordered_set<int>();
+      ruleids_by_dep[it->name] = std::unordered_set<int>();
     }
-    ruleids_by_dep[*it].insert(r.ruleid);
+    ruleids_by_dep[it->name].insert(r.ruleid);
   }
 }
 
@@ -325,6 +356,88 @@ pid_t fork_child(int ruleid)
 
 void mark_executed(int ruleid);
 
+struct timespec rec_mtim(const char *name)
+{
+  struct timespec max;
+  struct stat statbuf;
+  DIR *dir = opendir(name);
+  //std::cout << "Statting " << name << std::endl;
+  if (stat(name, &statbuf) != 0)
+  {
+    printf("Can't open file %s\n", name);
+    exit(1);
+  }
+  max = statbuf.st_mtim;
+  if (lstat(name, &statbuf) != 0)
+  {
+    printf("Can't open file %s\n", name);
+    exit(1);
+  }
+  if (ts_cmp(statbuf.st_mtim, max) > 0)
+  {
+    max = statbuf.st_mtim;
+  }
+  if (dir == NULL)
+  {
+    printf("Can't open dir %s\n", name);
+    exit(1);
+  }
+  for (;;)
+  {
+    struct dirent *de = readdir(dir);
+    struct timespec cur;
+    std::string nam2(name);
+    if (de == NULL)
+    {
+      break;
+    }
+    if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+    {
+      continue;
+    }
+    nam2 += std::string("/") + de->d_name;
+    //if (de->d_type == DT_DIR)
+    if (0)
+    {
+      cur = rec_mtim(nam2.c_str());
+    }
+    else
+    {
+      if (stat(nam2.c_str(), &statbuf) != 0)
+      {
+        printf("Can't open file %s\n", nam2.c_str());
+        exit(1);
+      }
+      cur = statbuf.st_mtim;
+      if (lstat(nam2.c_str(), &statbuf) != 0)
+      {
+        printf("Can't open file %s\n", nam2.c_str());
+        exit(1);
+      }
+      if (ts_cmp(statbuf.st_mtim, cur) > 0)
+      {
+        cur = statbuf.st_mtim;
+      }
+    }
+    if (ts_cmp(cur, max) > 0)
+    {
+      //std::cout << "nam2 file new " << nam2 << std::endl;
+      max = cur;
+    }
+    if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
+    {
+      cur = rec_mtim(nam2.c_str());
+      if (ts_cmp(cur, max) > 0)
+      {
+        //std::cout << "nam2 dir new " << nam2 << std::endl;
+        max = cur;
+      }
+    }
+  }
+  closedir(dir);
+  return max;
+}
+
 void do_exec(int ruleid)
 {
   Rule &r = rules.at(ruleid);
@@ -339,16 +452,16 @@ void do_exec(int ruleid)
     {
       int seen_nonphony = 0;
       int seen_tgt = 0;
-      struct timespec st_mtim, st_mtimtgt;
+      struct timespec st_mtim = {}, st_mtimtgt = {};
       for (auto it = r.deps.begin(); it != r.deps.end(); it++)
       {
         struct stat statbuf;
         //std::cout << "it " << *it << std::endl;
-        if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+        if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
         {
           //std::cout << "ruleid by tgt: " << *it << std::endl;
           //std::cout << "ruleid by tgt- " << ruleid_by_tgt[*it] << std::endl;
-          if (rules.at(ruleid_by_tgt[*it]).phony)
+          if (rules.at(ruleid_by_tgt[it->name]).phony)
           {
             has_to_exec = 1;
             //std::cout << "phony" << std::endl;
@@ -356,11 +469,34 @@ void do_exec(int ruleid)
           }
           //std::cout << "nonphony" << std::endl;
         }
-        if (stat(it->c_str(), &statbuf) != 0)
+        if (it->recursive)
+        {
+          struct timespec st_rectim = rec_mtim(it->name.c_str());
+          if (!seen_nonphony || ts_cmp(st_rectim, st_mtim) > 0)
+          {
+            st_mtim = st_rectim;
+          }
+          seen_nonphony = 1;
+          continue;
+        }
+        if (stat(it->name.c_str(), &statbuf) != 0)
         {
           has_to_exec = 1;
           break;
           //perror("can't stat");
+          //fprintf(stderr, "file was: %s\n", it->c_str());
+          //abort();
+        }
+        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+        {
+          st_mtim = statbuf.st_mtim;
+        }
+        seen_nonphony = 1;
+        if (lstat(it->name.c_str(), &statbuf) != 0)
+        {
+          has_to_exec = 1;
+          break;
+          //perror("can't lstat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //abort();
         }
@@ -448,14 +584,14 @@ void consider(int ruleid)
   r.executing = true;
   for (auto it = r.deps.begin(); it != r.deps.end(); it++)
   {
-    if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
+    if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
     {
-      consider(ruleid_by_tgt[*it]);
-      if (!rules.at(ruleid_by_tgt[*it]).executed)
+      consider(ruleid_by_tgt[it->name]);
+      if (!rules.at(ruleid_by_tgt[it->name]).executed)
       {
         if (debug)
         {
-          std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
+          std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
         toexecute = 1;
       }
@@ -758,9 +894,13 @@ int main(int argc, char **argv)
   for (auto it = stiryy.rules; it != stiryy.rules + stiryy.rulesz; it++)
   {
     std::vector<std::string> tgt;
-    std::vector<std::string> dep;
+    std::vector<Dep> dep;
     std::vector<std::string> cmd;
-    std::copy(it->deps, it->deps+it->depsz, std::back_inserter(dep));
+    //std::copy(it->deps, it->deps+it->depsz, std::back_inserter(dep));
+    for (auto it2 = it->deps; it2 != it->deps+it->depsz; it2++)
+    {
+      dep.push_back(Dep(it2->name, it2->rec));
+    }
     std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
     if (tgt.size() > 0) // FIXME chg to if (1)
     {

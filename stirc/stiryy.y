@@ -108,6 +108,7 @@ int stiryywrap(yyscan_t scanner)
 %token FUNCTION
 %token ENDFUNCTION
 %token LOCVAR
+%token RECDEP
 
 %token DELAYVAR
 %token DELAYEXPR
@@ -159,6 +160,7 @@ int stiryywrap(yyscan_t scanner)
 %type<d> value
 %type<d> valuelistentry
 %type<d> maybeqmequals
+%type<d> maybe_rec
 
 %start st
 
@@ -663,22 +665,32 @@ targets:
 }
 ;
 
+maybe_rec:
+{
+  $$ = 0;
+}
+| RECDEP
+{
+  $$ = 1;
+}
+;
+
 deps:
-| deps FREEFORM_TOKEN
+| deps maybe_rec FREEFORM_TOKEN
 {
-  printf("dep %s\n", $2);
-  stiryy_set_dep(stiryy, $2);
-  free($2);
+  printf("dep %s rec? %d\n", $3, (int)$2);
+  stiryy_set_dep(stiryy, $3, $2);
+  free($3);
 }
-| deps STRING_LITERAL
+| deps maybe_rec STRING_LITERAL
 {
-  printf("dep %s\n", $2.str);
-  stiryy_set_dep(stiryy, $2.str);
-  free($2.str);
+  printf("dep %s rec? %d\n", $3.str, (int)$2);
+  stiryy_set_dep(stiryy, $3.str, $2);
+  free($3.str);
 }
-| deps VARREF_LITERAL
+| deps maybe_rec VARREF_LITERAL
 {
   printf("depref\n");
-  free($2);
+  free($3);
 }
 ;

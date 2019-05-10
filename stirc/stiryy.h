@@ -55,8 +55,13 @@ static inline void csaddstr(struct CSnippet *cs, char *str)
   cs->data[cs->len] = '\0';
 }
 
+struct dep {
+  char *name;
+  int rec;
+};
+
 struct stiryyrule {
-  char **deps;
+  struct dep *deps;
   size_t depsz;
   size_t depcapacity;
   char **targets;
@@ -118,17 +123,19 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
   stiryy->cdepincludes[stiryy->cdepincludesz++] = strdup(cd);
 }
 
-static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep)
+static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec)
 {
   struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
   size_t newcapacity;
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
-    rule->deps = (char**)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
+    rule->deps = (struct dep*)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
     rule->depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz++] = strdup(dep);
+  rule->deps[rule->depsz].name = strdup(dep);
+  rule->deps[rule->depsz].rec = rec;
+  rule->depsz++;
 }
 
 static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
@@ -170,7 +177,7 @@ static inline void stiryy_free(struct stiryy *stiryy)
   {
     for (j = 0; j < stiryy->rules[i].depsz; j++)
     {
-      free(stiryy->rules[i].deps[j]);
+      free(stiryy->rules[i].deps[j].name);
     }
     for (j = 0; j < stiryy->rules[i].targetsz; j++)
     {
