@@ -862,6 +862,10 @@ void tojson(memblock mb, std::ostream &oss)
       {
         oss << (int64_t)mb.u.d;
       }
+      else if (isnan(mb.u.d) || isinf(mb.u.d))
+      {
+        throw std::invalid_argument("non-finite number");
+      }
       else
       {
         oss << std::setprecision(20) << mb.u.d;
