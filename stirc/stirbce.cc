@@ -15,23 +15,6 @@
 #include "errno.h"
 #include "stirbce.h"
 
-class memblock_type_error: public std::runtime_error {
-  public:
-    memblock_type_error(const char *what): std::runtime_error(what) {}
-};
-class illegal_sequence: public std::runtime_error {
-  public:
-    illegal_sequence(const char *what): std::runtime_error(what) {}
-};
-class io_error: public std::runtime_error {
-  public:
-    io_error(const char *what): std::runtime_error(what) {}
-};
-class custom_error: public std::runtime_error {
-  public:
-    custom_error(const char *what): std::runtime_error(what) {}
-};
-
 std::map<lua_State*, memblock> scopes_lex;
 memblock scope_global_dyn;
 stringtab *st_global;
@@ -47,6 +30,7 @@ scope &scopy(const memblock &mb)
   return *mb.u.sc;
 }
 
+extern "C"
 int lua_makelexcall(lua_State *lua) {
   try {
     if (lua_gettop(lua) == 0)
@@ -117,6 +101,8 @@ int lua_makelexcall(lua_State *lua) {
     std::terminate();
   }
 }
+
+extern "C"
 int lua_getlexval(lua_State *lua) {
   try {
     if (lua_gettop(lua) == 0)
@@ -192,6 +178,7 @@ int lua_getlexval(lua_State *lua) {
 }
 
 
+extern "C"
 int luaopen_stir(lua_State *lua)
 {
         static const luaL_Reg stir_lib[] = {

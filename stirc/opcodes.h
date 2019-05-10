@@ -19,6 +19,24 @@ extern "C" {
 #include <lualib.h>
 };
 
+class memblock_type_error: public std::runtime_error {
+  public:
+    memblock_type_error(const char *what): std::runtime_error(what) {}
+};
+class illegal_sequence: public std::runtime_error {
+  public:
+    illegal_sequence(const char *what): std::runtime_error(what) {}
+};
+class io_error: public std::runtime_error {
+  public:
+    io_error(const char *what): std::runtime_error(what) {}
+};
+class custom_error: public std::runtime_error {
+  public:
+    custom_error(const char *what): std::runtime_error(what) {}
+};
+
+
 class stringtab;
 
 extern stringtab *st_global;
@@ -100,7 +118,7 @@ class memblock {
   {
     if (isfn && isreg)
     {
-      std::terminate();
+      throw std::invalid_argument("both isfn and isreg set");
     }
     u.d = d;
   }
@@ -194,11 +212,9 @@ class memblock {
         }
         break;
       case T_F:
-        std::cerr << "fn" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a function");
       case T_REG:
-        std::cerr << "reg" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a register");
     }
   }
   void push_lua(lua_State *lua)
@@ -236,17 +252,13 @@ class memblock {
         }
         break;
       case T_SC:
-        std::cerr << "sc" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a scope");
       case T_IOS:
-        std::cerr << "iostream" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is an iostream");
       case T_F:
-        std::cerr << "fn" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a function");
       case T_REG:
-        std::cerr << "reg" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a register");
     }
   }
   memblock(lua_State *lua, int idx = -1)
@@ -321,17 +333,13 @@ class memblock {
         break;
       }
       case LUA_TFUNCTION:
-        std::cerr << "func" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a lua function");
       case LUA_TUSERDATA:
-        std::cerr << "ud" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a lua userdata");
       case LUA_TTHREAD:
-        std::cerr << "thr" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a lua thread");
       case LUA_TLIGHTUSERDATA:
-        std::cerr << "lud" << std::endl;
-        std::terminate(); // FIXME better error handling
+        throw std::invalid_argument("is a lua lightuserdata");
     }
   }
 };
@@ -342,7 +350,7 @@ static inline memblock &get_lexscope_by_lua(lua_State *lua)
 {
   if (scopes_lex.find(lua) == scopes_lex.end())
   {
-    std::terminate();
+    throw std::invalid_argument("lexscope by lua not found");
   }
   memblock &mb = scopes_lex[lua];
   return mb;
@@ -352,11 +360,12 @@ static inline scope &get_dynscope(void)
   memblock &mb = scope_global_dyn;
   if (mb.type != memblock::T_SC)
   {
-    std::terminate();
+    throw memblock_type_error("not a scope");
   }
   return *mb.u.sc;
 }
 
+extern "C"
 int luaopen_stir(lua_State *lua);
 
 class scope {
@@ -380,7 +389,7 @@ class scope {
     scope(memblock parent, bool holey = false): parent(parent), holey(holey) {
       if (parent.type != memblock::T_SC)
       {
-        std::terminate();
+        throw memblock_type_error("not a scope");
       }
       lua = luaL_newstate();
       luaL_openlibs(lua);
@@ -419,8 +428,7 @@ class scope {
       {
         return parent.u.sc->recursive_lookup(name);
       }
-      std::cerr << "var " << name << " not found" << std::endl;
-      std::terminate();
+      throw std::invalid_argument("var " + name + " not found");
     }
 };
 
