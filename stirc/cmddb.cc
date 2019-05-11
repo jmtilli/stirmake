@@ -42,7 +42,7 @@ void skip_whitespace(std::istream &is)
   char ch;
   for (;;)
   {
-    is >> ch;
+    ch = is.get();
     if (ch != ' ' && ch != '\n' && ch != '\r' && ch != '\t')
     {
       is.putback(ch);
@@ -86,17 +86,17 @@ std::string read_string(std::istream &is)
   std::ostringstream oss;
   char ch = '\0';
   skip_whitespace(is);
-  is >> ch;
+  ch = is.get();
   if (ch != '"')
   {
     throw std::runtime_error("expecting string");
   }
   for (;;)
   {
-    is >> ch;
+    ch = is.get();
     if (ch == '\\')
     {
-      is >> ch;
+      ch = is.get();
       switch (ch)
       {
         case '"': oss << '"'; break;
@@ -111,7 +111,10 @@ std::string read_string(std::istream &is)
         {
           char ch1, ch2, ch3, ch4;
           uint16_t u16;
-          is >> ch1 >> ch2 >> ch3 >> ch4;
+          ch1 = is.get();
+          ch2 = is.get();
+          ch3 = is.get();
+          ch4 = is.get();
           if (!ishex(ch1) || !ishex(ch2) || !ishex(ch3) || !ishex(ch4))
           {
             throw std::runtime_error("expecting hex");
@@ -161,7 +164,7 @@ std::vector<std::vector<std::string> > get_cmds(std::istream &is)
   char ch;
   std::vector<std::vector<std::string> > cmds;
   skip_whitespace(is);
-  is >> ch;
+  ch = is.get();
   if (ch != '[')
   {
     throw std::runtime_error("expecting [");
@@ -169,7 +172,7 @@ std::vector<std::vector<std::string> > get_cmds(std::istream &is)
   for (;;)
   {
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch == ']') // RFE disallow [,] etc.
     {
       break;
@@ -182,7 +185,7 @@ std::vector<std::vector<std::string> > get_cmds(std::istream &is)
     for (;;)
     {
       skip_whitespace(is);
-      is >> ch;
+      ch = is.get();
       if (ch == ']') // RFE disallow [,] etc.
       {
         break;
@@ -190,7 +193,7 @@ std::vector<std::vector<std::string> > get_cmds(std::istream &is)
       is.putback(ch);
       cmds.back().push_back(read_string(is));
       skip_whitespace(is);
-      is >> ch;
+      ch = is.get();
       if (ch == ']')
       {
         break;
@@ -201,7 +204,7 @@ std::vector<std::vector<std::string> > get_cmds(std::istream &is)
       }
     }
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch == ']')
     {
       break;
@@ -218,8 +221,9 @@ std::vector<std::vector<std::string> > get_cmds(std::istream &is)
 CmdDb::CmdDb(std::istream &is)
 {
   char ch = '\0';
+  is.exceptions(std::ios_base::failbit | std::ios_base::eofbit | std::ios_base::badbit);
   skip_whitespace(is);
-  is >> ch;
+  ch = is.get();
   if (ch != '{')
   {
     throw std::runtime_error("expecting '{'");
@@ -229,13 +233,13 @@ CmdDb::CmdDb(std::istream &is)
     throw std::runtime_error("expecting tgts");
   }
   skip_whitespace(is);
-  is >> ch;
+  ch = is.get();
   if (ch != ':')
   {
     throw std::runtime_error("expecting ':'");
   }
   skip_whitespace(is);
-  is >> ch;
+  ch = is.get();
   if (ch != '{')
   {
     throw std::runtime_error("expecting '{'");
@@ -243,7 +247,7 @@ CmdDb::CmdDb(std::istream &is)
   for (;;)
   {
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch == '}')
     {
       break;
@@ -255,13 +259,13 @@ CmdDb::CmdDb(std::istream &is)
     is.putback(ch);
     std::string tgt = read_string(is);
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch != ':')
     {
       throw std::runtime_error("expecting ':'");
     }
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch != '{')
     {
       throw std::runtime_error("expecting ':'");
@@ -271,7 +275,7 @@ CmdDb::CmdDb(std::istream &is)
       throw std::runtime_error("expecting cmds");
     }
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch != ':')
     {
       throw std::runtime_error("expecting ':'");
@@ -279,7 +283,7 @@ CmdDb::CmdDb(std::istream &is)
     cmds[tgt] = get_cmds(is);
     // get values
     skip_whitespace(is);
-    is >> ch;
+    ch = is.get();
     if (ch == '}')
     {
       break;
@@ -290,7 +294,7 @@ CmdDb::CmdDb(std::istream &is)
     }
   }
   skip_whitespace(is);
-  is >> ch;
+  ch = is.get();
   if (ch != '}')
   {
     throw std::runtime_error("expecting '}'");
