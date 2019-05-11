@@ -1,3 +1,4 @@
 - Make keys of dict memblocks too
 - Order only prerequisites
-- Recursive directory prerequisites (use recursively last mtime)
+- Two memory areas for engine: temp microcode and global microcode
+  - Use signed number to distinguish between two
