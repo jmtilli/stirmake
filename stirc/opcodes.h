@@ -148,6 +148,14 @@ class memblock {
     u.m = m;
     refc = new size_t(1);
   }
+  memblock(memblock &&other)
+  {
+    type = other.type;
+    u = other.u;
+    refc = other.refc;
+    other.refc = NULL;
+    other.type = T_N;
+  }
   memblock(const memblock &other)
   {
     type = other.type;
@@ -172,176 +180,9 @@ class memblock {
     return *this;
   }
   ~memblock();
-  void dump(void)
-  {
-    switch (type)
-    {
-      case T_S:
-        std::cout << "\"" << *u.s << "\"";
-        break;
-      case T_SC:
-        std::cout << "scope";
-        break;
-      case T_IOS:
-        std::cout << "iostream";
-        break;
-      case T_D:
-        std::cout << u.d;
-        break;
-      case T_V:
-        std::cout << "[";
-        for (size_t i = 0; i != u.v->size(); i++)
-        {
-          u.v->at(i).dump();
-          std::cout << ", ";
-        }
-        std::cout << "]";
-        break;
-      case T_B:
-        std::cout << (u.d ? "true" : "false");
-        break;
-      case T_N:
-        std::cout << "nil";
-        break;
-      case T_M:
-        for (auto it = u.m->begin(); it != u.m->end(); it++)
-        {
-          std::cout << "\"" << *u.s << "\": ";
-          it->second.dump();
-          std::cout << ", ";
-        }
-        break;
-      case T_F:
-        throw std::invalid_argument("is a function");
-      case T_REG:
-        throw std::invalid_argument("is a register");
-    }
-  }
-  void push_lua(lua_State *lua)
-  {
-    switch (type)
-    {
-      case T_S:
-        lua_pushlstring(lua, u.s->data(), u.s->length());
-        break;
-      case T_D:
-        lua_pushnumber(lua, u.d);
-        break;
-      case T_V:
-        lua_newtable(lua);
-        for (size_t i = 0; i != u.v->size(); i++)
-        {
-          lua_pushnumber(lua, i + 1);
-          u.v->at(i).push_lua(lua);
-          lua_settable(lua, -3);
-        }
-        break;
-      case T_B:
-        lua_pushboolean(lua, u.d ? 1 : 0);
-        break;
-      case T_N:
-        lua_pushnil(lua);
-        break;
-      case T_M:
-        lua_newtable(lua);
-        for (auto it = u.m->begin(); it != u.m->end(); it++)
-        {
-          lua_pushlstring(lua, it->first.data(), it->first.length());
-          it->second.push_lua(lua);
-          lua_settable(lua, -3);
-        }
-        break;
-      case T_SC:
-        throw std::invalid_argument("is a scope");
-      case T_IOS:
-        throw std::invalid_argument("is an iostream");
-      case T_F:
-        throw std::invalid_argument("is a function");
-      case T_REG:
-        throw std::invalid_argument("is a register");
-    }
-  }
-  memblock(lua_State *lua, int idx = -1)
-  {
-    int t = lua_type(lua, idx);
-    refc = NULL;
-    switch (t) {
-      case LUA_TSTRING:
-      {
-        const char *s;
-        size_t l;
-        type = T_S;
-        s = lua_tolstring(lua, idx, &l);
-        u.s = new std::string(s, l);
-        refc = new size_t(1);
-        break;
-      }
-      case LUA_TBOOLEAN:
-      {
-        type = T_B;
-        u.d = lua_toboolean(lua, idx) ? 1.0 : 0.0;
-        break;
-      }
-      case LUA_TNUMBER:
-      {
-        type = T_D;
-        u.d = lua_tonumber(lua, idx);
-        break;
-      }
-      case LUA_TTABLE:
-      {
-        size_t len = lua_objlen(lua, -1); // in newer versions, lua_rawlen
-        refc = new size_t(1);
-        if (len)
-        {
-          type = T_V;
-          u.v = new std::vector<memblock>();
-          for (size_t i = 0; i < len; i++)
-          {
-            lua_pushnumber(lua, i + 1);
-            lua_gettable(lua, idx - 1);
-            u.v->push_back(memblock(lua));
-            lua_pop(lua, 1);
-          }
-        }
-        else
-        {
-          type = T_M;
-          u.m = new std::map<std::string, memblock>();
-          lua_pushnil(lua);
-          while (lua_next(lua, idx - 1) != 0)
-          {
-            size_t l;
-            const char *s = lua_tolstring(lua, -2, &l);
-            std::string str(s, l);
-            (*u.m)[str] = memblock(lua);
-            lua_pop(lua, 1);
-          }
-          if (u.m->empty()) // Exception: empty table is always an array
-          {
-            delete u.m;
-            type = T_V;
-            u.v = new std::vector<memblock>();
-          }
-        }
-        break;
-      }
-      case LUA_TNIL:
-      {
-        type = T_N;
-        u.d = 0;
-        break;
-      }
-      case LUA_TFUNCTION:
-        throw std::invalid_argument("is a lua function");
-      case LUA_TUSERDATA:
-        throw std::invalid_argument("is a lua userdata");
-      case LUA_TTHREAD:
-        throw std::invalid_argument("is a lua thread");
-      case LUA_TLIGHTUSERDATA:
-        throw std::invalid_argument("is a lua lightuserdata");
-    }
-  }
+  void dump(void);
+  void push_lua(lua_State *lua);
+  memblock(lua_State *lua, int idx = -1);
 };
 
 extern std::map<lua_State*, memblock> scopes_lex;

@@ -88,7 +88,7 @@ int lua_makelexcall(lua_State *lua) {
       std::terminate();
     }
 
-    memblock rv = stack.back(); stack.pop_back();
+    memblock rv = std::move(stack.back()); stack.pop_back();
 
     rv.push_lua(lua);
 
@@ -163,7 +163,7 @@ int lua_getlexval(lua_State *lua) {
 
     //stack.push_back(get_scope());
 
-    memblock rv = stack.back(); stack.pop_back();
+    memblock rv = std::move(stack.back()); stack.pop_back();
 
     rv.push_lua(lua);
 
@@ -188,6 +188,179 @@ int luaopen_stir(lua_State *lua)
 
         luaL_newlib(lua, stir_lib);
         return 1;
+}
+
+void memblock::push_lua(lua_State *lua)
+{
+  switch (type)
+  {
+    case T_S:
+      lua_pushlstring(lua, u.s->data(), u.s->length());
+      break;
+    case T_D:
+      lua_pushnumber(lua, u.d);
+      break;
+    case T_V:
+      lua_newtable(lua);
+      for (size_t i = 0; i != u.v->size(); i++)
+      {
+        lua_pushnumber(lua, i + 1);
+        u.v->at(i).push_lua(lua);
+        lua_settable(lua, -3);
+      }
+      break;
+    case T_B:
+      lua_pushboolean(lua, u.d ? 1 : 0);
+      break;
+    case T_N:
+      lua_pushnil(lua);
+      break;
+    case T_M:
+      lua_newtable(lua);
+      for (auto it = u.m->begin(); it != u.m->end(); it++)
+      {
+        lua_pushlstring(lua, it->first.data(), it->first.length());
+        it->second.push_lua(lua);
+        lua_settable(lua, -3);
+      }
+      break;
+    case T_SC:
+      throw std::invalid_argument("is a scope");
+    case T_IOS:
+      throw std::invalid_argument("is an iostream");
+    case T_F:
+      throw std::invalid_argument("is a function");
+    case T_REG:
+      throw std::invalid_argument("is a register");
+  }
+}
+
+void memblock::dump(void)
+{
+  switch (type)
+  {
+    case T_S:
+      std::cout << "\"" << *u.s << "\"";
+      break;
+    case T_SC:
+      std::cout << "scope";
+      break;
+    case T_IOS:
+      std::cout << "iostream";
+      break;
+    case T_D:
+      std::cout << u.d;
+      break;
+    case T_V:
+      std::cout << "[";
+      for (size_t i = 0; i != u.v->size(); i++)
+      {
+        u.v->at(i).dump();
+        std::cout << ", ";
+      }
+      std::cout << "]";
+      break;
+    case T_B:
+      std::cout << (u.d ? "true" : "false");
+      break;
+    case T_N:
+      std::cout << "nil";
+      break;
+    case T_M:
+      for (auto it = u.m->begin(); it != u.m->end(); it++)
+      {
+        std::cout << "\"" << *u.s << "\": ";
+        it->second.dump();
+        std::cout << ", ";
+      }
+      break;
+    case T_F:
+      throw std::invalid_argument("is a function");
+    case T_REG:
+      throw std::invalid_argument("is a register");
+  }
+}
+
+memblock::memblock(lua_State *lua, int idx)
+{
+  int t = lua_type(lua, idx);
+  refc = NULL;
+  switch (t) {
+    case LUA_TSTRING:
+    {
+      const char *s;
+      size_t l;
+      type = T_S;
+      s = lua_tolstring(lua, idx, &l);
+      u.s = new std::string(s, l);
+      refc = new size_t(1);
+      break;
+    }
+    case LUA_TBOOLEAN:
+    {
+      type = T_B;
+      u.d = lua_toboolean(lua, idx) ? 1.0 : 0.0;
+      break;
+    }
+    case LUA_TNUMBER:
+    {
+      type = T_D;
+      u.d = lua_tonumber(lua, idx);
+      break;
+    }
+    case LUA_TTABLE:
+    {
+      size_t len = lua_objlen(lua, -1); // in newer versions, lua_rawlen
+      refc = new size_t(1);
+      if (len)
+      {
+        type = T_V;
+        u.v = new std::vector<memblock>();
+        for (size_t i = 0; i < len; i++)
+        {
+          lua_pushnumber(lua, i + 1);
+          lua_gettable(lua, idx - 1);
+          u.v->push_back(memblock(lua));
+          lua_pop(lua, 1);
+        }
+      }
+      else
+      {
+        type = T_M;
+        u.m = new std::map<std::string, memblock>();
+        lua_pushnil(lua);
+        while (lua_next(lua, idx - 1) != 0)
+        {
+          size_t l;
+          const char *s = lua_tolstring(lua, -2, &l);
+          std::string str(s, l);
+          (*u.m)[str] = memblock(lua);
+          lua_pop(lua, 1);
+        }
+        if (u.m->empty()) // Exception: empty table is always an array
+        {
+          delete u.m;
+          type = T_V;
+          u.v = new std::vector<memblock>();
+        }
+      }
+      break;
+    }
+    case LUA_TNIL:
+    {
+      type = T_N;
+      u.d = 0;
+      break;
+    }
+    case LUA_TFUNCTION:
+      throw std::invalid_argument("is a lua function");
+    case LUA_TUSERDATA:
+      throw std::invalid_argument("is a lua userdata");
+    case LUA_TTHREAD:
+      throw std::invalid_argument("is a lua thread");
+    case LUA_TLIGHTUSERDATA:
+      throw std::invalid_argument("is a lua lightuserdata");
+  }
 }
 
 memblock::~memblock()
@@ -280,8 +453,7 @@ static uint64_t load_u64(uint64_t *s, uint64_t sp, const uint8_t *v, uint64_t vs
 
 int64_t get_funaddr(std::vector<memblock> &stack)
 {
-  memblock mb = stack.back();
-  stack.pop_back();
+  memblock mb = std::move(stack.back()); stack.pop_back();
   if (mb.type != memblock::T_F)
   {
     throw memblock_type_error("not a function address");
@@ -290,8 +462,7 @@ int64_t get_funaddr(std::vector<memblock> &stack)
 }
 int64_t get_reg(std::vector<memblock> &stack)
 {
-  memblock mb = stack.back();
-  stack.pop_back();
+  memblock mb = std::move(stack.back()); stack.pop_back();
   if (mb.type != memblock::T_REG)
   {
     throw memblock_type_error("not a register");
@@ -749,8 +920,7 @@ std::string pathdir(const std::string &s1)
 
 std::string get_str(std::vector<memblock> &stack)
 {
-  memblock mb = stack.back();
-  stack.pop_back();
+  memblock mb = std::move(stack.back()); stack.pop_back();
   if (mb.type != memblock::T_S)
   {
     throw memblock_type_error("not a string");
@@ -759,8 +929,7 @@ std::string get_str(std::vector<memblock> &stack)
 }
 double get_dbl(std::vector<memblock> &stack)
 {
-  memblock mb = stack.back();
-  stack.pop_back();
+  memblock mb = std::move(stack.back()); stack.pop_back();
   if (mb.type != memblock::T_D && mb.type != memblock::T_B)
   {
     throw memblock_type_error("not a double or boolean");
@@ -924,6 +1093,179 @@ std::string tojson(memblock mb)
   return oss.str();
 }
 
+void create_backtrace(std::vector<memblock> &stack, std::vector<std::string> &backtrace, size_t ip)
+{
+  backtrace.push_back(fun_stringify(ip));
+  while (stack.size() >= 2)
+  {
+    if (stack[stack.size() - 1].type == memblock::T_REG &&
+        stack[stack.size() - 2].type == memblock::T_REG)
+    {
+      backtrace.push_back(fun_stringify(stack[stack.size() - 1].u.d));
+      stack.pop_back();
+      stack.pop_back();
+      continue;
+    }
+    stack.pop_back();
+  }
+}
+
+memblock file_get(memblock &stream, double delim, double maxcnt)
+{
+  size_t toget = 0;
+  char delim_ch = 0;
+  int delim_nan = 0;
+  int maxcnt_inf = 0;
+  memblock mb;
+  if (stream.type != memblock::T_IOS)
+  {
+    throw memblock_type_error("file_get: arg not stream");
+  }
+  if (stream.u.ios->ios == NULL)
+  {
+    throw std::runtime_error("file_flush: arg already closed");
+  }
+  if (isnan(delim))
+  {
+    delim_nan = 1;
+  }
+  else
+  {
+    delim_ch = (char)(unsigned char)delim;
+    if ((double)(unsigned char)delim_ch != delim)
+    {
+      throw std::invalid_argument("not a character");
+    }
+  }
+  if (isinf(maxcnt))
+  {
+    if (maxcnt < 0)
+    {
+      throw std::invalid_argument("maxcnt < 0");
+    }
+    maxcnt_inf = 1;
+  }
+  else if (!isfinite(maxcnt) || maxcnt < 0)
+  {
+    throw std::invalid_argument("maxcnt negative infinity");
+  }
+  else
+  {
+    toget = maxcnt;
+    if ((double)toget != maxcnt)
+    {
+      throw std::invalid_argument("maxcnt not an integer");
+    }
+  }
+  if (!delim_nan && !maxcnt_inf) // delim set && maxcnt set
+  {
+    throw std::invalid_argument("delim&maxcnt set not supported yet");
+  }
+  if (delim_nan && maxcnt_inf) // delim not set && maxcnt not set
+  {
+    std::ostringstream oss;
+    std::vector<char> buf;
+    buf.resize(32768);
+    while (stream.u.ios->ios->good())
+    {
+      stream.u.ios->ios->read(&buf[0], buf.size());
+      oss.write(&buf[0], stream.u.ios->ios->gcount());
+    }
+    mb = memblock(new std::string(oss.str()));
+  }
+  else if (!delim_nan) // delim set
+  {
+    std::string str;
+    getline(*stream.u.ios->ios, str, delim_ch);
+    mb = memblock(new std::string(str));
+  }
+  else // maxcnt set
+  {
+    std::vector<char> buf;
+    buf.resize(toget);
+    stream.u.ios->ios->read(&buf[0], toget);
+    buf.resize(stream.u.ios->ios->gcount());
+    mb = memblock(new std::string(&buf[0], buf.size()));
+  }
+  if ((stream.u.ios->ios->fail() || stream.u.ios->ios->eof()) &&
+      !stream.u.ios->ios->bad())
+  {
+    stream.u.ios->ios->clear();
+  }
+  if (stream.u.ios->ios->fail())
+  {
+    throw io_error("file_get: stream in error");
+  }
+  //stream.u.ios->ios->seekp(act_len, std::ios_base::cur); // RFE correct?
+  stream.u.ios->ios->clear();
+  return mb;
+}
+
+memblock file_open(const std::string &name, int64_t mode)
+{
+  std::unique_ptr<std::iostream> ptr;
+  std::ios_base::openmode cppmode;
+  if ((mode&3) == 1)
+  {
+    cppmode = std::ios_base::in;
+  }
+  else if ((mode&3) == 2)
+  {
+    cppmode = std::ios_base::out;
+  }
+  else if ((mode&3) == 3)
+  {
+    cppmode = std::ios_base::in | std::ios_base::out;
+  }
+  else
+  {
+    throw std::invalid_argument("invalid file open mode");
+  }
+  if (mode&(1<<2))
+  {
+    if ((mode&3) == 1)
+    {
+      throw std::invalid_argument("can't append to read-only file");
+    }
+    cppmode |= std::ios_base::app;
+  }
+  if (mode&(1<<3))
+  {
+    if ((mode&3) == 1)
+    {
+      throw std::invalid_argument("can't truncate read-only file");
+    }
+    cppmode |= std::ios_base::trunc;
+  }
+  ptr.reset(new std::fstream(name.c_str(), cppmode));
+  if (!ptr->good())
+  {
+    throw io_error("can't open file");
+  }
+  memblock mb(new ioswrapper(ptr.release()));
+  return mb;
+}
+
+std::string mbtostring(memblock &mb)
+{
+  std::ostringstream oss;
+  switch (mb.type)
+  {
+    case memblock::T_D: oss << mb.u.d; break;
+    case memblock::T_B: oss << (mb.u.d ? "true" : "false"); break;
+    case memblock::T_F: oss << "function: " << mb.u.d; break;
+    case memblock::T_V: oss << "vector: " << (void*)(mb.u.v); break;
+    case memblock::T_M: oss << "map: " << (void*)(mb.u.m); break;
+    case memblock::T_N: oss << "null"; break;
+    case memblock::T_S: oss << mb.u.s; break;
+    case memblock::T_SC: oss << "scope: " << (void*)(mb.u.sc); break;
+    case memblock::T_IOS: oss << "iostream: " << (void*)(mb.u.ios); break;
+    case memblock::T_REG: oss << "register: " << mb.u.d; break;
+    default: oss << "UNKNOWN"; break;
+  }
+  return oss.str();
+}
+
 int engine(lua_State *lua, memblock scope,
            std::vector<memblock> &stack, std::vector<std::string> &backtrace, size_t ip)
 {
@@ -1002,7 +1344,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             stack.push_back((double)(int)mb.type);
             break;
           }
@@ -1034,8 +1376,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back();
-            stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             if (mb.type != memblock::T_S)
             {
               throw memblock_type_error("not a string");
@@ -1177,7 +1518,7 @@ int engine(lua_State *lua, memblock scope,
             }
             std::string ns = get_str(stack);
             std::string os = get_str(stack);
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             memblock mb2;
             if (mb.type == memblock::T_S)
             {
@@ -1210,7 +1551,7 @@ int engine(lua_State *lua, memblock scope,
             }
             int reverse = get_dbl(stack) ? 1 : 0;
             std::string suf = get_str(stack);
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             memblock mb2;
             if (mb.type == memblock::T_V)
             {
@@ -1240,7 +1581,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             stack.push_back(memblock(new std::string(tojson(mb))));
             break;
           }
@@ -1250,7 +1591,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             memblock mb2;
             if (mb.type == memblock::T_S)
             {
@@ -1281,7 +1622,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             memblock mb2;
             if (mb.type == memblock::T_S)
             {
@@ -1312,7 +1653,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             memblock mb2;
             if (mb.type == memblock::T_S)
             {
@@ -1343,7 +1684,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             memblock mb2;
             if (mb.type == memblock::T_S)
             {
@@ -1404,8 +1745,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back();
-            stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             mb.dump();
             std::cout << std::endl;
             break;
@@ -1431,8 +1771,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back();
-            stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             for (int i = 0; i < cnt; i++)
             {
               stack.pop_back(); // Clear local variable block
@@ -1448,6 +1787,7 @@ int engine(lua_State *lua, memblock scope,
             }
             bp = get_reg(stack);
             std::cout << "retex2/0, stack size " << stack.size() << " w/o retval" << std::endl;
+#if 0
             if (mb.type == memblock::T_V)
             {
               std::cout << "[ ";
@@ -1487,6 +1827,7 @@ int engine(lua_State *lua, memblock scope,
             {
               std::cout << "UNKNOWN: " << mb.type << std::endl;
             }
+#endif
             ip = jmp;
             for (int i = 0; i < cntarg; i++)
             {
@@ -1502,8 +1843,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back();
-            stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             jmp = get_reg(stack);
             if (jmp == -1)
             {
@@ -1515,6 +1855,7 @@ int engine(lua_State *lua, memblock scope,
             }
             bp = get_reg(stack);
             std::cout << "ret, stack size " << stack.size() << " w/o retval" << std::endl;
+#if 0
             if (mb.type == memblock::T_V)
             {
               std::cout << "[ ";
@@ -1550,6 +1891,7 @@ int engine(lua_State *lua, memblock scope,
             {
               std::cout << "UNKNOWN: " << mb.type << std::endl;
             }
+#endif
             ip = jmp;
             stack.push_back(mb);
             break;
@@ -1628,8 +1970,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back();
-            stack.pop_back();
+            memblock mb = std::move(stack.back()); stack.pop_back();
             val = get_i64(stack);
             if (val < 0)
             {
@@ -1769,23 +2110,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mb = stack.back(); stack.pop_back();
-            std::ostringstream oss;
-            switch (mb.type)
-            {
-              case memblock::T_D: oss << mb.u.d; break;
-              case memblock::T_B: oss << (mb.u.d ? "true" : "false"); break;
-              case memblock::T_F: oss << "function: " << mb.u.d; break;
-              case memblock::T_V: oss << "vector: " << (void*)(mb.u.v); break;
-              case memblock::T_M: oss << "map: " << (void*)(mb.u.m); break;
-              case memblock::T_N: oss << "null"; break;
-              case memblock::T_S: oss << mb.u.s; break;
-              case memblock::T_SC: oss << "scope: " << (void*)(mb.u.sc); break;
-              case memblock::T_IOS: oss << "iostream: " << (void*)(mb.u.ios); break;
-              case memblock::T_REG: oss << "register: " << mb.u.d; break;
-              default: oss << "UNKNOWN"; break;
-            }
-            stack.push_back(memblock(new std::string(oss.str())));
+            memblock mb = std::move(stack.back()); stack.pop_back();
+            stack.push_back(memblock(new std::string(mbtostring(mb))));
             break;
           }
           case STIRBCE_OPCODE_TONUMBER:
@@ -2197,7 +2523,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_M)
             {
               throw memblock_type_error("dictlen: not a map");
@@ -2211,8 +2537,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock str = stack.back(); stack.pop_back();
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock str = std::move(stack.back()); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_M)
             {
               throw memblock_type_error("dictdel: not a map");
@@ -2230,8 +2556,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbit = stack.back(); stack.pop_back();
-            memblock str = stack.back(); stack.pop_back();
+            memblock mbit = std::move(stack.back()); stack.pop_back();
+            memblock str = std::move(stack.back()); stack.pop_back();
             memblock mbar = stack.back();
             if (mbar.type != memblock::T_M)
             {
@@ -2250,9 +2576,9 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbit = stack.back(); stack.pop_back();
-            memblock str = stack.back(); stack.pop_back();
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbit = std::move(stack.back()); stack.pop_back();
+            memblock str = std::move(stack.back()); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_M)
             {
               throw memblock_type_error("dictdel: not a map");
@@ -2274,7 +2600,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::overflow_error("stack overflow");
             }
-            memblock str = stack.back(); stack.pop_back(); // lastkey
+            memblock str = std::move(stack.back()); stack.pop_back(); // lastkey
             memblock mbar = stack.back();
             if (mbar.type != memblock::T_M)
             {
@@ -2320,8 +2646,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock str = stack.back(); stack.pop_back();
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock str = std::move(stack.back()); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_SC || str.type != memblock::T_S)
             {
               throw memblock_type_error("scope_has: invalid type");
@@ -2335,8 +2661,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock str = stack.back(); stack.pop_back();
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock str = std::move(stack.back()); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_M)
             {
               throw memblock_type_error("dicthas: not a map");
@@ -2354,8 +2680,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock str = stack.back(); stack.pop_back();
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock str = std::move(stack.back()); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_M)
             {
               throw memblock_type_error("dictget: not a map");
@@ -2380,7 +2706,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V)
             {
               throw memblock_type_error("listlen: not a vector");
@@ -2394,9 +2720,9 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbit = stack.back(); stack.pop_back();
+            memblock mbit = std::move(stack.back()); stack.pop_back();
             int64_t nr = get_i64(stack);
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V)
             {
               throw memblock_type_error("listset: not a vector");
@@ -2419,7 +2745,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V && mbar.type != memblock::T_M)
             {
               throw memblock_type_error("dup_nonrecursive: neither vector nor map");
@@ -2449,7 +2775,7 @@ int engine(lua_State *lua, memblock scope,
             }
             int64_t end = get_i64(stack);
             int64_t start = get_i64(stack);
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V)
             {
               throw memblock_type_error("listsplice: not a vector");
@@ -2486,7 +2812,7 @@ int engine(lua_State *lua, memblock scope,
               throw std::underflow_error("stack underflow");
             }
             int64_t nr = get_i64(stack);
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V)
             {
               throw memblock_type_error("listget: not a vector");
@@ -2509,7 +2835,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V)
             {
               throw memblock_type_error("listpop: not a vector");
@@ -2524,7 +2850,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbit = stack.back(); stack.pop_back();
+            memblock mbit = std::move(stack.back()); stack.pop_back();
             memblock mbar = stack.back();
             if (mbar.type != memblock::T_V)
             {
@@ -2539,7 +2865,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbit = stack.back(); stack.pop_back();
+            memblock mbit = std::move(stack.back()); stack.pop_back();
             if (mbit.type != memblock::T_V)
             {
               throw memblock_type_error("appendall_maintain: arg 2 not a vector");
@@ -2559,8 +2885,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbit = stack.back(); stack.pop_back();
-            memblock mbar = stack.back(); stack.pop_back();
+            memblock mbit = std::move(stack.back()); stack.pop_back();
+            memblock mbar = std::move(stack.back()); stack.pop_back();
             if (mbar.type != memblock::T_V)
             {
               throw memblock_type_error("append: not a vector");
@@ -2624,8 +2950,8 @@ int engine(lua_State *lua, memblock scope,
               throw std::underflow_error("stack underflow");
             }
             // RFE swap order?
-            memblock mbsc = stack.back(); stack.pop_back();
-            memblock mbs = stack.back(); stack.pop_back();
+            memblock mbsc = std::move(stack.back()); stack.pop_back();
+            memblock mbs = std::move(stack.back()); stack.pop_back();
             if (mbsc.type != memblock::T_SC)
             {
               throw memblock_type_error("scopevar: not a scope");
@@ -2644,7 +2970,7 @@ int engine(lua_State *lua, memblock scope,
               throw std::underflow_error("stack underflow");
             }
             int64_t ival = get_i64(stack);
-            memblock mbstr = stack.back(); stack.pop_back();
+            memblock mbstr = std::move(stack.back()); stack.pop_back();
             if (mbstr.type != memblock::T_S)
             {
               throw memblock_type_error("strrep: not a string");
@@ -2663,9 +2989,9 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbreplace = stack.back(); stack.pop_back();
-            memblock mbfind = stack.back(); stack.pop_back();
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mbreplace = std::move(stack.back()); stack.pop_back();
+            memblock mbfind = std::move(stack.back()); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             if (mbfind.type != memblock::T_S || mborig.type != memblock::T_S || mbreplace.type != memblock::T_S)
             {
               throw memblock_type_error("strgsub: not all strings");
@@ -2679,8 +3005,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbspec = stack.back(); stack.pop_back();
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mbspec = std::move(stack.back()); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
             {
               throw memblock_type_error("strwordcnt: not all strings");
@@ -2694,7 +3020,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             if (mborig.type != memblock::T_S)
             {
               throw memblock_type_error("path_simplify: not a string");
@@ -2709,8 +3035,8 @@ int engine(lua_State *lua, memblock scope,
               throw std::underflow_error("stack underflow");
             }
             int64_t wordidx = get_i64(stack);
-            memblock mbspec = stack.back(); stack.pop_back();
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mbspec = std::move(stack.back()); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
             {
               throw memblock_type_error("strword: not a string");
@@ -2728,7 +3054,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             memblock mbar(new std::vector<memblock>());
             if (mborig.type != memblock::T_S)
             {
@@ -2751,8 +3077,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbspec = stack.back(); stack.pop_back();
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mbspec = std::move(stack.back()); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             memblock mbar(new std::vector<memblock>());
             if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
             {
@@ -2771,8 +3097,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbspec = stack.back(); stack.pop_back();
-            memblock mborig = stack.back(); stack.pop_back();
+            memblock mbspec = std::move(stack.back()); stack.pop_back();
+            memblock mborig = std::move(stack.back()); stack.pop_back();
             if (mbspec.type != memblock::T_S || mborig.type != memblock::T_S)
             {
               throw memblock_type_error("strstrip: not all strings");
@@ -2786,8 +3112,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbneedle = stack.back(); stack.pop_back();
-            memblock mbhaystack = stack.back(); stack.pop_back();
+            memblock mbneedle = std::move(stack.back()); stack.pop_back();
+            memblock mbhaystack = std::move(stack.back()); stack.pop_back();
             if (mbneedle.type != memblock::T_S || mbhaystack.type != memblock::T_S)
             {
               throw memblock_type_error("strstr: not all strings");
@@ -2801,8 +3127,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbextend = stack.back(); stack.pop_back();
-            memblock mbbase = stack.back(); stack.pop_back();
+            memblock mbextend = std::move(stack.back()); stack.pop_back();
+            memblock mbbase = std::move(stack.back()); stack.pop_back();
             if (mbbase.type != memblock::T_S || mbextend.type != memblock::T_S)
             {
               throw memblock_type_error("strappend: not all strings");
@@ -2818,7 +3144,7 @@ int engine(lua_State *lua, memblock scope,
             }
             int64_t a = get_i64(stack);
             int64_t b = get_i64(stack);
-            memblock mbbase = stack.back(); stack.pop_back();
+            memblock mbbase = std::move(stack.back()); stack.pop_back();
             if (mbbase.type != memblock::T_S)
             {
               throw memblock_type_error("strsub: not a string");
@@ -2855,7 +3181,7 @@ int engine(lua_State *lua, memblock scope,
             }
             int64_t ch = get_i64(stack);
             int64_t a = get_i64(stack);
-            memblock mbbase = stack.back(); stack.pop_back();
+            memblock mbbase = std::move(stack.back()); stack.pop_back();
             if (mbbase.type != memblock::T_S)
             {
               throw memblock_type_error("strset: not a string");
@@ -2880,7 +3206,7 @@ int engine(lua_State *lua, memblock scope,
               throw std::underflow_error("stack underflow");
             }
             int64_t a = get_i64(stack);
-            memblock mbbase = stack.back(); stack.pop_back();
+            memblock mbbase = std::move(stack.back()); stack.pop_back();
             if (mbbase.type != memblock::T_S)
             {
               throw memblock_type_error("strget: not a string");
@@ -2898,7 +3224,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbbase = stack.back(); stack.pop_back();
+            memblock mbbase = std::move(stack.back()); stack.pop_back();
             std::string joiner = get_str(stack);
             std::ostringstream oss;
             if (mbbase.type != memblock::T_V)
@@ -2929,7 +3255,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbbase = stack.back(); stack.pop_back();
+            memblock mbbase = std::move(stack.back()); stack.pop_back();
             if (mbbase.type != memblock::T_S)
             {
               throw memblock_type_error("strlen: not a string");
@@ -2943,49 +3269,9 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            std::unique_ptr<std::iostream> ptr;
             int64_t mode = get_i64(stack);
             std::string name = get_str(stack);
-            std::ios_base::openmode cppmode;
-            if ((mode&3) == 1)
-            {
-              cppmode = std::ios_base::in;
-            }
-            else if ((mode&3) == 2)
-            {
-              cppmode = std::ios_base::out;
-            }
-            else if ((mode&3) == 3)
-            {
-              cppmode = std::ios_base::in | std::ios_base::out;
-            }
-            else
-            {
-              throw std::invalid_argument("invalid file open mode");
-            }
-            if (mode&(1<<2))
-            {
-              if ((mode&3) == 1)
-              {
-                throw std::invalid_argument("can't append to read-only file");
-              }
-              cppmode |= std::ios_base::app;
-            }
-            if (mode&(1<<3))
-            {
-              if ((mode&3) == 1)
-              {
-                throw std::invalid_argument("can't truncate read-only file");
-              }
-              cppmode |= std::ios_base::trunc;
-            }
-            ptr.reset(new std::fstream(name.c_str(), cppmode));
-            if (!ptr->good())
-            {
-              throw io_error("can't open file");
-            }
-            memblock mb(new ioswrapper(ptr.release()));
-            stack.push_back(mb);
+            stack.push_back(file_open(name, mode));
             break;
           }
           case STIRBCE_OPCODE_FILE_CLOSE:
@@ -2994,7 +3280,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock stream = stack.back(); stack.pop_back();
+            memblock stream = std::move(stack.back()); stack.pop_back();
             if (stream.type != memblock::T_IOS)
             {
               throw memblock_type_error("file_close: arg not stream");
@@ -3012,7 +3298,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock stream = stack.back(); stack.pop_back();
+            memblock stream = std::move(stack.back()); stack.pop_back();
             if (stream.type != memblock::T_IOS)
             {
               throw memblock_type_error("file_flush: arg not stream");
@@ -3032,7 +3318,7 @@ int engine(lua_State *lua, memblock scope,
             }
             int64_t whence = get_i64(stack);
             int64_t amt = get_i64(stack);
-            memblock stream = stack.back(); stack.pop_back();
+            memblock stream = std::move(stack.back()); stack.pop_back();
             if (stream.type != memblock::T_IOS)
             {
               throw memblock_type_error("file_seek_tell: arg not a stream");
@@ -3072,7 +3358,7 @@ int engine(lua_State *lua, memblock scope,
               throw std::underflow_error("stack underflow");
             }
             std::string out = get_str(stack);
-            memblock stream = stack.back(); stack.pop_back();
+            memblock stream = std::move(stack.back()); stack.pop_back();
             if (stream.type != memblock::T_IOS)
             {
               throw memblock_type_error("file_write: arg not stream");
@@ -3098,92 +3384,8 @@ int engine(lua_State *lua, memblock scope,
             }
             double delim = get_dbl(stack);
             double maxcnt = get_dbl(stack);
-            size_t toget = 0;
-            char delim_ch = 0;
-            int delim_nan = 0;
-            int maxcnt_inf = 0;
-            memblock stream = stack.back(); stack.pop_back();
-            if (stream.type != memblock::T_IOS)
-            {
-              throw memblock_type_error("file_get: arg not stream");
-            }
-            if (stream.u.ios->ios == NULL)
-            {
-              throw std::runtime_error("file_flush: arg already closed");
-            }
-            if (isnan(delim))
-            {
-              delim_nan = 1;
-            }
-            else
-            {
-              delim_ch = (char)(unsigned char)delim;
-              if ((double)(unsigned char)delim_ch != delim)
-              {
-                throw std::invalid_argument("not a character");
-              }
-            }
-            if (isinf(maxcnt))
-            {
-              if (maxcnt < 0)
-              {
-                throw std::invalid_argument("maxcnt < 0");
-              }
-              maxcnt_inf = 1;
-            }
-            else if (!isfinite(maxcnt) || maxcnt < 0)
-            {
-              throw std::invalid_argument("maxcnt negative infinity");
-            }
-            else
-            {
-              toget = maxcnt;
-              if ((double)toget != maxcnt)
-              {
-                throw std::invalid_argument("maxcnt not an integer");
-              }
-            }
-            if (!delim_nan && !maxcnt_inf) // delim set && maxcnt set
-            {
-              throw std::invalid_argument("delim&maxcnt set not supported yet");
-            }
-            if (delim_nan && maxcnt_inf) // delim not set && maxcnt not set
-            {
-              std::ostringstream oss;
-              std::vector<char> buf;
-              buf.resize(32768);
-              while (stream.u.ios->ios->good())
-              {
-                stream.u.ios->ios->read(&buf[0], buf.size());
-                oss.write(&buf[0], stream.u.ios->ios->gcount());
-              }
-              stack.push_back(memblock(new std::string(oss.str())));
-            }
-            else if (!delim_nan) // delim set
-            {
-              std::string str;
-              getline(*stream.u.ios->ios, str, delim_ch);
-              stack.push_back(memblock(new std::string(str)));
-            }
-            else // maxcnt set
-            {
-              std::vector<char> buf;
-              buf.resize(toget);
-              stream.u.ios->ios->read(&buf[0], toget);
-              buf.resize(stream.u.ios->ios->gcount());
-              stack.push_back(memblock(new std::string(&buf[0], buf.size())));
-            }
-            if ((stream.u.ios->ios->fail() || stream.u.ios->ios->eof()) &&
-                !stream.u.ios->ios->bad())
-            {
-              stream.u.ios->ios->clear();
-            }
-            if (stream.u.ios->ios->fail())
-            {
-              throw io_error("file_get: stream in error");
-            }
-            //stream.u.ios->ios->seekp(act_len, std::ios_base::cur); // RFE correct?
-            stream.u.ios->ios->clear();
+            memblock stream = std::move(stack.back()); stack.pop_back();
+            stack.push_back(file_get(stream, delim, maxcnt));
             break;
           }
           case STIRBCE_OPCODE_MEMFILE_IOPEN:
@@ -3203,9 +3405,9 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::underflow_error("stack underflow");
             }
-            memblock mbval = stack.back(); stack.pop_back();
-            memblock mbs = stack.back(); stack.pop_back();
-            memblock mbsc = stack.back(); stack.pop_back();
+            memblock mbval = std::move(stack.back()); stack.pop_back();
+            memblock mbs = std::move(stack.back()); stack.pop_back();
+            memblock mbsc = std::move(stack.back()); stack.pop_back();
             if (mbsc.type != memblock::T_SC)
             {
               throw memblock_type_error("scopevar_set: arg not scope");
@@ -3214,7 +3416,7 @@ int engine(lua_State *lua, memblock scope,
             {
               throw memblock_type_error("scopevar_set: arg not str");
             }
-            mbsc.u.sc->vars[*mbs.u.s] = mbval;
+            mbsc.u.sc->vars[*mbs.u.s] = std::move(mbval);
             break;
           }
   #if 1
@@ -3227,21 +3429,7 @@ int engine(lua_State *lua, memblock scope,
     }
     catch (...)
     {
-  #if 1 // Some code for creating backtrace for debugging, needs stringification
-      backtrace.push_back(fun_stringify(ip));
-      while (stack.size() >= 2)
-      {
-        if (stack[stack.size() - 1].type == memblock::T_REG &&
-            stack[stack.size() - 2].type == memblock::T_REG)
-        {
-          backtrace.push_back(fun_stringify(stack[stack.size() - 1].u.d));
-          stack.pop_back();
-          stack.pop_back();
-          continue;
-        }
-        stack.pop_back();
-      }
-  #endif
+      create_backtrace(stack, backtrace, ip);
       throw;
     }
   }
