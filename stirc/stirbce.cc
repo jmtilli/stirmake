@@ -993,7 +993,7 @@ int engine(lua_State *lua, memblock scope,
         {
           throw illegal_sequence("illegal byte sequence");
         }
-        printf("ip %zu instr %d\n", ip-1, (int)opcode);
+        std::cout << "ip " << (ip-1) << " instr " << (int)opcode << std::endl;
         switch ((enum stirbce_opcode)opcode)
         {
           case STIRBCE_OPCODE_TYPE:
@@ -1065,8 +1065,8 @@ int engine(lua_State *lua, memblock scope,
               {
                 throw std::overflow_error("microprogram overflow");
               }
-              printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz_global);
-              printf("instr %d\n", microprogram_global[jmp]);
+              std::cout << "call, stack size " << stack.size() << " jmp " << jmp << " usz " << microsz_global << std::endl;
+              std::cout << "instr " << (int)microprogram_global[jmp] << std::endl;
               if (microprogram_global[jmp] != STIRBCE_OPCODE_FUN_HEADER)
               {
                 throw std::invalid_argument("not a function address");
@@ -1136,8 +1136,8 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::overflow_error("microprogram overflow");
             }
-            printf("call, stack size %zu jmp %zu usz %zu\n", stack.size(), jmp, microsz_global);
-            printf("instr %d\n", microprogram_global[jmp]);
+            std::cout << "call, stack size " << stack.size() << " jmp " << jmp << " usz " << microsz_global << std::endl;
+            std::cout << "instr " << (int)microprogram_global[jmp] << std::endl;
             if (microprogram_global[jmp] != STIRBCE_OPCODE_FUN_HEADER)
             {
               throw std::invalid_argument("not a function");
@@ -1165,7 +1165,7 @@ int engine(lua_State *lua, memblock scope,
           }
           case STIRBCE_OPCODE_EXIT:
           {
-            printf("exit, stack size %zu\n", stack.size());
+            std::cout << "exit, stack size " << stack.size() << std::endl;
             ip = microsz_global;
             break;
           }
@@ -1399,7 +1399,7 @@ int engine(lua_State *lua, memblock scope,
           }
           case STIRBCE_OPCODE_DUMP:
           {
-            printf("dump, stack size %zu\n", stack.size());
+            std::cout << "dump, stack size " << stack.size() << std::endl;
             if (unlikely(stack.size() < 1))
             {
               throw std::underflow_error("stack underflow");
@@ -1412,7 +1412,7 @@ int engine(lua_State *lua, memblock scope,
           }
           case STIRBCE_OPCODE_RETEX2:
           {
-            printf("retex2/1, stack size %zu\n", stack.size());
+            std::cout << "retex2/1, stack size " << stack.size() << std::endl;
             if (unlikely(stack.size() < 5))
             {
               throw std::underflow_error("stack underflow");
@@ -1447,7 +1447,7 @@ int engine(lua_State *lua, memblock scope,
               throw std::overflow_error("microprogram overflow");
             }
             bp = get_reg(stack);
-            printf("retex2/0, stack size %zu w/o retval\n", stack.size());
+            std::cout << "retex2/0, stack size " << stack.size() << " w/o retval" << std::endl;
             if (mb.type == memblock::T_V)
             {
               std::cout << "[ ";
@@ -1497,7 +1497,7 @@ int engine(lua_State *lua, memblock scope,
           }
           case STIRBCE_OPCODE_RET:
           {
-            printf("ret1, stack size %zu\n", stack.size());
+            std::cout << "ret1, stack size " << stack.size() << std::endl;
             if (unlikely(stack.size() < 3))
             {
               throw std::underflow_error("stack underflow");
@@ -1514,7 +1514,7 @@ int engine(lua_State *lua, memblock scope,
               throw std::overflow_error("microprogram overflow");
             }
             bp = get_reg(stack);
-            printf("ret, stack size %zu w/o retval\n", stack.size());
+            std::cout << "ret, stack size " << stack.size() << " w/o retval" << std::endl;
             if (mb.type == memblock::T_V)
             {
               std::cout << "[ ";
