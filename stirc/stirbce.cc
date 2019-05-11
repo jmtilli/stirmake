@@ -2624,21 +2624,6 @@ int engine(lua_State *lua, memblock scope,
             stack.push_back(mbsc.u.sc->recursive_lookup(*mbs.u.s));
             break;
           }
-          case STIRBCE_OPCODE_FUN_JMP_ADDR:
-          {
-            if (unlikely(stack.size() < 1))
-            {
-              throw std::underflow_error("stack underflow");
-            }
-            memblock mbit = stack.back(); stack.pop_back();
-            if (mbit.type != memblock::T_F)
-            {
-              throw memblock_type_error("fun_jmp_addr: not a function");
-            }
-            stack.push_back(memblock(0.0)); // FIXME implement
-            std::terminate();
-            break;
-          }
           case STIRBCE_OPCODE_STRREP:
           {
             if (unlikely(stack.size() < 2))
@@ -3149,7 +3134,6 @@ int engine(lua_State *lua, memblock scope,
             {
               throw std::invalid_argument("delim&maxcnt set not supported yet");
             }
-            size_t act_len = 0;
             if (delim_nan && maxcnt_inf) // delim not set && maxcnt not set
             {
               std::ostringstream oss;
@@ -3160,14 +3144,12 @@ int engine(lua_State *lua, memblock scope,
                 stream.u.ios->ios->read(&buf[0], buf.size());
                 oss.write(&buf[0], stream.u.ios->ios->gcount());
               }
-              act_len = oss.str().size();
               stack.push_back(memblock(new std::string(oss.str())));
             }
             else if (!delim_nan) // delim set
             {
               std::string str;
               getline(*stream.u.ios->ios, str, delim_ch);
-              act_len = str.size();
               stack.push_back(memblock(new std::string(str)));
             }
             else // maxcnt set
@@ -3176,7 +3158,6 @@ int engine(lua_State *lua, memblock scope,
               buf.resize(toget);
               stream.u.ios->ios->read(&buf[0], toget);
               buf.resize(stream.u.ios->ios->gcount());
-              act_len = buf.size();
               stack.push_back(memblock(new std::string(&buf[0], buf.size())));
             }
             if ((stream.u.ios->ios->fail() || stream.u.ios->ios->eof()) &&
@@ -3252,6 +3233,7 @@ int engine(lua_State *lua, memblock scope,
     }
   }
   catch (custom_error) { /* ignore */ }
+  return 0;
 }
 
 void store_d(std::vector<uint8_t> &v, double d)
