@@ -1862,7 +1862,7 @@ int engine(lua_State *lua, memblock scope,
             stack.push_back(memblock(new std::string(s)));
             break;
           }
-          case STIRBCE_OPCODE_STR_EQ:
+          case STIRBCE_OPCODE_STR_CMP:
           {
             if (unlikely(stack.size() < 2))
             {
@@ -1870,7 +1870,20 @@ int engine(lua_State *lua, memblock scope,
             }
             std::string s = get_str(stack);
             std::string s2 = get_str(stack);
-            stack.push_back(!!(val == val2));
+            int cmpres;
+            if (s < s2)
+            {
+              cmpres = -1;
+            }
+            else if (s == s2)
+            {
+              cmpres = 0;
+            }
+            else
+            {
+              cmpres = 1;
+            }
+            stack.push_back(cmpres);
             break;
           }
           case STIRBCE_OPCODE_CALL_EQ:
