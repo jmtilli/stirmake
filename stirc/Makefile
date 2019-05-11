@@ -123,13 +123,13 @@ stiryy.lex.c: stiryy.l Makefile
 stiryy.lex.h: stiryy.l Makefile
 	flex --outfile=/dev/null --header-file=stiryy.lex.h stiryy.l
 stiryy.tab.c: stiryy.y Makefile
-	byacc -d -p stiryy -b stiryy -o .tmp.stiryy.tab.c stiryy.y
-	rm .tmp.stiryy.tab.h
-	mv .tmp.stiryy.tab.c stiryy.tab.c
+	byacc -d -p stiryy -b stiryy -o .tmpc.stiryy.tab.c stiryy.y
+	rm .tmpc.stiryy.tab.h
+	mv .tmpc.stiryy.tab.c stiryy.tab.c
 stiryy.tab.h: stiryy.y Makefile
-	byacc -d -p stiryy -b stiryy -o .tmp.stiryy.tab.c stiryy.y
-	rm .tmp.stiryy.tab.c
-	mv .tmp.stiryy.tab.h stiryy.tab.h
+	byacc -d -p stiryy -b stiryy -o .tmph.stiryy.tab.c stiryy.y
+	rm .tmph.stiryy.tab.c
+	mv .tmph.stiryy.tab.h stiryy.tab.h
 
 incyy.lex.d: incyy.tab.h incyy.lex.h
 incyy.lex.o: incyy.tab.h incyy.lex.h
@@ -141,12 +141,12 @@ incyy.lex.c: incyy.l Makefile
 incyy.lex.h: incyy.l Makefile
 	flex --outfile=/dev/null --header-file=incyy.lex.h incyy.l
 incyy.tab.c: incyy.y Makefile
-	byacc -d -p incyy -b incyy -o .tmp.incyy.tab.c incyy.y
-	rm .tmp.incyy.tab.h
-	mv .tmp.incyy.tab.c incyy.tab.c
+	byacc -d -p incyy -b incyy -o .tmpc.incyy.tab.c incyy.y
+	rm .tmpc.incyy.tab.h
+	mv .tmpc.incyy.tab.c incyy.tab.c
 incyy.tab.h: incyy.y Makefile
-	byacc -d -p incyy -b incyy -o .tmp.incyy.tab.c incyy.y
-	rm .tmp.incyy.tab.c
-	mv .tmp.incyy.tab.h incyy.tab.h
+	byacc -d -p incyy -b incyy -o .tmph.incyy.tab.c incyy.y
+	rm .tmph.incyy.tab.c
+	mv .tmph.incyy.tab.h incyy.tab.h
 
 -include *.d
