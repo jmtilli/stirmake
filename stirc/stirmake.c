@@ -97,19 +97,20 @@ static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
   return 0;
 }
 
-void ins_ruleid_by_tgt(char *tgt, int ruleid)
+void ins_ruleid_by_tgt(const char *tgt, int ruleid)
 {
   uint32_t hash = abce_murmur_buf(0x12345678U, tgt, strlen(tgt));
   struct ruleid_by_tgt_entry *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
   e = malloc(sizeof(*e));
-  e->tgt = tgt;
+  e->tgt = strdup(tgt);
   e->ruleid = ruleid;
   head = &ruleid_by_tgt[hash % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_tgt_entry_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
+    printf("1\n");
     abort();
   }
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
@@ -218,6 +219,94 @@ struct rule {
   //size_t deps_remain_cnt; // XXX return this for less memory use?
 };
 
+static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct tgt *e1 = ABCE_CONTAINER_OF(n1, struct tgt, node);
+  struct tgt *e2 = ABCE_CONTAINER_OF(n2, struct tgt, node);
+  size_t len1 = strlen(e1->tgt);
+  size_t len2, lenmin;
+  int ret;
+  len2 = strlen(e2->tgt);
+  lenmin = (len1 < len2) ? len1 : len2;
+  ret = memcmp(e1->tgt, e2->tgt, lenmin);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  if (len1 > len2)
+  {
+    return 1;
+  }
+  if (len1 < len2)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct stirdep *e1 = ABCE_CONTAINER_OF(n1, struct stirdep, node);
+  struct stirdep *e2 = ABCE_CONTAINER_OF(n2, struct stirdep, node);
+  size_t len1 = strlen(e1->name);
+  size_t len2, lenmin;
+  int ret;
+  len2 = strlen(e2->name);
+  lenmin = (len1 < len2) ? len1 : len2;
+  ret = memcmp(e1->name, e2->name, lenmin);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  if (len1 > len2)
+  {
+    return 1;
+  }
+  if (len1 < len2)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+
+void ins_tgt(struct rule *rule, const char *tgt)
+{
+  uint32_t hash = abce_murmur_buf(0x12345678U, tgt, strlen(tgt));
+  struct tgt *e;
+  struct abce_rb_tree_nocmp *head;
+  int ret;
+  e = malloc(sizeof(*e));
+  e->tgt = strdup(tgt);
+  head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
+  ret = abce_rb_tree_nocmp_insert_nonexist(head, tgt_cmp_sym, NULL, &e->node);
+  if (ret != 0)
+  {
+    printf("2\n");
+    abort();
+  }
+  linked_list_add_tail(&e->llnode, &rule->tgtlist);
+}
+
+void ins_dep(struct rule *rule, const char *dep, int is_recursive)
+{
+  uint32_t hash = abce_murmur_buf(0x12345678U, dep, strlen(dep));
+  struct stirdep *e;
+  struct abce_rb_tree_nocmp *head;
+  int ret;
+  e = malloc(sizeof(*e));
+  e->name = strdup(dep);
+  e->is_recursive = !!is_recursive;
+  head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
+  ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
+  if (ret != 0)
+  {
+    printf("3\n");
+    abort();
+  }
+  linked_list_add_tail(&e->llnode, &rule->deplist);
+}
+
 int deps_remain_has(struct rule *rule, int ruleid)
 {
   struct abce_rb_tree_node *n;
@@ -263,6 +352,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   dep_remain->ruleid = ruleid;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
   {
+    printf("4\n");
     abort();
   }
   linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
@@ -417,7 +507,7 @@ struct ruleid_by_dep_entry {
 #endif
 };
 
-static inline int ruleid_by_dep_entry_cmp_asym(char *str, struct abce_rb_tree_node *n2, void *ud)
+static inline int ruleid_by_dep_entry_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct ruleid_by_dep_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_dep_entry, node);
   size_t len1 = strlen(str);
@@ -491,7 +581,7 @@ struct ruleid_by_dep_entry *find_ruleids_by_dep(char *dep)
   return NULL;
 }
 
-struct ruleid_by_dep_entry *ensure_ruleid_by_dep(char *dep)
+struct ruleid_by_dep_entry *ensure_ruleid_by_dep(const char *dep)
 {
   uint32_t hash = abce_murmur_buf(0x12345678U, dep, strlen(dep));
   struct ruleid_by_dep_entry *e;
@@ -508,7 +598,7 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(char *dep)
   }
   
   e = malloc(sizeof(*e));
-  e->dep = dep;
+  e->dep = strdup(dep);
   for (i = 0; i < sizeof(e->one_ruleid_by_dep)/sizeof(*e->one_ruleid_by_dep); i++)
   {
     abce_rb_tree_nocmp_init(&e->one_ruleid_by_dep[i]);
@@ -518,13 +608,14 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(char *dep)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_dep_entry_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
+    printf("5\n");
     abort();
   }
   linked_list_add_tail(&e->llnode, &ruleids_by_dep_list);
   return e;
 }
 
-void ins_ruleid_by_dep(char *dep, int ruleid)
+void ins_ruleid_by_dep(const char *dep, int ruleid)
 {
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(dep);
   uint32_t hash = abce_murmur32(0x12345678U, ruleid);
@@ -546,6 +637,7 @@ void ins_ruleid_by_dep(char *dep, int ruleid)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, one_ruleid_by_dep_entry_cmp_sym, NULL, &one->node);
   if (ret != 0)
   {
+    printf("6\n");
     abort();
   }
   return;
@@ -757,6 +849,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, const char *dep)
   entry2->dep = strdup(dep);
   if (abce_rb_tree_nocmp_insert_nonexist(&entry->add_deps[hashloc], add_dep_cmp_sym, NULL, &entry2->node) != 0)
   {
+    printf("7\n");
     abort();
   }
   linked_list_add_tail(&entry2->llnode, &entry->add_deplist);
@@ -786,6 +879,7 @@ struct add_deps *add_deps_ensure(const char *tgt)
   linked_list_head_init(&entry->add_deplist);
   if (abce_rb_tree_nocmp_insert_nonexist(&add_deps[hashloc], add_deps_cmp_sym, NULL, &entry->node) != 0)
   {
+    printf("8\n");
     abort();
   }
   linked_list_add_tail(&entry->llnode, &add_deplist);
@@ -837,6 +931,30 @@ void zero_rule(struct rule *rule)
   linked_list_head_init(&rule->depremainlist);
 }
 
+char *null_cmds[] = {NULL};
+
+char **argdup(char **cmdargs)
+{
+  size_t cnt = 0;
+  size_t i;
+  char **result;
+  printf("cmdargs: %p\n", cmdargs);
+  while (cmdargs[cnt] != NULL)
+  {
+    cnt++;
+    printf("cnt now %zu\n", cnt);
+  }
+  result = malloc((cnt+1) * sizeof(*result));
+  for (i = 0; i < cnt; i++)
+  {
+    result[i] = strdup(cmdargs[i]);
+  }
+  result[cnt] = NULL;
+  printf("returning: %p\n", result);
+  return result;
+}
+
+
 void process_additional_deps(void)
 {
   struct linked_list_node *node, *node2;
@@ -858,12 +976,17 @@ void process_additional_deps(void)
       //rule = &rules[rules_size];
       //printf("adding tgt: %s\n", entry->tgt);
       zero_rule(rule);
+      rule->cmd.args = argdup(null_cmds);
 
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgt, rule->ruleid);
-      // FIXME ins_tgt
-      // FIXME ins_deps
-      rule->is_phony = entry->phony;
+      ins_tgt(rule, entry->tgt);
+      LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
+      {
+        struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
+        ins_dep(rule, dep->dep, 0);
+      }
+      rule->is_phony = !!entry->phony;
       LINKED_LIST_FOR_EACH(node2, &rule->deplist)
       {
         struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
@@ -877,7 +1000,11 @@ void process_additional_deps(void)
     {
       rule->is_phony = 1;
     }
-    // FIXME ins_deps
+    LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
+    {
+      struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
+      ins_dep(rule, dep->dep, 0);
+    }
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
       struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
@@ -939,15 +1066,19 @@ void add_rule(char **tgts, size_t tgtsz,
 {
   struct rule *rule;
   struct cmd cmd;
+  size_t i;
+
   if (tgtsz <= 0)
   {
+    printf("9\n");
     abort();
   }
   if (phony && tgtsz != 1)
   {
+    printf("10\n");
     abort();
   }
-  cmd.args = cmdargs;
+  cmd.args = argdup(cmdargs);
   if (rules_size >= rules_capacity)
   {
     size_t new_capacity = 2*rules_capacity + 16;
@@ -961,7 +1092,17 @@ void add_rule(char **tgts, size_t tgtsz,
   rule->ruleid = rules_size++;
   rule->cmd = cmd;
   rule->is_phony = !!phony;
-  // FIXME add tgts, deps
+
+  for (i = 0; i < tgtsz; i++)
+  {
+    ins_tgt(rule, tgts[i]);
+    ins_ruleid_by_tgt(tgts[i], rule->ruleid);
+  }
+  for (i = 0; i < depsz; i++)
+  {
+    ins_dep(rule, deps[i].name, !!deps[i].rec);
+    ins_ruleid_by_dep(deps[i].name, rule->ruleid);
+  }
 }
 
 #if 0
@@ -1084,6 +1225,7 @@ pid_t fork_child(int ruleid)
   pid = fork();
   if (pid < 0)
   {
+    printf("11\n");
     abort();
   }
   else if (pid == 0)
@@ -1109,6 +1251,7 @@ pid_t fork_child(int ruleid)
     hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
     if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
     {
+      printf("12\n");
       abort();
     }
     return pid;
@@ -1151,6 +1294,7 @@ struct timespec rec_mtim(const char *name)
     //std::string nam2(name);
     if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
     {
+      printf("13\n");
       abort();
     }
     if (de == NULL)
@@ -1165,6 +1309,7 @@ struct timespec rec_mtim(const char *name)
     if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
                  "/%s", de->d_name) >= sizeof(nam2)-oldlen)
     {
+      printf("14\n");
       abort();
     }
     //if (de->d_type == DT_DIR)
@@ -1364,6 +1509,7 @@ void do_exec(int ruleid)
       {
         if (!seen_tgt)
         {
+          printf("15\n");
           abort();
         }
         if (seen_nonphony && ts_cmp(st_mtimtgt, st_mtim) < 0)
@@ -1446,6 +1592,13 @@ void consider(int ruleid)
         toexecute = 1;
       }
     }
+    else
+    {
+      if (debug)
+      {
+        printf("ruleid by target %s not found\n", e->name);
+      }
+    }
   }
 /*
   if (r.phony)
@@ -1524,10 +1677,12 @@ void mark_executed(int ruleid)
   struct linked_list_node *node, *node2;
   if (r->is_executed)
   {
+    printf("16\n");
     abort();
   }
   if (!r->is_executing)
   {
+    printf("17\n");
     abort();
   }
   r->is_executed = 1;
@@ -1574,11 +1729,13 @@ void set_nonblock(int fd)
   int flags = fcntl(fd, F_GETFL);
   if (flags < 0)
   {
+    printf("18\n");
     abort();
   }
   flags |= O_NONBLOCK;
   if (fcntl(fd, F_SETFL, flags) < 0)
   {
+    printf("19\n");
     abort();
   }
 }
@@ -1637,6 +1794,7 @@ void stack_conf(void)
   result = getrlimit(RLIMIT_STACK, &rl);
   if (result != 0)
   {
+    printf("20\n");
     abort();
   }
   if (rl.rlim_cur < stackSize)
@@ -1645,6 +1803,7 @@ void stack_conf(void)
     result = setrlimit(RLIMIT_STACK, &rl);
     if (result != 0)
     {
+      printf("21\n");
       abort();
     }
   }
@@ -1729,6 +1888,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
   size_t hashloc;
   if (strlen(symbol) != symlen)
   {
+    printf("22\n");
     abort(); // RFE what to do?
   }
   hashval = abce_murmur_buf(0x12345678U, symbol, symlen);
@@ -1744,6 +1904,7 @@ NULL, symbol);
   stringtabentry->idx = st_cnt++;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
   {
+    printf("23\n");
     abort();
   }
   return stringtabentry->idx;
@@ -1777,8 +1938,6 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
   return old;
 #endif
 }
-
-char **null_cmds = {NULL};
 
 int main(int argc, char **argv)
 {
@@ -1822,6 +1981,7 @@ int main(int argc, char **argv)
 
   if (!f)
   {
+    printf("24\n");
     abort();
   }
   stiryydoparse(f, &stiryy);
@@ -1884,6 +2044,7 @@ int main(int argc, char **argv)
     f = fopen(stiryy.cdepincludes[i], "r");
     if (!f)
     {
+      printf("25\n");
       abort();
     }
     incyydoparse(f, &incyy);
@@ -1921,9 +2082,12 @@ int main(int argc, char **argv)
   {
     struct ruleid_by_dep_entry *entry =
       ABCE_CONTAINER_OF(node, struct ruleid_by_dep_entry, llnode);
+    printf("bytgt: %s\n", entry->dep);
     int bytgt = get_ruleid_by_tgt(entry->dep);
     if (bytgt < 0)
     {
+      continue;
+      printf("26\n");
       abort();
     }
     if (no_cycles[bytgt])
@@ -2017,12 +2181,14 @@ int main(int argc, char **argv)
 
   if (pipe(self_pipe_fd) != 0)
   {
+    printf("27\n");
     abort();
   }
   set_nonblock(self_pipe_fd[0]);
   set_nonblock(self_pipe_fd[1]);
   if (pipe(jobserver_fd) != 0)
   {
+    printf("28\n");
     abort();
   }
   set_nonblock(jobserver_fd[0]);
@@ -2121,6 +2287,7 @@ int main(int argc, char **argv)
               abort();
             }
           }
+          printf("29\n");
           abort();
         }
         if (pid < 0)
@@ -2129,11 +2296,13 @@ int main(int argc, char **argv)
           {
             break;
           }
+          printf("30\n");
           abort();
         }
         int ruleid = ruleid_by_pid_erase(pid);
         if (ruleid < 0)
         {
+          printf("31\n");
           abort();
         }
 #if 0
