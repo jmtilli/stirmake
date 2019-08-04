@@ -633,7 +633,7 @@ struct abce_rb_tree_nocmp add_deps[8192];
 
 struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
 
-static inline int add_dep_cmp_asym(char *str, struct abce_rb_tree_node *n2, void *ud)
+static inline int add_dep_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct add_dep *e = ABCE_CONTAINER_OF(n2, struct add_dep, node);
   size_t len1 = strlen(str);
@@ -685,7 +685,7 @@ static inline int add_dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_t
   return 0;
 }
 
-static inline int add_deps_cmp_asym(char *str, struct abce_rb_tree_node *n2, void *ud)
+static inline int add_deps_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct add_deps *e = ABCE_CONTAINER_OF(n2, struct add_deps, node);
   size_t len1 = strlen(str);
@@ -737,7 +737,7 @@ static inline int add_deps_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_
   return 0;
 }
 
-struct add_dep *add_dep_ensure(struct add_deps *entry, char *dep)
+struct add_dep *add_dep_ensure(struct add_deps *entry, const char *dep)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -750,7 +750,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, char *dep)
     return ABCE_CONTAINER_OF(n, struct add_dep, node);
   }
   struct add_dep *entry2 = malloc(sizeof(struct add_dep));
-  entry2->dep = dep;
+  entry2->dep = strdup(dep);
   if (abce_rb_tree_nocmp_insert_nonexist(&entry->add_deps[hashloc], add_dep_cmp_sym, NULL, &entry2->node) != 0)
   {
     abort();
@@ -759,7 +759,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, char *dep)
   return entry2;
 }
 
-struct add_deps *add_deps_ensure(char *tgt)
+struct add_deps *add_deps_ensure(const char *tgt)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -773,7 +773,7 @@ struct add_deps *add_deps_ensure(char *tgt)
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
   }
   struct add_deps *entry = malloc(sizeof(struct add_deps));
-  entry->tgt = tgt;
+  entry->tgt = strdup(tgt);
   entry->phony = 0;
   for (i = 0; i < sizeof(entry->add_deps)/sizeof(*entry->add_deps); i++)
   {
