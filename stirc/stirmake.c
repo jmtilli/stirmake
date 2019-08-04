@@ -21,6 +21,15 @@
 #endif
 #include "incyyutils.h"
 
+
+#define STIR_LINKED_LIST_HEAD_INITER(x) { \
+  .node = { \
+    .prev = &(x).node, \
+    .next = &(x).node, \
+  }, \
+}
+
+
 int debug = 1;
 
 int self_pipe_fd[2];
@@ -29,11 +38,14 @@ int jobserver_fd[2];
 
 struct ruleid_by_tgt_entry {
   struct abce_rb_tree_node node;
+  struct linked_list_node llnode;
   int ruleid;
   char *tgt;
 };
 
 struct abce_rb_tree_nocmp ruleid_by_tgt[8192];
+struct linked_list_head ruleid_by_tgt_list =
+  STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
 
 static inline int ruleid_by_tgt_entry_cmp_asym(char *str, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -100,6 +112,7 @@ void ins_ruleid_by_tgt(char *tgt, int ruleid)
   {
     abort();
   }
+  linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
 }
 
 int get_ruleid_by_tgt(char *tgt)
@@ -393,6 +406,7 @@ static inline int one_ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, 
 
 struct ruleid_by_dep_entry {
   struct abce_rb_tree_node node;
+  struct linked_list_node llnode;
   char *dep;
   struct abce_rb_tree_nocmp one_ruleid_by_dep[64];
   struct linked_list_head one_ruleid_by_deplist;
@@ -456,6 +470,8 @@ static inline int ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
 }
 
 struct abce_rb_tree_nocmp ruleids_by_dep[8192];
+struct linked_list_head ruleids_by_dep_list =
+  STIR_LINKED_LIST_HEAD_INITER(ruleids_by_dep_list);
 
 struct ruleid_by_dep_entry *find_ruleids_by_dep(char *dep)
 {
@@ -504,6 +520,7 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(char *dep)
   {
     abort();
   }
+  linked_list_add_tail(&e->llnode, &ruleids_by_dep_list);
   return e;
 }
 
@@ -613,13 +630,6 @@ struct add_deps {
 };
 
 struct abce_rb_tree_nocmp add_deps[8192];
-
-#define STIR_LINKED_LIST_HEAD_INITER(x) { \
-  .node = { \
-    .prev = &(x).node, \
-    .next = &(x).node, \
-  }, \
-}
 
 struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
 
@@ -1889,6 +1899,48 @@ int main(int argc, char **argv)
 
   // Delete unreachable rules from ruleids_by_dep
 #if 1
+  struct linked_list_node *node, *tmp;
+  LINKED_LIST_FOR_EACH_SAFE(node, tmp, &ruleids_by_dep_list)
+  {
+    struct ruleid_by_dep_entry *entry =
+      ABCE_CONTAINER_OF(node, struct ruleid_by_dep_entry, llnode);
+    int bytgt = get_ruleid_by_tgt(entry->dep);
+    if (bytgt < 0)
+    {
+      abort();
+    }
+    if (no_cycles[bytgt])
+    {
+      struct linked_list_node *node2, *tmp2;
+      LINKED_LIST_FOR_EACH_SAFE(node2, tmp2, &entry->one_ruleid_by_deplist)
+      {
+        struct one_ruleid_by_dep_entry *one =
+          ABCE_CONTAINER_OF(node2, struct one_ruleid_by_dep_entry, llnode);
+        if (no_cycles[one->ruleid])
+        {
+          continue;
+        }
+        uint32_t hashval;
+        size_t hashloc;
+        hashval = abce_murmur32(0x12345678U, one->ruleid);
+        hashloc = hashval % (sizeof(entry->one_ruleid_by_dep)/sizeof(*entry->one_ruleid_by_dep));
+        abce_rb_tree_nocmp_delete(&entry->one_ruleid_by_dep[hashloc], &one->node);
+        linked_list_delete(&one->llnode);
+        free(one);
+      }
+    }
+    else
+    {
+      uint32_t hashval;
+      size_t hashloc;
+      hashval = abce_murmur_buf(0x12345678U, entry->dep, strlen(entry->dep));
+      hashloc = hashval % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep));
+      abce_rb_tree_nocmp_delete(&ruleids_by_dep[hashloc], &entry->node);
+      linked_list_delete(&entry->llnode);
+      free(entry);
+    }
+  }
+#if 0
   for (auto it = ruleids_by_dep.begin(); it != ruleids_by_dep.end(); )
   {
     if (no_cycles[ruleid_by_tgt[it->first]])
@@ -1912,6 +1964,24 @@ int main(int argc, char **argv)
       it = ruleids_by_dep.erase(it);
     }
   }
+#endif
+  LINKED_LIST_FOR_EACH_SAFE(node, tmp, &ruleid_by_tgt_list)
+  {
+    struct ruleid_by_tgt_entry *entry =
+      ABCE_CONTAINER_OF(node, struct ruleid_by_tgt_entry, llnode);
+    if (no_cycles[entry->ruleid])
+    {
+      continue;
+    }
+    uint32_t hashval;
+    size_t hashloc;
+    hashval = abce_murmur_buf(0x12345678U, entry->tgt, strlen(entry->tgt));
+    hashloc = hashval % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt));
+    abce_rb_tree_nocmp_delete(&ruleid_by_tgt[hashloc], &entry->node);
+    linked_list_delete(&entry->llnode);
+    free(entry);
+  }
+#if 0
   // Delete unreachable rules from ruleid_by_tgt
   for (auto it = ruleid_by_tgt.begin(); it != ruleid_by_tgt.end(); )
   {
@@ -1925,6 +1995,7 @@ int main(int argc, char **argv)
     }
   }
   ruleid_by_tgt.rehash(ruleid_by_tgt.size());
+#endif
 #endif
 
   if (pipe(self_pipe_fd) != 0)
