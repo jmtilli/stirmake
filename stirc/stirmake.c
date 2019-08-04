@@ -216,6 +216,24 @@ int deps_remain_has(struct rule *rule, int ruleid)
   return n != NULL;
 }
 
+void deps_remain_erase(struct rule *rule, int ruleid)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hashval;
+  size_t hashloc;
+  hashval = abce_murmur32(0x12345678U, ruleid);
+  hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
+  if (n == NULL)
+  {
+    return;
+  }
+  struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
+  abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
+  linked_list_delete(&dep_remain->llnode);
+  free(dep_remain);
+}
+
 void deps_remain_insert(struct rule *rule, int ruleid)
 {
   struct abce_rb_tree_node *n;
@@ -438,6 +456,24 @@ static inline int ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
 }
 
 struct abce_rb_tree_nocmp ruleids_by_dep[8192];
+
+struct ruleid_by_dep_entry *find_ruleids_by_dep(char *dep)
+{
+  uint32_t hash = abce_murmur_buf(0x12345678U, dep, strlen(dep));
+  struct ruleid_by_dep_entry *e;
+  struct abce_rb_tree_nocmp *head;
+  struct abce_rb_tree_node *n;
+  int ret;
+  size_t i;
+
+  head = &ruleids_by_dep[hash % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, dep);
+  if (n != NULL)
+  {
+    return ABCE_CONTAINER_OF(n, struct ruleid_by_dep_entry, node);
+  }
+  return NULL;
+}
 
 struct ruleid_by_dep_entry *ensure_ruleid_by_dep(char *dep)
 {
@@ -797,6 +833,7 @@ void process_additional_deps(void)
       }
       rule = &rules[rules_size];
       //printf("adding tgt: %s\n", entry->tgt);
+      memset(rule, 0, sizeof(*rule));
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgt, rule->ruleid);
       // FIXME ins_tgt
@@ -871,6 +908,36 @@ void process_additional_deps(void)
 #endif
 }
 
+void add_rule(char **tgts, size_t tgtsz,
+              struct dep *deps, size_t depsz,
+              char **cmdargs, int phony)
+{
+  struct rule *rule;
+  struct cmd cmd;
+  if (tgtsz <= 0)
+  {
+    abort();
+  }
+  if (phony && tgtsz != 1)
+  {
+    abort();
+  }
+  cmd.args = cmdargs;
+  if (rules_size >= rules_capacity)
+  {
+    size_t new_capacity = 2*rules_capacity + 16;
+    rules = realloc(rules, new_capacity * sizeof(*rules));
+    rules_capacity = new_capacity;
+  }
+  rule = &rules[rules_size];
+  memset(rule, 0, sizeof(*rule));
+  rule->ruleid = rules_size++;
+  rule->cmd = cmd;
+  rule->is_phony = !!phony;
+  // FIXME add tgts, deps
+}
+
+#if 0
 void add_rule(const std::vector<std::string> &tgts,
               const std::vector<Dep> &deps,
               const std::vector<std::string> &cmdargs,
@@ -914,16 +981,78 @@ void add_rule(const std::vector<std::string> &tgts,
     ruleids_by_dep[it->name].insert(r.ruleid);
   }
 }
+#endif
 
-std::vector<int> ruleids_to_run;
+//std::vector<int> ruleids_to_run;
+int *ruleids_to_run;
+size_t ruleids_to_run_size;
+size_t ruleids_to_run_capacity;
 
-std::unordered_map<pid_t, int> ruleid_by_pid;
+struct ruleid_by_pid {
+  struct abce_rb_tree_node node;
+  pid_t pid;
+  int ruleid;
+};
+
+static inline int ruleid_by_pid_cmp_asym(pid_t pid, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct ruleid_by_pid *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, node);
+  if (pid > e->pid)
+  {
+    return 1;
+  }
+  if (pid < e->pid)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+static inline int ruleid_by_pid_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct ruleid_by_pid *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_pid, node);
+  struct ruleid_by_pid *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, node);
+  if (e1->pid > e2->pid)
+  {
+    return 1;
+  }
+  if (e1->pid < e2->pid)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+struct abce_rb_tree_nocmp ruleid_by_pid[64];
+
+int ruleid_by_pid_erase(pid_t pid)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hashval;
+  size_t hashloc;
+  int ruleid;
+  hashval = abce_murmur32(0x12345678U, pid);
+  hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
+  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, pid);
+  if (n == NULL)
+  {
+    return -ENOENT;
+  }
+  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
+  abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
+  ruleid = bypid->ruleid;
+  free(bypid);
+  return ruleid;
+}
+
+//std::unordered_map<pid_t, int> ruleid_by_pid;
 
 pid_t fork_child(int ruleid)
 {
-  std::vector<char*> args;
+  char **args;
   pid_t pid;
-  Cmd cmd = rules.at(ruleid).cmd;
+  struct cmd cmd = rules[ruleid].cmd;
+  args = cmd.args;
 
   pid = fork();
   if (pid < 0)
@@ -932,11 +1061,6 @@ pid_t fork_child(int ruleid)
   }
   else if (pid == 0)
   {
-    for (auto it = cmd.args.begin(); it != cmd.args.end(); it++)
-    {
-      args.push_back(strdup(it->c_str()));
-    }
-    args.push_back(NULL);
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
     // FIXME check for make
@@ -948,8 +1072,18 @@ pid_t fork_child(int ruleid)
   }
   else
   {
+    struct ruleid_by_pid *bypid = malloc(sizeof(*bypid));
+    uint32_t hashval;
+    size_t hashloc;
+    bypid->pid = pid;
+    bypid->ruleid = ruleid;
     children++;
-    ruleid_by_pid[pid] = ruleid;
+    hashval = abce_murmur32(0x12345678U, pid);
+    hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
+    if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
+    {
+      abort();
+    }
     return pid;
   }
 }
@@ -961,7 +1095,7 @@ struct timespec rec_mtim(const char *name)
   struct timespec max;
   struct stat statbuf;
   DIR *dir = opendir(name);
-  //std::cout << "Statting " << name << std::endl;
+  //printf("Statting %s\n", name);
   if (stat(name, &statbuf) != 0)
   {
     printf("Can't open file %s\n", name);
@@ -986,7 +1120,12 @@ struct timespec rec_mtim(const char *name)
   {
     struct dirent *de = readdir(dir);
     struct timespec cur;
-    std::string nam2(name);
+    char nam2[PATH_MAX + 1] = {0}; // RFE avoid large static recursive allocs?
+    //std::string nam2(name);
+    if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
+    {
+      abort();
+    }
     if (de == NULL)
     {
       break;
@@ -995,23 +1134,28 @@ struct timespec rec_mtim(const char *name)
     {
       continue;
     }
-    nam2 += std::string("/") + de->d_name;
+    size_t oldlen = strlen(nam2);
+    if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
+                 "/%s", de->d_name) >= sizeof(nam2)-oldlen)
+    {
+      abort();
+    }
     //if (de->d_type == DT_DIR)
     if (0)
     {
-      cur = rec_mtim(nam2.c_str());
+      cur = rec_mtim(nam2);
     }
     else
     {
-      if (stat(nam2.c_str(), &statbuf) != 0)
+      if (stat(nam2, &statbuf) != 0)
       {
-        printf("Can't open file %s\n", nam2.c_str());
+        printf("Can't open file %s\n", nam2);
         exit(1);
       }
       cur = statbuf.st_mtim;
-      if (lstat(nam2.c_str(), &statbuf) != 0)
+      if (lstat(nam2, &statbuf) != 0)
       {
-        printf("Can't open file %s\n", nam2.c_str());
+        printf("Can't open file %s\n", nam2);
         exit(1);
       }
       if (ts_cmp(statbuf.st_mtim, cur) > 0)
@@ -1021,15 +1165,15 @@ struct timespec rec_mtim(const char *name)
     }
     if (ts_cmp(cur, max) > 0)
     {
-      //std::cout << "nam2 file new " << nam2 << std::endl;
+      //printf("nam2 file new %s\n", nam2);
       max = cur;
     }
     if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
     {
-      cur = rec_mtim(nam2.c_str());
+      cur = rec_mtim(nam2);
       if (ts_cmp(cur, max) > 0)
       {
-        //std::cout << "nam2 dir new " << nam2 << std::endl;
+        //printf("nam2 dir new %s\n", nam2);
         max = cur;
       }
     }
@@ -1040,19 +1184,87 @@ struct timespec rec_mtim(const char *name)
 
 void do_exec(int ruleid)
 {
-  Rule &r = rules.at(ruleid);
+  struct rule *r = &rules[ruleid];
+  //Rule &r = rules.at(ruleid);
   if (debug)
   {
-    std::cout << "do_exec " << ruleid << std::endl;
+    printf("do_exec %d\n", ruleid);
   }
-  if (!r.queued)
+  if (!r->is_queued)
   {
     int has_to_exec = 0;
-    if (!r.phony && r.deps.size() > 0)
+    if (!r->is_phony && !linked_list_is_empty(&r->deplist))
     {
       int seen_nonphony = 0;
       int seen_tgt = 0;
       struct timespec st_mtim = {}, st_mtimtgt = {};
+      struct linked_list_node *node;
+      LINKED_LIST_FOR_EACH(node, &r->deplist)
+      {
+        struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+        struct stat statbuf;
+        int depid = get_ruleid_by_tgt(e->name);
+        if (depid >= 0)
+        {
+          if (rules[depid].is_phony)
+          {
+            has_to_exec = 1;
+            continue;
+          }
+        }
+        if (e->is_recursive)
+        {
+          struct timespec st_rectim = rec_mtim(e->name);
+          if (!seen_nonphony || ts_cmp(st_rectim, st_mtim) > 0)
+          {
+            st_mtim = st_rectim;
+          }
+          seen_nonphony = 1;
+          continue;
+        }
+        if (stat(e->name, &statbuf) != 0)
+        {
+          has_to_exec = 1;
+          break;
+          //perror("can't stat");
+          //fprintf(stderr, "file was: %s\n", it->c_str());
+          //abort();
+        }
+        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+        {
+          st_mtim = statbuf.st_mtim;
+        }
+        seen_nonphony = 1;
+        if (lstat(e->name, &statbuf) != 0)
+        {
+          has_to_exec = 1;
+          break;
+          //perror("can't lstat");
+          //fprintf(stderr, "file was: %s\n", it->c_str());
+          //abort();
+        }
+        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+        {
+          st_mtim = statbuf.st_mtim;
+        }
+        seen_nonphony = 1;
+      }
+      LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+      {
+        struct tgt *e = ABCE_CONTAINER_OF(node, struct tgt, llnode);
+        struct stat statbuf;
+        if (stat(e->tgt, &statbuf) != 0)
+        {
+          has_to_exec = 1;
+          break;
+        }
+        if (!seen_tgt || ts_cmp(statbuf.st_mtim, st_mtimtgt) < 0)
+        {
+          st_mtimtgt = statbuf.st_mtim;
+        }
+        seen_tgt = 1;
+      }
+#if 0
       for (auto it = r.deps.begin(); it != r.deps.end(); it++)
       {
         struct stat statbuf;
@@ -1120,6 +1332,7 @@ void do_exec(int ruleid)
         }
         seen_tgt = 1;
       }
+#endif
       if (!has_to_exec)
       {
         if (!seen_tgt)
@@ -1132,26 +1345,32 @@ void do_exec(int ruleid)
         }
       }
     }
-    else if (r.phony)
+    else if (r->is_phony)
     {
       has_to_exec = 1;
     }
-    if (has_to_exec && r.cmd.args.size() > 0)
+    if (has_to_exec && r->cmd.args[0] != NULL)
     {
       if (debug)
       {
-        std::cout << "do_exec: has_to_exec " << ruleid << std::endl;
+        printf("do_exec: has_to_exec %d\n", ruleid);
       }
-      ruleids_to_run.push_back(ruleid);
-      r.queued = true;
+      if (ruleids_to_run_size >= ruleids_to_run_capacity)
+      {
+        size_t new_capacity = 2*ruleids_to_run_capacity + 16;
+        ruleids_to_run = realloc(ruleids_to_run, new_capacity*sizeof(*ruleids_to_run));
+        ruleids_to_run_capacity = new_capacity;
+      }
+      ruleids_to_run[ruleids_to_run_size++] = ruleid;
+      r->is_queued = 1;
     }
     else
     {
       if (debug)
       {
-        std::cout << "do_exec: mark_executed " << ruleid << std::endl;
+        printf("do_exec: mark_executed %d\n", ruleid);
       }
-      r.queued = true;
+      r->is_queued = 1;
       mark_executed(ruleid);
     }
   }
@@ -1159,39 +1378,43 @@ void do_exec(int ruleid)
 
 void consider(int ruleid)
 {
-  Rule &r = rules.at(ruleid);
+  struct rule *r = &rules[ruleid];
+  struct linked_list_node *node;
   int toexecute = 0;
   if (debug)
   {
-    std::cout << "considering " << r << std::endl;
+    printf("considering %d\n", r->ruleid); // FIXME better output
   }
-  if (r.executed)
+  if (r->is_executed)
   {
     if (debug)
     {
-      std::cout << "already execed " << r << std::endl;
+      printf("already execed %d\n", r->ruleid); // FIXME better output
     }
     return;
   }
-  if (r.executing)
+  if (r->is_executing)
   {
     if (debug)
     {
-      std::cout << "already execing " << r << std::endl;
+      printf("already execing %d\n", r->ruleid); // FIXME better output
     }
     return;
   }
-  r.executing = true;
-  for (auto it = r.deps.begin(); it != r.deps.end(); it++)
+  r->is_executing = 1;
+  LINKED_LIST_FOR_EACH(node, &r->deplist)
   {
-    if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
+    struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+    int idbytgt = get_ruleid_by_tgt(e->name);
+    if (idbytgt >= 0)
     {
-      consider(ruleid_by_tgt[it->name]);
-      if (!rules.at(ruleid_by_tgt[it->name]).executed)
+      consider(idbytgt);
+      if (!rules[idbytgt].is_executed)
       {
         if (debug)
         {
-          std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
+          printf("rule %d not executed, executing rule %d\n", idbytgt, ruleid);
+          //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
         toexecute = 1;
       }
@@ -1204,7 +1427,7 @@ void consider(int ruleid)
     break;
   }
 */
-  if (!toexecute && !r.queued)
+  if (!toexecute && !r->is_queued)
   {
     do_exec(ruleid);
     //ruleids_to_run.push_back(ruleid);
@@ -1218,30 +1441,30 @@ void consider(int ruleid)
 
 void reconsider(int ruleid, int ruleid_executed)
 {
-  Rule &r = rules.at(ruleid);
+  struct rule *r = &rules[ruleid];
   int toexecute = 0;
   if (debug)
   {
-    std::cout << "reconsidering " << r << std::endl;
+    printf("reconsidering %d\n", r->ruleid); // FIXME better output
   }
-  if (r.executed)
+  if (r->is_executed)
   {
     if (debug)
     {
-      std::cout << "already execed " << r << std::endl;
+      printf("already execed %d\n", r->ruleid); // FIXME better output
     }
     return;
   }
-  if (!r.executing)
+  if (!r->is_executing)
   {
     if (debug)
     {
-      std::cout << "rule not executing " << r << std::endl;
+      printf("rule not executing %d\n", r->ruleid); // FIXME better output
     }
     return;
   }
-  r.deps_remain.erase(ruleid_executed);
-  if (r.deps_remain.size() > 0)
+  deps_remain_erase(r, ruleid_executed);
+  if (!linked_list_is_empty(&r->depremainlist))
   {
     toexecute = 1;
   }
@@ -1260,7 +1483,7 @@ void reconsider(int ruleid, int ruleid_executed)
     }
   }
 #endif
-  if (!toexecute && !r.queued)
+  if (!toexecute && !r->is_queued)
   {
     do_exec(ruleid);
     //ruleids_to_run.push_back(ruleid);
@@ -1270,26 +1493,30 @@ void reconsider(int ruleid, int ruleid_executed)
 
 void mark_executed(int ruleid)
 {
-  Rule &r = rules.at(ruleid);
-  if (r.executed)
+  struct rule *r = &rules[ruleid];
+  struct linked_list_node *node, *node2;
+  if (r->is_executed)
   {
     abort();
   }
-  if (!r.executing)
+  if (!r->is_executing)
   {
     abort();
   }
-  r.executed = true;
+  r->is_executed = 1;
   if (ruleid == 0)
   {
     return;
   }
-  for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
+  LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
-    std::unordered_set<int> &s = ruleids_by_dep[*it];
-    for (auto it2 = s.begin(); it2 != s.end(); it2++)
+    struct tgt *e = ABCE_CONTAINER_OF(node, struct tgt, llnode);
+    struct ruleid_by_dep_entry *e2 = find_ruleids_by_dep(e->tgt);
+    LINKED_LIST_FOR_EACH(node2, &e2->one_ruleid_by_deplist)
     {
-      reconsider(*it2, ruleid);
+      struct one_ruleid_by_dep_entry *one =
+        ABCE_CONTAINER_OF(node2, struct one_ruleid_by_dep_entry, llnode);
+      reconsider(one->ruleid, ruleid);
     }
   }
 }
@@ -1320,12 +1547,12 @@ void set_nonblock(int fd)
   int flags = fcntl(fd, F_GETFL);
   if (flags < 0)
   {
-    std::terminate();
+    abort();
   }
   flags |= O_NONBLOCK;
   if (fcntl(fd, F_SETFL, flags) < 0)
   {
-    std::terminate();
+    abort();
   }
 }
 
@@ -1334,36 +1561,43 @@ void sigchld_handler(int x)
   write(self_pipe_fd[1], ".", 1);
 }
 
+char *myitoa(int i)
+{
+  char *res = malloc(16);
+  snprintf(res, 16, "%d", i);
+  return res;
+}
+
 void pathological_test(void)
 {
   int rule;
-  std::vector<std::string> v_rules;
-  std::string rulestr;
+  //std::vector<std::string> v_rules;
+  char *v_rules[3000];
+  size_t v_rules_sz = 0;
+  struct timeval tv1, tv2;
+  char *rulestr;
+  //std::string rulestr;
   //std::ofstream mf("Makefile");
   //mf << "all: d2999" << std::endl;
   for (rule = 0; rule < 3000; rule++)
   {
-    std::ostringstream oss;
-    std::vector<std::string> v_rule;
-    oss << rule;
-    rulestr = oss.str();
-    v_rule.push_back(rulestr);
-    add_dep(v_rule, v_rules, 0);
+    rulestr = myitoa(rule);
+    add_dep(&rulestr, 1, v_rules, v_rules_sz, 0);
 #if 0
     mf << "d" << rulestr << ": ";
     for (auto it = v_rules.begin(); it != v_rules.end(); it++)
       mf << "d" << *it << " ";
     mf << std::endl;
 #endif
-    v_rules.push_back(rulestr);
+    v_rules[v_rules_sz++] = rulestr;
   }
   process_additional_deps();
-  std::cout << "starting DFS2" << std::endl;
-  auto cl1 = std::chrono::steady_clock::now();
-  free(better_cycle_detect(ruleid_by_tgt[rulestr]));
-  auto cl2 = std::chrono::steady_clock::now();
-  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(cl2 - cl1);
-  std::cout << "ending DFS2 in " << ms.count() << " ms" << std::endl;
+  printf("starting DFS2\n");
+  gettimeofday(&tv1, NULL);
+  free(better_cycle_detect(get_ruleid_by_tgt(rulestr)));
+  gettimeofday(&tv2, NULL);
+  double ms = (tv2.tv_usec - tv1.tv_usec + 1e6*(tv2.tv_sec - tv1.tv_sec)) / 1e3;
+  printf("ending DFS2 in %g ms\n", ms);
   //mf.close();
   exit(0);
 }
@@ -1376,7 +1610,7 @@ void stack_conf(void)
   result = getrlimit(RLIMIT_STACK, &rl);
   if (result != 0)
   {
-    std::terminate();
+    abort();
   }
   if (rl.rlim_cur < stackSize)
   {
@@ -1384,30 +1618,120 @@ void stack_conf(void)
     result = setrlimit(RLIMIT_STACK, &rl);
     if (result != 0)
     {
-      std::terminate();
+      abort();
     }
   }
 }
 
-stringtab st;
+struct stringtabentry {
+  struct abce_rb_tree_node node;
+  char *string;
+  size_t idx;
+};
+
+static inline int stringtabentry_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct stringtabentry *e = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
+  size_t len1 = strlen(str);
+  size_t len2, lenmin;
+  int ret;
+  char *str2;
+  len2 = strlen(e->string);
+  str2 = e->string;
+  lenmin = (len1 < len2) ? len1 : len2;
+  ret = memcmp(str, str2, lenmin);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  if (len1 > len2)
+  {
+    return 1;
+  }
+  if (len1 < len2)
+  {
+    return -1;
+  }
+  return 0;
+}
+static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct stringtabentry *e1 = ABCE_CONTAINER_OF(n1, struct stringtabentry, node);
+  struct stringtabentry *e2 = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
+  size_t len1 = strlen(e1->string);
+  size_t len2, lenmin;
+  int ret;
+  len2 = strlen(e2->string);
+  lenmin = (len1 < len2) ? len1 : len2;
+  ret = memcmp(e1->string, e2->string, lenmin);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  if (len1 > len2)
+  {
+    return 1;
+  }
+  if (len1 < len2)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+struct abce_rb_tree_nocmp st[8192];
+size_t st_cnt;
+
+#if 0
 std::vector<memblock> all_scopes; // FIXME needed?
 std::vector<memblock> scope_stack;
+#endif
 
-extern "C"
+#if 0
 size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
   std::string str(symbol, symlen);
   return st.add(str);
 }
+#endif
 
-extern "C"
+size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hashval;
+  size_t hashloc;
+  if (strlen(symbol) != symlen)
+  {
+    abort(); // RFE what to do?
+  }
+  hashval = abce_murmur_buf(0x12345678U, symbol, symlen);
+  hashloc = hashval % (sizeof(st)/sizeof(*st));
+  n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, 
+NULL, symbol);
+  if (n != NULL)
+  {
+    return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
+  }
+  struct stringtabentry *stringtabentry = malloc(sizeof(struct stringtabentry));
+  stringtabentry->string = strdup(symbol);
+  stringtabentry->idx = st_cnt++;
+  if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
+  {
+    abort();
+  }
+  return stringtabentry->idx;
+}
+
+
 size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
+  // FIXME implement in C!
+#if 0
   size_t old = (size_t)-1;
   memblock &mb = scope_stack.back();
   if (mb.type != memblock::T_SC)
   {
-    std::terminate();
+    abort();
   }
   scope *sc = mb.u.sc;
   std::string str(symbol);
@@ -1424,12 +1748,18 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
   }
   sc->vars[str] = memblock(loc, true);
   return old;
+#endif
 }
+
+char **null_cmds = {NULL};
 
 int main(int argc, char **argv)
 {
+#if 0
   all_scopes.push_back(memblock(new scope()));
   scope_stack.push_back(all_scopes.back());
+#endif
+
 #if 0
   std::vector<std::string> v_all{"all"};
   std::vector<std::string> v_l1g{"l1g.txt"};
@@ -1465,11 +1795,12 @@ int main(int argc, char **argv)
 
   if (!f)
   {
-    std::terminate();
+    abort();
   }
   stiryydoparse(f, &stiryy);
   fclose(f);
 
+#if 0
   std::vector<memblock> stack;
 
   stack.push_back(memblock(-1, false, true));
@@ -1488,12 +1819,15 @@ int main(int argc, char **argv)
   stack.back().dump();
   std::cout << std::endl;
   //exit(0);
+#endif
 
   stack_conf();
 
-  ruleid_by_tgt.rehash(stiryy.rulesz);
-  for (auto it = stiryy.rules; it != stiryy.rules + stiryy.rulesz; it++)
+  //ruleid_by_tgt.rehash(stiryy.rulesz);
+  //for (auto it = stiryy.rules; it != stiryy.rules + stiryy.rulesz; it++)
+  for (i = 0; i < stiryy.rulesz; i++)
   {
+#if 0
     std::vector<std::string> tgt;
     std::vector<Dep> dep;
     std::vector<std::string> cmd;
@@ -1503,32 +1837,40 @@ int main(int argc, char **argv)
       dep.push_back(Dep(it2->name, it2->rec));
     }
     std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
-    if (tgt.size() > 0) // FIXME chg to if (1)
+#endif
+    if (stiryy.rules[i].targetsz > 0) // FIXME chg to if (1)
     {
       if (debug)
       {
-        std::cout << "ADDING RULE" << std::endl;
+        printf("ADDING RULE\n");
       }
-      add_rule(tgt, dep, cmd, 0);
+      add_rule(stiryy.rules[i].targets, stiryy.rules[i].targetsz,
+               stiryy.rules[i].deps, stiryy.rules[i].depsz,
+               null_cmds, 0);
     }
   }
 
   for (i = 0; i < stiryy.cdepincludesz; i++)
   {
     struct incyy incyy = {};
+    size_t j;
     f = fopen(stiryy.cdepincludes[i], "r");
     if (!f)
     {
-      std::terminate();
+      abort();
     }
     incyydoparse(f, &incyy);
-    for (auto it = incyy.rules; it != incyy.rules + incyy.rulesz; it++)
+    //for (auto it = incyy.rules; it != incyy.rules + incyy.rulesz; it++)
+    for (j = 0; j < incyy.rulesz; j++)
     {
-      std::vector<std::string> tgt;
-      std::vector<std::string> dep;
-      std::copy(it->deps, it->deps+it->depsz, std::back_inserter(dep));
-      std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
-      add_dep(tgt, dep, 0);
+      //std::vector<std::string> tgt;
+      //std::vector<std::string> dep;
+      //std::copy(it->deps, it->deps+it->depsz, std::back_inserter(dep));
+      //std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
+      add_dep(incyy.rules[j].targets, incyy.rules[j].targetsz,
+              incyy.rules[j].deps, incyy.rules[j].depsz,
+              0);
+      //add_dep(tgt, dep, 0);
     }
     fclose(f);
     incyy_free(&incyy);
@@ -1587,13 +1929,13 @@ int main(int argc, char **argv)
 
   if (pipe(self_pipe_fd) != 0)
   {
-    std::terminate();
+    abort();
   }
   set_nonblock(self_pipe_fd[0]);
   set_nonblock(self_pipe_fd[1]);
   if (pipe(jobserver_fd) != 0)
   {
-    std::terminate();
+    abort();
   }
   set_nonblock(jobserver_fd[0]);
   set_nonblock(jobserver_fd[1]);
@@ -1611,7 +1953,7 @@ int main(int argc, char **argv)
 
   consider(0);
 
-  while (!ruleids_to_run.empty())
+  while (ruleids_to_run_size > 0)
   {
     if (children)
     {
@@ -1621,9 +1963,9 @@ int main(int argc, char **argv)
         break;
       }
     }
-    std::cout << "forking1 child" << std::endl;
-    fork_child(ruleids_to_run.back());
-    ruleids_to_run.pop_back();
+    printf("forking1 child\n");
+    fork_child(ruleids_to_run[ruleids_to_run_size-1]);
+    ruleids_to_run_size--;
   }
 
 /*
@@ -1650,12 +1992,12 @@ int main(int argc, char **argv)
     int wstatus = 0;
     fd_set readfds;
     FD_SET(self_pipe_fd[0], &readfds);
-    if (!ruleids_to_run.empty())
+    if (ruleids_to_run_size > 0)
     {
       FD_SET(jobserver_fd[0], &readfds);
     }
     select(maxfd+1, &readfds, NULL, NULL, NULL);
-    std::cout << "SELECT RETURNED" << std::endl;
+    printf("SELECT RETURNED\n");
     if (read(self_pipe_fd[0], chbuf, 100))
     {
       for (;;)
@@ -1670,24 +2012,24 @@ int main(int argc, char **argv)
         {
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
-            std::cout << "error exit status" << std::endl;
-            std::cout << WIFEXITED(wstatus) << std::endl;
-            std::cout << WIFSIGNALED(wstatus) << std::endl;
-            std::cout << WEXITSTATUS(wstatus) << std::endl;
+            printf("error exit status\n");
+            printf("%d\n", (int)WIFEXITED(wstatus));
+            printf("%d\n", (int)WIFSIGNALED(wstatus));
+            printf("%d\n", (int)WEXITSTATUS(wstatus));
             return 1;
           }
         }
-        if (children <= 0 && ruleids_to_run.empty())
+        if (children <= 0 && ruleids_to_run_size == 0)
         {
           if (pid < 0 && errno == ECHILD)
           {
-            if (rules.at(0).executed)
+            if (rules[0].is_executed)
             {
               return 0;
             }
             else
             {
-              std::cerr << "can't execute rule 0" << std::endl;
+              fprintf(stderr, "can't execute rule 0\n");
               abort();
             }
           }
@@ -1701,11 +2043,18 @@ int main(int argc, char **argv)
           }
           abort();
         }
+        int ruleid = ruleid_by_pid_erase(pid);
+        if (ruleid < 0)
+        {
+          abort();
+        }
+#if 0
         int ruleid = ruleid_by_pid[pid];
         if (ruleid_by_pid.erase(pid) != 1)
         {
           abort();
         }
+#endif
         mark_executed(ruleid);
         children--;
         if (children != 0)
@@ -1722,7 +2071,7 @@ int main(int argc, char **argv)
       ruleids_to_run.pop_back();
     }
 #endif
-    while (!ruleids_to_run.empty())
+    while (ruleids_to_run_size > 0)
     {
       if (children)
       {
@@ -1732,9 +2081,11 @@ int main(int argc, char **argv)
           break;
         }
       }
-      std::cout << "forking child" << std::endl;
-      fork_child(ruleids_to_run.back());
-      ruleids_to_run.pop_back();
+      printf("forking child\n");
+      //std::cout << "forking child" << std::endl;
+      fork_child(ruleids_to_run[ruleids_to_run_size-1]);
+      ruleids_to_run_size--;
+      //ruleids_to_run.pop_back();
     }
   }
   return 0;
