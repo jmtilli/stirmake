@@ -1,0 +1,3 @@
+[submodule "stirc/abce"]
+	path = stirc/abce
+	url = git@version.aalto.fi:communicationsw/abce.git
