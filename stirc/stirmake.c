@@ -365,7 +365,7 @@ std::ostream &operator<<(std::ostream &o, const Rule &r)
 int children = 0;
 const int limit = 2;
 
-struct rule *rules;
+struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
 size_t rules_capacity;
 size_t rules_size;
 
@@ -574,7 +574,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
       if (parents[i])
       {
         // FIXME print full rule info
-        fprintf(stderr, " rule in cycle: %d\n", rules[i].ruleid);
+        fprintf(stderr, " rule in cycle: %d\n", rules[i]->ruleid);
       }
     }
     exit(1);
@@ -590,7 +590,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
     }
   }
 #endif
-  LINKED_LIST_FOR_EACH(node, &rules[cur].deplist)
+  LINKED_LIST_FOR_EACH(node, &rules[cur]->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     char *depname = e->name;
@@ -609,6 +609,10 @@ unsigned char *better_cycle_detect(int cur)
   unsigned char *no_cycles, *parents;
   no_cycles = malloc(rules_size);
   parents = malloc(rules_size);
+
+  memset(no_cycles, 0, rules_size);
+  memset(parents, 0, rules_size);
+
   better_cycle_detect_impl(cur, parents, no_cycles);
   free(parents);
   return no_cycles;
@@ -825,6 +829,14 @@ void add_dep(char **tgts, size_t tgts_sz,
 #endif
 }
 
+void zero_rule(struct rule *rule)
+{
+  memset(rule, 0, sizeof(*rule));
+  linked_list_head_init(&rule->deplist);
+  linked_list_head_init(&rule->tgtlist);
+  linked_list_head_init(&rule->depremainlist);
+}
+
 void process_additional_deps(void)
 {
   struct linked_list_node *node, *node2;
@@ -841,9 +853,12 @@ void process_additional_deps(void)
         rules = realloc(rules, new_capacity * sizeof(*rules));
         rules_capacity = new_capacity;
       }
-      rule = &rules[rules_size];
+      rule = malloc(sizeof(*rule));
+      rules[rules_size] = rule;
+      //rule = &rules[rules_size];
       //printf("adding tgt: %s\n", entry->tgt);
-      memset(rule, 0, sizeof(*rule));
+      zero_rule(rule);
+
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgt, rule->ruleid);
       // FIXME ins_tgt
@@ -857,7 +872,7 @@ void process_additional_deps(void)
       }
       continue;
     }
-    rule = &rules[ruleid];
+    rule = rules[ruleid];
     if (entry->phony)
     {
       rule->is_phony = 1;
@@ -939,8 +954,10 @@ void add_rule(char **tgts, size_t tgtsz,
     rules = realloc(rules, new_capacity * sizeof(*rules));
     rules_capacity = new_capacity;
   }
-  rule = &rules[rules_size];
-  memset(rule, 0, sizeof(*rule));
+  rule = malloc(sizeof(*rule));
+  rules[rules_size] = rule;
+
+  zero_rule(rule);
   rule->ruleid = rules_size++;
   rule->cmd = cmd;
   rule->is_phony = !!phony;
@@ -1061,7 +1078,7 @@ pid_t fork_child(int ruleid)
 {
   char **args;
   pid_t pid;
-  struct cmd cmd = rules[ruleid].cmd;
+  struct cmd cmd = rules[ruleid]->cmd;
   args = cmd.args;
 
   pid = fork();
@@ -1194,7 +1211,7 @@ struct timespec rec_mtim(const char *name)
 
 void do_exec(int ruleid)
 {
-  struct rule *r = &rules[ruleid];
+  struct rule *r = rules[ruleid];
   //Rule &r = rules.at(ruleid);
   if (debug)
   {
@@ -1216,7 +1233,7 @@ void do_exec(int ruleid)
         int depid = get_ruleid_by_tgt(e->name);
         if (depid >= 0)
         {
-          if (rules[depid].is_phony)
+          if (rules[depid]->is_phony)
           {
             has_to_exec = 1;
             continue;
@@ -1388,7 +1405,7 @@ void do_exec(int ruleid)
 
 void consider(int ruleid)
 {
-  struct rule *r = &rules[ruleid];
+  struct rule *r = rules[ruleid];
   struct linked_list_node *node;
   int toexecute = 0;
   if (debug)
@@ -1419,7 +1436,7 @@ void consider(int ruleid)
     if (idbytgt >= 0)
     {
       consider(idbytgt);
-      if (!rules[idbytgt].is_executed)
+      if (!rules[idbytgt]->is_executed)
       {
         if (debug)
         {
@@ -1451,7 +1468,7 @@ void consider(int ruleid)
 
 void reconsider(int ruleid, int ruleid_executed)
 {
-  struct rule *r = &rules[ruleid];
+  struct rule *r = rules[ruleid];
   int toexecute = 0;
   if (debug)
   {
@@ -1503,7 +1520,7 @@ void reconsider(int ruleid, int ruleid_executed)
 
 void mark_executed(int ruleid)
 {
-  struct rule *r = &rules[ruleid];
+  struct rule *r = rules[ruleid];
   struct linked_list_node *node, *node2;
   if (r->is_executed)
   {
@@ -1894,7 +1911,7 @@ int main(int argc, char **argv)
   unsigned char *no_cycles = better_cycle_detect(0);
   for (i = 0; i < rules_size; i++)
   {
-    calc_deps_remain(&rules[i]);
+    calc_deps_remain(rules[i]);
   }
 
   // Delete unreachable rules from ruleids_by_dep
@@ -2094,7 +2111,7 @@ int main(int argc, char **argv)
         {
           if (pid < 0 && errno == ECHILD)
           {
-            if (rules[0].is_executed)
+            if (rules[0]->is_executed)
             {
               return 0;
             }
