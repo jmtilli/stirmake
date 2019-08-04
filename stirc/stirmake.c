@@ -689,7 +689,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
     int ruleid = get_ruleid_by_tgt(depname);
     if (ruleid >= 0)
     {
-      better_cycle_detect_impl(ruleid, parents, no_cycles);
+      better_cycle_detect_impl(ruleid, no_cycles, parents);
     }
   }
   parents[cur] = 0;
@@ -705,7 +705,7 @@ unsigned char *better_cycle_detect(int cur)
   memset(no_cycles, 0, rules_size);
   memset(parents, 0, rules_size);
 
-  better_cycle_detect_impl(cur, parents, no_cycles);
+  better_cycle_detect_impl(cur, no_cycles, parents);
   free(parents);
   return no_cycles;
 }
@@ -938,11 +938,9 @@ char **argdup(char **cmdargs)
   size_t cnt = 0;
   size_t i;
   char **result;
-  printf("cmdargs: %p\n", cmdargs);
   while (cmdargs[cnt] != NULL)
   {
     cnt++;
-    printf("cnt now %zu\n", cnt);
   }
   result = malloc((cnt+1) * sizeof(*result));
   for (i = 0; i < cnt; i++)
@@ -950,7 +948,6 @@ char **argdup(char **cmdargs)
     result[i] = strdup(cmdargs[i]);
   }
   result[cnt] = NULL;
-  printf("returning: %p\n", result);
   return result;
 }
 
@@ -2082,7 +2079,6 @@ int main(int argc, char **argv)
   {
     struct ruleid_by_dep_entry *entry =
       ABCE_CONTAINER_OF(node, struct ruleid_by_dep_entry, llnode);
-    printf("bytgt: %s\n", entry->dep);
     int bytgt = get_ruleid_by_tgt(entry->dep);
     if (bytgt < 0)
     {
