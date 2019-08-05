@@ -599,8 +599,88 @@ shell_commands:
 shell_command:
   SHELL_COMMAND NEWLINE
 {
-  printf("\tshell %s\n", $1);
+  char *outbuf = NULL;
+  size_t outcap = 0;
+  size_t outsz = 0;
+  size_t len = strlen($1);
+  size_t i;
+  for (i = 0; i < len; i++)
+  {
+    if ($1[i] == '\\')
+    {
+      if (i+1 >= len)
+      {
+        abort();
+      }
+      if (outsz >= outcap)
+      {
+        outcap = 2*outcap + 16;
+        outbuf = realloc(outbuf, outcap);
+      }
+      outbuf[outsz++] = $1[i+1];
+      i++;
+      continue;
+    }
+    else if ($1[i] == '$')
+    {
+      if (i+1 < len && $1[i+1] == '<')
+      {
+        char *dep;
+        size_t deplen;
+        struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+        if (rule->depsz <= 0)
+        {
+          fprintf(stderr, "$< on rule with no dependencies\n");
+          abort();
+        }
+        dep = rule->deps[0].name;
+        deplen = strlen(dep);
+        if (outsz + deplen > outcap)
+        {
+          outcap = 2*outcap + deplen;
+          outbuf = realloc(outbuf, outcap);
+        }
+        memcpy(&outbuf[outsz], dep, deplen);
+        outsz += deplen;
+        i++;
+        continue;
+      }
+      abort();
+    }
+    else if ($1[i] == ' ')
+    {
+      while ($1[i] == ' ')
+      {
+        i++;
+      }
+      i--; // will be incremented by for
+      if (outsz >= outcap)
+      {
+        outcap = 2*outcap + 16;
+        outbuf = realloc(outbuf, outcap);
+      }
+      outbuf[outsz++] = '\0';
+      stiryy_add_shell(stiryy, outbuf);
+      outsz = 0;
+      continue;
+    }
+    if (outsz >= outcap)
+    {
+      outcap = 2*outcap + 16;
+      outbuf = realloc(outbuf, outcap);
+    }
+    outbuf[outsz++] = $1[i];
+  }
+  if (outsz >= outcap)
+  {
+    outcap = 2*outcap + 16;
+    outbuf = realloc(outbuf, outcap);
+  }
+  outbuf[outsz++] = '\0';
+  printf("\tshell\n");
+  stiryy_add_shell(stiryy, outbuf);
   free($1);
+  // FIXME multiple shell command lines
 }
 | ATTAB expr NEWLINE
 {

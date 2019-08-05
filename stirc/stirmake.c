@@ -859,6 +859,19 @@ void zero_rule(struct rule *rule)
 
 char *null_cmds[] = {NULL};
 
+char **argdupcnt(char **cmdargs, size_t cnt)
+{
+  size_t i;
+  char **result;
+  result = my_malloc((cnt+1) * sizeof(*result));
+  for (i = 0; i < cnt; i++)
+  {
+    result[i] = my_strdup(cmdargs[i]);
+  }
+  result[cnt] = NULL;
+  return result;
+}
+
 char **argdup(char **cmdargs)
 {
   size_t cnt = 0;
@@ -941,7 +954,7 @@ void process_additional_deps(void)
 
 void add_rule(char **tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
-              char **cmdargs, int phony)
+              char **cmdargs, size_t cmdargsz, int phony)
 {
   struct rule *rule;
   struct cmd cmd;
@@ -957,7 +970,7 @@ void add_rule(char **tgts, size_t tgtsz,
     printf("10\n");
     abort();
   }
-  cmd.args = argdup(cmdargs);
+  cmd.args = argdupcnt(cmdargs, cmdargsz);
   if (rules_size >= rules_capacity)
   {
     size_t new_capacity = 2*rules_capacity + 16;
@@ -1057,7 +1070,16 @@ pid_t fork_child(int ruleid)
   char **args;
   pid_t pid;
   struct cmd cmd = rules[ruleid]->cmd;
+  char **argiter;
   args = cmd.args;
+  argiter = args;
+
+  printf("start args:\n");
+  while (*argiter)
+  {
+    printf("  %s\n", *argiter++);
+  }
+  printf("end args\n");
 
   pid = fork();
   if (pid < 0)
@@ -1611,7 +1633,7 @@ int main(int argc, char **argv)
       }
       add_rule(stiryy.rules[i].targets, stiryy.rules[i].targetsz,
                stiryy.rules[i].deps, stiryy.rules[i].depsz,
-               null_cmds, 0);
+               stiryy.rules[i].shells, stiryy.rules[i].shellsz, 0);
     }
   }
 

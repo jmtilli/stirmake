@@ -67,6 +67,9 @@ struct stiryyrule {
   char **targets;
   size_t targetsz;
   size_t targetcapacity;
+  char **shells;
+  size_t shellsz;
+  size_t shellcapacity;
 };
 
 struct stiryy {
@@ -151,6 +154,19 @@ static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
   rule->targets[rule->targetsz++] = strdup(tgt);
 }
 
+static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
+{
+  struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+  size_t newcapacity;
+  if (rule->shellsz >= rule->shellcapacity)
+  {
+    newcapacity = 2*rule->shellcapacity + 1;
+    rule->shells = (char**)realloc(rule->shells, sizeof(*rule->shells)*newcapacity);
+    rule->shellcapacity = newcapacity;
+  }
+  rule->shells[rule->shellsz++] = strdup(shell);
+}
+
 static inline void stiryy_emplace_rule(struct stiryy *stiryy)
 {
   size_t newcapacity;
@@ -166,6 +182,9 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
   stiryy->rules[stiryy->rulesz].targetsz = 0;
   stiryy->rules[stiryy->rulesz].targetcapacity = 0;
   stiryy->rules[stiryy->rulesz].targets = NULL;
+  stiryy->rules[stiryy->rulesz].shellsz = 0;
+  stiryy->rules[stiryy->rulesz].shellcapacity = 0;
+  stiryy->rules[stiryy->rulesz].shells = NULL;
   stiryy->rulesz++;
 }
 
