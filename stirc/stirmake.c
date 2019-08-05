@@ -311,6 +311,18 @@ struct tgt {
   size_t tgtidx;
 };
 
+/*
+ * First, is_executing is set to 1. This means the dependencies of the rule
+ * are being executed.
+ *
+ * Then, is_queued is set to 1. This means the rule is in the queue of processes
+ * to fork&exec.
+ *
+ * Last, is_executed is set to 1 if the sub-process was successful.
+ *
+ * We shouldn't add any dependencies to a rule whenever is_executing flag is on.
+ * XXX or should we? Hard to support dynamic deps without.
+ */
 struct rule {
   unsigned is_phony:1;
   unsigned is_executed:1;
