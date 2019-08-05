@@ -57,26 +57,62 @@
   size_t len;
   char *cp;
 
-  len = strlen(yytext);
+  //len = strlen(yytext);
+  len = yyleng;
 
   yylval->s = malloc(len+1);
   cp = yylval->s;
 
   // Re-count yylineno and yycolumn
-  yycolumn -= strlen(yytext);
-  for (idx = 0; idx < len; idx++)
+  //if (memchr(yytext, '\n', len))
+  if (strchr(yytext, '\n'))
   {
-    if (yytext[idx] == '\n')
+    yycolumn -= len;
+    for (idx = 0; idx < len; idx++)
     {
-      ++yylineno;
-      yycolumn=1;
-      last_newline_true = 0;
-    }
-    else
-    {
-      ++yycolumn;
+      if (yytext[idx] == '\n')
+      {
+        ++yylineno;
+        yycolumn=1;
+        last_newline_true = 0;
+      }
+      else
+      {
+        ++yycolumn;
+      }
     }
   }
+#if 0
+  char *in = yytext;
+  char *natural_end = in + len;
+  while (*in)
+  {
+    //char *end = memchr(in, '\\', natural_end - in);
+    char *end = strchr(in, '\\');
+    size_t seglen;
+    if (end == NULL)
+    {
+      seglen = natural_end - in;
+      memcpy(cp, in, seglen);
+      cp += seglen;
+      break;
+      //end = natural_end;
+    }
+    seglen = end - in;
+    memcpy(cp, in, seglen);
+    cp += seglen;
+    in += seglen;
+    while (*in == '\\')
+    {
+      if (idx+1 >= len)
+      {
+        abort();
+      }
+      *cp++ = *++in;
+      in++;
+    }
+  }
+#else
   // Unescape string
   for (idx = 0; idx < len; idx++)
   {
@@ -93,9 +129,10 @@
       *cp++ = yytext[idx];
     }
   }
+#endif
   *cp++ = '\0';
 
-  printf("Returning free-form token\n");
+  //printf("Returning free-form token\n");
 
   return FREEFORM_TOKEN;
 }
