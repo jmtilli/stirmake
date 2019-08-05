@@ -112,6 +112,8 @@ struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 char *sttable[1048576]; // RFE make variable sized
 size_t st_cnt;
 
+size_t stringtab_cnt = 0;
+
 size_t stringtab_add(const char *symbol)
 {
   struct abce_rb_tree_node *n;
@@ -125,6 +127,7 @@ NULL, symbol);
   {
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
   }
+  stringtab_cnt++;
   struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
   stringtabentry->string = my_strdup(symbol);
   sttable[st_cnt] = stringtabentry->string;
@@ -199,12 +202,15 @@ static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
   return 0;
 }
 
+size_t ruleid_by_tgt_entry_cnt;
+
 void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
 {
   uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
   struct ruleid_by_tgt_entry *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
+  ruleid_by_tgt_entry_cnt++;
   e = my_malloc(sizeof(*e));
   e->tgtidx = tgtidx;
   e->ruleid = ruleid;
@@ -266,7 +272,7 @@ struct stirdep {
 
 struct dep_remain {
   struct abce_rb_tree_node node;
-  struct linked_list_node llnode;
+  //struct linked_list_node llnode;
   int ruleid;
 };
 
@@ -317,8 +323,8 @@ struct rule {
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
-  struct linked_list_head depremainlist;
-  //size_t deps_remain_cnt; // XXX return this for less memory use?
+  //struct linked_list_head depremainlist;
+  size_t deps_remain_cnt; // XXX return this for less memory use?
 };
 
 static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
@@ -347,6 +353,8 @@ static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   return 0;
 }
 
+size_t tgt_cnt;
+
 
 void ins_tgt(struct rule *rule, size_t tgtidx)
 {
@@ -354,6 +362,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx)
   struct tgt *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
+  tgt_cnt++;
   e = my_malloc(sizeof(*e));
   e->tgtidx = tgtidx;
   head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
@@ -366,12 +375,15 @@ void ins_tgt(struct rule *rule, size_t tgtidx)
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
 }
 
+size_t stirdep_cnt;
+
 void ins_dep(struct rule *rule, size_t depidx, int is_recursive)
 {
   uint32_t hash = abce_murmur32(0x12345678U, depidx);
   struct stirdep *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
+  stirdep_cnt++;
   e = my_malloc(sizeof(*e));
   e->nameidx = depidx;
   e->is_recursive = !!is_recursive;
@@ -410,9 +422,12 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   }
   struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
-  linked_list_delete(&dep_remain->llnode);
+  //linked_list_delete(&dep_remain->llnode);
+  rule->deps_remain_cnt--;
   my_free(dep_remain);
 }
+
+size_t dep_remain_cnt;
 
 void deps_remain_insert(struct rule *rule, int ruleid)
 {
@@ -426,6 +441,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   {
     return;
   }
+  dep_remain_cnt++;
   struct dep_remain *dep_remain = my_malloc(sizeof(struct dep_remain));
   dep_remain->ruleid = ruleid;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
@@ -433,8 +449,8 @@ void deps_remain_insert(struct rule *rule, int ruleid)
     printf("4\n");
     abort();
   }
-  linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
-  //rule->deps_remain_cnt++;
+  //linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
+  rule->deps_remain_cnt++;
 }
 
 void calc_deps_remain(struct rule *rule)
@@ -634,6 +650,8 @@ struct ruleid_by_dep_entry *find_ruleids_by_dep(size_t depidx)
   return NULL;
 }
 
+size_t ruleid_by_dep_entry_cnt;
+
 struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
 {
   uint32_t hash = abce_murmur32(0x12345678U, depidx);
@@ -650,6 +668,7 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
     return ABCE_CONTAINER_OF(n, struct ruleid_by_dep_entry, node);
   }
   
+  ruleid_by_dep_entry_cnt++;
   e = my_malloc(sizeof(*e));
   e->depidx = depidx;
   for (i = 0; i < sizeof(e->one_ruleid_by_dep)/sizeof(*e->one_ruleid_by_dep); i++)
@@ -668,6 +687,8 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
   return e;
 }
 
+size_t one_ruleid_by_dep_entry_cnt;
+
 void ins_ruleid_by_dep(size_t depidx, int ruleid)
 {
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(depidx);
@@ -683,6 +704,7 @@ void ins_ruleid_by_dep(size_t depidx, int ruleid)
     return;
   }
   
+  one_ruleid_by_dep_entry_cnt++;
   one = my_malloc(sizeof(*one));
   one->ruleid = ruleid;
   linked_list_add_tail(&one->llnode, &e->one_ruleid_by_deplist);
@@ -835,6 +857,8 @@ static inline int add_deps_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_
   return 0;
 }
 
+size_t add_dep_cnt;
+
 struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
 {
   struct abce_rb_tree_node *n;
@@ -847,6 +871,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
   {
     return ABCE_CONTAINER_OF(n, struct add_dep, node);
   }
+  add_dep_cnt++;
   struct add_dep *entry2 = my_malloc(sizeof(struct add_dep));
   entry2->depidx = depidx;
   if (abce_rb_tree_nocmp_insert_nonexist(&entry->add_deps[hashloc], add_dep_cmp_sym, NULL, &entry2->node) != 0)
@@ -857,6 +882,8 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
   linked_list_add_tail(&entry2->llnode, &entry->add_deplist);
   return entry2;
 }
+
+size_t add_deps_cnt;
 
 struct add_deps *add_deps_ensure(size_t tgtidx)
 {
@@ -871,6 +898,7 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   {
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
   }
+  add_deps_cnt++;
   struct add_deps *entry = my_malloc(sizeof(struct add_deps));
   entry->tgtidx = tgtidx;
   entry->phony = 0;
@@ -930,7 +958,8 @@ void zero_rule(struct rule *rule)
   memset(rule, 0, sizeof(*rule));
   linked_list_head_init(&rule->deplist);
   linked_list_head_init(&rule->tgtlist);
-  linked_list_head_init(&rule->depremainlist);
+  rule->deps_remain_cnt = 0;
+  //linked_list_head_init(&rule->depremainlist);
 }
 
 char *null_cmds[] = {NULL};
@@ -953,6 +982,7 @@ char **argdup(char **cmdargs)
   return result;
 }
 
+size_t rule_cnt;
 
 void process_additional_deps(void)
 {
@@ -970,6 +1000,7 @@ void process_additional_deps(void)
         rules = realloc(rules, new_capacity * sizeof(*rules));
         rules_capacity = new_capacity;
       }
+      rule_cnt++;
       rule = my_malloc(sizeof(*rule));
       rules[rules_size] = rule;
       //rule = &rules[rules_size];
@@ -1084,6 +1115,7 @@ void add_rule(char **tgts, size_t tgtsz,
     rules = realloc(rules, new_capacity * sizeof(*rules));
     rules_capacity = new_capacity;
   }
+  rule_cnt++;
   rule = my_malloc(sizeof(*rule));
   rules[rules_size] = rule;
 
@@ -1216,6 +1248,8 @@ int ruleid_by_pid_erase(pid_t pid)
 
 //std::unordered_map<pid_t, int> ruleid_by_pid;
 
+size_t ruleid_by_pid_cnt;
+
 pid_t fork_child(int ruleid)
 {
   char **args;
@@ -1242,6 +1276,7 @@ pid_t fork_child(int ruleid)
   }
   else
   {
+    ruleid_by_pid_cnt++;
     struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid));
     uint32_t hashval;
     size_t hashloc;
@@ -1645,7 +1680,8 @@ void reconsider(int ruleid, int ruleid_executed)
     return;
   }
   deps_remain_erase(r, ruleid_executed);
-  if (!linked_list_is_empty(&r->depremainlist))
+  //if (!linked_list_is_empty(&r->depremainlist))
+  if (r->deps_remain_cnt > 0)
   {
     toexecute = 1;
   }
@@ -2256,6 +2292,23 @@ int main(int argc, char **argv)
       ruleids_to_run_size--;
       //ruleids_to_run.pop_back();
     }
+  }
+  if (debug)
+  {
+    printf("\n");
+    printf("Memory use statistics:\n");
+    printf("  stringtab: %zu\n", stringtab_cnt);
+    printf("  ruleid_by_tgt_entry: %zu\n", ruleid_by_tgt_entry_cnt);
+    printf("  ruleid_by_tgt_entry: %zu\n", ruleid_by_tgt_entry_cnt);
+    printf("  tgt: %zu\n", tgt_cnt);
+    printf("  stirdep: %zu\n", stirdep_cnt);
+    printf("  dep_remain: %zu\n", dep_remain_cnt);
+    printf("  ruleid_by_dep_entry: %zu\n", ruleid_by_dep_entry_cnt);
+    printf("  one_ruleid_by_dep_entry: %zu\n", one_ruleid_by_dep_entry_cnt);
+    printf("  add_dep: %zu\n", add_dep_cnt);
+    printf("  add_deps: %zu\n", add_deps_cnt);
+    printf("  rule: %zu\n", rule_cnt);
+    printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
   return 0;
 }
