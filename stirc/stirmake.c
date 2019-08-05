@@ -2299,7 +2299,6 @@ int main(int argc, char **argv)
     printf("Memory use statistics:\n");
     printf("  stringtab: %zu\n", stringtab_cnt);
     printf("  ruleid_by_tgt_entry: %zu\n", ruleid_by_tgt_entry_cnt);
-    printf("  ruleid_by_tgt_entry: %zu\n", ruleid_by_tgt_entry_cnt);
     printf("  tgt: %zu\n", tgt_cnt);
     printf("  stirdep: %zu\n", stirdep_cnt);
     printf("  dep_remain: %zu\n", dep_remain_cnt);
