@@ -1,0 +1,18 @@
+macro=value ...
+target name ...
+
+-f stirfile: specify a different stirfile
+  "-" shall denote the standard input
+  XXX should probably support multiple stirfiles?
+-i: ignore error codes returned by invoked commands
+-k: do as much as you can if an error occurs
+-n: dry run
+  TODO note that in this:
+  a.txt: b.txt
+  b.txt: c.txt
+  ...if a.txt is newer than b.txt, and you do "touch c.txt; stirmake", it has
+  to work.
+-q: exit with 0 if target up-to-date; otherwise, exit with 1. No commands.
+-S: opposite of -k, the default
+-s: silent, don't write to standard output any commands or touch messages
+-t: touch mode: touch each not-up-to-date target, write "touch TGT" to stdout
