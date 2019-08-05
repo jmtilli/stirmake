@@ -604,6 +604,7 @@ shell_command:
   size_t outsz = 0;
   size_t len = strlen($1);
   size_t i;
+  stiryy_add_shell_section(stiryy);
   for (i = 0; i < len; i++)
   {
     if ($1[i] == '\\')
@@ -703,6 +704,7 @@ shell_command:
   stiryy_add_shell(stiryy, outbuf);
   free($1);
   free(outbuf);
+  stiryy_add_shell(stiryy, NULL);
   // FIXME multiple shell command lines
 }
 | ATTAB expr NEWLINE

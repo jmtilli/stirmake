@@ -67,9 +67,11 @@ struct stiryyrule {
   char **targets;
   size_t targetsz;
   size_t targetcapacity;
-  char **shells;
+  char ***shells;
   size_t shellsz;
   size_t shellcapacity;
+  size_t lastshellsz;
+  size_t lastshellcapacity;
 };
 
 struct stiryy {
@@ -158,13 +160,29 @@ static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 {
   struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
   size_t newcapacity;
+  if (rule->lastshellsz >= rule->lastshellcapacity)
+  {
+    newcapacity = 2*rule->lastshellcapacity + 1;
+    rule->shells[rule->shellsz - 1] = (char**)realloc(rule->shells[rule->shellsz - 1], sizeof(*rule->shells[rule->shellsz - 1])*newcapacity);
+    rule->lastshellcapacity = newcapacity;
+  }
+  rule->shells[rule->shellsz - 1][rule->lastshellsz++] = shell ? strdup(shell) : NULL;
+}
+
+static inline void stiryy_add_shell_section(struct stiryy *stiryy)
+{
+  struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+  size_t newcapacity;
   if (rule->shellsz >= rule->shellcapacity)
   {
     newcapacity = 2*rule->shellcapacity + 1;
-    rule->shells = (char**)realloc(rule->shells, sizeof(*rule->shells)*newcapacity);
+    rule->shells = (char***)realloc(rule->shells, sizeof(*rule->shells)*newcapacity);
     rule->shellcapacity = newcapacity;
   }
-  rule->shells[rule->shellsz++] = strdup(shell);
+  printf("section\n");
+  rule->shells[rule->shellsz++] = NULL;
+  rule->lastshellsz = 0;
+  rule->lastshellcapacity = 0;
 }
 
 static inline void stiryy_emplace_rule(struct stiryy *stiryy)

@@ -239,7 +239,7 @@ int get_ruleid_by_tgt(size_t tgt)
 }
 
 struct cmd {
-  char **args;
+  char ***args;
 };
 
 int ts_cmp(struct timespec ta, struct timespec tb)
@@ -857,20 +857,7 @@ void zero_rule(struct rule *rule)
   //linked_list_head_init(&rule->depremainlist);
 }
 
-char *null_cmds[] = {NULL};
-
-char **argdupcnt(char **cmdargs, size_t cnt)
-{
-  size_t i;
-  char **result;
-  result = my_malloc((cnt+1) * sizeof(*result));
-  for (i = 0; i < cnt; i++)
-  {
-    result[i] = my_strdup(cmdargs[i]);
-  }
-  result[cnt] = NULL;
-  return result;
-}
+char **null_cmds[] = {NULL};
 
 char **argdup(char **cmdargs)
 {
@@ -885,6 +872,19 @@ char **argdup(char **cmdargs)
   for (i = 0; i < cnt; i++)
   {
     result[i] = my_strdup(cmdargs[i]);
+  }
+  result[cnt] = NULL;
+  return result;
+}
+
+char ***argsdupcnt(char ***cmdargs, size_t cnt)
+{
+  size_t i;
+  char ***result;
+  result = my_malloc((cnt+1) * sizeof(*result));
+  for (i = 0; i < cnt; i++)
+  {
+    result[i] = argdup(cmdargs[i]);
   }
   result[cnt] = NULL;
   return result;
@@ -914,7 +914,7 @@ void process_additional_deps(void)
       //rule = &rules[rules_size];
       //printf("adding tgt: %s\n", entry->tgt);
       zero_rule(rule);
-      rule->cmd.args = argdup(null_cmds);
+      rule->cmd.args = argsdupcnt(null_cmds, 1);
 
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgtidx, rule->ruleid);
@@ -954,7 +954,7 @@ void process_additional_deps(void)
 
 void add_rule(char **tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
-              char **cmdargs, size_t cmdargsz, int phony)
+              char ***cmdargs, size_t cmdargsz, int phony)
 {
   struct rule *rule;
   struct cmd cmd;
@@ -970,7 +970,7 @@ void add_rule(char **tgts, size_t tgtsz,
     printf("10\n");
     abort();
   }
-  cmd.args = argdupcnt(cmdargs, cmdargsz);
+  cmd.args = argsdupcnt(cmdargs, cmdargsz);
   if (rules_size >= rules_capacity)
   {
     size_t new_capacity = 2*rules_capacity + 16;
@@ -1065,21 +1065,77 @@ int ruleid_by_pid_erase(pid_t pid)
 
 size_t ruleid_by_pid_cnt;
 
+void child_execvp_wait(const char *cmd, char **args)
+{
+  pid_t pid = fork();
+  if (pid < 0)
+  {
+    //printf("11\n");
+    _exit(1);
+  }
+  else if (pid == 0)
+  {
+    close(self_pipe_fd[0]);
+    close(self_pipe_fd[1]);
+    // FIXME check for make
+    close(jobserver_fd[0]);
+    close(jobserver_fd[1]);
+    execvp(cmd, args);
+    //write(1, "Err\n", 4);
+    _exit(1);
+  }
+  else
+  {
+    int wstatus;
+    int ret;
+    do {
+      ret = waitpid(pid, &wstatus, 0);
+    } while (ret == -1 && errno == -EINTR);
+    if (!WIFEXITED(wstatus))
+    {
+      _exit(1);
+    }
+    if (WEXITSTATUS(wstatus) != 0)
+    {
+      _exit(1);
+    }
+    return;
+  }
+}
+
 pid_t fork_child(int ruleid)
 {
-  char **args;
+  char ***args;
   pid_t pid;
   struct cmd cmd = rules[ruleid]->cmd;
-  char **argiter;
+  char ***argiter;
+  char **oneargiter;
+  size_t argcnt = 0;
+
   args = cmd.args;
   argiter = args;
 
   printf("start args:\n");
   while (*argiter)
   {
-    printf("  %s\n", *argiter++);
+    oneargiter = *argiter++;
+    printf(" ");
+    while (*oneargiter)
+    {
+      printf(" %s", *oneargiter++);
+    }
+    printf("\n");
+    argcnt++;
   }
   printf("end args\n");
+
+  argiter = args;
+
+  if (argcnt == 0)
+  {
+    printf("no arguments\n");
+    abort();
+  }
 
   pid = fork();
   if (pid < 0)
@@ -1089,12 +1145,18 @@ pid_t fork_child(int ruleid)
   }
   else if (pid == 0)
   {
+    while (argcnt > 1)
+    {
+      child_execvp_wait((*argiter)[0], &(*argiter)[0]);
+      argiter++;
+      argcnt--;
+    }
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
-    execvp(args[0], &args[0]);
+    execvp((*argiter)[0], &(*argiter)[0]);
     //write(1, "Err\n", 4);
     _exit(1);
   }
