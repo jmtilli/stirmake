@@ -56,6 +56,32 @@ enum {
   STRINGTAB_SIZE = 8192,
 };
 
+char my_arena[1536*1024*1024];
+char *my_arena_ptr = my_arena;
+
+void *my_malloc(size_t sz)
+{
+  void *result = my_arena_ptr;
+  my_arena_ptr += (sz+7)/8*8;
+  if (my_arena_ptr >= my_arena + sizeof(my_arena))
+  {
+    printf("OOM\n");
+    abort();
+  }
+  return result;
+}
+void my_free(void *ptr)
+{
+  // nop
+}
+void *my_strdup(const char *str)
+{
+  size_t sz = strlen(str);
+  void *result = my_malloc(sz + 1);
+  memcpy(result, str, sz + 1);
+  return result;
+}
+
 struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
 struct linked_list_head ruleid_by_tgt_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
@@ -92,8 +118,8 @@ void ins_ruleid_by_tgt(const char *tgt, int ruleid)
   struct ruleid_by_tgt_entry *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
-  e = malloc(sizeof(*e));
-  e->tgt = strdup(tgt);
+  e = my_malloc(sizeof(*e));
+  e->tgt = my_strdup(tgt);
   e->ruleid = ruleid;
   head = &ruleid_by_tgt[hash % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_tgt_entry_cmp_sym, NULL, &e->node);
@@ -241,8 +267,8 @@ void ins_tgt(struct rule *rule, const char *tgt)
   struct tgt *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
-  e = malloc(sizeof(*e));
-  e->tgt = strdup(tgt);
+  e = my_malloc(sizeof(*e));
+  e->tgt = my_strdup(tgt);
   head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, tgt_cmp_sym, NULL, &e->node);
   if (ret != 0)
@@ -259,8 +285,8 @@ void ins_dep(struct rule *rule, const char *dep, int is_recursive)
   struct stirdep *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
-  e = malloc(sizeof(*e));
-  e->name = strdup(dep);
+  e = my_malloc(sizeof(*e));
+  e->name = my_strdup(dep);
   e->is_recursive = !!is_recursive;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
@@ -298,7 +324,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
   linked_list_delete(&dep_remain->llnode);
-  free(dep_remain);
+  my_free(dep_remain);
 }
 
 void deps_remain_insert(struct rule *rule, int ruleid)
@@ -313,7 +339,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   {
     return;
   }
-  struct dep_remain *dep_remain = malloc(sizeof(struct dep_remain));
+  struct dep_remain *dep_remain = my_malloc(sizeof(struct dep_remain));
   dep_remain->ruleid = ruleid;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
   {
@@ -537,8 +563,8 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(const char *dep)
     return ABCE_CONTAINER_OF(n, struct ruleid_by_dep_entry, node);
   }
   
-  e = malloc(sizeof(*e));
-  e->dep = strdup(dep);
+  e = my_malloc(sizeof(*e));
+  e->dep = my_strdup(dep);
   for (i = 0; i < sizeof(e->one_ruleid_by_dep)/sizeof(*e->one_ruleid_by_dep); i++)
   {
     abce_rb_tree_nocmp_init(&e->one_ruleid_by_dep[i]);
@@ -570,7 +596,7 @@ void ins_ruleid_by_dep(const char *dep, int ruleid)
     return;
   }
   
-  one = malloc(sizeof(*one));
+  one = my_malloc(sizeof(*one));
   one->ruleid = ruleid;
   linked_list_add_tail(&one->llnode, &e->one_ruleid_by_deplist);
 
@@ -735,8 +761,8 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, const char *dep)
   {
     return ABCE_CONTAINER_OF(n, struct add_dep, node);
   }
-  struct add_dep *entry2 = malloc(sizeof(struct add_dep));
-  entry2->dep = strdup(dep);
+  struct add_dep *entry2 = my_malloc(sizeof(struct add_dep));
+  entry2->dep = my_strdup(dep);
   if (abce_rb_tree_nocmp_insert_nonexist(&entry->add_deps[hashloc], add_dep_cmp_sym, NULL, &entry2->node) != 0)
   {
     printf("7\n");
@@ -759,8 +785,8 @@ struct add_deps *add_deps_ensure(const char *tgt)
   {
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
   }
-  struct add_deps *entry = malloc(sizeof(struct add_deps));
-  entry->tgt = strdup(tgt);
+  struct add_deps *entry = my_malloc(sizeof(struct add_deps));
+  entry->tgt = my_strdup(tgt);
   entry->phony = 0;
   for (i = 0; i < sizeof(entry->add_deps)/sizeof(*entry->add_deps); i++)
   {
@@ -832,10 +858,10 @@ char **argdup(char **cmdargs)
   {
     cnt++;
   }
-  result = malloc((cnt+1) * sizeof(*result));
+  result = my_malloc((cnt+1) * sizeof(*result));
   for (i = 0; i < cnt; i++)
   {
-    result[i] = strdup(cmdargs[i]);
+    result[i] = my_strdup(cmdargs[i]);
   }
   result[cnt] = NULL;
   return result;
@@ -858,7 +884,7 @@ void process_additional_deps(void)
         rules = realloc(rules, new_capacity * sizeof(*rules));
         rules_capacity = new_capacity;
       }
-      rule = malloc(sizeof(*rule));
+      rule = my_malloc(sizeof(*rule));
       rules[rules_size] = rule;
       //rule = &rules[rules_size];
       //printf("adding tgt: %s\n", entry->tgt);
@@ -972,7 +998,7 @@ void add_rule(char **tgts, size_t tgtsz,
     rules = realloc(rules, new_capacity * sizeof(*rules));
     rules_capacity = new_capacity;
   }
-  rule = malloc(sizeof(*rule));
+  rule = my_malloc(sizeof(*rule));
   rules[rules_size] = rule;
 
   zero_rule(rule);
@@ -1096,7 +1122,7 @@ int ruleid_by_pid_erase(pid_t pid)
   struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
   abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
   ruleid = bypid->ruleid;
-  free(bypid);
+  my_free(bypid);
   return ruleid;
 }
 
@@ -1128,7 +1154,7 @@ pid_t fork_child(int ruleid)
   }
   else
   {
-    struct ruleid_by_pid *bypid = malloc(sizeof(*bypid));
+    struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid));
     uint32_t hashval;
     size_t hashloc;
     bypid->pid = pid;
@@ -1634,7 +1660,7 @@ void sigchld_handler(int x)
 
 char *myitoa(int i)
 {
-  char *res = malloc(16);
+  char *res = my_malloc(16);
   snprintf(res, 16, "%d", i);
   return res;
 }
@@ -1762,8 +1788,8 @@ NULL, symbol);
   {
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
   }
-  struct stringtabentry *stringtabentry = malloc(sizeof(struct stringtabentry));
-  stringtabentry->string = strdup(symbol);
+  struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
+  stringtabentry->string = my_strdup(symbol);
   stringtabentry->idx = st_cnt++;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
   {
@@ -1969,7 +1995,7 @@ int main(int argc, char **argv)
         hashloc = hashval % (sizeof(entry->one_ruleid_by_dep)/sizeof(*entry->one_ruleid_by_dep));
         abce_rb_tree_nocmp_delete(&entry->one_ruleid_by_dep[hashloc], &one->node);
         linked_list_delete(&one->llnode);
-        free(one);
+        my_free(one);
       }
     }
     else
@@ -1980,7 +2006,7 @@ int main(int argc, char **argv)
       hashloc = hashval % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep));
       abce_rb_tree_nocmp_delete(&ruleids_by_dep[hashloc], &entry->node);
       linked_list_delete(&entry->llnode);
-      free(entry);
+      my_free(entry);
     }
   }
 #if 0
@@ -2022,7 +2048,7 @@ int main(int argc, char **argv)
     hashloc = hashval % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt));
     abce_rb_tree_nocmp_delete(&ruleid_by_tgt[hashloc], &entry->node);
     linked_list_delete(&entry->llnode);
-    free(entry);
+    my_free(entry);
   }
 #if 0
   // Delete unreachable rules from ruleid_by_tgt
