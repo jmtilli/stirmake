@@ -645,6 +645,28 @@ shell_command:
         i++;
         continue;
       }
+      if (i+1 < len && $1[i+1] == '@')
+      {
+        char *tgt;
+        size_t tgtlen;
+        struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+        if (rule->targetsz <= 0)
+        {
+          fprintf(stderr, "$@ on rule with no targets\n");
+          abort();
+        }
+        tgt = rule->targets[0];
+        tgtlen = strlen(tgt);
+        if (outsz + tgtlen > outcap)
+        {
+          outcap = 2*outcap + tgtlen;
+          outbuf = realloc(outbuf, outcap);
+        }
+        memcpy(&outbuf[outsz], tgt, tgtlen);
+        outsz += tgtlen;
+        i++;
+        continue;
+      }
       abort();
     }
     else if ($1[i] == ' ')
