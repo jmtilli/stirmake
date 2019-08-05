@@ -62,8 +62,10 @@ wc:
 LUAINC:=/usr/include/luajit-2.1
 LUALIB:=/usr/lib/x86_64-linux-gnu/libluajit-5.1.a
 
-CC=gcc
-CPP=g++
+#CC=gcc
+#CPP=g++
+CC=clang
+CPP=clang++
 CFLAGS=-O3 -Wall -g -I$(LUAINC)
 CPPFLAGS=-O3 -Wall -g -I$(LUAINC)
 
