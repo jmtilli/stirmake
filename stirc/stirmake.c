@@ -479,84 +479,7 @@ void calc_deps_remain(struct rule *rule)
       deps_remain_insert(rule, ruleid);
     }
   }
-#if 0
-  for (i = 0; i < rule->deps_size; i++) // FIXME linked list
-  {
-    char *depname = rule->deps[i].name;
-    int ruleid = get_ruleid_by_tgt(depname);
-    if (ruleid >= 0)
-    {
-      deps_remain_insert(rule, ruleid);
-    }
-  }
-#endif
 }
-
-#if 0
-class Rule {
-  public:
-    bool phony;
-    bool executed;
-    bool executing;
-    bool queued;
-    std::unordered_set<std::string> tgts;
-    std::unordered_set<Dep> deps;
-    std::unordered_set<int> deps_remain;
-    Cmd cmd;
-    int ruleid;
-
-    Rule(): phony(false), executed(false), executing(false), queued(false) {}
-
-    void calc_deps_remain(void)
-    {
-      for (auto it = deps.begin(); it != deps.end(); it++)
-      {
-        if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
-        {
-          deps_remain.insert(ruleid_by_tgt[it->name]);
-        }
-      }
-    }
-};
-#endif
-
-#if 0
-std::ostream &operator<<(std::ostream &o, const Rule &r)
-{
-  bool first = true;
-  o << "Rule(";
-  o << r.ruleid;
-  o << ",[";
-  for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
-  {
-    if (first)
-    {
-      first = false;
-    }
-    else
-    {
-      o << ",";
-    }
-    o << *it;
-  }
-  first = true;
-  o << "],[";
-  for (auto it = r.deps.begin(); it != r.deps.end(); it++)
-  {
-    if (first)
-    {
-      first = false;
-    }
-    else
-    {
-      o << ",";
-    }
-    o << it->name;
-  }
-  o << "])";
-  return o;
-}
-#endif
 
 int children = 0;
 const int limit = 2;
@@ -606,11 +529,6 @@ struct ruleid_by_dep_entry {
   size_t depidx;
   struct abce_rb_tree_nocmp one_ruleid_by_dep[ONE_RULEID_BY_DEP_SIZE];
   struct linked_list_head one_ruleid_by_deplist;
-#if 0
-  int *ruleids;
-  size_t ruleids_capacity;
-  size_t ruleids_size;
-#endif
 };
 
 static inline int ruleid_by_dep_entry_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
@@ -730,13 +648,6 @@ void ins_ruleid_by_dep(size_t depidx, int ruleid)
   return;
 }
 
-#if 0
-std::vector<Rule> rules;
-
-std::unordered_map<std::string, std::unordered_set<int>> ruleids_by_dep;
-#endif
-
-
 void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *parents)
 {
   size_t i;
@@ -759,16 +670,6 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
     exit(1);
   }
   parents[cur] = 1;
-#if 0
-  for (i = 0; i < rules[cur].deps_size; i++)
-  {
-    int ruleid = get_ruleid_by_tgt(rules[cur].deps[i].name);
-    if (ruleid >= 0)
-    {
-      better_cycle_detect_impl(ruleid, parents, no_cycles);
-    }
-  }
-#endif
   LINKED_LIST_FOR_EACH(node, &rules[cur]->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
@@ -945,24 +846,6 @@ void add_dep(char **tgts, size_t tgts_sz,
       add_dep_ensure(entry, stringtab_add(deps[j]));
     }
   }
-#if 0
-  for (auto tgt = tgts.begin(); tgt != tgts.end(); tgt++)
-  {
-    if (add_deps.find(*tgt) == add_deps.end())
-    {
-      add_deps[*tgt] = std::make_pair(false, std::unordered_set<std::string>());
-    }
-    if (phony)
-    {
-      add_deps[*tgt].first = true;
-    }
-    add_deps[*tgt].second.rehash(deps.size());
-    for (auto dep = deps.begin(); dep != deps.end(); dep++)
-    {
-      add_deps[*tgt].second.insert(*dep);
-    }
-  }
-#endif
 }
 
 void zero_rule(struct rule *rule)
@@ -1054,52 +937,6 @@ void process_additional_deps(void)
       //printf(" dep: %s\n", dep->name);
     }
   }
-#if 0
-  for (auto it = add_deps.begin(); it != add_deps.end(); it++)
-  {
-    if (ruleid_by_tgt.find(it->first) == ruleid_by_tgt.end())
-    {
-      Rule r;
-      r.ruleid = rules.size();
-      //std::cout << "adding tgt " << it->first << std::endl;
-      ruleid_by_tgt[it->first] = r.ruleid;
-      r.tgts.insert(it->first);
-      r.deps.rehash(r.deps.size() + it->second.second.size());
-      std::copy(it->second.second.begin(), it->second.second.end(),
-                std::inserter(r.deps, r.deps.begin()));
-      r.phony = it->second.first;
-      for (auto it2 = r.deps.begin(); it2 != r.deps.end(); it2++)
-      {
-        if (ruleids_by_dep.find(it2->name) == ruleids_by_dep.end())
-        {
-          ruleids_by_dep[it2->name] = std::unordered_set<int>();
-        }
-        ruleids_by_dep[it2->name].insert(r.ruleid);
-        //std::cout << " dep: " << *it2 << std::endl;
-      }
-      rules.push_back(r);
-      //std::cout << "added Rule: " << r << std::endl;
-      continue;
-    }
-    Rule &r = rules[ruleid_by_tgt[it->first]];
-    if (it->second.first)
-    {
-      r.phony = true;
-    }
-    //std::cout << "modifying rule " << r << std::endl;
-    std::copy(it->second.second.begin(), it->second.second.end(),
-              std::inserter(r.deps, r.deps.begin()));
-    //std::cout << "modified rule " << r << std::endl;
-    for (auto it2 = r.deps.begin(); it2 != r.deps.end(); it2++)
-    {
-      if (ruleids_by_dep.find(it2->name) == ruleids_by_dep.end())
-      {
-        ruleids_by_dep[it2->name] = std::unordered_set<int>();
-      }
-      ruleids_by_dep[it2->name].insert(r.ruleid);
-    }
-  }
-#endif
 }
 
 void add_rule(char **tgts, size_t tgtsz,
@@ -1150,53 +987,6 @@ void add_rule(char **tgts, size_t tgtsz,
   }
 }
 
-#if 0
-void add_rule(const std::vector<std::string> &tgts,
-              const std::vector<Dep> &deps,
-              const std::vector<std::string> &cmdargs,
-              bool phony)
-{
-  Rule r;
-  Cmd c(cmdargs);
-  r.phony = phony;
-  if (tgts.size() <= 0)
-  {
-    abort();
-  }
-  if (phony && tgts.size() != 1)
-  {
-    abort();
-  }
-  r.tgts.rehash(tgts.size());
-  r.deps.rehash(deps.size());
-  std::copy(tgts.begin(), tgts.end(), std::inserter(r.tgts, r.tgts.begin()));
-  std::copy(deps.begin(), deps.end(), std::inserter(r.deps, r.deps.begin()));
-  //r.tgts = tgts;
-  //r.deps = deps;
-  r.cmd = c;
-  r.ruleid = rules.size();
-  rules.push_back(r);
-  for (auto it = tgts.begin(); it != tgts.end(); it++)
-  {
-    if (ruleid_by_tgt.find(*it) != ruleid_by_tgt.end())
-    {
-      std::cerr << "duplicate rule" << std::endl;
-      exit(1);
-    }
-    ruleid_by_tgt[*it] = r.ruleid;
-  }
-  for (auto it = deps.begin(); it != deps.end(); it++)
-  {
-    if (ruleids_by_dep.find(it->name) == ruleids_by_dep.end())
-    {
-      ruleids_by_dep[it->name] = std::unordered_set<int>();
-    }
-    ruleids_by_dep[it->name].insert(r.ruleid);
-  }
-}
-#endif
-
-//std::vector<int> ruleids_to_run;
 int *ruleids_to_run;
 size_t ruleids_to_run_size;
 size_t ruleids_to_run_capacity;
@@ -1484,75 +1274,6 @@ void do_exec(int ruleid)
         }
         seen_tgt = 1;
       }
-#if 0
-      for (auto it = r.deps.begin(); it != r.deps.end(); it++)
-      {
-        struct stat statbuf;
-        //std::cout << "it " << *it << std::endl;
-        if (ruleid_by_tgt.find(it->name) != ruleid_by_tgt.end())
-        {
-          //std::cout << "ruleid by tgt: " << *it << std::endl;
-          //std::cout << "ruleid by tgt- " << ruleid_by_tgt[*it] << std::endl;
-          if (rules.at(ruleid_by_tgt[it->name]).phony)
-          {
-            has_to_exec = 1;
-            //std::cout << "phony" << std::endl;
-            continue;
-          }
-          //std::cout << "nonphony" << std::endl;
-        }
-        if (it->recursive)
-        {
-          struct timespec st_rectim = rec_mtim(it->name.c_str());
-          if (!seen_nonphony || ts_cmp(st_rectim, st_mtim) > 0)
-          {
-            st_mtim = st_rectim;
-          }
-          seen_nonphony = 1;
-          continue;
-        }
-        if (stat(it->name.c_str(), &statbuf) != 0)
-        {
-          has_to_exec = 1;
-          break;
-          //perror("can't stat");
-          //fprintf(stderr, "file was: %s\n", it->c_str());
-          //abort();
-        }
-        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
-        {
-          st_mtim = statbuf.st_mtim;
-        }
-        seen_nonphony = 1;
-        if (lstat(it->name.c_str(), &statbuf) != 0)
-        {
-          has_to_exec = 1;
-          break;
-          //perror("can't lstat");
-          //fprintf(stderr, "file was: %s\n", it->c_str());
-          //abort();
-        }
-        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
-        {
-          st_mtim = statbuf.st_mtim;
-        }
-        seen_nonphony = 1;
-      }
-      for (auto it = r.tgts.begin(); it != r.tgts.end(); it++)
-      {
-        struct stat statbuf;
-        if (stat(it->c_str(), &statbuf) != 0)
-        {
-          has_to_exec = 1;
-          break;
-        }
-        if (!seen_tgt || ts_cmp(statbuf.st_mtim, st_mtimtgt) < 0)
-        {
-          st_mtimtgt = statbuf.st_mtim;
-        }
-        seen_tgt = 1;
-      }
-#endif
       if (!has_to_exec)
       {
         if (!seen_tgt)
@@ -1697,21 +1418,6 @@ void reconsider(int ruleid, int ruleid_executed)
   {
     toexecute = 1;
   }
-#if 0
-  for (auto it = r.deps.begin(); it != r.deps.end(); it++)
-  {
-    int dep = ruleid_by_tgt[*it];
-    if (!rules.at(dep).executed)
-    {
-      if (debug)
-      {
-        std::cout << "rule " << ruleid_by_tgt[*it] << " not executed, executing rule " << ruleid << std::endl;
-      }
-      toexecute = 1;
-      break;
-    }
-  }
-#endif
   if (!toexecute && !r->is_queued)
   {
     do_exec(ruleid);
@@ -1804,24 +1510,14 @@ char *myitoa(int i)
 void pathological_test(void)
 {
   int rule;
-  //std::vector<std::string> v_rules;
   char *v_rules[3000];
   size_t v_rules_sz = 0;
   struct timeval tv1, tv2;
   char *rulestr;
-  //std::string rulestr;
-  //std::ofstream mf("Makefile");
-  //mf << "all: d2999" << std::endl;
   for (rule = 0; rule < 3000; rule++)
   {
     rulestr = myitoa(rule);
     add_dep(&rulestr, 1, v_rules, v_rules_sz, 0);
-#if 0
-    mf << "d" << rulestr << ": ";
-    for (auto it = v_rules.begin(); it != v_rules.end(); it++)
-      mf << "d" << *it << " ";
-    mf << std::endl;
-#endif
     v_rules[v_rules_sz++] = rulestr;
   }
   process_additional_deps();
@@ -1831,7 +1527,6 @@ void pathological_test(void)
   gettimeofday(&tv2, NULL);
   double ms = (tv2.tv_usec - tv1.tv_usec + 1e6*(tv2.tv_sec - tv1.tv_sec)) / 1e3;
   printf("ending DFS2 in %g ms\n", ms);
-  //mf.close();
   exit(0);
 }
 
@@ -1857,19 +1552,6 @@ void stack_conf(void)
     }
   }
 }
-
-#if 0
-std::vector<memblock> all_scopes; // FIXME needed?
-std::vector<memblock> scope_stack;
-#endif
-
-#if 0
-size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
-{
-  std::string str(symbol, symlen);
-  return st.add(str);
-}
-#endif
 
 
 size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
@@ -1903,38 +1585,7 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
 int main(int argc, char **argv)
 {
 #if 0
-  all_scopes.push_back(memblock(new scope()));
-  scope_stack.push_back(all_scopes.back());
-#endif
-
-#if 0
-  std::vector<std::string> v_all{"all"};
-  std::vector<std::string> v_l1g{"l1g.txt"};
-  std::vector<std::string> v_l2ab{"l2a.txt", "l2b.txt"};
-  std::vector<std::string> v_l2a{"l2a.txt"};
-  std::vector<std::string> v_l3cde{"l3c.txt", "l3d.txt", "l3e.txt"};
-  std::vector<std::string> v_l3cd{"l3c.txt", "l3d.txt"};
-  std::vector<std::string> v_l3c{"l3c.txt"};
-  std::vector<std::string> v_l3d{"l3d.txt"};
-  std::vector<std::string> v_l3e{"l3e.txt"};
-  std::vector<std::string> v_l4f{"l4f.txt"};
-
-  std::vector<std::string> argt_l2ab{"./touchs1", "l2a.txt", "l2b.txt"};
-  std::vector<std::string> argt_l3c{"./touchs1", "l3c.txt"};
-  std::vector<std::string> argt_l3d{"./touchs1", "l3d.txt"};
-  std::vector<std::string> argt_l3e{"./touchs1", "l3e.txt"};
-  std::vector<std::string> argt_l1g{"./touchs1", "l1g.txt"};
-  std::vector<std::string> arge_all{"echo", "all"};
-
   pathological_test();
-
-  add_rule(v_all, v_l1g, arge_all, 1);
-  add_rule(v_l1g, v_l2ab, argt_l1g, 0);
-  add_rule(v_l2ab, v_l3cd, argt_l2ab, 0);
-  add_rule(v_l3c, v_l4f, argt_l3c, 0);
-  add_rule(v_l3d, v_l4f, argt_l3d, 0);
-  add_rule(v_l3e, v_l4f, argt_l3e, 0);
-  add_dep(v_l2a, v_l3e, 0);
 #endif
   FILE *f = fopen("Stirfile", "r");
   struct stiryy stiryy = {};
@@ -1948,44 +1599,10 @@ int main(int argc, char **argv)
   stiryydoparse(f, &stiryy);
   fclose(f);
 
-#if 0
-  std::vector<memblock> stack;
-
-  stack.push_back(memblock(-1, false, true));
-  stack.push_back(memblock(-1, false, true));
-  size_t ip = scope_stack.back().u.sc->vars["MYFLAGS"].u.d + 9;
-  std::cout << "to become ip: " << ip << std::endl;
-
-  microprogram_global = stiryy.bytecode;
-  microsz_global = stiryy.bytesz;
-  st_global = &st;
-  engine(scope_stack.back().u.sc->lua, scope_stack.back(),
-         stack, ip);
-
-  std::cout << "STACK SIZE: " << stack.size() << std::endl;
-  std::cout << "DUMP: ";
-  stack.back().dump();
-  std::cout << std::endl;
-  //exit(0);
-#endif
-
   stack_conf();
 
-  //ruleid_by_tgt.rehash(stiryy.rulesz);
-  //for (auto it = stiryy.rules; it != stiryy.rules + stiryy.rulesz; it++)
   for (i = 0; i < stiryy.rulesz; i++)
   {
-#if 0
-    std::vector<std::string> tgt;
-    std::vector<Dep> dep;
-    std::vector<std::string> cmd;
-    //std::copy(it->deps, it->deps+it->depsz, std::back_inserter(dep));
-    for (auto it2 = it->deps; it2 != it->deps+it->depsz; it2++)
-    {
-      dep.push_back(Dep(it2->name, it2->rec));
-    }
-    std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
-#endif
     if (stiryy.rules[i].targetsz > 0) // FIXME chg to if (1)
     {
       if (debug)
@@ -2081,31 +1698,6 @@ int main(int argc, char **argv)
       my_free(entry);
     }
   }
-#if 0
-  for (auto it = ruleids_by_dep.begin(); it != ruleids_by_dep.end(); )
-  {
-    if (no_cycles[ruleid_by_tgt[it->first]])
-    {
-      for (auto it2 = it->second.begin(); it2 != it->second.end(); )
-      {
-        if (no_cycles[*it2])
-        {
-          it2++;
-        }
-        else
-        {
-          it2 = it->second.erase(it2);
-        }
-      }
-      it->second.rehash(it->second.size());
-      it++;
-    }
-    else
-    {
-      it = ruleids_by_dep.erase(it);
-    }
-  }
-#endif
   LINKED_LIST_FOR_EACH_SAFE(node, tmp, &ruleid_by_tgt_list)
   {
     struct ruleid_by_tgt_entry *entry =
@@ -2122,21 +1714,6 @@ int main(int argc, char **argv)
     linked_list_delete(&entry->llnode);
     my_free(entry);
   }
-#if 0
-  // Delete unreachable rules from ruleid_by_tgt
-  for (auto it = ruleid_by_tgt.begin(); it != ruleid_by_tgt.end(); )
-  {
-    if (no_cycles[it->second])
-    {
-      it++;
-    }
-    else
-    {
-      it = ruleid_by_tgt.erase(it);
-    }
-  }
-  ruleid_by_tgt.rehash(ruleid_by_tgt.size());
-#endif
 #endif
 
   if (pipe(self_pipe_fd) != 0)
@@ -2265,13 +1842,6 @@ int main(int argc, char **argv)
           printf("31\n");
           abort();
         }
-#if 0
-        int ruleid = ruleid_by_pid[pid];
-        if (ruleid_by_pid.erase(pid) != 1)
-        {
-          abort();
-        }
-#endif
         mark_executed(ruleid);
         children--;
         if (children != 0)
@@ -2280,14 +1850,6 @@ int main(int argc, char **argv)
         }
       }
     }
-#if 0
-    while (children < limit && !ruleids_to_run.empty())
-    {
-      std::cout << "forking child" << std::endl;
-      fork_child(ruleids_to_run.back());
-      ruleids_to_run.pop_back();
-    }
-#endif
     while (ruleids_to_run_size > 0)
     {
       if (children)
