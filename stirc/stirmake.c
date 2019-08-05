@@ -63,25 +63,13 @@ struct linked_list_head ruleid_by_tgt_list =
 static inline int ruleid_by_tgt_entry_cmp_asym(char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct ruleid_by_tgt_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
-  size_t len1 = strlen(str);
-  size_t len2, lenmin;
   int ret;
   char *str2;
-  len2 = strlen(e->tgt);
   str2 = e->tgt;
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(str, str2, lenmin);
+  ret = strcmp(str, str2);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -89,23 +77,11 @@ static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
 {
   struct ruleid_by_tgt_entry *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_tgt_entry, node);
   struct ruleid_by_tgt_entry *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
-  size_t len1 = strlen(e1->tgt);
-  size_t len2, lenmin;
   int ret;
-  len2 = strlen(e2->tgt);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->tgt, e2->tgt, lenmin);
+  ret = strcmp(e1->tgt, e2->tgt);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -236,23 +212,11 @@ static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
 {
   struct tgt *e1 = ABCE_CONTAINER_OF(n1, struct tgt, node);
   struct tgt *e2 = ABCE_CONTAINER_OF(n2, struct tgt, node);
-  size_t len1 = strlen(e1->tgt);
-  size_t len2, lenmin;
   int ret;
-  len2 = strlen(e2->tgt);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->tgt, e2->tgt, lenmin);
+  ret = strcmp(e1->tgt, e2->tgt);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -261,23 +225,11 @@ static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
 {
   struct stirdep *e1 = ABCE_CONTAINER_OF(n1, struct stirdep, node);
   struct stirdep *e2 = ABCE_CONTAINER_OF(n2, struct stirdep, node);
-  size_t len1 = strlen(e1->name);
-  size_t len2, lenmin;
   int ret;
-  len2 = strlen(e2->name);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->name, e2->name, lenmin);
+  ret = strcmp(e1->name, e2->name);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -523,25 +475,13 @@ struct ruleid_by_dep_entry {
 static inline int ruleid_by_dep_entry_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct ruleid_by_dep_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_dep_entry, node);
-  size_t len1 = strlen(str);
-  size_t len2, lenmin;
   int ret;
   char *str2;
-  len2 = strlen(e->dep);
   str2 = e->dep;
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(str, str2, lenmin);
+  ret = strcmp(str, str2);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -549,25 +489,12 @@ static inline int ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
 {
   struct ruleid_by_dep_entry *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_dep_entry, node);
   struct ruleid_by_dep_entry *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_dep_entry, node);
-  size_t len2, lenmin;
   int ret;
-  size_t len1;
   
-  len1 = strlen(e1->dep);
-  len2 = strlen(e2->dep);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->dep, e2->dep, lenmin);
+  ret = strcmp(e1->dep, e2->dep);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -745,25 +672,13 @@ struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
 static inline int add_dep_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct add_dep *e = ABCE_CONTAINER_OF(n2, struct add_dep, node);
-  size_t len1 = strlen(str);
-  size_t len2, lenmin;
   int ret;
   char *str2;
-  len2 = strlen(e->dep);
   str2 = e->dep;
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(str, str2, lenmin);
+  ret = strcmp(str, str2);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -771,25 +686,12 @@ static inline int add_dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_t
 {
   struct add_dep *e1 = ABCE_CONTAINER_OF(n1, struct add_dep, node);
   struct add_dep *e2 = ABCE_CONTAINER_OF(n2, struct add_dep, node);
-  size_t len2, lenmin;
   int ret;
-  size_t len1;
   
-  len1 = strlen(e1->dep);
-  len2 = strlen(e2->dep);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->dep, e2->dep, lenmin);
+  ret = strcmp(e1->dep, e2->dep);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -797,25 +699,13 @@ static inline int add_dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_t
 static inline int add_deps_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct add_deps *e = ABCE_CONTAINER_OF(n2, struct add_deps, node);
-  size_t len1 = strlen(str);
-  size_t len2, lenmin;
   int ret;
   char *str2;
-  len2 = strlen(e->tgt);
   str2 = e->tgt;
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(str, str2, lenmin);
+  ret = strcmp(str, str2);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -823,25 +713,12 @@ static inline int add_deps_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_
 {
   struct add_deps *e1 = ABCE_CONTAINER_OF(n1, struct add_deps, node);
   struct add_deps *e2 = ABCE_CONTAINER_OF(n2, struct add_deps, node);
-  size_t len2, lenmin;
   int ret;
-  size_t len1;
   
-  len1 = strlen(e1->tgt);
-  len2 = strlen(e2->tgt);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->tgt, e2->tgt, lenmin);
+  ret = strcmp(e1->tgt, e2->tgt);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -1828,25 +1705,13 @@ struct stringtabentry {
 static inline int stringtabentry_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct stringtabentry *e = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
-  size_t len1 = strlen(str);
-  size_t len2, lenmin;
   int ret;
   char *str2;
-  len2 = strlen(e->string);
   str2 = e->string;
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(str, str2, lenmin);
+  ret = strcmp(str, str2);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
@@ -1854,23 +1719,11 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
 {
   struct stringtabentry *e1 = ABCE_CONTAINER_OF(n1, struct stringtabentry, node);
   struct stringtabentry *e2 = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
-  size_t len1 = strlen(e1->string);
-  size_t len2, lenmin;
   int ret;
-  len2 = strlen(e2->string);
-  lenmin = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->string, e2->string, lenmin);
+  ret = strcmp(e1->string, e2->string);
   if (ret != 0)
   {
     return ret;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  if (len1 < len2)
-  {
-    return -1;
   }
   return 0;
 }
