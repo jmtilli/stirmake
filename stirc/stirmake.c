@@ -1670,6 +1670,7 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
 void version(char *argv0)
 {
   fprintf(stderr, "Stirmake 0.1, Copyright (C) 2017-19 Aalto University, 2018 Juha-Matti Tilli\n");
+  fprintf(stderr, "Logo (C) 2019 Juha-Matti Tilli, All right reserved, license not applicable\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Authors:\n");
   fprintf(stderr, "- Juha-Matti Tilli (copyright transfer to Aalto on 19.4.2018 for some code)\n");
