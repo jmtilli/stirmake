@@ -43,7 +43,20 @@ struct ruleid_by_tgt_entry {
   char *tgt;
 };
 
-struct abce_rb_tree_nocmp ruleid_by_tgt[8192];
+enum {
+  RULEID_BY_TGT_SIZE = 8192,
+  RULEIDS_BY_DEP_SIZE = 8192,
+  TGTS_SIZE = 64,
+  DEPS_SIZE = 64,
+  DEPS_REMAIN_SIZE = 64,
+  ONE_RULEID_BY_DEP_SIZE = 64,
+  ADD_DEP_SIZE = 64,
+  ADD_DEPS_SIZE = 8192,
+  RULEID_BY_PID_SIZE = 64,
+  STRINGTAB_SIZE = 8192,
+};
+
+struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
 struct linked_list_head ruleid_by_tgt_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
 
@@ -210,11 +223,11 @@ struct rule {
   unsigned is_queued:1;
   struct cmd cmd;
   int ruleid;
-  struct abce_rb_tree_nocmp tgts[64];
+  struct abce_rb_tree_nocmp tgts[TGTS_SIZE];
   struct linked_list_head tgtlist;
-  struct abce_rb_tree_nocmp deps[64];
+  struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
-  struct abce_rb_tree_nocmp deps_remain[64];
+  struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   struct linked_list_head depremainlist;
   //size_t deps_remain_cnt; // XXX return this for less memory use?
 };
@@ -498,7 +511,7 @@ struct ruleid_by_dep_entry {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
   char *dep;
-  struct abce_rb_tree_nocmp one_ruleid_by_dep[64];
+  struct abce_rb_tree_nocmp one_ruleid_by_dep[ONE_RULEID_BY_DEP_SIZE];
   struct linked_list_head one_ruleid_by_deplist;
 #if 0
   int *ruleids;
@@ -559,7 +572,7 @@ static inline int ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
   return 0;
 }
 
-struct abce_rb_tree_nocmp ruleids_by_dep[8192];
+struct abce_rb_tree_nocmp ruleids_by_dep[RULEIDS_BY_DEP_SIZE];
 struct linked_list_head ruleids_by_dep_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleids_by_dep_list);
 
@@ -720,12 +733,12 @@ struct add_deps {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
   char *tgt;
-  struct abce_rb_tree_nocmp add_deps[64];
+  struct abce_rb_tree_nocmp add_deps[ADD_DEP_SIZE];
   struct linked_list_head add_deplist;
   unsigned phony:1;
 };
 
-struct abce_rb_tree_nocmp add_deps[8192];
+struct abce_rb_tree_nocmp add_deps[ADD_DEPS_SIZE];
 
 struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
 
@@ -1188,7 +1201,7 @@ static inline int ruleid_by_pid_cmp_sym(struct abce_rb_tree_node *n1, struct abc
   return 0;
 }
 
-struct abce_rb_tree_nocmp ruleid_by_pid[64];
+struct abce_rb_tree_nocmp ruleid_by_pid[RULEID_BY_PID_SIZE];
 
 int ruleid_by_pid_erase(pid_t pid)
 {
@@ -1862,7 +1875,7 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
   return 0;
 }
 
-struct abce_rb_tree_nocmp st[8192];
+struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 size_t st_cnt;
 
 #if 0
