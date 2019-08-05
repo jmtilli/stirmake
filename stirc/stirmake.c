@@ -884,7 +884,7 @@ char ***argsdupcnt(char ***cmdargs, size_t cnt)
   result = my_malloc((cnt+1) * sizeof(*result));
   for (i = 0; i < cnt; i++)
   {
-    result[i] = argdup(cmdargs[i]);
+    result[i] = cmdargs[i] ? argdup(cmdargs[i]) : NULL;
   }
   result[cnt] = NULL;
   return result;
