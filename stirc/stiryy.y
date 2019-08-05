@@ -680,6 +680,7 @@ shell_command:
   printf("\tshell\n");
   stiryy_add_shell(stiryy, outbuf);
   free($1);
+  free(outbuf);
   // FIXME multiple shell command lines
 }
 | ATTAB expr NEWLINE
