@@ -1667,15 +1667,69 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
 #endif
 }
 
+void version(char *argv0)
+{
+  fprintf(stderr, "Stirmake 0.1\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Copyright (C) 2017-2019 Aalto University\n");
+  fprintf(stderr, "Copyright (C) 2018 Juha-Matti Tilli\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "Authors:\n");
+  fprintf(stderr, "- Juha-Matti Tilli (copyright transfer to Aalto on 19.4.2018 for some code)\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr,
+"Permission is hereby granted, free of charge, to any person obtaining\n"
+"a copy of this software and associated documentation files (the\n"
+"\"Software\"), to deal in the Software without restriction, including\n"
+"without limitation the rights to use, copy, modify, merge, publish,\n"
+"distribute, sublicense, and/or sell copies of the Software, and to\n"
+"permit persons to whom the Software is furnished to do so, subject to\n"
+"the following conditions:\n"
+"\n"
+"The above copyright notice and this permission notice shall be\n"
+"included in all copies or substantial portions of the Software.\n"
+"\n"
+"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n"
+"EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n"
+"MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n"
+"NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\n"
+"LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\n"
+"OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\n"
+"WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n");
+  exit(0);
+}
+
+void usage(char *argv0)
+{
+  fprintf(stderr, "Usage:\n");
+  fprintf(stderr, "%s [-v]\n", argv0);
+  exit(1);
+}
+
 int main(int argc, char **argv)
 {
 #if 0
   pathological_test();
 #endif
-  FILE *f = fopen("Stirfile", "r");
+  FILE *f;
   struct stiryy stiryy = {};
   size_t i;
+  int opt;
 
+  while ((opt = getopt(argc, argv, "v")) != -1)
+  {
+    switch (opt)
+    {
+    case 'v':
+      version(argv[0]);
+    default:
+    case '?':
+      usage(argv[0]);
+    }
+  }
+
+
+  f = fopen("Stirfile", "r");
   if (!f)
   {
     printf("24\n");
