@@ -57,6 +57,9 @@ abce:
 wc:
 	wc -l $(LEX) $(YACC) $(SRC_CPP) $(SRC) $(filter-out %.lex.h %.tab.h,$(wildcard *.h))
 
+wcc:
+	wc -l $(LEX) $(YACC) $(SRC) $(filter-out %.lex.h %.tab.h,$(wildcard *.h))
+
 #LUAINC:=/usr/include/lua5.3
 #LUALIB:=/usr/lib/x86_64-linux-gnu/liblua5.3.a
 LUAINC:=/usr/include/luajit-2.1
