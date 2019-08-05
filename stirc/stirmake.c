@@ -1145,6 +1145,7 @@ pid_t fork_child(int ruleid)
   }
   else if (pid == 0)
   {
+    // FIXME remove signal handler?
     while (argcnt > 1)
     {
       child_execvp_wait((*argiter)[0], &(*argiter)[0]);
