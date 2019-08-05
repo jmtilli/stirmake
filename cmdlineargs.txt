@@ -1,6 +1,7 @@
 macro=value ...
 target name ...
 
+POSIX options:
 -f stirfile: specify a different stirfile
   "-" shall denote the standard input
   XXX should probably support multiple stirfiles?
@@ -16,3 +17,33 @@ target name ...
 -S: opposite of -k, the default
 -s: silent, don't write to standard output any commands or touch messages
 -t: touch mode: touch each not-up-to-date target, write "touch TGT" to stdout
+
+We probably won't support these POSIX options:
+-e: environment variable overrides
+-p: print the data base
+-r: no builtin rules
+
+GNU options:
+-B: unconditionally make all targets
+-C "/" -C "etc" -C "ssh": should go to /etc/ssh before reading any makefiles
+-d: print debugging onformation
+-j JOBCNT: job count
+--jobserver-fds R,W
+-l load: if jobs running and load average >= load, don't start new jobs
+-L: use the latest mtime between symlinks and target
+-o file: don't remake file, and also assume it's mtime is very old
+-O: same as -O target
+-O target: synchronize output of parallel jobs (entire recipe grouped)
+-O line: synchronize output of parallel jobs (one command-line grouped)
+-v: print stirmake versions plus a copyright and license
+-W file: pretend file has just been modified
+
+Maybe we could support these GNU options:
+--trace: information about the disposition of each target
+
+We probably won't support these GNU options:
+-I dir: search dir for included makefiles
+-R: no builtin variables
+-w: print directory traversal
+-W: don't print directory traversal
+--warn-undefined-variables: what it says
