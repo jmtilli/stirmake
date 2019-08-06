@@ -8,8 +8,8 @@ firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
 # This is a comment
 
 @function $ARCMDS()
-  @locvar lists = []
-  @locvar list = []
+  @locvar $lists = []
+  @locvar $list = []
   @append($list, "rm")
   @append($list, "-f")
   @append($list, @dyno["@"]<>)
@@ -24,11 +24,11 @@ firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
 @endfunction
 
 @function $addrule()
-  @locvar deplist = []
-  @locvar tgtlist = []
-  @locvar cmd = []
-  @locvar cmdlist = []
-  @locvar rulelist = {}
+  @locvar $deplist = []
+  @locvar $tgtlist = []
+  @locvar $cmd = []
+  @locvar $cmdlist = []
+  @locvar $rulelist = {}
   @append($cmd, "echo")
   @append($cmd, "foo")
   @append($cmdlist, $cmd)
@@ -45,33 +45,33 @@ firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
   @lex["foo"] = "y" # equivalent
 @endfunction
 
-MYFLAGS = [["-Wall", "-Wextra"]]
-MYFLAGS += [["foo", "bar"]]
+$MYFLAGS = [["-Wall", "-Wextra"]]
+$MYFLAGS += [["foo", "bar"]]
 
-CC = "cc"
-CFLAGS = ["-Wall", "-Wextra"]
-CCCMD = [$CC, @$CFLAGS]
-TGTS = ["a.txt", "b.txt"]
+$CC = "cc"
+$CFLAGS = ["-Wall", "-Wextra"]
+$CCCMD = [$CC, @$CFLAGS]
+$TGTS = ["a.txt", "b.txt"]
 
-CC = "cc"
-CFLAGS = []
-CCCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-c", "-o", @delayvar($@), @delayvar($<)]]
-CCLDCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-o", @delayvar($@), @delaylistexpand($^)]]
-DEPCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-MM", "-MP", "-MF", @delayvar($@), "-MT", @delayvar($@), "-MT", @delayexpr(@sufsubone($@, ".d", ".o")), @delayvar($<)]]
-ARCMDS = [["rm", "-f", @delayvar($@)], ["ar", "rs", @delayvar($@), @delaylistexpand(@suffilter($^, ".o"))]]
+$CC = "cc"
+$CFLAGS = []
+$CCCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-c", "-o", @delayvar($@), @delayvar($<)]]
+$CCLDCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-o", @delayvar($@), @delaylistexpand($^)]]
+$DEPCMDS = [[@delayvar($CC), @delaylistexpand($CFLAGS), "-MM", "-MP", "-MF", @delayvar($@), "-MT", @delayvar($@), "-MT", @delayexpr(@sufsubone($@, ".d", ".o")), @delayvar($<)]]
+$ARCMDS = [["rm", "-f", @delayvar($@)], ["ar", "rs", @delayvar($@), @delaylistexpand(@suffilter($^, ".o"))]]
 
-SUBDIRS = ['mod0', 'mod1', 'mod2', 'mod3']
+$SUBDIRS = ['mod0', 'mod1', 'mod2', 'mod3']
 
 @phonyrule: 'all1': $(SUBDIRS)
 
 @fileinclude 'opts.mk'
 @dirinclude $(SUBDIRS)
 
-SRC = ['mod3_main.c', 'mod3.c']
-OBJ = @sufsub($(SRC), ".c", ".o")
-DEP = @sufsub($(SRC), ".c", ".d")
-CFLAGS += ["-I$(DIRMOD0)", "-I$(DIRMOD2)"]
-LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
+$SRC = ['mod3_main.c', 'mod3.c']
+$OBJ = @sufsub($(SRC), ".c", ".o")
+$DEP = @sufsub($(SRC), ".c", ".d")
+$CFLAGS += ["-I$(DIRMOD0)", "-I$(DIRMOD2)"]
+$LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
 
 @phonyrule: 'all2': 'libmod3.a' 'mod3'
 

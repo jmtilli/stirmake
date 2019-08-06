@@ -119,6 +119,7 @@ int stiryywrap(yyscan_t scanner)
 %token DELAYLISTEXPAND
 %token SUFFILTER
 %token SUFSUBONE
+%token STRAPPEND
 %token SUFSUB
 %token PHONYRULE
 %token DISTRULE
@@ -241,7 +242,7 @@ funlines:
 ;
 
 locvarlines:
-| locvarlines LOCVAR FREEFORM_TOKEN EQUALS expr NEWLINE
+| locvarlines LOCVAR VARREF_LITERAL EQUALS expr NEWLINE
 {
   free($3);
 }
@@ -283,25 +284,25 @@ maybe_bracketexprlist:
 maybeqmequals: EQUALS {$$ = 0;} | QMEQUALS {$$ = 1;} ;
 
 assignrule:
-FREEFORM_TOKEN QMCOLONEQUALS expr NEWLINE
+VARREF_LITERAL QMCOLONEQUALS expr NEWLINE
 {
   free($1);
   printf("not implemented yet\n");
   YYABORT;
 }
-| FREEFORM_TOKEN COLONEQUALS expr NEWLINE
+| VARREF_LITERAL COLONEQUALS expr NEWLINE
 {
   free($1);
   printf("not implemented yet\n");
   YYABORT;
 }
-| FREEFORM_TOKEN PLUSCOLONEQUALS expr NEWLINE
+| VARREF_LITERAL PLUSCOLONEQUALS expr NEWLINE
 {
   free($1);
   printf("not implemented yet\n");
   YYABORT;
 }
-| FREEFORM_TOKEN maybeqmequals
+| VARREF_LITERAL maybeqmequals
 {
   size_t funloc = stiryy->bytesz;
   stiryy_add_fun_sym(stiryy, $1, $2, funloc);
@@ -316,7 +317,7 @@ expr NEWLINE
   stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $1, strlen($1)));
   free($1);
 }
-| FREEFORM_TOKEN PLUSEQUALS
+| VARREF_LITERAL PLUSEQUALS
 {
   size_t funloc = stiryy->bytesz;
   size_t oldloc = stiryy_add_fun_sym(stiryy, $1, 0, funloc);
@@ -496,6 +497,11 @@ expr0:
 {
   free($1.str);
 }
+| NUMBER
+{
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_DBL);
+  stiryy_add_double(stiryy, $1);
+}
 | lvalue
 | lvalue OPEN_PAREN maybe_arglist CLOSE_PAREN
 | lvalue MAYBE_CALL
@@ -528,6 +534,8 @@ expr0:
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
 | APPEND OPEN_PAREN expr COMMA expr CLOSE_PAREN
 | APPEND_LIST OPEN_PAREN expr COMMA expr CLOSE_PAREN
+| STRAPPEND OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{ stiryy_add_byte(stiryy, ABCE_OPCODE_STRAPPEND); }
 | RULE_DIST
 | RULE_PHONY
 | RULE_ORDINARY
