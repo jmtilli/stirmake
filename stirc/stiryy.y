@@ -230,9 +230,9 @@ maybe_parlist:
 ;
 
 parlist:
-FREEFORM_TOKEN
+VARREF_LITERAL
 { free($1); }
-| parlist COMMA FREEFORM_TOKEN
+| parlist COMMA VARREF_LITERAL
 { free($3); }
 ;
 
@@ -767,6 +767,11 @@ depspec:
 targets:
   FREEFORM_TOKEN
 {
+  if (!stiryy->freeform_token_seen)
+  {
+    printf("Recommend using string literals instead of free-form tokens\n");
+    stiryy->freeform_token_seen=1;
+  }
   printf("target1 %s\n", $1);
   stiryy_emplace_rule(stiryy);
   stiryy_set_tgt(stiryy, $1);
@@ -787,6 +792,11 @@ targets:
 }
 | targets FREEFORM_TOKEN
 {
+  if (!stiryy->freeform_token_seen)
+  {
+    printf("Recommend using string literals instead of free-form tokens\n");
+    stiryy->freeform_token_seen=1;
+  }
   printf("target %s\n", $2);
   stiryy_set_tgt(stiryy, $2);
   free($2);
@@ -817,6 +827,11 @@ maybe_rec:
 deps:
 | deps maybe_rec FREEFORM_TOKEN
 {
+  if (!stiryy->freeform_token_seen)
+  {
+    printf("Recommend using string literals instead of free-form tokens\n");
+    stiryy->freeform_token_seen=1;
+  }
   printf("dep %s rec? %d\n", $3, (int)$2);
   stiryy_set_dep(stiryy, $3, $2);
   free($3);
