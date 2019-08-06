@@ -7,7 +7,7 @@ firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
 
 # This is a comment
 
-@function ARCMDS()
+@function $ARCMDS()
   @locvar lists = []
   @locvar list = []
   @append($list, "rm")
@@ -23,7 +23,7 @@ firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
   @return $lists
 @endfunction
 
-@function addrule()
+@function $addrule()
   @locvar deplist = []
   @locvar tgtlist = []
   @locvar cmd = []

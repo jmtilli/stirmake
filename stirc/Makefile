@@ -72,8 +72,8 @@ CPP=clang++
 CFLAGS=-O3 -Wall -g -I$(LUAINC)
 CPPFLAGS=-O3 -Wall -g -I$(LUAINC)
 
-stirmain: stirmain.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+stirmain: stirmain.o libstirmake.a Makefile $(LUALIB) abce
+	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
@@ -99,8 +99,8 @@ luatest: luatest.o libstirmake.a Makefile $(LUALIB)
 cctest: cctest.o libstirmake.a Makefile $(LUALIB)
 	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
 
-stir: stir.o libstirmake.a Makefile $(LUALIB)
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+stir: stir.o libstirmake.a Makefile $(LUALIB) abce
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 inc: inc.o libstirmake.a Makefile $(LUALIB)
 	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl

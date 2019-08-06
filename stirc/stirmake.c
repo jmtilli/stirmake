@@ -1639,6 +1639,7 @@ void stack_conf(void)
 }
 
 
+#if 0
 size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
   // FIXME implement in C!
@@ -1666,6 +1667,7 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
   return old;
 #endif
 }
+#endif
 
 void version(char *argv0)
 {
@@ -1725,6 +1727,7 @@ int main(int argc, char **argv)
     }
   }
 
+  stiryy_init(&stiryy);
 
   f = fopen("Stirfile", "r");
   if (!f)

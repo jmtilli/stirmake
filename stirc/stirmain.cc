@@ -800,6 +800,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
   return st.add(str);
 }
 
+#if 0
 extern "C"
 size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
@@ -825,6 +826,7 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
   sc->vars[str] = memblock(loc, true);
   return old;
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -861,6 +863,8 @@ int main(int argc, char **argv)
 #endif
   FILE *f = fopen("Stirfile", "r");
   struct stiryy stiryy = {};
+
+  stiryy_init(&stiryy);
 
   if (!f)
   {

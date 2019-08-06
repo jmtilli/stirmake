@@ -8,6 +8,8 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include "abce/abce.h"
+#include "abce/abcescopes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,36 +87,63 @@ struct stiryy {
   char **cdepincludes;
   size_t cdepincludesz;
   size_t cdepincludecapacity;
+
+  struct abce abce;
+  struct amyplan_locvarctx *ctx;
 };
 
-size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
-size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc);
-
-static inline void stiryy_add_byte(struct stiryy *stiryy, uint8_t byte)
+static inline void stiryy_init(struct stiryy *yy)
 {
-  size_t newcapacity;
-  if (stiryy->bytesz >= stiryy->bytecapacity)
+  abce_init(&yy->abce);
+  yy->ctx = NULL;
+}
+
+
+static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
+{
+  return abce_cache_add_str(&stiryy->abce, symbol, symlen);
+}
+static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
+{
+  struct abce_mb mb;
+  struct abce_mb mbold;
+  int ret;
+  mb.typ = ABCE_T_F;
+  mb.u.d = loc;
+  ret = abce_sc_put_val_str_maybe_old(&stiryy->abce, &stiryy->abce.dynscope, symbol, &mb, maybe, &mbold);
+  if (ret != 0 && ret != -EEXIST)
   {
-    newcapacity = 2*stiryy->bytecapacity + 1;
-    stiryy->bytecode = (uint8_t*)realloc(stiryy->bytecode, sizeof(*stiryy->bytecode)*newcapacity);
-    stiryy->bytecapacity = newcapacity;
+    printf("can't add symbol %s\n", symbol);
+    exit(1);
   }
-  stiryy->bytecode[stiryy->bytesz++] = byte; 
+  if (mbold.typ == ABCE_T_N)
+  {
+    return (size_t)-1;
+  }
+  else
+  {
+    size_t ret = abce_cache_add(&stiryy->abce, &mbold);
+    abce_mb_refdn(&stiryy->abce, &mbold);
+    return ret;
+  }
+}
+
+static inline void stiryy_add_byte(struct stiryy *stiryy, uint16_t ins)
+{
+  abce_add_ins(&stiryy->abce, ins);
 }
 
 static inline void stiryy_add_double(struct stiryy *stiryy, double dbl)
 {
-  uint64_t val;
-  memcpy(&val, &dbl, 8);
-  stiryy_add_byte(stiryy, val>>56);
-  stiryy_add_byte(stiryy, val>>48);
-  stiryy_add_byte(stiryy, val>>40);
-  stiryy_add_byte(stiryy, val>>32);
-  stiryy_add_byte(stiryy, val>>24);
-  stiryy_add_byte(stiryy, val>>16);
-  stiryy_add_byte(stiryy, val>>8);
-  stiryy_add_byte(stiryy, val);
+  abce_add_double(&stiryy->abce, dbl);
 }
+
+static inline void stiryy_set_double(struct stiryy *stiryy, size_t i, double dbl)
+{
+  abce_set_double(&stiryy->abce, i, dbl);
+}
+
+size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
 
 static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
 {

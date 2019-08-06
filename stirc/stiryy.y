@@ -23,6 +23,10 @@ typedef void *yyscan_t;
 #include "stiryy.tab.h"
 #include "stiryy.lex.h"
 #include "opcodesonly.h"
+#include "abce/amyplanyy.h"
+#include "abce/amyplanyyutils.h"
+#include "abce/abceopcodes.h"
+#include "abce/amyplanlocvarctx.h"
 #include <arpa/inet.h>
 
 void stiryyerror(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, const char *str)
@@ -192,10 +196,32 @@ stirrules:
   free($3.str);
 }
 | stirrules CDEPINCLUDESCURDIR varref NEWLINE
-| stirrules FUNCTION FREEFORM_TOKEN OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
-{ free($3); }
+| stirrules FUNCTION VARREF_LITERAL
+{
+  stiryy->ctx = amyplan_locvarctx_alloc(NULL, 2, (size_t)-1, (size_t)-1);
+}
+OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
+{
+  size_t funloc = stiryy->abce.bytecodesz;
+  stiryy_add_fun_sym(stiryy, $3, 0, funloc);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
+  stiryy_add_double(stiryy, stiryy->ctx->args);
+}
   funlines
   ENDFUNCTION NEWLINE
+{
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_NIL); // retval
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_DBL);
+  stiryy_add_double(stiryy, stiryy->ctx->args); // argcnt
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_DBL);
+  stiryy_add_double(stiryy, stiryy->ctx->sz - stiryy->ctx->args); // locvarcnt
+  stiryy_add_byte(stiryy, ABCE_OPCODE_RETEX2);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_TRAILER);
+  stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $3, strlen($3)));
+  free($3);
+  amyplan_locvarctx_free(stiryy->ctx);
+  stiryy->ctx = NULL;
+}
 ;
 
 maybe_parlist:
@@ -279,15 +305,15 @@ FREEFORM_TOKEN QMCOLONEQUALS expr NEWLINE
 {
   size_t funloc = stiryy->bytesz;
   stiryy_add_fun_sym(stiryy, $1, $2, funloc);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_HEADER);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
   stiryy_add_double(stiryy, 0);
 }
 expr NEWLINE
 {
   printf("Assigning to %s\n", $1);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_RET);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_TRAILER);
-  stiryy_add_double(stiryy, symbol_add(stiryy, $1, strlen($1)));
+  stiryy_add_byte(stiryy, ABCE_OPCODE_RET);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_TRAILER);
+  stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $1, strlen($1)));
   free($1);
 }
 | FREEFORM_TOKEN PLUSEQUALS
@@ -299,14 +325,14 @@ expr NEWLINE
     printf("Can't find old symbol function\n");
     YYABORT;
   }
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_HEADER);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
   stiryy_add_double(stiryy, 0);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_DBL);
   stiryy_add_double(stiryy, oldloc);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_STRINGTAB);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_CALL_IF_FUN);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_FROM_CACHE);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_CALL_IF_FUN);
   // FIXME what if it's not a list?
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_DUP_NONRECURSIVE);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_DUP_NONRECURSIVE);
 /*
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUNIFY);
   stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
@@ -318,10 +344,10 @@ expr NEWLINE
 {
   printf("Plus-assigning to %s\n", $1);
   // FIXME what if it's not a list?
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPENDALL_MAINTAIN);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_RET);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUN_TRAILER);
-  stiryy_add_double(stiryy, symbol_add(stiryy, $1, strlen($1)));
+  stiryy_add_byte(stiryy, ABCE_OPCODE_APPENDALL_MAINTAIN);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_RET);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_TRAILER);
+  stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $1, strlen($1)));
   free($1);
 }
 ;
@@ -329,10 +355,10 @@ expr NEWLINE
 value:
   STRING_LITERAL
 {
-  size_t symid = symbol_add(stiryy, $1.str, $1.sz);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
+  size_t symid = stiryy_symbol_add(stiryy, $1.str, $1.sz);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_DBL);
   stiryy_add_double(stiryy, symid);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_STRINGTAB);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_FROM_CACHE);
   free($1.str);
   $$ = 0;
 }
@@ -519,7 +545,7 @@ expr
 list:
 OPEN_BRACKET
 {
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_NEW_ARRAY);
+  stiryy_add_byte(stiryy, ABCE_OPCODE_PUSH_NEW_ARRAY);
 }
 maybe_valuelist
 CLOSE_BRACKET
@@ -554,11 +580,11 @@ valuelist:
 {
   if ($1)
   {
-    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPENDALL_MAINTAIN);
+    stiryy_add_byte(stiryy, ABCE_OPCODE_APPENDALL_MAINTAIN);
   }
   else
   {
-    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPEND_MAINTAIN);
+    stiryy_add_byte(stiryy, ABCE_OPCODE_APPEND_MAINTAIN);
   }
 }
 | valuelist COMMA
@@ -566,11 +592,11 @@ valuelist:
 {
   if ($3)
   {
-    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPENDALL_MAINTAIN);
+    stiryy_add_byte(stiryy, ABCE_OPCODE_APPENDALL_MAINTAIN);
   }
   else
   {
-    stiryy_add_byte(stiryy, STIRBCE_OPCODE_APPEND_MAINTAIN);
+    stiryy_add_byte(stiryy, ABCE_OPCODE_APPEND_MAINTAIN);
   }
 }
 ;
