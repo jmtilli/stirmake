@@ -87,6 +87,7 @@ struct stiryy {
   char **cdepincludes;
   size_t cdepincludesz;
   size_t cdepincludecapacity;
+  int freeform_token_seen;
 
   struct abce abce;
   struct amyplan_locvarctx *ctx;
@@ -96,6 +97,7 @@ static inline void stiryy_init(struct stiryy *yy)
 {
   abce_init(&yy->abce);
   yy->ctx = NULL;
+  yy->freeform_token_seen = 0;
 }
 
 

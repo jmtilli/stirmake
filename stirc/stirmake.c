@@ -1747,13 +1747,17 @@ int main(int argc, char **argv)
   struct stiryy stiryy = {};
   size_t i;
   int opt;
+  const char *filename = "Stirfile";
 
-  while ((opt = getopt(argc, argv, "v")) != -1)
+  while ((opt = getopt(argc, argv, "vf:")) != -1)
   {
     switch (opt)
     {
     case 'v':
       version(argv[0]);
+    case 'f':
+      filename = optarg;
+      break;
     default:
     case '?':
       usage(argv[0]);
@@ -1762,7 +1766,7 @@ int main(int argc, char **argv)
 
   stiryy_init(&stiryy);
 
-  f = fopen("Stirfile", "r");
+  f = fopen(filename, "r");
   if (!f)
   {
     printf("24\n");
