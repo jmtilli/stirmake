@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
@@ -1065,6 +1066,30 @@ int ruleid_by_pid_erase(pid_t pid)
 
 size_t ruleid_by_pid_cnt;
 
+void print_cmd(char **argiter_orig)
+{
+  size_t argcnt = 0;
+  struct iovec *iovs;
+  char **argiter = argiter_orig;
+  size_t i;
+  while (*argiter != NULL)
+  {
+    argiter++;
+    argcnt++;
+  }
+  iovs = malloc(sizeof(*iovs)*argcnt*2);
+  for (i = 0; i < argcnt; i++)
+  {
+    iovs[2*i+0].iov_base = argiter_orig[i];
+    iovs[2*i+0].iov_len = strlen(argiter_orig[i]);
+    iovs[2*i+1].iov_base = " ";
+    iovs[2*i+1].iov_len = 1;
+  }
+  iovs[2*argcnt-1].iov_base = "\n";
+  iovs[2*argcnt-1].iov_len = 1;
+  writev(1, iovs, 2*argcnt);
+}
+
 void child_execvp_wait(const char *cmd, char **args)
 {
   pid_t pid = fork();
@@ -1080,6 +1105,7 @@ void child_execvp_wait(const char *cmd, char **args)
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
+    print_cmd(args);
     execvp(cmd, args);
     //write(1, "Err\n", 4);
     _exit(1);
@@ -1157,6 +1183,7 @@ pid_t fork_child(int ruleid)
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
+    print_cmd(&(*argiter)[0]);
     execvp((*argiter)[0], &(*argiter)[0]);
     //write(1, "Err\n", 4);
     _exit(1);
