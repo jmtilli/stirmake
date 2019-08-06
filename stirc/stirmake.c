@@ -1100,8 +1100,10 @@ void child_execvp_wait(const char *cmd, char **args)
   }
   else if (pid == 0)
   {
+#if 0 // Already closed
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
+#endif
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
@@ -1171,15 +1173,19 @@ pid_t fork_child(int ruleid)
   }
   else if (pid == 0)
   {
-    // FIXME remove signal handler?
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGCHLD, &sa, NULL);
+    close(self_pipe_fd[0]);
+    close(self_pipe_fd[1]);
     while (argcnt > 1)
     {
       child_execvp_wait((*argiter)[0], &(*argiter)[0]);
       argiter++;
       argcnt--;
     }
-    close(self_pipe_fd[0]);
-    close(self_pipe_fd[1]);
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
