@@ -99,6 +99,7 @@ struct stiryy {
   struct stiryy_main *main;
   struct amyplan_locvarctx *ctx;
   char *curprefix;
+  size_t curscopeidx;
   struct abce_mb curscope;
 };
 
@@ -109,7 +110,7 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
   //abce_init(&yy->abce);
   yy->ctx = NULL;
   yy->curprefix = strdup(prefix);
-  abce_cache_add(yy->main->abce, &curscope); // to avoid abort() on GC
+  yy->curscopeidx = abce_cache_add(yy->main->abce, &curscope); // avoid GC abort
   yy->curscope = curscope;
 }
 
