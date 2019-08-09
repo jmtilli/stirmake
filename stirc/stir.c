@@ -17,8 +17,11 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
 int main(int argc, char **argv)
 {
   FILE *f = fopen("Stirfile", "r");
+  struct abce abce;
+  struct stiryy_main main = {.abce = &abce};
   struct stiryy stiryy = {};
-  stiryy_init(&stiryy);
+  abce_init(&abce);
+  stiryy_init(&stiryy, &main, ".", abce.dynscope);
   if (!f)
   {
     abort();

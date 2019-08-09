@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include "abce/abce.h"
+#include "canon.h"
 #include "abce/abcescopes.h"
 
 #ifdef __cplusplus
@@ -76,34 +77,45 @@ struct stiryyrule {
   size_t lastshellcapacity;
 };
 
-struct stiryy {
-  void *baton;
-  uint8_t *bytecode;
-  size_t bytecapacity;
-  size_t bytesz;
+struct stiryy_main {
   struct stiryyrule *rules;
   size_t rulesz;
   size_t rulecapacity;
+  struct abce *abce;
+  int freeform_token_seen;
+};
+
+struct stiryy {
+  void *baton;
+#if 0
+  uint8_t *bytecode;
+  size_t bytecapacity;
+  size_t bytesz;
+#endif
   char **cdepincludes;
   size_t cdepincludesz;
   size_t cdepincludecapacity;
-  int freeform_token_seen;
 
-  struct abce abce;
+  struct stiryy_main *main;
   struct amyplan_locvarctx *ctx;
+  char *curprefix;
+  struct abce_mb curscope;
 };
 
-static inline void stiryy_init(struct stiryy *yy)
+static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
+                               char *prefix, struct abce_mb curscope)
 {
-  abce_init(&yy->abce);
+  yy->main = main;
+  //abce_init(&yy->abce);
   yy->ctx = NULL;
-  yy->freeform_token_seen = 0;
+  yy->curprefix = strdup(prefix);
+  abce_cache_add(yy->main->abce, &curscope); // to avoid abort() on GC
+  yy->curscope = curscope;
 }
-
 
 static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
-  return abce_cache_add_str(&stiryy->abce, symbol, symlen);
+  return abce_cache_add_str(stiryy->main->abce, symbol, symlen);
 }
 static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
@@ -112,7 +124,7 @@ static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbo
   int ret;
   mb.typ = ABCE_T_F;
   mb.u.d = loc;
-  ret = abce_sc_put_val_str_maybe_old(&stiryy->abce, &stiryy->abce.dynscope, symbol, &mb, maybe, &mbold);
+  ret = abce_sc_put_val_str_maybe_old(stiryy->main->abce, &stiryy->curscope, symbol, &mb, maybe, &mbold);
   if (ret != 0 && ret != -EEXIST)
   {
     printf("can't add symbol %s\n", symbol);
@@ -124,25 +136,25 @@ static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbo
   }
   else
   {
-    size_t ret = abce_cache_add(&stiryy->abce, &mbold);
-    abce_mb_refdn(&stiryy->abce, &mbold);
+    size_t ret = abce_cache_add(stiryy->main->abce, &mbold);
+    abce_mb_refdn(stiryy->main->abce, &mbold);
     return ret;
   }
 }
 
 static inline void stiryy_add_byte(struct stiryy *stiryy, uint16_t ins)
 {
-  abce_add_ins(&stiryy->abce, ins);
+  abce_add_ins(stiryy->main->abce, ins);
 }
 
 static inline void stiryy_add_double(struct stiryy *stiryy, double dbl)
 {
-  abce_add_double(&stiryy->abce, dbl);
+  abce_add_double(stiryy->main->abce, dbl);
 }
 
 static inline void stiryy_set_double(struct stiryy *stiryy, size_t i, double dbl)
 {
-  abce_set_double(&stiryy->abce, i, dbl);
+  abce_set_double(stiryy->main->abce, i, dbl);
 }
 
 size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
@@ -161,35 +173,54 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
 
 static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec)
 {
-  struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
+  size_t sz = strlen(stiryy->curprefix) + strlen(dep) + 2;
+  char *can, *tmp = malloc(sz);
+  if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, dep) >= sz)
+  {
+    abort();
+  }
+  can = canon(tmp);
+  free(tmp);
+  // FIXME normalize dep so that in dir "a" the rule "../b/c.txt" is "b/c.txt"
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
     rule->deps = (struct dep*)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
     rule->depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz].name = strdup(dep);
+  rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].rec = rec;
   rule->depsz++;
+  free(can);
 }
 
 static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
 {
-  struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
+  size_t sz = strlen(stiryy->curprefix) + strlen(tgt) + 2;
+  char *can, *tmp = malloc(sz);
+  if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, tgt) >= sz)
+  {
+    abort();
+  }
+  can = canon(tmp);
+  free(tmp);
   if (rule->targetsz >= rule->targetcapacity)
   {
     newcapacity = 2*rule->targetcapacity + 1;
     rule->targets = (char**)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
     rule->targetcapacity = newcapacity;
   }
-  rule->targets[rule->targetsz++] = strdup(tgt);
+  rule->targets[rule->targetsz++] = strdup(can);
+  free(can);
 }
 
 static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 {
-  struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
   if (rule->lastshellsz >= rule->lastshellcapacity)
   {
@@ -202,7 +233,7 @@ static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 
 static inline void stiryy_add_shell_section(struct stiryy *stiryy)
 {
-  struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
   if (rule->shellsz >= rule->shellcapacity)
   {
@@ -219,47 +250,69 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
 static inline void stiryy_emplace_rule(struct stiryy *stiryy)
 {
   size_t newcapacity;
-  if (stiryy->rulesz >= stiryy->rulecapacity)
+  if (stiryy->main->rulesz >= stiryy->main->rulecapacity)
   {
-    newcapacity = 2*stiryy->rulecapacity + 1;
-    stiryy->rules = (struct stiryyrule*)realloc(stiryy->rules, sizeof(*stiryy->rules)*newcapacity);
-    stiryy->rulecapacity = newcapacity;
+    newcapacity = 2*stiryy->main->rulecapacity + 1;
+    stiryy->main->rules = (struct stiryyrule*)realloc(stiryy->main->rules, sizeof(*stiryy->main->rules)*newcapacity);
+    stiryy->main->rulecapacity = newcapacity;
   }
-  stiryy->rules[stiryy->rulesz].depsz = 0;
-  stiryy->rules[stiryy->rulesz].depcapacity = 0;
-  stiryy->rules[stiryy->rulesz].deps = NULL;
-  stiryy->rules[stiryy->rulesz].targetsz = 0;
-  stiryy->rules[stiryy->rulesz].targetcapacity = 0;
-  stiryy->rules[stiryy->rulesz].targets = NULL;
-  stiryy->rules[stiryy->rulesz].shellsz = 0;
-  stiryy->rules[stiryy->rulesz].shellcapacity = 0;
-  stiryy->rules[stiryy->rulesz].shells = NULL;
-  stiryy->rulesz++;
+  stiryy->main->rules[stiryy->main->rulesz].depsz = 0;
+  stiryy->main->rules[stiryy->main->rulesz].depcapacity = 0;
+  stiryy->main->rules[stiryy->main->rulesz].deps = NULL;
+  stiryy->main->rules[stiryy->main->rulesz].targetsz = 0;
+  stiryy->main->rules[stiryy->main->rulesz].targetcapacity = 0;
+  stiryy->main->rules[stiryy->main->rulesz].targets = NULL;
+  stiryy->main->rules[stiryy->main->rulesz].shellsz = 0;
+  stiryy->main->rules[stiryy->main->rulesz].shellcapacity = 0;
+  stiryy->main->rules[stiryy->main->rulesz].shells = NULL;
+  stiryy->main->rulesz++;
+}
+
+static inline void stiryy_main_free(struct stiryy_main *main)
+{
+  size_t i;
+  size_t j;
+  for (i = 0; i < main->rulesz; i++)
+  {
+    for (j = 0; j < main->rules[i].depsz; j++)
+    {
+      free(main->rules[i].deps[j].name);
+    }
+    for (j = 0; j < main->rules[i].targetsz; j++)
+    {
+      free(main->rules[i].targets[j]);
+    }
+    free(main->rules[i].deps);
+    free(main->rules[i].targets);
+  }
+  free(main->rules);
 }
 
 static inline void stiryy_free(struct stiryy *stiryy)
 {
   size_t i;
+#if 0
   size_t j;
-  for (i = 0; i < stiryy->rulesz; i++)
+  for (i = 0; i < stiryy->main->rulesz; i++)
   {
-    for (j = 0; j < stiryy->rules[i].depsz; j++)
+    for (j = 0; j < stiryy->main->rules[i].depsz; j++)
     {
       free(stiryy->rules[i].deps[j].name);
     }
-    for (j = 0; j < stiryy->rules[i].targetsz; j++)
+    for (j = 0; j < stiryy->main->rules[i].targetsz; j++)
     {
       free(stiryy->rules[i].targets[j]);
     }
-    free(stiryy->rules[i].deps);
-    free(stiryy->rules[i].targets);
+    free(stiryy->main->rules[i].deps);
+    free(stiryy->main->rules[i].targets);
   }
+  free(stiryy->rules);
+  free(stiryy->bytecode);
+#endif
   for (i = 0; i < stiryy->cdepincludesz; i++)
   {
     free(stiryy->cdepincludes[i]);
   }
-  free(stiryy->bytecode);
-  free(stiryy->rules);
   free(stiryy->cdepincludes);
   memset(stiryy, 0, sizeof(*stiryy));
 }

@@ -203,7 +203,7 @@ stirrules:
 }
 OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
 {
-  size_t funloc = stiryy->abce.bytecodesz;
+  size_t funloc = stiryy->main->abce->bytecodesz;
   stiryy_add_fun_sym(stiryy, $3, 0, funloc);
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
   stiryy_add_double(stiryy, stiryy->ctx->args);
@@ -304,7 +304,7 @@ VARREF_LITERAL QMCOLONEQUALS expr NEWLINE
 }
 | VARREF_LITERAL maybeqmequals
 {
-  size_t funloc = stiryy->bytesz;
+  size_t funloc = stiryy->main->abce->bytecodesz;
   stiryy_add_fun_sym(stiryy, $1, $2, funloc);
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
   stiryy_add_double(stiryy, 0);
@@ -319,7 +319,7 @@ expr NEWLINE
 }
 | VARREF_LITERAL PLUSEQUALS
 {
-  size_t funloc = stiryy->bytesz;
+  size_t funloc = stiryy->main->abce->bytecodesz;
   size_t oldloc = stiryy_add_fun_sym(stiryy, $1, 0, funloc);
   if (oldloc == (size_t)-1)
   {
@@ -662,7 +662,7 @@ shell_command:
       {
         char *dep;
         size_t deplen;
-        struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+        struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
         if (rule->depsz <= 0)
         {
           fprintf(stderr, "$< on rule with no dependencies\n");
@@ -684,7 +684,7 @@ shell_command:
       {
         char *tgt;
         size_t tgtlen;
-        struct stiryyrule *rule = &stiryy->rules[stiryy->rulesz - 1];
+        struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
         if (rule->targetsz <= 0)
         {
           fprintf(stderr, "$@ on rule with no targets\n");
@@ -767,10 +767,10 @@ depspec:
 targets:
   FREEFORM_TOKEN
 {
-  if (!stiryy->freeform_token_seen)
+  if (!stiryy->main->freeform_token_seen)
   {
     printf("Recommend using string literals instead of free-form tokens\n");
-    stiryy->freeform_token_seen=1;
+    stiryy->main->freeform_token_seen=1;
   }
   printf("target1 %s\n", $1);
   stiryy_emplace_rule(stiryy);
@@ -792,10 +792,10 @@ targets:
 }
 | targets FREEFORM_TOKEN
 {
-  if (!stiryy->freeform_token_seen)
+  if (!stiryy->main->freeform_token_seen)
   {
     printf("Recommend using string literals instead of free-form tokens\n");
-    stiryy->freeform_token_seen=1;
+    stiryy->main->freeform_token_seen=1;
   }
   printf("target %s\n", $2);
   stiryy_set_tgt(stiryy, $2);
@@ -827,10 +827,10 @@ maybe_rec:
 deps:
 | deps maybe_rec FREEFORM_TOKEN
 {
-  if (!stiryy->freeform_token_seen)
+  if (!stiryy->main->freeform_token_seen)
   {
     printf("Recommend using string literals instead of free-form tokens\n");
-    stiryy->freeform_token_seen=1;
+    stiryy->main->freeform_token_seen=1;
   }
   printf("dep %s rec? %d\n", $3, (int)$2);
   stiryy_set_dep(stiryy, $3, $2);

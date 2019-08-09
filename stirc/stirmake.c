@@ -1744,6 +1744,8 @@ int main(int argc, char **argv)
   pathological_test();
 #endif
   FILE *f;
+  struct abce abce = {};
+  struct stiryy_main main = {.abce = &abce};
   struct stiryy stiryy = {};
   size_t i;
   int opt;
@@ -1764,7 +1766,8 @@ int main(int argc, char **argv)
     }
   }
 
-  stiryy_init(&stiryy);
+  abce_init(&abce);
+  stiryy_init(&stiryy, &main, ".", abce.dynscope);
 
   f = fopen(filename, "r");
   if (!f)
@@ -1777,17 +1780,17 @@ int main(int argc, char **argv)
 
   stack_conf();
 
-  for (i = 0; i < stiryy.rulesz; i++)
+  for (i = 0; i < main.rulesz; i++)
   {
-    if (stiryy.rules[i].targetsz > 0) // FIXME chg to if (1)
+    if (main.rules[i].targetsz > 0) // FIXME chg to if (1)
     {
       if (debug)
       {
         printf("ADDING RULE\n");
       }
-      add_rule(stiryy.rules[i].targets, stiryy.rules[i].targetsz,
-               stiryy.rules[i].deps, stiryy.rules[i].depsz,
-               stiryy.rules[i].shells, stiryy.rules[i].shellsz, 0);
+      add_rule(main.rules[i].targets, main.rules[i].targetsz,
+               main.rules[i].deps, main.rules[i].depsz,
+               main.rules[i].shells, main.rules[i].shellsz, 0);
     }
   }
 
