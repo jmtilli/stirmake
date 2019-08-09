@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <locale.h>
 #include "yyutils.h"
 #include "linkedlist.h"
 #include "abce/abcemurmur.h"
@@ -1738,6 +1739,38 @@ void usage(char *argv0)
   exit(1);
 }
 
+void do_narration(void)
+{
+  wchar_t aumlautch = L'\xe4';
+  wchar_t oumlautch = L'\xf6';
+  char *aumlaut = malloc(MB_CUR_MAX+1);
+  char *oumlaut = malloc(MB_CUR_MAX+1);
+  int ret;
+  ret = wctomb(aumlaut, aumlautch);
+  if (ret < 0)
+  {
+    aumlaut[0] = 'a';
+    aumlaut[1] = '\0';
+  }
+  else
+  {
+    aumlaut[ret] = '\0';
+  }
+  ret = wctomb(oumlaut, oumlautch);
+  if (ret < 0)
+  {
+    oumlaut[0] = 'o';
+    oumlaut[1] = '\0';
+  }
+  else
+  {
+    oumlaut[ret] = '\0';
+  }
+  printf("Hellurei, hellurei, k%s%snt%s on hurjaa!\n", aumlaut, aumlaut, oumlaut);
+  free(aumlaut);
+  free(oumlaut);
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -1750,13 +1783,19 @@ int main(int argc, char **argv)
   size_t i;
   int opt;
   const char *filename = "Stirfile";
+  uint32_t forkedchildcnt = 0;
+  int narration = 0;
 
-  while ((opt = getopt(argc, argv, "vf:")) != -1)
+  while ((opt = getopt(argc, argv, "vf:H")) != -1)
   {
     switch (opt)
     {
     case 'v':
       version(argv[0]);
+    case 'H':
+      narration = 1;
+      setlocale(LC_CTYPE, "");
+      break;
     case 'f':
       filename = optarg;
       break;
@@ -2026,6 +2065,11 @@ int main(int argc, char **argv)
         if (children != 0)
         {
           write(jobserver_fd[1], ".", 1);
+        }
+        forkedchildcnt++;
+        if (((forkedchildcnt % 10) == 0) && narration)
+        {
+          do_narration();
         }
       }
     }
