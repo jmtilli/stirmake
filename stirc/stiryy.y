@@ -240,9 +240,9 @@ VARREF_LITERAL QMCOLONEQUALS expr NEWLINE
 | VARREF_LITERAL maybeqmequals
 {
   size_t funloc = stiryy->main->abce->bytecodesz;
-  stiryy_add_fun_sym(stiryy, $1, $2, funloc);
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
   stiryy_add_double(stiryy, 0);
+  $<d>$ = funloc;
 }
 expr NEWLINE
 {
@@ -250,12 +250,13 @@ expr NEWLINE
   stiryy_add_byte(stiryy, ABCE_OPCODE_RET);
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_TRAILER);
   stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $1, strlen($1)));
+  stiryy_add_fun_sym(stiryy, $1, $2, $<d>3);
   free($1);
 }
 | VARREF_LITERAL PLUSEQUALS
 {
   size_t funloc = stiryy->main->abce->bytecodesz;
-  size_t oldloc = stiryy_add_fun_sym(stiryy, $1, 0, funloc);
+  size_t oldloc = stiryy_add_fun_sym(stiryy, $1, 0, funloc); // FIXME move later
   if (oldloc == (size_t)-1)
   {
     printf("Can't find old symbol function\n");
@@ -1002,19 +1003,39 @@ varref:
   VARREF_LITERAL
 {
   int64_t locvar;
-  locvar = amyplan_locvarctx_search_rec(amyplanyy->ctx, $1);
-  if (locvar >= 0)
+  if (amyplanyy->ctx == NULL)
   {
+    // Outside of function, search for immediate symbol
+    // Doesn't really happen with standard syntax, but somebody may embed it
+    const struct abce_mb *mb2 =
+      abce_sc_get_rec_str(&get_abce(amyplanyy)->dynscope, $1, 1);
+    if (mb2 == NULL)
+    {
+      printf("Variable %s not found\n", $1);
+      YYABORT;
+    }
+    int64_t idx = abce_cache_add(get_abce(amyplanyy), mb2);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
-    amyplanyy_add_double(amyplanyy, locvar);
+    amyplanyy_add_double(amyplanyy, idx);
+    free($1);
+    $$ = ABCE_OPCODE_PUSH_FROM_CACHE;
   }
   else
   {
-    printf("var %s not found\n", $1);
-    abort();
+    locvar = amyplan_locvarctx_search_rec(amyplanyy->ctx, $1);
+    if (locvar >= 0)
+    {
+      amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+      amyplanyy_add_double(amyplanyy, locvar);
+    }
+    else
+    {
+      printf("var %s not found\n", $1);
+      abort();
+    }
+    free($1);
+    $$ = ABCE_OPCODE_PUSH_STACK;
   }
-  free($1);
-  $$ = ABCE_OPCODE_PUSH_STACK;
 }
 | DO VARREF_LITERAL
 {

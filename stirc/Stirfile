@@ -60,6 +60,7 @@ $CC = "cc"
 $CFLAGS = []
 $CCCMDS = [[@D$CC, @@D$CFLAGS, "-c", "-o", @D$@, @D$<]]
 $CCLDCMDS = [[@D$CC, @@D$CFLAGS, "-o", @D$@, @@D$^]]
+$DEPCMDS = []
 #$DEPCMDS = [[@D$CC, @@D$CFLAGS, "-MM", "-MP", "-MF", @D$@, "-MT", @D$@, "-MT", @sufsubone(@D$@, ".d", ".o"), @D$<]] # FIXME doesn't work
 #$ARCMDS = [["rm", "-f", @D$@], ["ar", "rs", @D$@, @suffilter(@D$^, ".o")]] # FIXME doesn't work
 
@@ -79,16 +80,16 @@ $LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
 @phonyrule: 'all2': 'libmod3.a' 'mod3'
 
 @distrule: 'mod3': 'mod3_main.o' 'libmod3.a' $(LIBS)
-@	@D$(CCLDCMDS)
+@	$(CCLDCMDS)
 
 @distrule: 'mod3.a': 'mod3.o'
-@	@D$(ARCMDS)
+@	$(ARCMDS)
 
 @patrule: $(OBJ): '%.o': '%.c' '%.d'
-@	@D$(CCCMDS)
+@	$(CCCMDS)
 
 @patrule: $(DEP): '%.d': '%.c'
-@	@D$(DEPCMDS)
+@	$(DEPCMDS)
 
 @cdepincludescurdir $(DEP)
 
