@@ -53,16 +53,18 @@ $MYFLAGS += [["foo", "bar"]]
 
 $CC = "cc"
 $CFLAGS = ["-Wall", "-Wextra"]
-$CCCMD = [@D$CC, @@D$CFLAGS]
+$CCCMD = [$CC, @$CFLAGS]
 $TGTS = ["a.txt", "b.txt"]
 
 $CC = "cc"
 $CFLAGS = []
-$CCCMDS = [[@D$CC, @@D$CFLAGS, "-c", "-o", @D$@, @D$<]]
-$CCLDCMDS = [[@D$CC, @@D$CFLAGS, "-o", @D$@, @@D$^]]
+# FIXME is there implicit <> used? Should be!
+# FIXME make the default scope dynamic instead of immediate outside of function.
+$CCCMDS = [[$CC, @$CFLAGS, "-c", "-o", @D$@, @D$<]]
+$CCLDCMDS = [[$CC, @$CFLAGS, "-o", @D$@, @@D$^]]
 $DEPCMDS = []
-#$DEPCMDS = [[@D$CC, @@D$CFLAGS, "-MM", "-MP", "-MF", @D$@, "-MT", @D$@, "-MT", @sufsubone(@D$@, ".d", ".o"), @D$<]] # FIXME doesn't work
-#$ARCMDS = [["rm", "-f", @D$@], ["ar", "rs", @D$@, @suffilter(@D$^, ".o")]] # FIXME doesn't work
+#$DEPCMDS = [[$CC, @$CFLAGS, "-MM", "-MP", "-MF", $@, "-MT", $@, "-MT", @sufsubone($@, ".d", ".o"), $<]] # FIXME doesn't work
+#$ARCMDS = [["rm", "-f", $@], ["ar", "rs", $@, @suffilter($^, ".o")]] # FIXME doesn't work
 
 $SUBDIRS = ['mod0', 'mod1', 'mod2', 'mod3']
 
