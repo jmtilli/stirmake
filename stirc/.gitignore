@@ -20,3 +20,7 @@
 /globtest
 /bttest
 /jsontest
+/dbyy.lex.c
+/dbyy.lex.h
+/dbyy.tab.c
+/dbyy.tab.h
