@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <locale.h>
+#include <libgen.h>
 #include "yyutils.h"
 #include "linkedlist.h"
 #include "abce/abcemurmur.h"
@@ -23,6 +24,15 @@
 #endif
 #include "incyyutils.h"
 
+enum mode {
+  MODE_NONE = 0,
+  MODE_THIS = 1,
+  MODE_PROJECT = 2,
+  MODE_ALL = 3,
+};
+
+enum mode mode = MODE_NONE;
+int isspecprog = 0;
 
 #define STIR_LINKED_LIST_HEAD_INITER(x) { \
   .node = { \
@@ -1749,7 +1759,18 @@ void version(char *argv0)
 void usage(char *argv0)
 {
   fprintf(stderr, "Usage:\n");
-  fprintf(stderr, "%s [-v]\n", argv0);
+  if (isspecprog)
+  {
+    fprintf(stderr, "%s [-v] [-f Stirfile]\n", argv0);
+    fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
+    fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
+  }
+  else
+  {
+    fprintf(stderr, "%s [-v] [-f Stirfile] -t | -p | -a\n", argv0);
+    fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
+    fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
+  }
   exit(1);
 }
 
@@ -1800,6 +1821,20 @@ void recursion_misuse_prevention(void)
   update_recursive_pid(0);
 }
 
+void set_mode(enum mode newmode, int newspecprog, char *argv0)
+{
+  if (mode != MODE_NONE && mode != newmode)
+  {
+    fprintf(stderr, "Ambiguous mode\n");
+    usage(argv0);
+  }
+  mode = newmode;
+  if (newspecprog)
+  {
+    isspecprog = 1;
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -1815,7 +1850,23 @@ int main(int argc, char **argv)
   uint32_t forkedchildcnt = 0;
   int narration = 0;
 
-  while ((opt = getopt(argc, argv, "vf:H")) != -1)
+  char *dupargv0 = strdup(argv[0]);
+  char *basenm = basename(dupargv0);
+
+  if (strcmp(basenm, "smka") == 0)
+  {
+    set_mode(MODE_ALL, 1, argv[0]);
+  }
+  else if (strcmp(basenm, "smkt") == 0)
+  {
+    set_mode(MODE_THIS, 1, argv[0]);
+  }
+  else if (strcmp(basenm, "smkp") == 0)
+  {
+    set_mode(MODE_PROJECT, 1, argv[0]);
+  }
+
+  while ((opt = getopt(argc, argv, "vf:Htpa")) != -1)
   {
     switch (opt)
     {
@@ -1828,10 +1879,24 @@ int main(int argc, char **argv)
     case 'f':
       filename = optarg;
       break;
+    case 't':
+      set_mode(MODE_THIS, 0, argv[0]);
+      break;
+    case 'p':
+      set_mode(MODE_PROJECT, 0, argv[0]);
+      break;
+    case 'a':
+      set_mode(MODE_ALL, 0, argv[0]);
+      break;
     default:
     case '?':
       usage(argv[0]);
     }
+  }
+
+  if (mode == MODE_NONE)
+  {
+    usage(argv[0]);
   }
 
   recursion_misuse_prevention();
