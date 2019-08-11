@@ -209,6 +209,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 
 %type<d> maybeqmequals
 %type<d> maybe_rec
+%type<d> maybe_maybe_call
 
 %start st
 
@@ -217,27 +218,10 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 st: stirrules;
 
 maybeqmequals: EQUALS {$$ = 0;} | QMEQUALS {$$ = 1;} ;
+maybe_maybe_call: {$$ = 0;} | MAYBE_CALL {$$ = 1;};
 
 assignrule:
-VARREF_LITERAL QMCOLONEQUALS expr NEWLINE
-{
-  free($1);
-  printf("not implemented yet\n");
-  YYABORT;
-}
-| VARREF_LITERAL COLONEQUALS expr NEWLINE
-{
-  free($1);
-  printf("not implemented yet\n");
-  YYABORT;
-}
-| VARREF_LITERAL PLUSCOLONEQUALS expr NEWLINE
-{
-  free($1);
-  printf("not implemented yet\n");
-  YYABORT;
-}
-| VARREF_LITERAL maybeqmequals
+  VARREF_LITERAL maybe_maybe_call maybeqmequals
 {
   size_t funloc = stiryy->main->abce->bytecodesz;
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
@@ -246,20 +230,48 @@ VARREF_LITERAL QMCOLONEQUALS expr NEWLINE
 }
 expr NEWLINE
 {
-  printf("Assigning to %s\n", $1);
+  unsigned char tmpbuf[256] = {};
+  size_t tmpsiz = 0;
   stiryy_add_byte(stiryy, ABCE_OPCODE_RET);
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_TRAILER);
   stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $1, strlen($1)));
-  stiryy_add_fun_sym(stiryy, $1, $2, $<d>3);
+  stiryy_add_fun_sym(stiryy, $1, $3, $<d>4);
+
+  if (!$2)
+  {
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+      abce_sc_get_rec_str_fun(&get_abce(stiryy)->dynscope, $1, 1));
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_FUNIFY);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
+
+    get_abce(stiryy)->ip = -tmpsiz-ABCE_GUARD;
+    if (abce_engine(get_abce(stiryy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for var %s\n", $1);
+      printf("error %d\n", get_abce(stiryy)->err.code);
+      YYABORT;
+    }
+    if (get_abce(stiryy)->sp != 1)
+    {
+      abort();
+    }
+    struct abce_mb key = abce_mb_create_string(get_abce(stiryy), $1, strlen($1));
+    abce_sc_replace_val_mb(get_abce(stiryy), &get_abce(stiryy)->dynscope, &key, &get_abce(stiryy)->stackbase[0]);
+    abce_mb_refdn(get_abce(stiryy), &key);
+    abce_pop(get_abce(stiryy));
+  }
+
   free($1);
 }
-| VARREF_LITERAL PLUSEQUALS
+| VARREF_LITERAL maybe_maybe_call PLUSEQUALS
 {
   size_t funloc = stiryy->main->abce->bytecodesz;
   size_t oldloc = stiryy_add_fun_sym(stiryy, $1, 0, funloc); // FIXME move later
   if (oldloc == (size_t)-1)
   {
-    printf("Can't find old symbol function\n");
+    printf("Can't find old symbol function for %s\n", $1);
     YYABORT;
   }
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_HEADER);
@@ -270,21 +282,46 @@ expr NEWLINE
   stiryy_add_byte(stiryy, ABCE_OPCODE_CALL_IF_FUN);
   // FIXME what if it's not a list?
   stiryy_add_byte(stiryy, ABCE_OPCODE_DUP_NONRECURSIVE);
-/*
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_FUNIFY);
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_PUSH_DBL);
-  stiryy_add_double(stiryy, 0); // arg cnt
-  stiryy_add_byte(stiryy, STIRBCE_OPCODE_CALL);
-*/
 }
 expr NEWLINE
 {
+  unsigned char tmpbuf[256] = {};
+  size_t tmpsiz = 0;
+  size_t symidx;
   printf("Plus-assigning to %s\n", $1);
   // FIXME what if it's not a list?
   stiryy_add_byte(stiryy, ABCE_OPCODE_APPENDALL_MAINTAIN);
   stiryy_add_byte(stiryy, ABCE_OPCODE_RET);
   stiryy_add_byte(stiryy, ABCE_OPCODE_FUN_TRAILER);
-  stiryy_add_double(stiryy, stiryy_symbol_add(stiryy, $1, strlen($1)));
+  symidx = stiryy_symbol_add(stiryy, $1, strlen($1));
+  stiryy_add_double(stiryy, symidx);
+
+  if (!$2)
+  {
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+      abce_sc_get_rec_str_fun(&get_abce(stiryy)->dynscope, $1, 1));
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_FUNIFY);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
+
+    get_abce(stiryy)->ip = -tmpsiz-ABCE_GUARD;
+    if (abce_engine(get_abce(stiryy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for var %s\n", $1);
+      printf("error %d\n", get_abce(stiryy)->err.code);
+      YYABORT;
+    }
+    if (get_abce(stiryy)->sp != 1)
+    {
+      abort();
+    }
+    struct abce_mb key = abce_mb_create_string(get_abce(stiryy), $1, strlen($1));
+    abce_sc_replace_val_mb(get_abce(stiryy), &get_abce(stiryy)->dynscope, &key, &get_abce(stiryy)->stackbase[0]);
+    abce_mb_refdn(get_abce(stiryy), &key);
+    abce_pop(get_abce(stiryy));
+  }
+
   free($1);
 }
 ;

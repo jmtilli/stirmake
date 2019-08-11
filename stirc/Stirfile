@@ -59,8 +59,8 @@ $TGTS = ["a.txt", "b.txt"]
 $CC = "cc"
 $CFLAGS = []
 # FIXME is there implicit <> used? Should be!
-$CCCMDS = [[$CC, @$CFLAGS, "-c", "-o", $@, $<]]
-$CCLDCMDS = [[$CC, @$CFLAGS, "-o", $@, @$^]]
+$CCCMDS<> = [[$CC, @$CFLAGS, "-c", "-o", $@, $<]]
+$CCLDCMDS<> = [[$CC, @$CFLAGS, "-o", $@, @$^]]
 $DEPCMDS = []
 #$DEPCMDS = [[$CC, @$CFLAGS, "-MM", "-MP", "-MF", $@, "-MT", $@, "-MT", @sufsubone($@, ".d", ".o"), $<]] # FIXME doesn't work
 #$ARCMDS = [["rm", "-f", $@], ["ar", "rs", $@, @suffilter($^, ".o")]] # FIXME doesn't work

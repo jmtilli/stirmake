@@ -22,30 +22,30 @@ $YACC = $(YACC_LIB)
   @return $ret
 @endfunction
 
-$LEXGEN_LIB = $sufsuball($LEX_LIB<>, ".l", ".lex.c")
-$LEXGEN = $sufsuball($LEX<>, ".l", ".lex.c")
-$YACCGEN_LIB = $sufsuball($YACC_LIB<>, ".y", ".tab.c")
-$YACCGEN = $sufsuball($YACC<>, ".y", ".tab.c")
+$LEXGEN_LIB<> = $sufsuball($LEX_LIB<>, ".l", ".lex.c")
+$LEXGEN<> = $sufsuball($LEX<>, ".l", ".lex.c")
+$YACCGEN_LIB<> = $sufsuball($YACC_LIB<>, ".y", ".tab.c")
+$YACCGEN<> = $sufsuball($YACC<>, ".y", ".tab.c")
 
-$GEN_LIB = [@$LEXGEN_LIB, @$YACCGEN_LIB]
-$GEN = [@$LEXGEN, @$YACCGEN]
+$GEN_LIB<> = [@$LEXGEN_LIB, @$YACCGEN_LIB]
+$GEN<> = [@$LEXGEN, @$YACCGEN]
 
-$OBJ_LIB = $sufsuball($SRC_LIB<>, ".c", ".o")
-$OBJ = $sufsuball($SRC<>, ".c", ".o")
-$OBJ_CPP_LIB = $sufsuball($SRC_CPP_LIB<>, ".cc", ".o")
-$OBJ_CPP = $sufsuball($SRC_CPP<>, ".cc", ".o")
-$OBJGEN_LIB = $sufsuball($GEN_LIB<>, ".c", ".o")
-$OBJGEN = $sufsuball($GEN<>, ".c", ".o")
-$ASM_LIB = $sufsuball($SRC_LIB<>, ".c", ".s")
-$ASM = $sufsuball($SRC<>, ".c", ".s")
-$ASMGEN_LIB = $sufsuball($GEN_LIB<>, ".c", ".s")
-$ASMGEN = $sufsuball($GEN<>, ".c", ".s")
-$DEP_LIB = $sufsuball($SRC_LIB<>, ".c", ".d")
-$DEP = $sufsuball($SRC<>, ".c", ".d")
-$DEP_CPP_LIB = $sufsuball($SRC_CPP_LIB<>, ".cc", ".d")
-$DEP_CPP = $sufsuball($SRC_CPP<>, ".cc", ".d")
-$DEPGEN_LIB = $sufsuball($GEN_LIB<>, ".c", ".d")
-$DEPGEN = $sufsuball($GEN<>, ".c", ".d")
+$OBJ_LIB<> = $sufsuball($SRC_LIB<>, ".c", ".o")
+$OBJ<> = $sufsuball($SRC<>, ".c", ".o")
+$OBJ_CPP_LIB<> = $sufsuball($SRC_CPP_LIB<>, ".cc", ".o")
+$OBJ_CPP<> = $sufsuball($SRC_CPP<>, ".cc", ".o")
+$OBJGEN_LIB<> = $sufsuball($GEN_LIB<>, ".c", ".o")
+$OBJGEN<> = $sufsuball($GEN<>, ".c", ".o")
+$ASM_LIB<> = $sufsuball($SRC_LIB<>, ".c", ".s")
+$ASM<> = $sufsuball($SRC<>, ".c", ".s")
+$ASMGEN_LIB<> = $sufsuball($GEN_LIB<>, ".c", ".s")
+$ASMGEN<> = $sufsuball($GEN<>, ".c", ".s")
+$DEP_LIB<> = $sufsuball($SRC_LIB<>, ".c", ".d")
+$DEP<> = $sufsuball($SRC<>, ".c", ".d")
+$DEP_CPP_LIB<> = $sufsuball($SRC_CPP_LIB<>, ".cc", ".d")
+$DEP_CPP<> = $sufsuball($SRC_CPP<>, ".cc", ".d")
+$DEPGEN_LIB<> = $sufsuball($GEN_LIB<>, ".c", ".d")
+$DEPGEN<> = $sufsuball($GEN<>, ".c", ".d")
 
 @function $subbuild($dir)
   @return [@D$(MAKE), "-C", $dir]
@@ -55,8 +55,8 @@ $DEPGEN = $sufsuball($GEN<>, ".c", ".d")
   @return @D$filterOut(@D$filterOut(@D$glob("*.h"), ".lex.h"), ".tab.h") # FIXME @filterOut, @glob
 @endfunction
 
-$WCCMD = ["wc", "-l", @$(LEX), @$(YACC), @$(SRC_CPP), @$(SRC), @$headers()]
-$WCCCMD = ["wc", "-l", @$(LEX), @$(YACC), @$(SRC), @$headers()]
+$WCCMD<> = ["wc", "-l", @$(LEX), @$(YACC), @$(SRC_CPP), @$(SRC), @$headers()]
+$WCCCMD<> = ["wc", "-l", @$(LEX), @$(YACC), @$(SRC), @$headers()]
 
 @phonyrule: all: stirmain stir inc arraytest luatest cctest streamtest globtest bttest jsontest build_abce stirmake
 

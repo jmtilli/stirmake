@@ -134,7 +134,6 @@ struct CSnippet luaSnippet = {
 @RULE_PHONY   return RULE_PHONY;
 @RULE_ORDINARY   return RULE_ORDINARY;
 :         return COLON;
-:=        return COLONEQUALS;
 ,         return COMMA;
 =         return EQUALS;
 && return LOGICAL_AND;
@@ -142,9 +141,7 @@ struct CSnippet luaSnippet = {
 != return NE;
 == return EQ;
 \+=         return PLUSEQUALS;
-\+:=        return PLUSCOLONEQUALS;
 \?=         return QMEQUALS;
-\?:=        return QMCOLONEQUALS;
 \<\< return SHL;
 \>\> return SHR;
 \<        return LT;
