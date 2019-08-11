@@ -238,7 +238,7 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_tgt_entry_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
-    printf("1\n");
+    printf("ruleid by tgt %s already exists\n", sttable[tgtidx]);
     abort();
   }
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);

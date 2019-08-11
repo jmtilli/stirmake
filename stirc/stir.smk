@@ -16,102 +16,100 @@ $YACC = $(YACC_LIB)
   @locvar $ret = []
   @locvar $idx = 0
   @while($idx < $list[])
-    @append($ret, @sufsub($list[$idx], $suf1, $suf2))
+    @append($ret, @D$sufsub($list[$idx], $suf1, $suf2)) # FIXME @sufsub
     $idx = $idx + 1
   @endwhile
   @return $ret
 @endfunction
 
 @function $LEXGEN_LIB()
-  @return $sufsuball($LEX_LIB<>, ".l", ".lex.c")
+  @return @D$sufsuball(@D$LEX_LIB<>, ".l", ".lex.c")
 @endfunction
 @function $LEXGEN()
-  @return $sufsuball($LEX<>, ".l", ".lex.c")
+  @return @D$sufsuball(@D$LEX<>, ".l", ".lex.c")
 @endfunction
 
 @function $YACCGEN_LIB()
-  @return $sufsuball($YACC_LIB<>, ".y", ".tab.c")
+  @return @D$sufsuball(@D$YACC_LIB<>, ".y", ".tab.c")
 @endfunction
 @function $YACCGEN()
-  @return $sufsuball($YACC<>, ".y", ".tab.c")
+  @return @D$sufsuball(@D$YACC<>, ".y", ".tab.c")
 @endfunction
 
 $GEN_LIB = [@$LEXGEN_LIB, @$YACCGEN_LIB]
 $GEN = [@$LEXGEN, @$YACCGEN]
 
 @function $OBJ_LIB()
-  @return $sufsuball($SRC_LIB<>, ".c", ".o")
+  @return @D$sufsuball(@D$SRC_LIB<>, ".c", ".o")
 @endfunction
 @function $OBJ()
-  @return $sufsuball($SRC<>, ".c", ".o")
+  @return @D$sufsuball(@D$SRC<>, ".c", ".o")
 @endfunction
 
 @function $OBJ_CPP_LIB()
-  @return $sufsuball($SRC_CPP_LIB<>, ".cc", ".o")
+  @return @D$sufsuball(@D$SRC_CPP_LIB<>, ".cc", ".o")
 @endfunction
 @function $OBJ_CPP()
-  @return $sufsuball($SRC_CPP<>, ".cc", ".o")
+  @return @D$sufsuball(@D$SRC_CPP<>, ".cc", ".o")
 @endfunction
 
 @function $OBJGEN_LIB()
-  @return $sufsuball($GEN_LIB<>, ".c", ".o")
+  @return @D$sufsuball(@D$GEN_LIB<>, ".c", ".o")
 @endfunction
 @function $OBJGEN()
-  @return $sufsuball($GEN<>, ".c", ".o")
+  @return @D$sufsuball(@D$GEN<>, ".c", ".o")
 @endfunction
 
 @function $ASM_LIB()
-  @return $sufsuball($SRC_LIB<>, ".c", ".s")
+  @return @D$sufsuball(@D$SRC_LIB<>, ".c", ".s")
 @endfunction
 @function $ASM()
-  @return $sufsuball($SRC<>, ".c", ".s")
+  @return @D$sufsuball(@D$SRC<>, ".c", ".s")
 @endfunction
 
 @function $ASMGEN_LIB()
-  @return $sufsuball($GEN_LIB<>, ".c", ".s")
+  @return @D$sufsuball(@D$GEN_LIB<>, ".c", ".s")
 @endfunction
 @function $ASMGEN()
-  @return $sufsuball($GEN<>, ".c", ".s")
+  @return @D$sufsuball(@D$GEN<>, ".c", ".s")
 @endfunction
 
 @function $DEP_LIB()
-  @return $sufsuball($SRC_LIB<>, ".c", ".d")
+  @return @D$sufsuball(@D$SRC_LIB<>, ".c", ".d")
 @endfunction
 @function $DEP()
-  @return $sufsuball($SRC<>, ".c", ".d")
+  @return @D$sufsuball(@D$SRC<>, ".c", ".d")
 @endfunction
 
 @function $DEP_CPP_LIB()
-  @return $sufsuball($SRC_CPP_LIB<>, ".cc", ".d")
+  @return @D$sufsuball(@D$SRC_CPP_LIB<>, ".cc", ".d")
 @endfunction
 @function $DEP_CPP()
-  @return $sufsuball($SRC_CPP<>, ".cc", ".d")
+  @return @D$sufsuball(@D$SRC_CPP<>, ".cc", ".d")
 @endfunction
 
 @function $DEPGEN_LIB()
-  @return $sufsuball($GEN_LIB<>, ".c", ".d")
+  @return @D$sufsuball(@D$GEN_LIB<>, ".c", ".d")
 @endfunction
 @function $DEPGEN()
-  @return $sufsuball($GEN<>, ".c", ".d")
+  @return @D$sufsuball(@D$GEN<>, ".c", ".d")
 @endfunction
 
 @function $subbuild($dir)
-  @return [$(MAKE), "-C", $dir]
+  @return [@D$(MAKE), "-C", $dir]
 @endfunction
 
 @function $headers()
-  @return $filterOut($filterOut(@glob("*.h"), ".lex.h"), ".tab.h")
+  @return @D$filterOut(@D$filterOut(@D$glob("*.h"), ".lex.h"), ".tab.h") # FIXME @filterOut, @glob
 @endfunction
 
 $WCCMD = ["wc", "-l", @$(LEX), @$(YACC), @$(SRC_CPP), @$(SRC), @$headers()]
 $WCCCMD = ["wc", "-l", @$(LEX), @$(YACC), @$(SRC), @$headers()]
 
-@phonyrule
-all: stirmain stir inc arraytest luatest cctest streamtest globtest bttest jsontest build_abce stirmake
+@phonyrule: all: stirmain stir inc arraytest luatest cctest streamtest globtest bttest jsontest build_abce stirmake
 
 
-@phonyrule
-build_abce: @recdep abce
+@phonyrule: build_abce: @recdep abce
 @	$subbuild("abce")
 
 wc:
@@ -132,61 +130,59 @@ $CPP = "clang++"
 $CFLAGS = ["-O3", "-Wall", "-g", "-I", $(LUAINC)]
 $CPPFLAGS = ["-O3", "-Wall", "-g", "-I", $(LUAINC)]
 
-# FIXME I got here, will have to fix these as well:
-
 stirmain: stirmain.o libstirmake.a Makefile $(LUALIB) abce
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "abce/libabce.a", "-lm", "-ldl"]
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "abce/libabce.a", "-lm", "-ldl"]
 
 arraytest: arraytest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 streamtest: streamtest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 globtest: globtest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 bttest: bttest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 jsontest: jsontest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 luatest: luatest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 cctest: cctest.o libstirmake.a Makefile $(LUALIB)
-	$(CPP) $(CPPFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CPP), @$(CPPFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 stir: stir.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+@	[$(CC), @$(CFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "abce/libabce.a", "-lm", "-ldl"]
 
 inc: inc.o libstirmake.a Makefile $(LUALIB)
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+@	[$(CC), @$(CFLAGS), "-o", $@, @$filter(".o", $^), @$filter(".a", $^), "-lm", "-ldl"]
 
 libstirmake.a: $(OBJ_LIB) $(OBJGEN_LIB) $(OBJ_CPP_LIB) Makefile
-	rm -f $@
-	ar rvs $@ $(filter %.o,$^)
+@	["rm", "-f", $@]
+@	["ar", "rvs", $@, @$filter(".o", $^)]
 
-$(OBJ): %.o: %.c %.d Makefile
-	$(CC) $(CFLAGS) -c -o $*.o $*.c
-	$(CC) $(CFLAGS) -c -S -o $*.s $*.c
-$(OBJ_CPP): %.o: %.cc %.d Makefile
-	$(CPP) $(CPPFLAGS) -c -o $*.o $*.cc
-	$(CPP) $(CPPFLAGS) -c -S -o $*.s $*.cc
-$(OBJGEN): %.o: %.c %.h %.d Makefile
-	$(CC) $(CFLAGS) -c -o $*.o $*.c -Wno-sign-compare -Wno-missing-prototypes
-	$(CC) $(CFLAGS) -c -S -o $*.s $*.c -Wno-sign-compare -Wno-missing-prototypes
+@patrule: $(OBJ): '%.o': '%.c' '%.d' Makefile
+@	[$(CC), @$(CFLAGS), "-c", "-o", $@, $<]
+@	[$(CC), @$(CFLAGS), "-c", "-S", "-o", @strappend($*, ".s"), $<]
+@patrule: $(OBJ_CPP): '%.o': '%.cc' '%.d' Makefile
+@	[$(CPP), @$(CPPFLAGS), "-c", "-o", $@, $<]
+@	[$(CPP), @$(CPPFLAGS), "-c", "-S", "-o", @strappend($*, ".s"), $<]
+@patrule: $(OBJGEN): '%.o': '%.c' '%.h' '%.d' Makefile
+@	[$(CC), @$(CFLAGS), "-Wno-sign-compare", "-Wno-missing-prototypes", "-c", "-o", $@, $<]
+@	[$(CC), @$(CFLAGS), "-Wno-sign-compare", "-Wno-missing-prototypes", "-c", "-S", "-o", @strappend($*, ".s"), $<]
 
-$(DEP): %.d: %.c Makefile
-	$(CC) $(CFLAGS) -MM -MP -MT "$*.d $*.o" -o $*.d $*.c
-$(DEP_CPP): %.d: %.cc Makefile
-	$(CPP) $(CPPFLAGS) -MM -MP -MT "$*.d $*.o" -o $*.d $*.cc
-$(DEPGEN): %.d: %.c %.h Makefile
-	$(CC) $(CFLAGS) -MM -MP -MT "$*.d $*.o" -o $*.d $*.c
+@patrule: $(DEP): '%.d': '%.c' Makefile
+@	[$(CC), @$(CFLAGS), "-MM", "-MP", "-MT", @strappend(@strappend(@strappend($*, ".d "), $*), " .o"), "-o", $@, $<]
+@patrule: $(DEP_CPP): '%.d': '%.cc' Makefile
+@	[$(CPP), @$(CPPFLAGS), "-MM", "-MP", "-MT", @strappend(@strappend(@strappend($*, ".d "), $*), " .o"), "-o", $@, $<]
+@patrule: $(DEPGEN): '%.d': '%.c' '%.h' Makefile
+@	[$(CC), @$(CFLAGS), "-MM", "-MP", "-MT", @strappend(@strappend(@strappend($*, ".d "), $*), " .o"), "-o", $@, $<]
 
 stiryy.lex.d: stiryy.tab.h stiryy.lex.h
 stiryy.lex.o: stiryy.tab.h stiryy.lex.h
@@ -224,4 +220,8 @@ incyy.tab.h: incyy.y Makefile
 	rm .tmph.incyy.tab.c
 	mv .tmph.incyy.tab.h incyy.tab.h
 
--include *.d
+@cdepincludescurdir $(DEP)
+@cdepincludescurdir $(DEP_CPP)
+@cdepincludescurdir $(DEPGEN)
+
+#-include *.d

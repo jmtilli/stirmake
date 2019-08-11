@@ -294,7 +294,7 @@ stirrule:
   targetspec COLON depspec NEWLINE shell_commands
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
-| PATRULE COLON targetspec COLON targetspec COLON depspec NEWLINE shell_commands
+| PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands
 ;
 
 shell_commands:
@@ -467,6 +467,22 @@ shell_command:
 }
 ;
 
+pattargetspec:
+  pattargets
+| list
+{
+  printf("targetlist\n");
+}
+;
+
+patdepspec:
+  patdeps
+| list
+{
+  printf("deplist\n");
+}
+;
+
 targetspec:
   targets
 | list
@@ -480,6 +496,56 @@ depspec:
 | list
 {
   printf("deplist\n");
+}
+;
+
+pattargets:
+  FREEFORM_TOKEN
+{
+  if (!stiryy->main->freeform_token_seen)
+  {
+    printf("Recommend using string literals instead of free-form tokens\n");
+    stiryy->main->freeform_token_seen=1;
+  }
+  printf("target1 %s\n", $1);
+  //stiryy_emplace_rule(stiryy);
+  //stiryy_set_tgt(stiryy, $1);
+  free($1);
+}
+| STRING_LITERAL
+{
+  printf("target1 %s\n", $1.str);
+  //stiryy_emplace_rule(stiryy);
+  //stiryy_set_tgt(stiryy, $1.str);
+  free($1.str);
+}
+| VARREF_LITERAL
+{
+  //stiryy_emplace_rule(stiryy);
+  printf("target1ref\n");
+  free($1);
+}
+| pattargets FREEFORM_TOKEN
+{
+  if (!stiryy->main->freeform_token_seen)
+  {
+    printf("Recommend using string literals instead of free-form tokens\n");
+    stiryy->main->freeform_token_seen=1;
+  }
+  printf("target %s\n", $2);
+  //stiryy_set_tgt(stiryy, $2);
+  free($2);
+}
+| pattargets STRING_LITERAL
+{
+  printf("target %s\n", $2.str);
+  //stiryy_set_tgt(stiryy, $2.str);
+  free($2.str);
+}
+| pattargets VARREF_LITERAL
+{
+  printf("targetref\n");
+  free($2);
 }
 ;
   
@@ -541,6 +607,31 @@ maybe_rec:
 | RECDEP
 {
   $$ = 1;
+}
+;
+
+patdeps:
+| patdeps maybe_rec FREEFORM_TOKEN
+{
+  if (!stiryy->main->freeform_token_seen)
+  {
+    printf("Recommend using string literals instead of free-form tokens\n");
+    stiryy->main->freeform_token_seen=1;
+  }
+  printf("dep %s rec? %d\n", $3, (int)$2);
+  //stiryy_set_dep(stiryy, $3, $2);
+  free($3);
+}
+| patdeps maybe_rec STRING_LITERAL
+{
+  printf("dep %s rec? %d\n", $3.str, (int)$2);
+  //stiryy_set_dep(stiryy, $3.str, $2);
+  free($3.str);
+}
+| patdeps maybe_rec VARREF_LITERAL
+{
+  printf("depref\n");
+  free($3);
 }
 ;
 
