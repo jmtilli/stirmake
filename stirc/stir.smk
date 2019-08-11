@@ -22,78 +22,30 @@ $YACC = $(YACC_LIB)
   @return $ret
 @endfunction
 
-@function $LEXGEN_LIB()
-  @return @D$sufsuball(@D$LEX_LIB<>, ".l", ".lex.c")
-@endfunction
-@function $LEXGEN()
-  @return @D$sufsuball(@D$LEX<>, ".l", ".lex.c")
-@endfunction
-
-@function $YACCGEN_LIB()
-  @return @D$sufsuball(@D$YACC_LIB<>, ".y", ".tab.c")
-@endfunction
-@function $YACCGEN()
-  @return @D$sufsuball(@D$YACC<>, ".y", ".tab.c")
-@endfunction
+$LEXGEN_LIB = $sufsuball($LEX_LIB<>, ".l", ".lex.c")
+$LEXGEN = $sufsuball($LEX<>, ".l", ".lex.c")
+$YACCGEN_LIB = $sufsuball($YACC_LIB<>, ".y", ".tab.c")
+$YACCGEN = $sufsuball($YACC<>, ".y", ".tab.c")
 
 $GEN_LIB = [@$LEXGEN_LIB, @$YACCGEN_LIB]
 $GEN = [@$LEXGEN, @$YACCGEN]
 
-@function $OBJ_LIB()
-  @return @D$sufsuball(@D$SRC_LIB<>, ".c", ".o")
-@endfunction
-@function $OBJ()
-  @return @D$sufsuball(@D$SRC<>, ".c", ".o")
-@endfunction
-
-@function $OBJ_CPP_LIB()
-  @return @D$sufsuball(@D$SRC_CPP_LIB<>, ".cc", ".o")
-@endfunction
-@function $OBJ_CPP()
-  @return @D$sufsuball(@D$SRC_CPP<>, ".cc", ".o")
-@endfunction
-
-@function $OBJGEN_LIB()
-  @return @D$sufsuball(@D$GEN_LIB<>, ".c", ".o")
-@endfunction
-@function $OBJGEN()
-  @return @D$sufsuball(@D$GEN<>, ".c", ".o")
-@endfunction
-
-@function $ASM_LIB()
-  @return @D$sufsuball(@D$SRC_LIB<>, ".c", ".s")
-@endfunction
-@function $ASM()
-  @return @D$sufsuball(@D$SRC<>, ".c", ".s")
-@endfunction
-
-@function $ASMGEN_LIB()
-  @return @D$sufsuball(@D$GEN_LIB<>, ".c", ".s")
-@endfunction
-@function $ASMGEN()
-  @return @D$sufsuball(@D$GEN<>, ".c", ".s")
-@endfunction
-
-@function $DEP_LIB()
-  @return @D$sufsuball(@D$SRC_LIB<>, ".c", ".d")
-@endfunction
-@function $DEP()
-  @return @D$sufsuball(@D$SRC<>, ".c", ".d")
-@endfunction
-
-@function $DEP_CPP_LIB()
-  @return @D$sufsuball(@D$SRC_CPP_LIB<>, ".cc", ".d")
-@endfunction
-@function $DEP_CPP()
-  @return @D$sufsuball(@D$SRC_CPP<>, ".cc", ".d")
-@endfunction
-
-@function $DEPGEN_LIB()
-  @return @D$sufsuball(@D$GEN_LIB<>, ".c", ".d")
-@endfunction
-@function $DEPGEN()
-  @return @D$sufsuball(@D$GEN<>, ".c", ".d")
-@endfunction
+$OBJ_LIB = $sufsuball($SRC_LIB<>, ".c", ".o")
+$OBJ = $sufsuball($SRC<>, ".c", ".o")
+$OBJ_CPP_LIB = $sufsuball($SRC_CPP_LIB<>, ".cc", ".o")
+$OBJ_CPP = $sufsuball($SRC_CPP<>, ".cc", ".o")
+$OBJGEN_LIB = $sufsuball($GEN_LIB<>, ".c", ".o")
+$OBJGEN = $sufsuball($GEN<>, ".c", ".o")
+$ASM_LIB = $sufsuball($SRC_LIB<>, ".c", ".s")
+$ASM = $sufsuball($SRC<>, ".c", ".s")
+$ASMGEN_LIB = $sufsuball($GEN_LIB<>, ".c", ".s")
+$ASMGEN = $sufsuball($GEN<>, ".c", ".s")
+$DEP_LIB = $sufsuball($SRC_LIB<>, ".c", ".d")
+$DEP = $sufsuball($SRC<>, ".c", ".d")
+$DEP_CPP_LIB = $sufsuball($SRC_CPP_LIB<>, ".cc", ".d")
+$DEP_CPP = $sufsuball($SRC_CPP<>, ".cc", ".d")
+$DEPGEN_LIB = $sufsuball($GEN_LIB<>, ".c", ".d")
+$DEPGEN = $sufsuball($GEN<>, ".c", ".d")
 
 @function $subbuild($dir)
   @return [@D$(MAKE), "-C", $dir]
