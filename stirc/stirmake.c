@@ -57,6 +57,14 @@ struct stringtabentry {
   size_t idx;
 };
 
+void update_recursive_pid(int parent)
+{
+  pid_t pid = parent ? getppid() : getpid();
+  char buf[64] = {};
+  snprintf(buf, sizeof(buf), "%d", (int)pid);
+  setenv("STIRMAKEPID", buf, 1);
+}
+
 static inline int stringtabentry_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
 {
   struct stringtabentry *e = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
@@ -1116,10 +1124,14 @@ void child_execvp_wait(const char *cmd, char **args)
   else
   {
     int wstatus;
-    int ret;
+    pid_t ret;
     do {
       ret = waitpid(pid, &wstatus, 0);
     } while (ret == -1 && errno == -EINTR);
+    if (ret == -1)
+    {
+      _exit(1);
+    }
     if (!WIFEXITED(wstatus))
     {
       _exit(1);
@@ -1177,16 +1189,18 @@ pid_t fork_child(int ruleid)
     struct sigaction sa;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    sa.sa_handler = SIG_IGN;
+    sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
     sigaction(SIGCHLD, &sa, NULL);
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
+    update_recursive_pid(0);
     while (argcnt > 1)
     {
       child_execvp_wait((*argiter)[0], &(*argiter)[0]);
       argiter++;
       argcnt--;
     }
+    update_recursive_pid(1);
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
@@ -1771,6 +1785,21 @@ void do_narration(void)
   free(oumlaut);
 }
 
+void recursion_misuse_prevention(void)
+{
+  char *pidstr = getenv("STIRMAKEPID");
+  if (pidstr != NULL)
+  {
+    pid_t pid = (int)atoi(pidstr);
+    if (getppid() == pid)
+    {
+      fprintf(stderr, "Recursion misuse detected. Stirmake is designed to be used non-recursively.\n");
+      exit(1);
+    }
+  }
+  update_recursive_pid(0);
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -1804,6 +1833,8 @@ int main(int argc, char **argv)
       usage(argv[0]);
     }
   }
+
+  recursion_misuse_prevention();
 
   abce_init(&abce);
   stiryy_init(&stiryy, &main, ".", abce.dynscope);
