@@ -55,7 +55,7 @@ enum {
 };
 
 
-int debug = 1;
+int debug = 0;
 
 int self_pipe_fd[2];
 
@@ -1761,13 +1761,13 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-v] [-f Stirfile]\n", argv0);
+    fprintf(stderr, "%s [-v] [-d] [-f Stirfile]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
   }
   else
   {
-    fprintf(stderr, "%s [-v] [-f Stirfile] -t | -p | -a\n", argv0);
+    fprintf(stderr, "%s [-v] [-d] [-f Stirfile] -t | -p | -a\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
   }
@@ -1866,12 +1866,16 @@ int main(int argc, char **argv)
     set_mode(MODE_PROJECT, 1, argv[0]);
   }
 
-  while ((opt = getopt(argc, argv, "vf:Htpa")) != -1)
+  debug = 0;
+  while ((opt = getopt(argc, argv, "vdf:Htpa")) != -1)
   {
     switch (opt)
     {
     case 'v':
       version(argv[0]);
+    case 'd':
+      debug = 1;
+      break;
     case 'H':
       narration = 1;
       setlocale(LC_CTYPE, "");
