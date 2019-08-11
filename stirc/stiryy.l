@@ -86,7 +86,7 @@ struct CSnippet luaSnippet = {
 @continue return CONTINUE;
 @return  return RETURN;
 @append   return APPEND;
-@appendList   return APPEND_LIST;
+@appendlist   return APPEND_LIST;
 
 @[?] return ATQM;
 @scope return SCOPE;

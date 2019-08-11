@@ -20,8 +20,8 @@ firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
   @append($list, "rs")
   #@append($list, @dyno["@"]<>)
   @append($list, @dyn["@"]<>)
-  #@appendList($list, (@suffilter(@dyno["^"], ".o"))<>)
-  #@appendList($list, (@suffilter(@dyn["^"], ".o"))<>)
+  #@appendlist($list, (@suffilter(@dyno["^"], ".o"))<>)
+  #@appendlist($list, (@suffilter(@dyn["^"], ".o"))<>)
   @append($lists, $list<>)
   @return $lists
 @endfunction
