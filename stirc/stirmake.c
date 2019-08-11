@@ -325,7 +325,7 @@ static inline int dep_remain_cmp_sym(struct abce_rb_tree_node *n1, struct abce_r
   return 0;
 }
 
-struct tgt {
+struct stirtgt {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
   size_t tgtidx;
@@ -361,8 +361,8 @@ struct rule {
 
 static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
-  struct tgt *e1 = ABCE_CONTAINER_OF(n1, struct tgt, node);
-  struct tgt *e2 = ABCE_CONTAINER_OF(n2, struct tgt, node);
+  struct stirtgt *e1 = ABCE_CONTAINER_OF(n1, struct stirtgt, node);
+  struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
   int ret;
   ret = sizecmp(e1->tgtidx, e2->tgtidx);
   if (ret != 0)
@@ -391,7 +391,7 @@ size_t tgt_cnt;
 void ins_tgt(struct rule *rule, size_t tgtidx)
 {
   uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
-  struct tgt *e;
+  struct stirtgt *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
   tgt_cnt++;
@@ -972,7 +972,7 @@ void process_additional_deps(void)
   }
 }
 
-void add_rule(char **tgts, size_t tgtsz,
+void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
               char ***cmdargs, size_t cmdargsz, int phony)
 {
@@ -1008,7 +1008,7 @@ void add_rule(char **tgts, size_t tgtsz,
 
   for (i = 0; i < tgtsz; i++)
   {
-    size_t tgtidx = stringtab_add(tgts[i]);
+    size_t tgtidx = stringtab_add(tgts[i].name);
     ins_tgt(rule, tgtidx);
     ins_ruleid_by_tgt(tgtidx, rule->ruleid);
   }
@@ -1404,7 +1404,7 @@ void do_exec(int ruleid)
       }
       LINKED_LIST_FOR_EACH(node, &r->tgtlist)
       {
-        struct tgt *e = ABCE_CONTAINER_OF(node, struct tgt, llnode);
+        struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
         struct stat statbuf;
         if (stat(sttable[e->tgtidx], &statbuf) != 0)
         {
@@ -1590,7 +1590,7 @@ void mark_executed(int ruleid)
   }
   LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
-    struct tgt *e = ABCE_CONTAINER_OF(node, struct tgt, llnode);
+    struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
     struct ruleid_by_dep_entry *e2 = find_ruleids_by_dep(e->tgtidx);
     LINKED_LIST_FOR_EACH(node2, &e2->one_ruleid_by_deplist)
     {

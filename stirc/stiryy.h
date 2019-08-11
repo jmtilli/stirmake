@@ -60,14 +60,19 @@ static inline void csaddstr(struct CSnippet *cs, char *str)
 
 struct dep {
   char *name;
+  char *namenodir;
   int rec;
+};
+struct tgt {
+  char *name;
+  char *namenodir;
 };
 
 struct stiryyrule {
   struct dep *deps;
   size_t depsz;
   size_t depcapacity;
-  char **targets;
+  struct tgt *targets;
   size_t targetsz;
   size_t targetcapacity;
   char ***shells;
@@ -75,6 +80,7 @@ struct stiryyrule {
   size_t shellcapacity;
   size_t lastshellsz;
   size_t lastshellcapacity;
+  char *prefix;
 };
 
 struct stiryy_main {
@@ -178,13 +184,22 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   size_t newcapacity;
   size_t sz = strlen(stiryy->curprefix) + strlen(dep) + 2;
   char *can, *tmp = malloc(sz);
-  if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, dep) >= sz)
+  if (dep[0] == '/')
   {
-    abort();
+    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    {
+      abort();
+    }
+  }
+  else
+  {
+    if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, dep) >= sz)
+    {
+      abort();
+    }
   }
   can = canon(tmp);
   free(tmp);
-  // FIXME normalize dep so that in dir "a" the rule "../b/c.txt" is "b/c.txt"
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
@@ -192,6 +207,7 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
     rule->depcapacity = newcapacity;
   }
   rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
+  rule->deps[rule->depsz].namenodir = strdup(dep);
   rule->deps[rule->depsz].rec = rec;
   rule->depsz++;
   free(can);
@@ -203,19 +219,31 @@ static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
   size_t newcapacity;
   size_t sz = strlen(stiryy->curprefix) + strlen(tgt) + 2;
   char *can, *tmp = malloc(sz);
-  if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, tgt) >= sz)
+  if (tgt[0] == '/')
   {
-    abort();
+    if (snprintf(tmp, sz, "%s", tgt) >= sz)
+    {
+      abort();
+    }
+  }
+  else
+  {
+    if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, tgt) >= sz)
+    {
+      abort();
+    }
   }
   can = canon(tmp);
   free(tmp);
   if (rule->targetsz >= rule->targetcapacity)
   {
     newcapacity = 2*rule->targetcapacity + 1;
-    rule->targets = (char**)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
+    rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
     rule->targetcapacity = newcapacity;
   }
-  rule->targets[rule->targetsz++] = strdup(can);
+  rule->targets[rule->targetsz].name = strdup(can);
+  rule->targets[rule->targetsz].namenodir = strdup(tgt);
+  rule->targetsz++;
   free(can);
 }
 
@@ -266,6 +294,7 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
   stiryy->main->rules[stiryy->main->rulesz].shellsz = 0;
   stiryy->main->rules[stiryy->main->rulesz].shellcapacity = 0;
   stiryy->main->rules[stiryy->main->rulesz].shells = NULL;
+  stiryy->main->rules[stiryy->main->rulesz].prefix = strdup(stiryy->curprefix);
   stiryy->main->rulesz++;
 }
 
@@ -278,10 +307,12 @@ static inline void stiryy_main_free(struct stiryy_main *main)
     for (j = 0; j < main->rules[i].depsz; j++)
     {
       free(main->rules[i].deps[j].name);
+      free(main->rules[i].deps[j].namenodir);
     }
     for (j = 0; j < main->rules[i].targetsz; j++)
     {
-      free(main->rules[i].targets[j]);
+      free(main->rules[i].targets[j].name);
+      free(main->rules[i].targets[j].namenodir);
     }
     free(main->rules[i].deps);
     free(main->rules[i].targets);

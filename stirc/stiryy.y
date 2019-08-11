@@ -339,7 +339,7 @@ shell_command:
           fprintf(stderr, "$< on rule with no dependencies\n");
           abort();
         }
-        dep = rule->deps[0].name;
+        dep = rule->deps[0].namenodir;
         deplen = strlen(dep);
         if (outsz + deplen > outcap)
         {
@@ -361,7 +361,7 @@ shell_command:
           fprintf(stderr, "$@ on rule with no targets\n");
           abort();
         }
-        tgt = rule->targets[0];
+        tgt = rule->targets[0].namenodir;
         tgtlen = strlen(tgt);
         if (outsz + tgtlen > outcap)
         {
