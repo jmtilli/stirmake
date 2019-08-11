@@ -373,6 +373,54 @@ shell_command:
         i++;
         continue;
       }
+      if (i+1 < len && $1[i+1] == '^')
+      {
+        char *tgt;
+        size_t tgtlen;
+        size_t tgtidx;
+        struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+        for (tgtidx = 0; tgtidx < rule->targetsz; tgtidx++)
+        {
+          if (tgtidx > 0 || outsz > 0)
+          {
+            // Emit new command
+            if (outsz >= outcap)
+            {
+              outcap = 2*outcap + 16;
+              outbuf = realloc(outbuf, outcap);
+            }
+            outbuf[outsz++] = '\0';
+            stiryy_add_shell(stiryy, outbuf);
+            outsz = 0;
+          }
+
+          tgt = rule->targets[tgtidx].namenodir;
+          tgtlen = strlen(tgt);
+          if (outsz + tgtlen > outcap)
+          {
+            outcap = 2*outcap + tgtlen;
+            outbuf = realloc(outbuf, outcap);
+          }
+          memcpy(&outbuf[outsz], tgt, tgtlen);
+          outsz += tgtlen;
+        }
+
+        if (tgtidx > 0 || outsz > 0)
+        {
+          // Emit new command
+          if (outsz >= outcap)
+          {
+            outcap = 2*outcap + 16;
+            outbuf = realloc(outbuf, outcap);
+          }
+          outbuf[outsz++] = '\0';
+          stiryy_add_shell(stiryy, outbuf);
+          outsz = 0;
+        }
+
+        i++;
+        continue;
+      }
       abort();
     }
     else if ($1[i] == ' ')
