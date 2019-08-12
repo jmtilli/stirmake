@@ -67,6 +67,21 @@ struct stringtabentry {
   size_t idx;
 };
 
+void errxit(const char *fmt, ...)
+{
+  va_list args;
+  const char *prefix = "stirmake: *** ";
+  const char *suffix = ". Exiting.\n";
+  size_t sz = strlen(prefix) + strlen(fmt) + strlen(suffix) + 1;
+  char *fmtdup = malloc(sz);
+  snprintf(fmtdup, sz, "%s%s%s", prefix, fmt, suffix);
+  va_start(args, fmt);
+  vfprintf(stderr, fmtdup, args);
+  va_end(args);
+  free(fmtdup);
+  exit(1);
+}
+
 void update_recursive_pid(int parent)
 {
   pid_t pid = parent ? getppid() : getpid();
@@ -1509,6 +1524,12 @@ void consider(int ruleid)
       if (debug)
       {
         printf("ruleid by target %s not found\n", sttable[e->nameidx]);
+      }
+      if (access(sttable[e->nameidx], F_OK) == -1)
+      {
+        errxit("File %s nonexistent and rule to make it not found",
+               sttable[e->nameidx]);
+        exit(1);
       }
     }
   }
