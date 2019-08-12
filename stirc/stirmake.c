@@ -52,6 +52,7 @@ enum {
   ADD_DEPS_SIZE = 8192,
   RULEID_BY_PID_SIZE = 64,
   STRINGTAB_SIZE = 8192,
+  MAX_JOBCNT = 1000,
 };
 
 
@@ -517,7 +518,7 @@ void calc_deps_remain(struct rule *rule)
 }
 
 int children = 0;
-const int limit = 2;
+//const int limit = 2;
 
 struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
 size_t rules_capacity;
@@ -1870,6 +1871,7 @@ int main(int argc, char **argv)
   const char *filename = "Stirfile";
   uint32_t forkedchildcnt = 0;
   int narration = 0;
+  int jobcnt = 1;
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -1888,7 +1890,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpa")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:")) != -1)
   {
     switch (opt)
     {
@@ -1903,6 +1905,17 @@ int main(int argc, char **argv)
       break;
     case 'f':
       filename = optarg;
+      break;
+    case 'j':
+      jobcnt = atoi(optarg);
+      if (jobcnt < 1)
+      {
+        usage(argv[0]);
+      }
+      if (jobcnt > MAX_JOBCNT)
+      {
+        usage(argv[0]);
+      }
       break;
     case 't':
       set_mode(MODE_THIS, 0, argv[0]);
@@ -2070,7 +2083,7 @@ int main(int argc, char **argv)
   set_nonblock(jobserver_fd[0]);
   set_nonblock(jobserver_fd[1]);
 
-  for (int i = 0; i < limit - 1; i++)
+  for (int i = 0; i < jobcnt - 1; i++)
   {
     write(jobserver_fd[1], ".", 1);
   }
