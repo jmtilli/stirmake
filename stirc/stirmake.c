@@ -1963,7 +1963,7 @@ int main(int argc, char **argv)
       }
       add_rule(main.rules[i].targets, main.rules[i].targetsz,
                main.rules[i].deps, main.rules[i].depsz,
-               main.rules[i].shells, main.rules[i].shellsz, 0);
+               main.rules[i].shells, main.rules[i].shellsz, main.rules[i].phony);
     }
   }
 

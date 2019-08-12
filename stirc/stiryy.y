@@ -330,6 +330,9 @@ expr NEWLINE
 stirrule:
   targetspec COLON depspec NEWLINE shell_commands
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
+{
+  stiryy_mark_phony(stiryy);
+}
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 | PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands
 ;
