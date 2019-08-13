@@ -9,6 +9,16 @@ char *canon(const char *old)
   size_t idx = 0;
   const char *old2;
   int is_abspath = 0;
+  if (old[0] == '\0')
+  {
+    abort(); // Must give some path
+  }
+  if (old[0] == '.' && old[1] == '\0')
+  {
+    neu[0] = '.';
+    neu[1] = '\0';
+    return neu;
+  }
   neu[0] = '\0';
   if (*old == '/')
   {
@@ -97,4 +107,70 @@ char *canon(const char *old)
     return neu - 1;
   }
   return neu;
+}
+
+static size_t strcnt(const char *haystack, char needle)
+{
+  size_t ret = 0;
+  while (*haystack)
+  {
+    ret += ((*haystack) == needle);
+    haystack++;
+  }
+  return ret;
+}
+
+/*
+ * Given a relative path of form a/b/c, constructs the path ../../.. where
+ * the count of .. elements is the same as the count of path elements. ".."
+ * elements in input are handled correctly, except the path may not start
+ * with .. after canonicalization. "." elements in niput are handled correctly,
+ * too.
+ */
+char *construct_backpath(const char *frontpath)
+{
+  char *can;
+  size_t cnt;
+  size_t sz;
+  char *ret, *ptr;
+  can = canon(frontpath);
+  if (can == NULL)
+  {
+    return NULL;
+  }
+  if (can[0] == '.' && can[1] == '\0')
+  {
+    return can;
+  }
+  if (can[0] == '/')
+  {
+    abort(); // we don't support this use case
+  }
+  if (can[0] == '.' && can[1] == '.' && (can[2] == '\0' || can[2] == '/'))
+  {
+    abort(); // we don't support this use case
+  }
+  cnt = strcnt(can, '/') + 1;
+  free(can);
+  sz = 3*cnt + 1;
+  ret = malloc(sz);
+  if (ret == NULL)
+  {
+    return NULL;
+  }
+  ptr = ret;
+  while (cnt > 1)
+  {
+    *ptr++ = '.';
+    *ptr++ = '.';
+    *ptr++ = '/';
+    cnt--;
+  }
+  if (cnt == 1)
+  {
+    *ptr++ = '.';
+    *ptr++ = '.';
+  }
+  *ptr++ = '\0';
+  return ret;
 }
