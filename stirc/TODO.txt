@@ -9,3 +9,5 @@
 - Order only prerequisites
 - Two memory areas for engine: temp microcode and global microcode
   - Use signed number to distinguish between two
+
+- when assigning to dynscope, refdn the old dynscope? it's in cache anyway...
