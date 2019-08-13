@@ -733,7 +733,7 @@ stirrules:
   }
   prefix2 = canon(prefix);
   oldscope = get_abce(stiryy)->dynscope;
-  get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 1);
+  get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
   if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
   {
     abort();
