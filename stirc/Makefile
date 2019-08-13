@@ -1,6 +1,6 @@
 .SUFFIXES:
 
-SRC_LIB := yyutils.c incyyutils.c canon.c
+SRC_LIB := yyutils.c incyyutils.c canon.c stirtrap.c
 SRC := $(SRC_LIB) stir.c inc.c stirmake.c
 
 SRC_CPP_LIB := stirbce.cc

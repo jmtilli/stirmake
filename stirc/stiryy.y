@@ -743,6 +743,7 @@ stirrules:
   prefix2 = canon(prefix);
   oldscope = get_abce(stiryy)->dynscope;
   get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
+  abce_scope_set_userdata(&get_abce(stiryy)->dynscope, prefix2);
   if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
   {
     abort();
@@ -761,7 +762,7 @@ stirrules:
   stiryy_free(&stiryy2);
   abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);
   get_abce(stiryy)->dynscope = oldscope;
-  free(prefix2);
+  // free(prefix2); // let it leak, FIXME free it someday
   free(prefix);
   free(filename);
   free($3.str);

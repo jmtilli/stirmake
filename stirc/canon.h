@@ -3,4 +3,6 @@
 
 char *canon(const char *old);
 
+char *construct_backpath(const char *frontpath);
+
 #endif
