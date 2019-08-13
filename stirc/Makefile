@@ -47,7 +47,7 @@ DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
 .PHONY: all wc
 
-all: stir inc arraytest luatest cctest streamtest globtest bttest jsontest abce stirmake
+all: stir inc arraytest luatest cctest streamtest globtest bttest jsontest abce stirmake smka smkt smkp
 
 .PHONY: abce
 
@@ -71,6 +71,13 @@ CC=clang
 CPP=clang++
 CFLAGS=-O3 -Wall -g -I$(LUAINC)
 CPPFLAGS=-O3 -Wall -g -I$(LUAINC)
+
+smka:
+	ln -s stirmake smka
+smkt:
+	ln -s stirmake smkt
+smkp:
+	ln -s stirmake smkp
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
