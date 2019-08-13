@@ -1880,6 +1880,9 @@ int main(int argc, char **argv)
   uint32_t forkedchildcnt = 0;
   int narration = 0;
   int jobcnt = 1;
+  char cwd[PATH_MAX];
+  char storcwd[PATH_MAX];
+  char curcwd[PATH_MAX];
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -1947,7 +1950,67 @@ int main(int argc, char **argv)
 
   recursion_misuse_prevention();
 
+  if (strcmp(filename, "Stirfile") == 0)
+  {
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+      abort();
+    }
+    if (getcwd(storcwd, sizeof(storcwd)) == NULL)
+    {
+      abort();
+    }
+    if (getcwd(curcwd, sizeof(curcwd)) == NULL)
+    {
+      abort();
+    }
+    for (;;)
+    {
+      if (strcmp(curcwd, "/") == 0)
+      {
+        break;
+      }
+      if (chdir("..") != 0)
+      {
+        abort();
+      }
+      if (getcwd(curcwd, sizeof(curcwd)) == NULL)
+      {
+        printf("can't getcwd\n");
+        abort();
+      }
+      abce_init(&abce);
+      init_main_for_realpath(&main, storcwd); // FIXME leaks
+      main.abce = &abce;
+      main.freeform_token_seen = 1;
+      stiryy_init(&stiryy, &main, ".", abce.dynscope);
+      f = fopen("Stirfile", "r");
+      if (f)
+      {
+        stiryydoparse(f, &stiryy);
+        fclose(f);
+        if (main.subdirseen)
+        {
+          if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= sizeof(cwd))
+          {
+            printf("can't snprintf\n");
+            abort();
+          }
+        }
+      }
+      stiryy_free(&stiryy);
+      abce_free(&abce);
+    }
+    printf("Using directory %s\n", cwd);
+    if (chdir(cwd) != 0)
+    {
+      abort();
+    }
+  }
+
   abce_init(&abce);
+  main.abce = &abce;
+  main.freeform_token_seen = 0;
   stiryy_init(&stiryy, &main, ".", abce.dynscope);
 
   f = fopen(filename, "r");

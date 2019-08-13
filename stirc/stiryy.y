@@ -720,6 +720,7 @@ stirrules:
   size_t psz = strlen(stiryy->curprefix) + strlen($3.str) + 2;
   char *prefix = malloc(psz);
   char *filename = malloc(fsz);
+  char realpathname[PATH_MAX];
   char *prefix2;
   FILE *f;
   struct abce_mb oldscope;
@@ -730,6 +731,14 @@ stirrules:
   if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, $3.str, "Stirfile") >= fsz)
   {
     abort();
+  }
+  if (realpath(filename, realpathname) == NULL)
+  {
+    abort();
+  }
+  if (strcmp(realpathname, stiryy->main->realpathname) == 0)
+  {
+    stiryy->main->subdirseen = 1;
   }
   prefix2 = canon(prefix);
   oldscope = get_abce(stiryy)->dynscope;
@@ -750,6 +759,7 @@ stirrules:
   fclose(f);
 
   stiryy_free(&stiryy2);
+  abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);
   get_abce(stiryy)->dynscope = oldscope;
   free(prefix2);
   free(prefix);

@@ -2,6 +2,7 @@
 #define _STIRYY_H_
 
 #include <stddef.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -89,6 +90,8 @@ struct stiryy_main {
   size_t rulesz;
   size_t rulecapacity;
   struct abce *abce;
+  char *realpathname;
+  int subdirseen;
   int freeform_token_seen;
 };
 
@@ -109,6 +112,23 @@ struct stiryy {
   size_t curscopeidx;
   struct abce_mb curscope;
 };
+
+static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
+{
+  char buf2[PATH_MAX+16];
+  char buf3[PATH_MAX+16];
+  memset(main, 0, sizeof(*main));
+  if (realpath(cwd, buf2) == NULL)
+  {
+    abort();
+  }
+  if (snprintf(buf3, sizeof(buf3), "%s/Stirfile", buf2) >= sizeof(buf3))
+  {
+    abort();
+  }
+  main->realpathname = canon(buf3);
+  main->subdirseen = 0;
+}
 
 static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
                                char *prefix, struct abce_mb curscope)
