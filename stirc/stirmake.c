@@ -364,6 +364,7 @@ struct rule {
   unsigned is_executed:1;
   unsigned is_executing:1;
   unsigned is_queued:1;
+  size_t diridx;
   struct cmd cmd;
   int ruleid;
   struct abce_rb_tree_nocmp tgts[TGTS_SIZE];
@@ -990,7 +991,7 @@ void process_additional_deps(void)
 
 void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
-              char ***cmdargs, size_t cmdargsz, int phony)
+              char ***cmdargs, size_t cmdargsz, int phony, char *prefix)
 {
   struct rule *rule;
   struct cmd cmd;
@@ -1034,6 +1035,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
     ins_dep(rule, nameidx, !!deps[i].rec);
     ins_ruleid_by_dep(nameidx, rule->ruleid);
   }
+  rule->diridx = stringtab_add(prefix);
 }
 
 int *ruleids_to_run;
@@ -1175,6 +1177,7 @@ pid_t fork_child(int ruleid)
   char ***args;
   pid_t pid;
   struct cmd cmd = rules[ruleid]->cmd;
+  const char *dir = sttable[rules[ruleid]->diridx];
   char ***argiter;
   char **oneargiter;
   size_t argcnt = 0;
@@ -1217,6 +1220,11 @@ pid_t fork_child(int ruleid)
     sa.sa_flags = 0;
     sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
     sigaction(SIGCHLD, &sa, NULL);
+    if (chdir(dir) != 0)
+    {
+      write(1, "CHDIRERR\n", 9);
+      _exit(1);
+    }
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
     update_recursive_pid(0);
@@ -1963,7 +1971,8 @@ int main(int argc, char **argv)
       }
       add_rule(main.rules[i].targets, main.rules[i].targetsz,
                main.rules[i].deps, main.rules[i].depsz,
-               main.rules[i].shells, main.rules[i].shellsz, main.rules[i].phony);
+               main.rules[i].shells, main.rules[i].shellsz, main.rules[i].phony,
+               main.rules[i].prefix);
     }
   }
 

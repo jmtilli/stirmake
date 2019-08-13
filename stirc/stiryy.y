@@ -715,6 +715,45 @@ stirrules:
 | stirrules FILEINCLUDE VARREF_LITERAL NEWLINE
 | stirrules DIRINCLUDE STRING_LITERAL NEWLINE
 {
+  struct stiryy stiryy2 = {};
+  size_t fsz = strlen(stiryy->curprefix) + strlen($3.str) + 8 + 3;
+  size_t psz = strlen(stiryy->curprefix) + strlen($3.str) + 2;
+  char *prefix = malloc(psz);
+  char *filename = malloc(fsz);
+  char *prefix2;
+  FILE *f;
+  struct abce_mb oldscope;
+  if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $3.str) >= psz)
+  {
+    abort();
+  }
+  if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, $3.str, "Stirfile") >= fsz)
+  {
+    abort();
+  }
+  prefix2 = canon(prefix);
+  oldscope = get_abce(stiryy)->dynscope;
+  get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 1);
+  if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
+  {
+    abort();
+  }
+  stiryy_init(&stiryy2, stiryy->main, prefix2, get_abce(stiryy)->dynscope);
+
+  f = fopen(filename, "r");
+  if (!f)
+  {
+    printf("can't open substirfile %s\n", filename);
+    abort();
+  }
+  stiryydoparse(f, &stiryy2);
+  fclose(f);
+
+  stiryy_free(&stiryy2);
+  get_abce(stiryy)->dynscope = oldscope;
+  free(prefix2);
+  free(prefix);
+  free(filename);
   free($3.str);
 }
 | stirrules DIRINCLUDE VARREF_LITERAL NEWLINE
