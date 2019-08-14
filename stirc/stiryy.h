@@ -291,7 +291,7 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
     rule->shells = (char***)realloc(rule->shells, sizeof(*rule->shells)*newcapacity);
     rule->shellcapacity = newcapacity;
   }
-  printf("section\n");
+  //printf("section\n");
   rule->shells[rule->shellsz++] = NULL;
   rule->lastshellsz = 0;
   rule->lastshellcapacity = 0;

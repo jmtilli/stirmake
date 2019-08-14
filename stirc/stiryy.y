@@ -493,7 +493,7 @@ shell_command:
     outbuf = realloc(outbuf, outcap);
   }
   outbuf[outsz++] = '\0';
-  printf("\tshell\n");
+  //printf("\tshell\n");
   stiryy_add_shell(stiryy, outbuf);
   free($1);
   free(outbuf);
@@ -598,14 +598,14 @@ targets:
     printf("Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
-  printf("target1 %s\n", $1);
+  //printf("target1 %s\n", $1);
   stiryy_emplace_rule(stiryy);
   stiryy_set_tgt(stiryy, $1);
   free($1);
 }
 | STRING_LITERAL
 {
-  printf("target1 %s\n", $1.str);
+  //printf("target1 %s\n", $1.str);
   stiryy_emplace_rule(stiryy);
   stiryy_set_tgt(stiryy, $1.str);
   free($1.str);
@@ -623,13 +623,13 @@ targets:
     printf("Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
-  printf("target %s\n", $2);
+  //printf("target %s\n", $2);
   stiryy_set_tgt(stiryy, $2);
   free($2);
 }
 | targets STRING_LITERAL
 {
-  printf("target %s\n", $2.str);
+  //printf("target %s\n", $2.str);
   stiryy_set_tgt(stiryy, $2.str);
   free($2.str);
 }
