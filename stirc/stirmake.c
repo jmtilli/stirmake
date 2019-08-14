@@ -118,14 +118,15 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
   return 0;
 }
 
-char my_arena[1536*1024*1024];
-char *my_arena_ptr = my_arena;
+char *my_arena;
+char *my_arena_ptr;
+size_t sizeof_my_arena;
 
 void *my_malloc(size_t sz)
 {
   void *result = my_arena_ptr;
   my_arena_ptr += (sz+7)/8*8;
-  if (my_arena_ptr >= my_arena + sizeof(my_arena))
+  if (my_arena_ptr >= my_arena + sizeof_my_arena)
   {
     printf("OOM\n");
     abort();
@@ -1957,6 +1958,16 @@ int main(int argc, char **argv)
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
+
+  sizeof_my_arena = 1536*1024*1024;
+  my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  if (my_arena == NULL || my_arena == MAP_FAILED)
+  {
+    printf("Can't mmap arena\n");
+    perror("reason was");
+    exit(1);
+  }
+  my_arena_ptr = my_arena;
 
   if (strcmp(basenm, "smka") == 0)
   {
