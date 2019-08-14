@@ -724,6 +724,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
         fprintf(stderr, " rule in cycle: %d\n", rules[i]->ruleid);
       }
     }
+    errxit("cycle found, cannot proceed further");
     exit(1);
   }
   parents[cur] = 1;
@@ -1309,13 +1310,13 @@ struct timespec rec_mtim(const char *name)
   //printf("Statting %s\n", name);
   if (stat(name, &statbuf) != 0)
   {
-    printf("Can't open file %s\n", name);
+    errxit("can't open file %s", name);
     exit(1);
   }
   max = statbuf.st_mtim;
   if (lstat(name, &statbuf) != 0)
   {
-    printf("Can't open file %s\n", name);
+    errxit("can't open file %s", name);
     exit(1);
   }
   if (ts_cmp(statbuf.st_mtim, max) > 0)
@@ -1324,7 +1325,7 @@ struct timespec rec_mtim(const char *name)
   }
   if (dir == NULL)
   {
-    printf("Can't open dir %s\n", name);
+    errxit("can't open dir %s", name);
     exit(1);
   }
   for (;;)
@@ -1362,13 +1363,13 @@ struct timespec rec_mtim(const char *name)
     {
       if (stat(nam2, &statbuf) != 0)
       {
-        printf("Can't open file %s\n", nam2);
+        errxit("can't open file %s", nam2);
         exit(1);
       }
       cur = statbuf.st_mtim;
       if (lstat(nam2, &statbuf) != 0)
       {
-        printf("Can't open file %s\n", nam2);
+        errxit("can't open file %s", nam2);
         exit(1);
       }
       if (ts_cmp(statbuf.st_mtim, cur) > 0)
@@ -1916,7 +1917,7 @@ void recursion_misuse_prevention(void)
     pid_t pid = (int)atoi(pidstr);
     if (getppid() == pid)
     {
-      fprintf(stderr, "Recursion misuse detected. Stirmake is designed to be used non-recursively.\n");
+      errxit("Recursion misuse detected. Stirmake is designed to be used non-recursively");
       exit(1);
     }
   }
@@ -1963,8 +1964,7 @@ int main(int argc, char **argv)
   my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   if (my_arena == NULL || my_arena == MAP_FAILED)
   {
-    printf("Can't mmap arena\n");
-    perror("reason was");
+    errxit("Can't mmap arena");
     exit(1);
   }
   my_arena_ptr = my_arena;
