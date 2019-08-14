@@ -715,13 +715,18 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
   }
   if (parents[cur])
   {
-    fprintf(stderr, "cycle found\n");
+    fprintf(stderr, "stirmake: cycle found\n");
     for (size_t i = 0; i < rules_size; i++)
     {
       if (parents[i])
       {
-        // FIXME print full rule info
-        fprintf(stderr, " rule in cycle: %d\n", rules[i]->ruleid);
+        fprintf(stderr, " rule in cycle: (");
+        LINKED_LIST_FOR_EACH(node, &rules[i]->tgtlist)
+        {
+          struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+          fprintf(stderr, " %s", sttable[e->tgtidx]);
+        }
+        fprintf(stderr, " )\n");
       }
     }
     errxit("cycle found, cannot proceed further");
@@ -1399,10 +1404,12 @@ struct timespec rec_mtim(const char *name)
 int do_exec(int ruleid)
 {
   struct rule *r = rules[ruleid];
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
   //Rule &r = rules.at(ruleid);
   if (debug)
   {
-    printf("do_exec %d\n", ruleid);
+    printf("do_exec %s\n", sttable[first_tgt->tgtidx]);
   }
   if (!r->is_queued)
   {
@@ -1422,8 +1429,23 @@ int do_exec(int ruleid)
         {
           if (rules[depid]->is_phony)
           {
+            if (debug)
+            {
+              printf("rule %d/%s is phony\n", depid, sttable[e->nameidx]);
+            }
             has_to_exec = 1;
             continue;
+          }
+          if (debug)
+          {
+            printf("ruleid %d/%s not phony\n", depid, sttable[e->nameidx]);
+          }
+        }
+        else
+        {
+          if (debug)
+          {
+            printf("ruleid for tgt %s not found\n", sttable[e->nameidx]);
           }
         }
         if (e->is_recursive)
@@ -1532,7 +1554,8 @@ int do_exec(int ruleid)
     {
       if (debug)
       {
-        printf("do_exec: mark_executed %d\n", ruleid);
+        printf("do_exec: mark_executed %s has_to_exec %d\n",
+               sttable[first_tgt->tgtidx], has_to_exec);
       }
       r->is_queued = 1;
       mark_executed(ruleid);
@@ -1552,18 +1575,20 @@ int do_exec(int ruleid)
 int consider(int ruleid)
 {
   struct rule *r = rules[ruleid];
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
   struct linked_list_node *node;
   int toexecute = 0;
   int execed_some = 0;
   if (debug)
   {
-    printf("considering %d\n", r->ruleid); // FIXME better output
+    printf("considering %s\n", sttable[first_tgt->tgtidx]);
   }
   if (r->is_executed)
   {
     if (debug)
     {
-      printf("already execed %d\n", r->ruleid); // FIXME better output
+      printf("already execed %s\n", sttable[first_tgt->tgtidx]);
     }
     return 0;
   }
@@ -1571,7 +1596,7 @@ int consider(int ruleid)
   {
     if (debug)
     {
-      printf("already execing %d\n", r->ruleid); // FIXME better output
+      printf("already execing %s\n", sttable[first_tgt->tgtidx]);
     }
     return 0;
   }
@@ -1629,16 +1654,18 @@ int consider(int ruleid)
 void reconsider(int ruleid, int ruleid_executed)
 {
   struct rule *r = rules[ruleid];
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
   int toexecute = 0;
   if (debug)
   {
-    printf("reconsidering %d\n", r->ruleid); // FIXME better output
+    printf("reconsidering %s\n", sttable[first_tgt->tgtidx]);
   }
   if (r->is_executed)
   {
     if (debug)
     {
-      printf("already execed %d\n", r->ruleid); // FIXME better output
+      printf("already execed %s\n", sttable[first_tgt->tgtidx]);
     }
     return;
   }
@@ -1646,7 +1673,7 @@ void reconsider(int ruleid, int ruleid_executed)
   {
     if (debug)
     {
-      printf("rule not executing %d\n", r->ruleid); // FIXME better output
+      printf("rule not executing %s\n", sttable[first_tgt->tgtidx]);
     }
     return;
   }
@@ -2115,7 +2142,7 @@ int main(int argc, char **argv)
       stiryy_free(&stiryy);
       abce_free(&abce);
     }
-    printf("Using directory %s\n", cwd);
+    printf("stirmake: Using directory %s\n", cwd);
     if (chdir(cwd) != 0)
     {
       abort();

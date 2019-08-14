@@ -544,7 +544,7 @@ pattargets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("Recommend using string literals instead of free-form tokens\n");
+    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
   printf("target1 %s\n", $1);
@@ -569,7 +569,7 @@ pattargets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("Recommend using string literals instead of free-form tokens\n");
+    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
   printf("target %s\n", $2);
@@ -595,7 +595,7 @@ targets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("Recommend using string literals instead of free-form tokens\n");
+    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
   //printf("target1 %s\n", $1);
@@ -620,7 +620,7 @@ targets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("Recommend using string literals instead of free-form tokens\n");
+    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
   //printf("target %s\n", $2);
@@ -655,7 +655,7 @@ patdeps:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("Recommend using string literals instead of free-form tokens\n");
+    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
   printf("dep %s rec? %d\n", $3, (int)$2);
@@ -680,16 +680,16 @@ deps:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("Recommend using string literals instead of free-form tokens\n");
+    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
     stiryy->main->freeform_token_seen=1;
   }
-  printf("dep %s rec? %d\n", $3, (int)$2);
+  //printf("dep %s rec? %d\n", $3, (int)$2);
   stiryy_set_dep(stiryy, $3, $2);
   free($3);
 }
 | deps maybe_rec STRING_LITERAL
 {
-  printf("dep %s rec? %d\n", $3.str, (int)$2);
+  //printf("dep %s rec? %d\n", $3.str, (int)$2);
   stiryy_set_dep(stiryy, $3.str, $2);
   free($3.str);
 }
