@@ -11,4 +11,3 @@
   - Use signed number to distinguish between two
 
 - when assigning to dynscope, refdn the old dynscope? it's in cache anyway...
-- a heap checker for abce?
