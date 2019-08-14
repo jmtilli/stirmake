@@ -1536,8 +1536,7 @@ void consider(int ruleid)
       }
       if (access(sttable[e->nameidx], F_OK) == -1)
       {
-        errxit("File %s nonexistent and rule to make it not found",
-               sttable[e->nameidx]);
+        errxit("No %s and rule not found", sttable[e->nameidx]);
         exit(1);
       }
     }
