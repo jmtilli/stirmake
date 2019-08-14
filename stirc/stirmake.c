@@ -1458,6 +1458,20 @@ void do_exec(int ruleid)
     {
       has_to_exec = 1;
     }
+    else // no deps, check that all targets exist
+    {
+      struct linked_list_node *node;
+      LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+      {
+        struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+        struct stat statbuf;
+        if (stat(sttable[e->tgtidx], &statbuf) != 0)
+        {
+          has_to_exec = 1;
+          break;
+        }
+      }
+    }
     if (has_to_exec && r->cmd.args[0] != NULL)
     {
       if (debug)
