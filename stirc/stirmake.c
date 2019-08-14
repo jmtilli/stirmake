@@ -51,6 +51,7 @@ enum {
   ADD_DEP_SIZE = 64,
   ADD_DEPS_SIZE = 8192,
   RULEID_BY_PID_SIZE = 64,
+  RULES_REMAIN_SIZE = 64,
   STRINGTAB_SIZE = 8192,
   MAX_JOBCNT = 1000,
 };
@@ -360,10 +361,12 @@ struct stirtgt {
  * XXX or should we? Hard to support dynamic deps without.
  */
 struct rule {
+  struct linked_list_node remainllnode;
   unsigned is_phony:1;
   unsigned is_executed:1;
   unsigned is_executing:1;
   unsigned is_queued:1;
+  unsigned remain:1;
   size_t diridx;
   struct cmd cmd;
   int ruleid;
@@ -372,9 +375,30 @@ struct rule {
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
-  //struct linked_list_head depremainlist;
   size_t deps_remain_cnt; // XXX return this for less memory use?
 };
+
+struct linked_list_head rules_remain_list =
+  STIR_LINKED_LIST_HEAD_INITER(rules_remain_list);
+
+static inline void ruleremain_add(struct rule *rule)
+{
+  if (rule->remain)
+  {
+    return;
+  }
+  linked_list_add_tail(&rule->remainllnode, &rules_remain_list);
+  rule->remain = 1;
+}
+static inline void ruleremain_rm(struct rule *rule)
+{
+  if (!rule->remain)
+  {
+    return;
+  }
+  linked_list_delete(&rule->remainllnode);
+  rule->remain = 0;
+}
 
 static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -504,7 +528,6 @@ void deps_remain_insert(struct rule *rule, int ruleid)
 
 void calc_deps_remain(struct rule *rule)
 {
-  size_t i;
   struct linked_list_node *node;
   LINKED_LIST_FOR_EACH(node, &rule->deplist)
   {
@@ -602,11 +625,8 @@ struct linked_list_head ruleids_by_dep_list =
 struct ruleid_by_dep_entry *find_ruleids_by_dep(size_t depidx)
 {
   uint32_t hash = abce_murmur32(0x12345678U, depidx);
-  struct ruleid_by_dep_entry *e;
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
-  int ret;
-  size_t i;
 
   head = &ruleids_by_dep[hash % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, depidx);
@@ -687,7 +707,6 @@ void ins_ruleid_by_dep(size_t depidx, int ruleid)
 
 void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *parents)
 {
-  size_t i;
   struct linked_list_node *node;
   if (no_cycles[cur])
   {
@@ -1647,14 +1666,26 @@ void mark_executed(int ruleid)
     abort();
   }
   r->is_executed = 1;
-  if (ruleid == 0)
+#if 0
+  if (ruleid == 0) // FIXME should we return??? This is totally incorrect.
   {
     return;
   }
+#endif
+  /* FIXME we need to handle:
+   * a: b
+   * b: c
+   * c:
+   * ...and then somebody types "smka b" and we don't want to build a
+   */
   LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
     struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
     struct ruleid_by_dep_entry *e2 = find_ruleids_by_dep(e->tgtidx);
+    if (e2 == NULL)
+    {
+      continue;
+    }
     LINKED_LIST_FOR_EACH(node2, &e2->one_ruleid_by_deplist)
     {
       struct one_ruleid_by_dep_entry *one =
@@ -2071,6 +2102,29 @@ int main(int argc, char **argv)
                main.rules[i].prefix);
     }
   }
+  if (optind == argc)
+  {
+    if (rules_size == 0)
+    {
+      errxit("no rules");
+    }
+    free(better_cycle_detect(0));
+    ruleremain_add(rules[0]);
+  }
+  else
+  {
+    for (i = optind; i < argc; i++)
+    {
+      size_t stidx = stringtab_add(argv[i]);
+      int ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+    }
+  }
 
   for (i = 0; i < stiryy.cdepincludesz; i++)
   {
@@ -2104,14 +2158,16 @@ int main(int argc, char **argv)
 
   process_additional_deps();
 
-  unsigned char *no_cycles = better_cycle_detect(0);
+#if 0
+  unsigned char *no_cycles = better_cycle_detect(0); // FIXME 0 incorrect!
+#endif
   for (i = 0; i < rules_size; i++)
   {
     calc_deps_remain(rules[i]);
   }
 
   // Delete unreachable rules from ruleids_by_dep
-#if 1
+#if 0
   struct linked_list_node *node, *tmp;
   LINKED_LIST_FOR_EACH_SAFE(node, tmp, &ruleids_by_dep_list)
   {
@@ -2199,7 +2255,14 @@ int main(int argc, char **argv)
   sa.sa_handler = sigchld_handler;
   sigaction(SIGCHLD, &sa, NULL);
 
-  consider(0);
+  struct linked_list_node *node;
+  LINKED_LIST_FOR_EACH(node, &rules_remain_list)
+  {
+    int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
+    consider(ruleid);
+  }
+
+  //consider(0);
 
   while (ruleids_to_run_size > 0)
   {
@@ -2292,13 +2355,13 @@ int main(int argc, char **argv)
         {
           if (pid < 0 && errno == ECHILD)
           {
-            if (rules[0]->is_executed)
+            if (linked_list_is_empty(&rules_remain_list))
             {
               return 0;
             }
             else
             {
-              fprintf(stderr, "can't execute rule 0\n");
+              fprintf(stderr, "out of children, yet not all targets made\n");
               abort();
             }
           }
@@ -2320,6 +2383,7 @@ int main(int argc, char **argv)
           printf("31\n");
           abort();
         }
+        ruleremain_rm(rules[ruleid]);
         mark_executed(ruleid);
         children--;
         if (children != 0)
