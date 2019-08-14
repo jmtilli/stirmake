@@ -18,10 +18,6 @@
 #include "abce/abcemurmur.h"
 #include "abce/abcecontainerof.h"
 #include "abce/abcerbtree.h"
-#if 0
-#include "opcodes.h"
-#include "engine.h"
-#endif
 #include "incyyutils.h"
 
 enum mode {
@@ -1837,36 +1833,6 @@ void stack_conf(void)
   }
 }
 
-
-#if 0
-size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
-{
-  // FIXME implement in C!
-#if 0
-  size_t old = (size_t)-1;
-  memblock &mb = scope_stack.back();
-  if (mb.type != memblock::T_SC)
-  {
-    abort();
-  }
-  scope *sc = mb.u.sc;
-  std::string str(symbol);
-  if (sc->vars.find(str) != sc->vars.end()
-      //&& sc->vars[str].type == memblock::T_F
-     )
-  {
-    old = st.addNonString(sc->vars[str]);
-    if (maybe)
-    {
-      return old;
-    }
-    //old = sc->vars[str].u.d;
-  }
-  sc->vars[str] = memblock(loc, true);
-  return old;
-#endif
-}
-#endif
 
 void version(char *argv0)
 {
