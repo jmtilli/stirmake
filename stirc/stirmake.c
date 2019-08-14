@@ -2160,8 +2160,9 @@ int main(int argc, char **argv)
     }
     free(better_cycle_detect(0));
     ruleremain_add(rules[0]);
+    // FIXME first rule in case MODE_THIS or MODE_PROJECT
   }
-  else if (mode == MODE_ALL)
+  else if (mode == MODE_ALL || mode == MODE_NONE)
   {
     for (i = optind; i < argc; i++)
     {
