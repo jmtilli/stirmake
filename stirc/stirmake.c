@@ -1945,6 +1945,21 @@ void set_mode(enum mode newmode, int newspecprog, char *argv0)
   }
 }
 
+void *my_memrchr(const void *s, int c, size_t n)
+{
+  unsigned const char *ptr = s + n;
+  while (n > 0)
+  {
+    ptr--;
+    if (*ptr == c)
+    {
+      return (void*)ptr;
+    }
+    n--;
+  }
+  return NULL;
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -1964,6 +1979,7 @@ int main(int argc, char **argv)
   char cwd[PATH_MAX];
   char storcwd[PATH_MAX];
   char curcwd[PATH_MAX];
+  size_t upcnt = 0;
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -2047,6 +2063,7 @@ int main(int argc, char **argv)
 
   if (!filename_set)
   {
+    size_t curupcnt = 0;
     if (getcwd(cwd, sizeof(cwd)) == NULL)
     {
       abort();
@@ -2074,6 +2091,7 @@ int main(int argc, char **argv)
         printf("can't getcwd\n");
         abort();
       }
+      curupcnt++;
       abce_init(&abce);
       init_main_for_realpath(&main, storcwd); // FIXME leaks
       main.abce = &abce;
@@ -2086,6 +2104,7 @@ int main(int argc, char **argv)
         fclose(f);
         if (main.subdirseen)
         {
+          upcnt = curupcnt;
           if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= sizeof(cwd))
           {
             printf("can't snprintf\n");
@@ -2142,7 +2161,7 @@ int main(int argc, char **argv)
     free(better_cycle_detect(0));
     ruleremain_add(rules[0]);
   }
-  else
+  else if (mode == MODE_ALL)
   {
     for (i = optind; i < argc; i++)
     {
@@ -2155,6 +2174,61 @@ int main(int argc, char **argv)
       free(better_cycle_detect(ruleid));
       ruleremain_add(rules[ruleid]);
     }
+  }
+  else if (mode == MODE_THIS)
+  {
+    char *fwd_path = NULL;
+    size_t idx = strlen(storcwd);
+    for (i = 0; i < upcnt; i++)
+    {
+      char *ptr;
+      ptr = my_memrchr(storcwd, '/', idx);
+      if (ptr == NULL)
+      {
+        idx = 0;
+      }
+      else
+      {
+        idx = ptr - storcwd;
+      }
+    }
+    if (storcwd[idx] == '/')
+    {
+      fwd_path = storcwd + idx + 1;
+    }
+    else
+    {
+      fwd_path = storcwd + idx;
+    }
+    if (*fwd_path == '\0')
+    {
+      fwd_path = ".";
+    }
+    printf("fwd_path: %s\n", fwd_path);
+    for (i = optind; i < argc; i++)
+    {
+      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
+      char *buf = malloc(bufsz);
+      char *can;
+      size_t stidx;
+      int ruleid;
+      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
+      can = canon(buf);
+      free(buf);
+      stidx = stringtab_add(can);
+      ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+      free(can);
+    }
+  }
+  else
+  {
+    errxit("project mode not yet supported"); // FIXME support!
   }
 
   for (i = 0; i < stiryy.cdepincludesz; i++)
