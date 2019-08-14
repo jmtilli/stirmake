@@ -1396,7 +1396,7 @@ struct timespec rec_mtim(const char *name)
   return max;
 }
 
-void do_exec(int ruleid)
+int do_exec(int ruleid)
 {
   struct rule *r = rules[ruleid];
   //Rule &r = rules.at(ruleid);
@@ -1536,6 +1536,7 @@ void do_exec(int ruleid)
       }
       r->is_queued = 1;
       mark_executed(ruleid);
+      return 1;
     }
   }
   else
@@ -1545,13 +1546,15 @@ void do_exec(int ruleid)
       printf("do_exec: is queued already\n");
     }
   }
+  return 0;
 }
 
-void consider(int ruleid)
+int consider(int ruleid)
 {
   struct rule *r = rules[ruleid];
   struct linked_list_node *node;
   int toexecute = 0;
+  int execed_some = 0;
   if (debug)
   {
     printf("considering %d\n", r->ruleid); // FIXME better output
@@ -1562,7 +1565,7 @@ void consider(int ruleid)
     {
       printf("already execed %d\n", r->ruleid); // FIXME better output
     }
-    return;
+    return 0;
   }
   if (r->is_executing)
   {
@@ -1570,7 +1573,7 @@ void consider(int ruleid)
     {
       printf("already execing %d\n", r->ruleid); // FIXME better output
     }
-    return;
+    return 0;
   }
   r->is_executing = 1;
   LINKED_LIST_FOR_EACH(node, &r->deplist)
@@ -1579,7 +1582,7 @@ void consider(int ruleid)
     int idbytgt = get_ruleid_by_tgt(e->nameidx);
     if (idbytgt >= 0)
     {
-      consider(idbytgt);
+      execed_some = execed_some || consider(idbytgt);
       if (!rules[idbytgt]->is_executed)
       {
         if (debug)
@@ -1612,10 +1615,11 @@ void consider(int ruleid)
 */
   if (!toexecute && !r->is_queued)
   {
-    do_exec(ruleid);
+    return do_exec(ruleid);
     //ruleids_to_run.push_back(ruleid);
     //r.queued = true;
   }
+  return execed_some;
 /*
   ruleids_to_run.push_back(ruleid);
   r.executed = true;
@@ -1674,6 +1678,7 @@ void mark_executed(int ruleid)
     printf("17\n");
     abort();
   }
+  ruleremain_rm(r);
   r->is_executed = 1;
 #if 0
   if (ruleid == 0) // FIXME should we return??? This is totally incorrect.
@@ -2282,10 +2287,14 @@ int main(int argc, char **argv)
   sigaction(SIGCHLD, &sa, NULL);
 
   struct linked_list_node *node;
+back:
   LINKED_LIST_FOR_EACH(node, &rules_remain_list)
   {
     int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
-    consider(ruleid);
+    if (consider(ruleid))
+    {
+      goto back; // this can edit the list, need to re-start iteration
+    }
   }
 
   //consider(0);
@@ -2409,7 +2418,7 @@ int main(int argc, char **argv)
           printf("31\n");
           abort();
         }
-        ruleremain_rm(rules[ruleid]);
+        //ruleremain_rm(rules[ruleid]);
         mark_executed(ruleid);
         children--;
         if (children != 0)
