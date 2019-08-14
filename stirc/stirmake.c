@@ -1129,7 +1129,7 @@ int ruleid_by_pid_erase(pid_t pid)
 
 size_t ruleid_by_pid_cnt;
 
-void print_cmd(char **argiter_orig)
+void print_cmd(const char *prefix, char **argiter_orig)
 {
   size_t argcnt = 0;
   struct iovec *iovs;
@@ -1140,20 +1140,26 @@ void print_cmd(char **argiter_orig)
     argiter++;
     argcnt++;
   }
-  iovs = malloc(sizeof(*iovs)*argcnt*2);
+  iovs = malloc(sizeof(*iovs)*argcnt*2+4);
+  iovs[0].iov_base = "[";
+  iovs[0].iov_len = 1;
+  iovs[1].iov_base = (void*)prefix;
+  iovs[1].iov_len = strlen(prefix);
+  iovs[2].iov_base = "] ";
+  iovs[2].iov_len = 2;
   for (i = 0; i < argcnt; i++)
   {
-    iovs[2*i+0].iov_base = argiter_orig[i];
-    iovs[2*i+0].iov_len = strlen(argiter_orig[i]);
-    iovs[2*i+1].iov_base = " ";
-    iovs[2*i+1].iov_len = 1;
+    iovs[3+2*i+0].iov_base = argiter_orig[i];
+    iovs[3+2*i+0].iov_len = strlen(argiter_orig[i]);
+    iovs[3+2*i+1].iov_base = " ";
+    iovs[3+2*i+1].iov_len = 1;
   }
-  iovs[2*argcnt-1].iov_base = "\n";
-  iovs[2*argcnt-1].iov_len = 1;
-  writev(1, iovs, 2*argcnt);
+  iovs[3+2*argcnt].iov_base = "\n";
+  iovs[3+2*argcnt].iov_len = 1;
+  writev(1, iovs, 4+2*argcnt);
 }
 
-void child_execvp_wait(const char *cmd, char **args)
+void child_execvp_wait(const char *prefix, const char *cmd, char **args)
 {
   pid_t pid = fork();
   if (pid < 0)
@@ -1170,7 +1176,7 @@ void child_execvp_wait(const char *cmd, char **args)
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
-    print_cmd(args);
+    print_cmd(prefix, args);
     execvp(cmd, args);
     //write(1, "Err\n", 4);
     _exit(1);
@@ -1272,7 +1278,7 @@ pid_t fork_child(int ruleid)
     update_recursive_pid(0);
     while (argcnt > 1)
     {
-      child_execvp_wait((*argiter)[0], &(*argiter)[0]);
+      child_execvp_wait(dir, (*argiter)[0], &(*argiter)[0]);
       argiter++;
       argcnt--;
     }
@@ -1280,7 +1286,7 @@ pid_t fork_child(int ruleid)
     // FIXME check for make
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
-    print_cmd(&(*argiter)[0]);
+    print_cmd(dir, &(*argiter)[0]);
     execvp((*argiter)[0], &(*argiter)[0]);
     //write(1, "Err\n", 4);
     _exit(1);
