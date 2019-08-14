@@ -1896,14 +1896,14 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-v] [-d]\n", argv0);
+    fprintf(stderr, "%s [-v] [-d] [-j jobcnt]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
   }
   else
   {
-    fprintf(stderr, "%s [-v] [-d] -f Stirfile | -t | -p | -a\n", argv0);
+    fprintf(stderr, "%s [-v] [-d] [-j jobcnt] -f Stirfile | -t | -p | -a\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
@@ -2034,7 +2034,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:h")) != -1)
   {
     switch (opt)
     {
@@ -2073,6 +2073,7 @@ int main(int argc, char **argv)
       break;
     default:
     case '?':
+    case 'h':
       usage(argv[0]);
     }
   }
