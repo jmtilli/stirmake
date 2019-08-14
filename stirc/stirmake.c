@@ -1185,19 +1185,35 @@ pid_t fork_child(int ruleid)
   args = cmd.args;
   argiter = args;
 
-  printf("start args:\n");
+  if (debug)
+  {
+    printf("start args:\n");
+  }
   while (*argiter)
   {
     oneargiter = *argiter++;
-    printf(" ");
+    if (debug)
+    {
+      printf(" ");
+    }
     while (*oneargiter)
     {
-      printf(" %s", *oneargiter++);
+      if (debug)
+      {
+        printf(" %s", *oneargiter);
+      }
+      oneargiter++;
     }
-    printf("\n");
+    if (debug)
+    {
+      printf("\n");
+    }
     argcnt++;
   }
-  printf("end args\n");
+  if (debug)
+  {
+    printf("end args\n");
+  }
 
   argiter = args;
 
@@ -1430,6 +1446,10 @@ void do_exec(int ruleid)
       {
         struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
         struct stat statbuf;
+        if (debug)
+        {
+          printf("statting %s\n", sttable[e->tgtidx]);
+        }
         if (stat(sttable[e->tgtidx], &statbuf) != 0)
         {
           has_to_exec = 1;
@@ -2191,7 +2211,10 @@ int main(int argc, char **argv)
         break;
       }
     }
-    printf("forking1 child\n");
+    if (debug)
+    {
+      printf("forking1 child\n");
+    }
     fork_child(ruleids_to_run[ruleids_to_run_size-1]);
     ruleids_to_run_size--;
   }
@@ -2225,7 +2248,10 @@ int main(int argc, char **argv)
       FD_SET(jobserver_fd[0], &readfds);
     }
     select(maxfd+1, &readfds, NULL, NULL, NULL);
-    printf("SELECT RETURNED\n");
+    if (debug)
+    {
+      printf("select returned\n");
+    }
     if (read(self_pipe_fd[0], chbuf, 100))
     {
       for (;;)
