@@ -2240,10 +2240,25 @@ int main(int argc, char **argv)
         {
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
-            printf("error exit status\n");
-            printf("%d\n", (int)WIFEXITED(wstatus));
-            printf("%d\n", (int)WIFSIGNALED(wstatus));
-            printf("%d\n", (int)WEXITSTATUS(wstatus));
+            int ruleid = ruleid_by_pid_erase(pid);
+            if (ruleid < 0)
+            {
+              printf("31.1\n");
+              abort();
+            }
+            fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
+            if (WIFSIGNALED(wstatus))
+            {
+              errxit("Error: signaled");
+            }
+            else if (WIFEXITED(wstatus))
+            {
+              errxit("Error %d", (int)WEXITSTATUS(wstatus));
+            }
+            else if (WIFEXITED(wstatus))
+            {
+              errxit("Unknown error");
+            }
             return 1;
           }
         }
