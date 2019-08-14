@@ -97,7 +97,7 @@ depspec:
 targets:
   FREEFORM_TOKEN
 {
-  printf("target1 %s\n", $1);
+  //printf("target1 %s\n", $1);
   incyy_set_tgt(incyy, $1);
   free($1);
 }
