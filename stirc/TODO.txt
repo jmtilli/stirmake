@@ -12,5 +12,4 @@
 
 - when assigning to dynscope, refdn the old dynscope? it's in cache anyway...
 
-- specification of other target than 0
-- specification of multiple targets
+- specification of target in subdir when in that dir
