@@ -1864,15 +1864,17 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-v] [-d] [-f Stirfile]\n", argv0);
+    fprintf(stderr, "%s [-v] [-d]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
+    fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
   }
   else
   {
-    fprintf(stderr, "%s [-v] [-d] [-f Stirfile] -t | -p | -a\n", argv0);
+    fprintf(stderr, "%s [-v] [-d] -f Stirfile | -t | -p | -a\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
+    fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
   }
   exit(1);
 }
@@ -1949,6 +1951,7 @@ int main(int argc, char **argv)
   struct stiryy stiryy = {};
   size_t i;
   int opt;
+  int filename_set = 0;
   const char *filename = "Stirfile";
   uint32_t forkedchildcnt = 0;
   int narration = 0;
@@ -1996,7 +1999,8 @@ int main(int argc, char **argv)
       narration = 1;
       setlocale(LC_CTYPE, "");
       break;
-    case 'f':
+    case 'f': // FIXME what if optarg contains directories?
+      filename_set = 1;
       filename = optarg;
       break;
     case 'j':
@@ -2025,14 +2029,18 @@ int main(int argc, char **argv)
     }
   }
 
-  if (mode == MODE_NONE)
+  if (mode == MODE_NONE && !filename_set)
+  {
+    usage(argv[0]);
+  }
+  if (mode != MODE_NONE && filename_set)
   {
     usage(argv[0]);
   }
 
   recursion_misuse_prevention();
 
-  if (strcmp(filename, "Stirfile") == 0)
+  if (!filename_set)
   {
     if (getcwd(cwd, sizeof(cwd)) == NULL)
     {
