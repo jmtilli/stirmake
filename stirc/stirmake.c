@@ -1536,6 +1536,13 @@ void do_exec(int ruleid)
       mark_executed(ruleid);
     }
   }
+  else
+  {
+    if (debug)
+    {
+      printf("do_exec: is queued already\n");
+    }
+  }
 }
 
 void consider(int ruleid)
@@ -2407,7 +2414,10 @@ int main(int argc, char **argv)
           break;
         }
       }
-      printf("forking child\n");
+      if (debug)
+      {
+        printf("forking child\n");
+      }
       //std::cout << "forking child" << std::endl;
       fork_child(ruleids_to_run[ruleids_to_run_size-1]);
       ruleids_to_run_size--;
