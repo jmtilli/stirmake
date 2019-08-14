@@ -2233,7 +2233,7 @@ int main(int argc, char **argv)
     {
       fwd_path = ".";
     }
-    printf("fwd_path: %s\n", fwd_path);
+    printf("stirmake: Forward path: %s\n", fwd_path);
     for (i = optind; i < argc; i++)
     {
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
