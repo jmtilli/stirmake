@@ -1865,13 +1865,13 @@ void usage(char *argv0)
   {
     fprintf(stderr, "%s [-v] [-d] [-f Stirfile]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
-    fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
+    fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
   }
   else
   {
     fprintf(stderr, "%s [-v] [-d] [-f Stirfile] -t | -p | -a\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
-    fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
+    fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
   }
   exit(1);
 }
