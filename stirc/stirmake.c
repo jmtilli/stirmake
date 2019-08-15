@@ -74,6 +74,7 @@ int children = 0;
 
 void merge_db(void);
 
+// FIXME do updates to DB here as well... Now they are not done.
 void errxit(const char *fmt, ...)
 {
   va_list args;
@@ -232,12 +233,6 @@ void ins_dbe(struct db *db, struct dbe *dbe)
     }
   }
   linked_list_add_tail(&dbe->llnode, &db->ll);
-}
-
-struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
-{
-  struct cmd ret = {};
-  return ret; // FIXME!
 }
 
 void escape_string(FILE *f, const char *str)
@@ -598,6 +593,7 @@ struct rule {
   struct linked_list_node remainllnode;
   unsigned is_phony:1;
   unsigned is_executed:1;
+  unsigned is_actually_executed:1; // command actually invoked
   unsigned is_executing:1;
   unsigned is_queued:1;
   unsigned remain:1;
@@ -1586,7 +1582,7 @@ pid_t fork_child(int ruleid)
   }
 }
 
-void mark_executed(int ruleid);
+void mark_executed(int ruleid, int was_actually_executed);
 
 struct timespec rec_mtim(const char *name)
 {
@@ -1839,7 +1835,7 @@ int do_exec(int ruleid)
                sttable[first_tgt->tgtidx], has_to_exec);
       }
       r->is_queued = 1;
-      mark_executed(ruleid);
+      mark_executed(ruleid, 0);
       return 1;
     }
   }
@@ -1972,7 +1968,7 @@ void reconsider(int ruleid, int ruleid_executed)
   }
 }
 
-void mark_executed(int ruleid)
+void mark_executed(int ruleid, int was_actually_executed)
 {
   struct rule *r = rules[ruleid];
   struct linked_list_node *node, *node2;
@@ -1988,6 +1984,7 @@ void mark_executed(int ruleid)
   }
   ruleremain_rm(r);
   r->is_executed = 1;
+  r->is_actually_executed = was_actually_executed;
 #if 0
   if (ruleid == 0) // FIXME should we return??? This is totally incorrect.
   {
@@ -2382,6 +2379,25 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int cleanbinaries)
   }
 }
 
+struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
+{
+  struct cmd ret = {};
+  size_t i, j;
+  char ***result = my_malloc((cmdssz+1) * sizeof(*result));
+  for (i = 0; i < cmdssz; i++)
+  {
+    result[i] = my_malloc((cmds[i].argssz+1) * sizeof(*(result[i])));
+    for (j = 0; j < cmds[i].argssz; j++)
+    {
+      result[i][j] = my_strdup(cmds[i].args[j]);
+    }
+    result[i][cmds[i].argssz] = NULL;
+  }
+  result[cmdssz] = NULL;
+  ret.args = result;
+  return ret;
+}
+
 void merge_db(void)
 {
   size_t i;
@@ -2403,7 +2419,7 @@ void merge_db(void)
   for (i = 0; i < rules_size; i++)
   {
     struct rule *rule = rules[i];
-    if (!rule->is_executed)
+    if (!rule->is_actually_executed)
     {
       continue;
     }
@@ -3078,7 +3094,7 @@ back:
           abort();
         }
         //ruleremain_rm(rules[ruleid]);
-        mark_executed(ruleid);
+        mark_executed(ruleid, 1);
         children--;
         if (children != 0)
         {
