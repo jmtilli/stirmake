@@ -150,7 +150,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token DISTRULE
 %token PATRULE
 %token FILEINCLUDE
-%token DIRINCLUDE
+%token DIRINCLUDE PROJDIRINCLUDE
 %token CDEPINCLUDESCURDIR
 %token DYNO
 %token LEXO
@@ -210,6 +210,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %type<d> maybeqmequals
 %type<d> maybe_rec
 %type<d> maybe_maybe_call
+%type<d> dirinclude
 
 %start st
 
@@ -700,6 +701,8 @@ deps:
 }
 ;
 
+dirinclude: DIRINCLUDE {$$ = 1;} | PROJDIRINCLUDE {$$ = 0;} ;
+
 stirrules:
 | stirrules stirrule
 | stirrules NEWLINE
@@ -713,7 +716,7 @@ stirrules:
   free($3.str);
 }
 | stirrules FILEINCLUDE VARREF_LITERAL NEWLINE
-| stirrules DIRINCLUDE STRING_LITERAL NEWLINE
+| stirrules dirinclude STRING_LITERAL NEWLINE
 {
   struct stiryy stiryy2 = {};
   size_t fsz = strlen(stiryy->curprefix) + strlen($3.str) + 8 + 3;
@@ -739,6 +742,10 @@ stirrules:
   if (strcmp(realpathname, stiryy->main->realpathname) == 0)
   {
     stiryy->main->subdirseen = 1;
+    if ($2 && stiryy->sameproject)
+    {
+      stiryy->main->subdirseen_sameproject = 1;
+    }
   }
   prefix2 = canon(prefix);
   oldscope = get_abce(stiryy)->dynscope;
@@ -749,6 +756,7 @@ stirrules:
     abort();
   }
   stiryy_init(&stiryy2, stiryy->main, prefix2, get_abce(stiryy)->dynscope);
+  stiryy2.sameproject = stiryy->sameproject && $2;
 
   f = fopen(filename, "r");
   if (!f)

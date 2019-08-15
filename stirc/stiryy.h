@@ -92,6 +92,7 @@ struct stiryy_main {
   struct abce *abce;
   char *realpathname;
   int subdirseen;
+  int subdirseen_sameproject;
   int freeform_token_seen;
 };
 
@@ -111,6 +112,7 @@ struct stiryy {
   char *curprefix;
   size_t curscopeidx;
   struct abce_mb curscope;
+  int sameproject;
 };
 
 static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
@@ -134,6 +136,7 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
                                char *prefix, struct abce_mb curscope)
 {
   yy->main = main;
+  yy->sameproject = 1;
   //abce_init(&yy->abce);
   yy->ctx = NULL;
   yy->curprefix = strdup(prefix);
