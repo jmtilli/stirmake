@@ -1,6 +1,6 @@
 .SUFFIXES:
 
-SRC_LIB := yyutils.c incyyutils.c canon.c stirtrap.c
+SRC_LIB := yyutils.c incyyutils.c dbyyutils.c canon.c stirtrap.c
 SRC := $(SRC_LIB) stir.c inc.c stirmake.c
 
 SRC_CPP_LIB := stirbce.cc
@@ -73,10 +73,13 @@ CFLAGS=-O3 -Wall -g -I$(LUAINC)
 CPPFLAGS=-O3 -Wall -g -I$(LUAINC)
 
 smka:
+	rm smka
 	ln -s stirmake smka
 smkt:
+	rm smkt
 	ln -s stirmake smkt
 smkp:
+	rm smkp
 	ln -s stirmake smkp
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce

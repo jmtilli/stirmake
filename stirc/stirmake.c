@@ -21,6 +21,8 @@
 #include "abce/abcecontainerof.h"
 #include "abce/abcerbtree.h"
 #include "incyyutils.h"
+#include "dbyy.h"
+#include "dbyyutils.h"
 
 enum mode {
   MODE_NONE = 0,
@@ -50,6 +52,7 @@ enum {
   ADD_DEPS_SIZE = 8192,
   RULEID_BY_PID_SIZE = 64,
   RULES_REMAIN_SIZE = 64,
+  DB_SIZE = 8192,
   STRINGTAB_SIZE = 8192,
   MAX_JOBCNT = 1000,
 };
@@ -69,6 +72,8 @@ struct stringtabentry {
 
 int children = 0;
 
+void merge_db(void);
+
 void errxit(const char *fmt, ...)
 {
   va_list args;
@@ -86,6 +91,7 @@ void errxit(const char *fmt, ...)
   pid = waitpid(-1, &wstatus, WNOHANG);
   if (pid < 0 && errno == ECHILD)
   {
+    merge_db();
     exit(1);
   }
   if (pid > 0)
@@ -115,6 +121,7 @@ void errxit(const char *fmt, ...)
       if (pid < 0 && errno == ECHILD)
       {
         fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
+        merge_db();
         exit(1);
       }
       printf("29.E\n");
@@ -142,6 +149,139 @@ void errxit(const char *fmt, ...)
     {
       write(jobserver_fd[1], ".", 1);
     }
+  }
+}
+
+struct cmd {
+  char ***args;
+};
+
+struct dbe {
+  struct abce_rb_tree_node node;
+  struct linked_list_node llnode;
+  size_t tgtidx; // key
+  size_t diridx; // non-key
+  struct cmd cmds; // non-key
+};
+
+int sizecmp(size_t size1, size_t size2)
+{
+  if (size1 > size2)
+  {
+    return 1;
+  }
+  if (size1 < size2)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+static inline int dbe_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct dbe *e = ABCE_CONTAINER_OF(n2, struct dbe, node);
+  int ret;
+  size_t str2;
+  str2 = e->tgtidx;
+  ret = sizecmp(str, str2);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  return 0;
+}
+static inline int dbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct dbe *e1 = ABCE_CONTAINER_OF(n1, struct dbe, node);
+  struct dbe *e2 = ABCE_CONTAINER_OF(n2, struct dbe, node);
+  int ret;
+  ret = sizecmp(e1->tgtidx, e2->tgtidx);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  return 0;
+}
+
+struct db {
+  struct abce_rb_tree_nocmp byname[DB_SIZE];
+  struct linked_list_head ll;
+};
+
+void ins_dbe(struct db *db, struct dbe *dbe)
+{
+  uint32_t hash = abce_murmur32(0x12345678U, dbe->tgtidx);
+  struct abce_rb_tree_nocmp *head;
+  int ret;
+  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
+  ret = abce_rb_tree_nocmp_insert_nonexist(head, dbe_cmp_sym, NULL, &dbe->node);
+  if (ret != 0)
+  {
+    struct abce_rb_tree_node *n;
+    n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, dbe->tgtidx);
+    if (n == NULL)
+    {
+      abort();
+    }
+    abce_rb_tree_nocmp_delete(head, n);
+    linked_list_delete(&ABCE_CONTAINER_OF(n, struct dbe, node)->llnode);
+    ret = abce_rb_tree_nocmp_insert_nonexist(head, dbe_cmp_sym, NULL, &dbe->node);
+    if (ret != 0)
+    {
+      abort();
+    }
+  }
+  linked_list_add_tail(&dbe->llnode, &db->ll);
+}
+
+struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
+{
+  struct cmd ret = {};
+  return ret; // FIXME!
+}
+
+void escape_string(FILE *f, const char *str)
+{
+  const char *ptr;
+  for (ptr = str; *ptr; ptr++)
+  {
+    unsigned char uch = *ptr;
+    if (uch < 0x20 || uch >= 0x7F)
+    {
+      fprintf(f, "\\x%.2X", uch);
+      continue;
+    }
+    if (uch == '\\')
+    {
+      fprintf(f, "\\\\");
+      continue;
+    }
+    if (uch == '\'')
+    {
+      fprintf(f, "\\'");
+      continue;
+    }
+    if (uch == '"')
+    {
+      fprintf(f, "\\\"");
+      continue;
+    }
+    if (uch == '\t')
+    {
+      fprintf(f, "\\t");
+      continue;
+    }
+    if (uch == '\r')
+    {
+      fprintf(f, "\\r");
+      continue;
+    }
+    if (uch == '\n')
+    {
+      fprintf(f, "\\n");
+      continue;
+    }
+    fprintf(f, "%c", (char)uch);
   }
 }
 
@@ -307,19 +447,6 @@ struct ruleid_by_tgt_entry {
   size_t tgtidx;
 };
 
-int sizecmp(size_t size1, size_t size2)
-{
-  if (size1 > size2)
-  {
-    return 1;
-  }
-  if (size1 < size2)
-  {
-    return -1;
-  }
-  return 0;
-}
-
 struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
 struct linked_list_head ruleid_by_tgt_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
@@ -385,10 +512,6 @@ int get_ruleid_by_tgt(size_t tgt)
   }
   return ABCE_CONTAINER_OF(n, struct ruleid_by_tgt_entry, node)->ruleid;
 }
-
-struct cmd {
-  char ***args;
-};
 
 int ts_cmp(struct timespec ta, struct timespec tb)
 {
@@ -2259,6 +2382,93 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int cleanbinaries)
   }
 }
 
+void merge_db(void)
+{
+  size_t i;
+  struct dbyy dbyy = {};
+  struct db db = {};
+  struct linked_list_node *node;
+  FILE *f;
+  int firstrule = 1;
+  linked_list_head_init(&db.ll);
+  dbyynameparse(".stir.db", &dbyy, 0);
+  for (i = 0; i < dbyy.rulesz; i++)
+  {
+    struct dbe *dbe = my_malloc(sizeof(struct dbe));
+    dbe->tgtidx = stringtab_add(dbyy.rules[i].tgt);
+    dbe->diridx = stringtab_add(dbyy.rules[i].dir);
+    dbe->cmds = dbyycmd_add(dbyy.rules[i].cmds, dbyy.rules[i].cmdssz);
+    ins_dbe(&db, dbe);
+  }
+  for (i = 0; i < rules_size; i++)
+  {
+    struct rule *rule = rules[i];
+    if (!rule->is_executed)
+    {
+      continue;
+    }
+    LINKED_LIST_FOR_EACH(node, &rule->tgtlist)
+    {
+      struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      struct dbe *dbe = my_malloc(sizeof(struct dbe));
+      dbe->tgtidx = e->tgtidx;
+      dbe->diridx = rule->diridx;
+      dbe->cmds = rule->cmd;
+      ins_dbe(&db, dbe);
+    }
+  }
+  f = fopen(".stir.db", "w");
+  if (f == NULL)
+  {
+    fprintf(stderr, "Can't open .stir.db"); // can't use errxit
+    exit(1);
+  }
+  LINKED_LIST_FOR_EACH(node, &db.ll)
+  {
+    struct dbe *dbe = ABCE_CONTAINER_OF(node, struct dbe, llnode);
+    char ***argiter = dbe->cmds.args;
+    char **oneargiter;
+    // dir tgt:
+    if (firstrule)
+    {
+      firstrule = 0;
+    }
+    else
+    {
+      fprintf(f, "\n");
+    }
+    fprintf(f, "\"");
+    escape_string(f, sttable[dbe->diridx]);
+    fprintf(f, "\" \"");
+    escape_string(f, sttable[dbe->tgtidx]);
+    fprintf(f, "\":\n");
+    while (*argiter)
+    {
+      int first = 1;
+      fprintf(f, "\t");
+      oneargiter = *argiter++;
+      while (*oneargiter)
+      {
+        if (first)
+        {
+          first = 0;
+        }
+        else
+        {
+          fprintf(f, " ");
+        }
+        fprintf(f, "\"");
+        escape_string(f, *oneargiter);
+        fprintf(f, "\"");
+        oneargiter++;
+      }
+      fprintf(f, "\n");
+    }
+  }
+  fclose(f);
+}
+
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -2831,7 +3041,7 @@ back:
             {
               errxit("Unknown error");
             }
-            return 1;
+            abort();
           }
         }
         if (children <= 0 && ruleids_to_run_size == 0)
@@ -2840,6 +3050,7 @@ back:
           {
             if (linked_list_is_empty(&rules_remain_list))
             {
+              merge_db();
               return 0;
             }
             else
@@ -2915,5 +3126,6 @@ back:
     printf("  rule: %zu\n", rule_cnt);
     printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
+  merge_db();
   return 0;
 }
