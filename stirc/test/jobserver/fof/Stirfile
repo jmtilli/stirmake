@@ -1,0 +1,5 @@
+all:
+	echo OK OK OK
+	/usr/bin/env
+	ls -aFl /dev/fd/
+	echo OK OK OK
