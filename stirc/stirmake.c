@@ -2283,6 +2283,9 @@ int main(int argc, char **argv)
   char curcwd[PATH_MAX];
   size_t upcnt = 0;
   size_t upcnt_sameproj = 0;
+  char *fwd_path = ".";
+  int ruleid_first = 0;
+  int ruleid_first_set = 0;
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -2462,6 +2465,24 @@ int main(int argc, char **argv)
 
   stack_conf();
 
+  if (mode == MODE_ALL || mode == MODE_NONE)
+  {
+    fwd_path = ".";
+  }
+  else if (mode == MODE_THIS)
+  {
+    fwd_path = calc_forward_path(storcwd, upcnt);
+    printf("stirmake: Forward path: %s\n", fwd_path);
+  }
+  else if (mode == MODE_PROJECT)
+  {
+    fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
+    printf("stirmake: Forward path: %s\n", fwd_path);
+  }
+  else
+  {
+    abort();
+  }
   for (i = 0; i < main.rulesz; i++)
   {
     if (main.rules[i].targetsz > 0) // FIXME chg to if (1)
@@ -2474,41 +2495,32 @@ int main(int argc, char **argv)
                main.rules[i].deps, main.rules[i].depsz,
                main.rules[i].shells, main.rules[i].shellsz, main.rules[i].phony,
                main.rules[i].prefix);
+      if (   (!ruleid_first_set)
+          && (   strcmp(fwd_path, ".") == 0
+              || strcmp(fwd_path, main.rules[i].prefix) == 0))
+      {
+        if (rules_size == 0)
+        {
+          abort();
+        }
+        ruleid_first = rules_size - 1;
+        ruleid_first_set = 1;
+      }
     }
+  }
+  if (!ruleid_first_set)
+  {
+    errxit("no applicable rules");
   }
   if (optind == argc)
   {
-    if (rules_size == 0)
-    {
-      errxit("no rules");
-    }
-    free(better_cycle_detect(0)); // FIXME first rule for MODE_THIS/MODE_PROJECT
+    free(better_cycle_detect(ruleid_first));
     if (clean || cleanbinaries)
     {
-      char *fwd_path;
-      if (mode == MODE_ALL || mode == MODE_NONE)
-      {
-        fwd_path = ".";
-      }
-      else if (mode == MODE_THIS)
-      {
-        fwd_path = calc_forward_path(storcwd, upcnt);
-        printf("stirmake: Forward path for clean: %s\n", fwd_path);
-      }
-      else if (mode == MODE_PROJECT)
-      {
-        fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
-        printf("stirmake: Forward path for clean: %s\n", fwd_path);
-      }
-      else
-      {
-        abort();
-      }
       do_clean(&main, fwd_path, cleanbinaries);
       exit(0); // don't process first rule
     }
-    ruleremain_add(rules[0]);
-    // FIXME first rule in case MODE_THIS or MODE_PROJECT
+    ruleremain_add(rules[ruleid_first]);
   }
   else if (mode == MODE_ALL || mode == MODE_NONE)
   {
@@ -2530,8 +2542,6 @@ int main(int argc, char **argv)
   }
   else if (mode == MODE_THIS)
   {
-    char *fwd_path = calc_forward_path(storcwd, upcnt);
-    printf("stirmake: Forward path: %s\n", fwd_path);
     for (i = optind; i < argc; i++)
     {
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
@@ -2559,8 +2569,6 @@ int main(int argc, char **argv)
   }
   else
   {
-    char *fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
-    printf("stirmake: Forward path: %s\n", fwd_path);
     for (i = optind; i < argc; i++)
     {
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
