@@ -943,8 +943,9 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
   }
   if (parents[cur])
   {
+    size_t i;
     fprintf(stderr, "stirmake: cycle found\n");
-    for (size_t i = 0; i < rules_size; i++)
+    for (i = 0; i < rules_size; i++)
     {
       if (parents[i])
       {
