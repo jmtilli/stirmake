@@ -67,6 +67,8 @@ struct stringtabentry {
   size_t idx;
 };
 
+int children = 0;
+
 void errxit(const char *fmt, ...)
 {
   va_list args;
@@ -74,12 +76,73 @@ void errxit(const char *fmt, ...)
   const char *suffix = ". Exiting.\n";
   size_t sz = strlen(prefix) + strlen(fmt) + strlen(suffix) + 1;
   char *fmtdup = malloc(sz);
+  int wstatus;
+  pid_t pid;
   snprintf(fmtdup, sz, "%s%s%s", prefix, fmt, suffix);
   va_start(args, fmt);
   vfprintf(stderr, fmtdup, args);
   va_end(args);
   free(fmtdup);
-  exit(1);
+  pid = waitpid(-1, &wstatus, WNOHANG);
+  if (pid < 0 && errno == ECHILD)
+  {
+    exit(1);
+  }
+  if (pid > 0)
+  {
+    if (children <= 0)
+    {
+      printf("27.E\n");
+      abort();
+    }
+    children--;
+    if (children != 0)
+    {
+      write(jobserver_fd[1], ".", 1);
+    }
+  }
+  fprintf(stderr, "stirmake: *** Waiting for child processes to die.\n");
+  for (;;)
+  {
+    pid = waitpid(-1, &wstatus, 0);
+    if (pid == 0)
+    {
+      printf("28.E\n");
+      abort();
+    }
+    if (children <= 0)
+    {
+      if (pid < 0 && errno == ECHILD)
+      {
+        fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
+        exit(1);
+      }
+      printf("29.E\n");
+      abort();
+    }
+    if (pid < 0)
+    {
+      // FIXME this happens, although very rarely. smka -j4 and number of
+      // children is 1 here, error is: "No child process"
+      printf("30.E\n");
+      perror("Error was");
+      printf("number of children: %d\n", children);
+      abort();
+    }
+#if 0 // Let's not do this, just in case the data is messed up.
+    int ruleid = ruleid_by_pid_erase(pid);
+    if (ruleid < 0)
+    {
+      printf("31.E\n");
+      abort();
+    }
+#endif
+    children--;
+    if (children != 0)
+    {
+      write(jobserver_fd[1], ".", 1);
+    }
+  }
 }
 
 void update_recursive_pid(int parent)
@@ -589,7 +652,6 @@ void calc_deps_remain(struct rule *rule)
   }
 }
 
-int children = 0;
 //const int limit = 2;
 
 struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
@@ -2601,6 +2663,7 @@ back:
               printf("31.1\n");
               abort();
             }
+            children--;
             fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
             if (WIFSIGNALED(wstatus))
             {
@@ -2610,7 +2673,7 @@ back:
             {
               errxit("Error %d", (int)WEXITSTATUS(wstatus));
             }
-            else if (WIFEXITED(wstatus))
+            else
             {
               errxit("Unknown error");
             }
