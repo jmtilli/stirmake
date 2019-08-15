@@ -2203,9 +2203,9 @@ void recursion_misuse_prevention(void)
     pid_t pid = (int)atoi(pidstr);
     if (getppid() == pid)
     {
-      fprintf(stderr, "stirmake: Three Processes for the Programmers waiting to type,\n");
-      fprintf(stderr, "stirmake: Seven for the Operators in their halls of racks,\n");
-      fprintf(stderr, "stirmake: Nine for the End-users believing all hype.\n");
+      fprintf(stderr, "stirmake: Seven Processes for the Programmers waiting to type,\n");
+      fprintf(stderr, "stirmake: Three for the Operators in their halls of racks,\n");
+      fprintf(stderr, "stirmake: Three for the End-users believing all hype.\n");
       fprintf(stderr, "stirmake: One for the Evil Cracker for his dark hacks\n");
       fprintf(stderr, "stirmake: In the land of Recursion where the Shadows lie.\n");
       fprintf(stderr, "stirmake: One Build Tool to rule them all, one Build Tool to find them,\n");
