@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -162,27 +163,32 @@ int read_jobserver(void)
   {
     abort();
   }
-  // Ugh. GNU make expects the jobserver to be blocking, which doesn't
-  // really suit our architecture. Set an interval timer in case of a race
-  // that GNU make won.
-  struct itimerval new_value = {};
-  new_value.it_interval.tv_sec = 0;
-  new_value.it_interval.tv_usec = 0;
-  new_value.it_value.tv_sec = 0;
-  new_value.it_value.tv_usec = 10*1000;
-  setitimer(ITIMER_REAL, &new_value, NULL);
 
-  ret = read(jobserver_fd[0], &ch, 1);
-
-  new_value.it_interval.tv_sec = 0;
-  new_value.it_interval.tv_usec = 0;
-  new_value.it_value.tv_sec = 0;
-  new_value.it_value.tv_usec = 0;
-  setitimer(ITIMER_REAL, &new_value, NULL);
-
-  if (ret > 1)
+  ret = recv(jobserver_fd[0], &ch, 1, MSG_DONTWAIT);
+  if (ret == -1 && errno == ENOTSOCK)
   {
-    abort();
+    //fprintf(stderr, "UGH\n");
+    // Ugh. GNU make expects the jobserver to be blocking, which doesn't
+    // really suit our architecture. Set an interval timer in case of a race
+    // that GNU make won.
+    struct itimerval new_value = {};
+    new_value.it_interval.tv_sec = 0;
+    new_value.it_interval.tv_usec = 0;
+    new_value.it_value.tv_sec = 0;
+    new_value.it_value.tv_usec = 10*1000;
+    setitimer(ITIMER_REAL, &new_value, NULL);
+    ret = read(jobserver_fd[0], &ch, 1);
+    new_value.it_interval.tv_sec = 0;
+    new_value.it_interval.tv_usec = 0;
+    new_value.it_value.tv_sec = 0;
+    new_value.it_value.tv_usec = 0;
+    setitimer(ITIMER_REAL, &new_value, NULL);
+
+    if (ret > 1)
+    {
+      abort();
+    }
+    return (ret == 1);
   }
   return (ret == 1);
 }
@@ -2050,6 +2056,56 @@ void *my_memrchr(const void *s, int c, size_t n)
   return NULL;
 }
 
+char *process_mflags(void)
+{
+  char *iter = getenv("MAKEFLAGS");
+  while (iter && *iter == ' ')
+  {
+    iter++;
+  }
+  while (iter && *iter == '-')
+  {
+    if (strncmp(iter, "--jobserver-fds=", strlen("--jobserver-fds=")) == 0)
+    {
+      iter += strlen("--jobserver-fds=");
+      return iter;
+    }
+    iter = strchr(iter, ' ');
+    while (iter && *iter == ' ')
+    {
+      iter++;
+    }
+  }
+  return NULL;
+}
+
+int process_jobserver(int fds[2])
+{
+  char *mflags;
+  mflags = process_mflags();
+  if (mflags == NULL)
+  {
+    return -ENOENT;
+  }
+  if (sscanf(mflags, "%d,%d", &fds[0], &fds[1]) != 2)
+  {
+    fprintf(stderr, "stirmake: Jobserver unavailable\n");
+    return -EINVAL;
+  }
+  if (fcntl(jobserver_fd[0], F_GETFD) == -1)
+  {
+    fprintf(stderr, "stirmake: Jobserver unavailable\n");
+    return -EBADF;
+  }
+  if (fcntl(jobserver_fd[1], F_GETFD) == -1)
+  {
+    fprintf(stderr, "stirmake: Jobserver unavailable\n");
+    return -EBADF;
+  }
+  fprintf(stderr, "stirmake: Jobserver available\n");
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -2433,17 +2489,21 @@ int main(int argc, char **argv)
   }
   set_nonblock(self_pipe_fd[0]);
   set_nonblock(self_pipe_fd[1]);
-  if (pipe(jobserver_fd) != 0)
-  {
-    printf("28\n");
-    abort();
-  }
-  //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
-  set_nonblock(jobserver_fd[1]);
 
-  for (int i = 0; i < jobcnt - 1; i++)
+  if (process_jobserver(jobserver_fd) != 0)
   {
-    write(jobserver_fd[1], ".", 1);
+    //if (pipe(jobserver_fd) != 0)
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, jobserver_fd) != 0)
+    {
+      printf("28\n");
+      abort();
+    }
+    //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
+    set_nonblock(jobserver_fd[1]);
+    for (int i = 0; i < jobcnt - 1; i++)
+    {
+      write(jobserver_fd[1], ".", 1);
+    }
   }
 
   struct sigaction sa;
