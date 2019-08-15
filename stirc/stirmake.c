@@ -2485,6 +2485,66 @@ void merge_db(void)
 }
 
 
+void create_pipe(int jobcnt)
+{
+  int err = 0;
+  int buf;
+  int i;
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, jobserver_fd) != 0)
+  {
+    printf("28\n");
+    abort();
+  }
+  //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
+  set_nonblock(jobserver_fd[1]);
+
+  buf = 512*1024;
+  setsockopt(jobserver_fd[0], SOL_SOCKET, SO_RCVBUF, &buf, sizeof(buf));
+  buf = 512*1024;
+  setsockopt(jobserver_fd[1], SOL_SOCKET, SO_RCVBUF, &buf, sizeof(buf));
+  buf = 512*1024;
+  setsockopt(jobserver_fd[0], SOL_SOCKET, SO_SNDBUF, &buf, sizeof(buf));
+  buf = 512*1024;
+  setsockopt(jobserver_fd[1], SOL_SOCKET, SO_SNDBUF, &buf, sizeof(buf));
+
+  for (i = 0; i < jobcnt - 1; i++)
+  {
+    if (write(jobserver_fd[1], ".", 1) == -1)
+    {
+      err = 1;
+      break;
+    }
+  }
+  if (!err)
+  {
+    return;
+  }
+  printf("stirmake: Socket pair didn't work, using pipe instead\n");
+  close(jobserver_fd[0]);
+  close(jobserver_fd[1]);
+  if (pipe(jobserver_fd) != 0)
+  {
+    printf("28.2\n");
+    abort();
+  }
+  //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
+  set_nonblock(jobserver_fd[1]);
+  err = 0;
+  for (i = 0; i < jobcnt - 1; i++)
+  {
+    if (write(jobserver_fd[1], ".", 1) == -1)
+    {
+      err = 1;
+      break;
+    }
+  }
+  if (!err)
+  {
+    return;
+  }
+  printf("stirmake: Could not write all tokens to jobserver (only %d)\n", i);
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -2934,18 +2994,7 @@ int main(int argc, char **argv)
 
   if (process_jobserver(jobserver_fd) != 0)
   {
-    //if (pipe(jobserver_fd) != 0)
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, jobserver_fd) != 0)
-    {
-      printf("28\n");
-      abort();
-    }
-    //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
-    set_nonblock(jobserver_fd[1]);
-    for (int i = 0; i < jobcnt - 1; i++)
-    {
-      write(jobserver_fd[1], ".", 1);
-    }
+    create_pipe(jobcnt);
   }
 
   struct sigaction sa;
