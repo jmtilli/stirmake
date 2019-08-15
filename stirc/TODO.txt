@@ -20,6 +20,8 @@
 
 - Reserved words for referring to all/project top and getting the relative path
   from all/project top to current directory
+  - Or actually no reference to all top, only to project top, to discourage
+    storing stuff in directories of other projects
 
 - Make $<, $@, $^ work in Amyplan
 
