@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <libgen.h>
+#include <poll.h>
 #include "yyutils.h"
 #include "linkedlist.h"
 #include "abce/abcemurmur.h"
@@ -141,6 +142,50 @@ void *my_strdup(const char *str)
   return result;
 }
 
+int read_jobserver(void)
+{
+  char ch;
+  struct pollfd pfd = {};
+  int ret;
+  pfd.fd = jobserver_fd[0];
+  pfd.events = POLLIN;
+  ret = poll(&pfd, 1, 0);
+  if (ret == 0)
+  {
+    return 0;
+  }
+  if (ret < 0)
+  {
+    abort();
+  }
+  if (!(pfd.revents & POLLIN))
+  {
+    abort();
+  }
+  // Ugh. GNU make expects the jobserver to be blocking, which doesn't
+  // really suit our architecture. Set an interval timer in case of a race
+  // that GNU make won.
+  struct itimerval new_value = {};
+  new_value.it_interval.tv_sec = 0;
+  new_value.it_interval.tv_usec = 0;
+  new_value.it_value.tv_sec = 0;
+  new_value.it_value.tv_usec = 10*1000;
+  setitimer(ITIMER_REAL, &new_value, NULL);
+
+  ret = read(jobserver_fd[0], &ch, 1);
+
+  new_value.it_interval.tv_sec = 0;
+  new_value.it_interval.tv_usec = 0;
+  new_value.it_value.tv_sec = 0;
+  new_value.it_value.tv_usec = 0;
+  setitimer(ITIMER_REAL, &new_value, NULL);
+
+  if (ret > 1)
+  {
+    abort();
+  }
+  return (ret == 1);
+}
 
 struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 char *sttable[1048576]; // RFE make variable sized
@@ -1155,6 +1200,53 @@ void print_cmd(const char *prefix, char **argiter_orig)
   writev(1, iovs, 4+2*argcnt);
 }
 
+const char *makecmds[] = {
+  "make",
+  "gmake",
+  "/usr/bin/make",
+  "/usr/bin/gmake",
+  "/usr/local/bin/make",
+  "/usr/local/bin/gmake",
+  "/usr/pkg/bin/make",
+  "/usr/pkg/bin/gmake",
+  "/opt/bin/make",
+  "/opt/bin/gmake",
+  "/opt/gnu/bin/make",
+  "/opt/gnu/bin/gmake",
+  "/bin/make",
+  "/bin/gmake",
+};
+size_t makecmds_size = sizeof(makecmds)/sizeof(*makecmds);
+
+int is_makecmd(const char *cmd)
+{
+  size_t i;
+  for (i = 0; i < makecmds_size; i++)
+  {
+    if (strcmp(cmd, makecmds[i]) == 0)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void do_makecmd(const char *cmd)
+{
+  if (is_makecmd(cmd))
+  {
+    char env[128] = {0};
+    snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j",
+             jobserver_fd[0], jobserver_fd[1]);
+    setenv("MAKEFLAGS", env, 1);
+  }
+  else
+  {
+    close(jobserver_fd[0]);
+    close(jobserver_fd[1]);
+  }
+}
+
 void child_execvp_wait(const char *prefix, const char *cmd, char **args)
 {
   pid_t pid = fork();
@@ -1169,9 +1261,7 @@ void child_execvp_wait(const char *prefix, const char *cmd, char **args)
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
 #endif
-    // FIXME check for make
-    close(jobserver_fd[0]);
-    close(jobserver_fd[1]);
+    do_makecmd(cmd);
     print_cmd(prefix, args);
     execvp(cmd, args);
     //write(1, "Err\n", 4);
@@ -1279,9 +1369,7 @@ pid_t fork_child(int ruleid)
       argcnt--;
     }
     update_recursive_pid(1);
-    // FIXME check for make
-    close(jobserver_fd[0]);
-    close(jobserver_fd[1]);
+    do_makecmd((*argiter)[0]);
     print_cmd(dir, &(*argiter)[0]);
     execvp((*argiter)[0], &(*argiter)[0]);
     //write(1, "Err\n", 4);
@@ -1778,6 +1866,9 @@ void set_nonblock(int fd)
 void sigchld_handler(int x)
 {
   write(self_pipe_fd[1], ".", 1);
+}
+void sigalrm_handler(int x)
+{
 }
 
 char *myitoa(int i)
@@ -2347,7 +2438,7 @@ int main(int argc, char **argv)
     printf("28\n");
     abort();
   }
-  set_nonblock(jobserver_fd[0]);
+  //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
   set_nonblock(jobserver_fd[1]);
 
   for (int i = 0; i < jobcnt - 1; i++)
@@ -2360,6 +2451,12 @@ int main(int argc, char **argv)
   sa.sa_flags = 0;
   sa.sa_handler = sigchld_handler;
   sigaction(SIGCHLD, &sa, NULL);
+
+  struct sigaction saint;
+  sigemptyset(&saint.sa_mask);
+  saint.sa_flags = 0;
+  saint.sa_handler = sigalrm_handler;
+  sigaction(SIGALRM, &saint, NULL);
 
   struct linked_list_node *node;
 back:
@@ -2378,8 +2475,7 @@ back:
   {
     if (children)
     {
-      char ch;
-      if (read(jobserver_fd[0], &ch, 1) != 1)
+      if (!read_jobserver())
       {
         break;
       }
@@ -2511,8 +2607,7 @@ back:
     {
       if (children)
       {
-        char ch;
-        if (read(jobserver_fd[0], &ch, 1) != 1)
+        if (!read_jobserver())
         {
           break;
         }
