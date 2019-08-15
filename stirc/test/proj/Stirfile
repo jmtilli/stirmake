@@ -1,0 +1,12 @@
+all: a b c dir/all
+
+@dirinclude "dir"
+
+a:
+	echo a
+
+b:
+	echo b
+
+c:
+	echo c

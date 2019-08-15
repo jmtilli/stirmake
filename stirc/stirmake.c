@@ -2278,9 +2278,11 @@ int main(int argc, char **argv)
   int cleanbinaries = 0;
   int clean = 0;
   char cwd[PATH_MAX];
+  char cwd_sameproj[PATH_MAX];
   char storcwd[PATH_MAX];
   char curcwd[PATH_MAX];
   size_t upcnt = 0;
+  size_t upcnt_sameproj = 0;
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -2384,6 +2386,10 @@ int main(int argc, char **argv)
     {
       abort();
     }
+    if (getcwd(cwd_sameproj, sizeof(cwd_sameproj)) == NULL)
+    {
+      abort();
+    }
     for (;;)
     {
       if (strcmp(curcwd, "/") == 0)
@@ -2414,6 +2420,16 @@ int main(int argc, char **argv)
         {
           upcnt = curupcnt;
           if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= sizeof(cwd))
+          {
+            printf("can't snprintf\n");
+            abort();
+          }
+        }
+        if (main.subdirseen_sameproject)
+        {
+          upcnt_sameproj = curupcnt;
+          if (snprintf(cwd_sameproj, sizeof(cwd_sameproj), "%s", curcwd)
+              >= sizeof(cwd_sameproj))
           {
             printf("can't snprintf\n");
             abort();
@@ -2466,7 +2482,7 @@ int main(int argc, char **argv)
     {
       errxit("no rules");
     }
-    free(better_cycle_detect(0));
+    free(better_cycle_detect(0)); // FIXME first rule for MODE_THIS/MODE_PROJECT
     if (clean || cleanbinaries)
     {
       char *fwd_path;
@@ -2479,10 +2495,14 @@ int main(int argc, char **argv)
         fwd_path = calc_forward_path(storcwd, upcnt);
         printf("stirmake: Forward path for clean: %s\n", fwd_path);
       }
+      else if (mode == MODE_PROJECT)
+      {
+        fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
+        printf("stirmake: Forward path for clean: %s\n", fwd_path);
+      }
       else
       {
-        fprintf(stderr, "project clean not implemented yet");
-        exit(1);
+        abort();
       }
       do_clean(&main, fwd_path, cleanbinaries);
       exit(0); // don't process first rule
@@ -2539,7 +2559,32 @@ int main(int argc, char **argv)
   }
   else
   {
-    errxit("project mode not yet supported"); // FIXME support!
+    char *fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
+    printf("stirmake: Forward path: %s\n", fwd_path);
+    for (i = optind; i < argc; i++)
+    {
+      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
+      char *buf = malloc(bufsz);
+      char *can;
+      size_t stidx;
+      int ruleid;
+      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
+      can = canon(buf);
+      free(buf);
+      stidx = stringtab_add(can);
+      ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+      free(can);
+    }
+    if (clean || cleanbinaries)
+    {
+      do_clean(&main, fwd_path, cleanbinaries);
+    }
   }
 
   for (i = 0; i < stiryy.cdepincludesz; i++)

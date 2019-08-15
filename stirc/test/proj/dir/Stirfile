@@ -1,0 +1,12 @@
+all: a b c subproj/all
+
+@projdirinclude "subproj"
+
+a:
+	echo a
+
+b:
+	echo b
+
+c:
+	echo c
