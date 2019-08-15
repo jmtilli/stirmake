@@ -16,3 +16,6 @@
 
 - support jobserver passing from GNU make to stirmake, fix the claim in paper
   that it won't work
+
+- clean for object directory hierarchies; use the prefix, not the start of the
+  target name, in comparison
