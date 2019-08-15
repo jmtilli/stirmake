@@ -1,15 +1,36 @@
 - Replace $CCCMDS = [[$CC<>, @$CFLAGS<>, "-c", "-o", $@, $<]] with
   $CCCMDS<> = [[$CC<>, @$CFLAGS<>, "-c", "-o", $@, $<]] and support it in abce
   too. Make $CCCMDS = [[$CC<>, @$CFLAGS<>, "-c", "-o", $@, $<]] evalute its
-  argument immediately.
-- Top-level marker to mark that "stirmake" can parse it directly and it's not
-  just for inclusion within other upper-level Stirfiles.
+  argument immediately. XXX has this been done already?
 
-- Make keys of dict memblocks too
+- Top-level marker to mark that "stirmake" can parse it directly and it's not
+  just for inclusion within other upper-level Stirfiles???
+
 - Order only prerequisites
-- Two memory areas for engine: temp microcode and global microcode
-  - Use signed number to distinguish between two
 
 - when assigning to dynscope, refdn the old dynscope? it's in cache anyway...
 
-- specification of target in subdir when in that dir
+- check that incyy includes prefix
+
+- build command DB
+
+- LuaJIT
+
+- Adding rules from Amyplan
+
+- Reserved words for referring to all/project top and getting the relative path
+  from all/project top to current directory
+
+- Make $<, $@, $^ work in Amyplan
+
+- Extend stiryy.y grammar to cover all cases
+
+- Conditional compilation and configurability
+
+- True distclean, now it's the same as clean
+
+- Actually unlink files in clean
+
+- Checks that non-PHONY rules create their targets
+
+- Holey scopes
