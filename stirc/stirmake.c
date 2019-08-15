@@ -2203,7 +2203,18 @@ void recursion_misuse_prevention(void)
     pid_t pid = (int)atoi(pidstr);
     if (getppid() == pid)
     {
-      errxit("Recursion misuse detected. Stirmake is designed to be used non-recursively");
+      fprintf(stderr, "stirmake: Three Processes for the Programmers waiting to type,\n");
+      fprintf(stderr, "stirmake: Seven for the Operators in their halls of racks,\n");
+      fprintf(stderr, "stirmake: Nine for End-users believing all hype.\n");
+      fprintf(stderr, "stirmake: One for the Evil Cracker for his dark hacks\n");
+      fprintf(stderr, "stirmake: In the land of Recursion where the Shadows lie.\n");
+      fprintf(stderr, "stirmake: One Build Tool to rule them all, one Build Tool to find them,\n");
+      fprintf(stderr, "stirmake: One Build Tool to bring them all, and in the darkness bind them,\n");
+      fprintf(stderr, "stirmake: In the land of Recursion where the Shadows lie.\n");
+      fprintf(stderr, "\n");
+      fprintf(stderr, "stirmake: *** Recursion misuse detected.\n");
+      fprintf(stderr, "stirmake: *** Stirmake is designed to be used non-recursively.\n");
+      fprintf(stderr, "stirmake: *** Exiting.\n");
       exit(1);
     }
   }
