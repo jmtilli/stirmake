@@ -13,4 +13,4 @@ d:
 	echo d
 
 e:
-	+cd fof && ../../smka
+	+cd fof && ../../../smka
