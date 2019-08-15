@@ -2027,14 +2027,14 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-v] [-d] [-j jobcnt]\n", argv0);
+    fprintf(stderr, "%s [-vdcb] [-j jobcnt] [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
   }
   else
   {
-    fprintf(stderr, "%s [-v] [-d] [-j jobcnt] -f Stirfile | -t | -p | -a\n", argv0);
+    fprintf(stderr, "%s [-vdcb] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
@@ -2141,6 +2141,39 @@ char *process_mflags(void)
   return NULL;
 }
 
+char *calc_forward_path(char *storcwd, size_t upcnt)
+{
+  char *fwd_path = NULL;
+  size_t idx = strlen(storcwd);
+  size_t i;
+  for (i = 0; i < upcnt; i++)
+  {
+    char *ptr;
+    ptr = my_memrchr(storcwd, '/', idx);
+    if (ptr == NULL)
+    {
+      idx = 0;
+    }
+    else
+    {
+      idx = ptr - storcwd;
+    }
+  }
+  if (storcwd[idx] == '/')
+  {
+    fwd_path = storcwd + idx + 1;
+  }
+  else
+  {
+    fwd_path = storcwd + idx;
+  }
+  if (*fwd_path == '\0')
+  {
+    fwd_path = ".";
+  }
+  return fwd_path;
+}
+
 int process_jobserver(int fds[2])
 {
   char *mflags;
@@ -2168,6 +2201,59 @@ int process_jobserver(int fds[2])
   return 0;
 }
 
+// FIXME cleanbinaries
+void do_clean(struct stiryy_main *main, char *fwd_path, int cleanbinaries)
+{
+  size_t i, j, fp_len;
+  int all;
+  all = (strcmp(fwd_path, ".") == 0);
+  fp_len = strlen(fwd_path);
+  for (i = 0; i < main->rulesz; i++)
+  {
+    for (j = 0; j < main->rules[i].targetsz; j++)
+    {
+      if (main->rules[i].phony)
+      {
+        continue;
+      }
+      int doit = all;
+      if (strncmp(main->rules[i].targets[j].name, fwd_path, fp_len) == 0)
+      {
+        if (main->rules[i].targets[j].name[fp_len] == '/')
+        {
+          doit = 1;
+        }
+      }
+      if (doit)
+      {
+        char *name = main->rules[i].targets[j].name;
+        struct stat statbuf;
+        if (stat(name, &statbuf) != 0)
+        {
+          continue;
+        }
+        if (S_ISREG(statbuf.st_mode))
+        {
+          printf("unlink regular: %s\n", name);
+        }
+        if (S_ISLNK(statbuf.st_mode))
+        {
+          printf("unlink symlink: %s\n", name);
+        }
+        if (S_ISSOCK(statbuf.st_mode))
+        {
+          printf("unlink socket: %s\n", name);
+        }
+        if (S_ISFIFO(statbuf.st_mode))
+        {
+          printf("unlink fifo: %s\n", name);
+        }
+        // FIXME do the actual unlinking
+      }
+    }
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -2184,6 +2270,8 @@ int main(int argc, char **argv)
   uint32_t forkedchildcnt = 0;
   int narration = 0;
   int jobcnt = 1;
+  int cleanbinaries = 0;
+  int clean = 0;
   char cwd[PATH_MAX];
   char storcwd[PATH_MAX];
   char curcwd[PATH_MAX];
@@ -2215,7 +2303,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:h")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcb")) != -1)
   {
     switch (opt)
     {
@@ -2231,6 +2319,12 @@ int main(int argc, char **argv)
     case 'f': // FIXME what if optarg contains directories?
       filename_set = 1;
       filename = optarg;
+      break;
+    case 'c': // clean
+      clean = 1;
+      break;
+    case 'b': // clean with binaries
+      cleanbinaries = 1;
       break;
     case 'j':
       jobcnt = atoi(optarg);
@@ -2368,6 +2462,26 @@ int main(int argc, char **argv)
       errxit("no rules");
     }
     free(better_cycle_detect(0));
+    if (clean || cleanbinaries)
+    {
+      char *fwd_path;
+      if (mode == MODE_ALL || mode == MODE_NONE)
+      {
+        fwd_path = ".";
+      }
+      else if (mode == MODE_THIS)
+      {
+        fwd_path = calc_forward_path(storcwd, upcnt);
+        printf("stirmake: Forward path for clean: %s\n", fwd_path);
+      }
+      else
+      {
+        fprintf(stderr, "project clean not implemented yet");
+        exit(1);
+      }
+      do_clean(&main, fwd_path, cleanbinaries);
+      exit(0); // don't process first rule
+    }
     ruleremain_add(rules[0]);
     // FIXME first rule in case MODE_THIS or MODE_PROJECT
   }
@@ -2384,36 +2498,14 @@ int main(int argc, char **argv)
       free(better_cycle_detect(ruleid));
       ruleremain_add(rules[ruleid]);
     }
+    if (clean || cleanbinaries)
+    {
+      do_clean(&main, ".", cleanbinaries);
+    }
   }
   else if (mode == MODE_THIS)
   {
-    char *fwd_path = NULL;
-    size_t idx = strlen(storcwd);
-    for (i = 0; i < upcnt; i++)
-    {
-      char *ptr;
-      ptr = my_memrchr(storcwd, '/', idx);
-      if (ptr == NULL)
-      {
-        idx = 0;
-      }
-      else
-      {
-        idx = ptr - storcwd;
-      }
-    }
-    if (storcwd[idx] == '/')
-    {
-      fwd_path = storcwd + idx + 1;
-    }
-    else
-    {
-      fwd_path = storcwd + idx;
-    }
-    if (*fwd_path == '\0')
-    {
-      fwd_path = ".";
-    }
+    char *fwd_path = calc_forward_path(storcwd, upcnt);
     printf("stirmake: Forward path: %s\n", fwd_path);
     for (i = optind; i < argc; i++)
     {
@@ -2434,6 +2526,10 @@ int main(int argc, char **argv)
       free(better_cycle_detect(ruleid));
       ruleremain_add(rules[ruleid]);
       free(can);
+    }
+    if (clean || cleanbinaries)
+    {
+      do_clean(&main, fwd_path, cleanbinaries);
     }
   }
   else
