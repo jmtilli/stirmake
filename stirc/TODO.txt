@@ -13,9 +13,3 @@
 - when assigning to dynscope, refdn the old dynscope? it's in cache anyway...
 
 - specification of target in subdir when in that dir
-
-- support jobserver passing from GNU make to stirmake, fix the claim in paper
-  that it won't work
-
-- clean for object directory hierarchies; use the prefix, not the start of the
-  target name, in comparison

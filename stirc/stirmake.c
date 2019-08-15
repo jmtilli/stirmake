@@ -2210,19 +2210,24 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int cleanbinaries)
   fp_len = strlen(fwd_path);
   for (i = 0; i < main->rulesz; i++)
   {
+    int doit = all;
+    if (strncmp(main->rules[i].prefix, fwd_path, fp_len) == 0)
+    {
+      if (main->rules[i].prefix[fp_len] == '/' ||
+          main->rules[i].prefix[fp_len] == '\0')
+      {
+        doit = 1;
+      }
+    }
+    if (!doit)
+    {
+      continue; // optimization
+    }
     for (j = 0; j < main->rules[i].targetsz; j++)
     {
       if (main->rules[i].phony)
       {
         continue;
-      }
-      int doit = all;
-      if (strncmp(main->rules[i].targets[j].name, fwd_path, fp_len) == 0)
-      {
-        if (main->rules[i].targets[j].name[fp_len] == '/')
-        {
-          doit = 1;
-        }
       }
       if (doit)
       {
