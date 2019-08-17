@@ -38,7 +38,7 @@ DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
 .PHONY: all wc
 
-all: stir inc arraytest luatest cctest streamtest globtest bttest jsontest abce stirmake smka smkt smkp
+all: stir inc abce stirmake smka smkt smkp
 
 .PHONY: abce
 
