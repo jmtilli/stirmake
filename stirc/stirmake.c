@@ -2121,6 +2121,7 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     return;
   }
+  // FIXME or is this guarding against a in case of a: b, b: c and smka b?
 #if 0 // This seems to be totally bogus code!
   if (!r->is_executing)
   {
