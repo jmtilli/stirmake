@@ -63,6 +63,7 @@ struct dep {
   char *name;
   char *namenodir;
   int rec;
+  int orderonly;
 };
 struct tgt {
   char *name;
@@ -215,7 +216,7 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
   stiryy->main->cdepincludesz++;
 }
 
-static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec)
+static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly)
 {
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
@@ -246,6 +247,7 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = strdup(dep);
   rule->deps[rule->depsz].rec = rec;
+  rule->deps[rule->depsz].orderonly = orderonly;
   rule->depsz++;
   free(can);
 }

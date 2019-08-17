@@ -60,6 +60,7 @@ struct CSnippet luaSnippet = {
 @endfunction return ENDFUNCTION;
 @locvar   return LOCVAR;
 @recdep   return RECDEP;
+@orderonly   return ORDERONLY;
 @once return ONCE;
 @endonce return ENDONCE;
 @stdout return STDOUT;

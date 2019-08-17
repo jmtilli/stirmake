@@ -145,6 +145,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token ENDFUNCTION
 %token LOCVAR
 %token RECDEP
+%token ORDERONLY
 %token DEPONLY
 
 %token DELAYVAR
@@ -1892,6 +1893,10 @@ maybe_rec:
 {
   $$ = 1;
 }
+| ORDERONLY
+{
+  $$ = 2;
+}
 ;
 
 patdeps:
@@ -1903,13 +1908,13 @@ patdeps:
     stiryy->main->freeform_token_seen=1;
   }
   printf("dep %s rec? %d\n", $3, (int)$2);
-  //stiryy_set_dep(stiryy, $3, $2);
+  //stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
   free($3);
 }
 | patdeps maybe_rec STRING_LITERAL
 {
   printf("dep %s rec? %d\n", $3.str, (int)$2);
-  //stiryy_set_dep(stiryy, $3.str, $2);
+  //stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
   free($3.str);
 }
 | patdeps maybe_rec VARREF_LITERAL
@@ -1928,13 +1933,13 @@ deps:
     stiryy->main->freeform_token_seen=1;
   }
   //printf("dep %s rec? %d\n", $3, (int)$2);
-  stiryy_set_dep(stiryy, $3, $2);
+  stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
   free($3);
 }
 | deps maybe_rec STRING_LITERAL
 {
   //printf("dep %s rec? %d\n", $3.str, (int)$2);
-  stiryy_set_dep(stiryy, $3.str, $2);
+  stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
   free($3.str);
 }
 | deps maybe_rec VARREF_LITERAL

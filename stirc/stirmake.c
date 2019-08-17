@@ -617,6 +617,7 @@ struct stirdep {
   struct linked_list_node llnode;
   size_t nameidx;
   unsigned is_recursive:1;
+  unsigned is_orderonly:1;
 };
 
 struct dep_remain {
@@ -796,7 +797,7 @@ struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
 
 size_t stirdep_cnt;
 
-void ins_dep(struct rule *rule, size_t depidx, int is_recursive)
+void ins_dep(struct rule *rule, size_t depidx, int is_recursive, int orderonly)
 {
   uint32_t hash = abce_murmur32(0x12345678U, depidx);
   struct stirdep *e;
@@ -806,6 +807,7 @@ void ins_dep(struct rule *rule, size_t depidx, int is_recursive)
   e = my_malloc(sizeof(*e));
   e->nameidx = depidx;
   e->is_recursive = !!is_recursive;
+  e->is_orderonly = !!orderonly;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
   if (ret != 0)
@@ -1350,7 +1352,7 @@ void process_additional_deps(size_t global_scopeidx)
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-        ins_dep(rule, dep->depidx, 0);
+        ins_dep(rule, dep->depidx, 0, 0);
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
@@ -1370,7 +1372,7 @@ void process_additional_deps(size_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      ins_dep(rule, dep->depidx, 0);
+      ins_dep(rule, dep->depidx, 0, 0);
     }
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
@@ -1429,7 +1431,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   for (i = 0; i < depsz; i++)
   {
     size_t nameidx = stringtab_add(deps[i].name);
-    ins_dep(rule, nameidx, !!deps[i].rec);
+    ins_dep(rule, nameidx, !!deps[i].rec, !!deps[i].orderonly);
     ins_ruleid_by_dep(nameidx, rule->ruleid);
   }
   rule->diridx = stringtab_add(prefix);
@@ -1899,11 +1901,14 @@ int do_exec(int ruleid)
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //abort();
         }
-        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+        if (!e->is_orderonly)
         {
-          st_mtim = statbuf.st_mtim;
+          if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+          {
+              st_mtim = statbuf.st_mtim;
+          }
+          seen_nonphony = 1;
         }
-        seen_nonphony = 1;
         if (lstat(sttable[e->nameidx], &statbuf) != 0)
         {
           has_to_exec = 1;
@@ -1913,11 +1918,14 @@ int do_exec(int ruleid)
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //abort();
         }
-        if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+        if (!e->is_orderonly)
         {
-          st_mtim = statbuf.st_mtim;
+          if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+          {
+            st_mtim = statbuf.st_mtim;
+          }
+          seen_nonphony = 1;
         }
-        seen_nonphony = 1;
       }
       r->st_mtim_valid = seen_nonphony;
       if (seen_nonphony)
