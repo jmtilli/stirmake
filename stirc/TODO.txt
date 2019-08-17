@@ -3,8 +3,6 @@
 
 - Order only prerequisites
 
-- check that incyy includes prefix
-
 - LuaJIT
 
 - Adding rules from Amyplan

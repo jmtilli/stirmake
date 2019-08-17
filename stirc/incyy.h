@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include "canon.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,32 +27,75 @@ struct incyy {
   struct incyyrule *rules;
   size_t rulesz;
   size_t rulecapacity;
+  char *prefix;
 };
 
 static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
 {
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
+  size_t sz = strlen(incyy->prefix) + strlen(dep) + 2;
+  char *can, *tmp = malloc(sz);
+
+  if (dep[0] == '/')
+  {
+    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    {
+      abort();
+    }
+  }
+  else
+  {
+    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, dep) >= sz)
+    {
+      abort();
+    }
+  }
+  can = canon(tmp);
+  free(tmp);
+
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
     rule->deps = (char**)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
     rule->depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz++] = strdup(dep);
+  rule->deps[rule->depsz++] = strdup(can);
+  free(can);
 }
 
 static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
 {
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
+  size_t sz = strlen(incyy->prefix) + strlen(tgt) + 2;
+  char *can, *tmp = malloc(sz);
+
+  if (tgt[0] == '/')
+  {
+    if (snprintf(tmp, sz, "%s", tgt) >= sz)
+    {
+      abort();
+    }
+  }
+  else
+  {
+    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, tgt) >= sz)
+    {
+      abort();
+    }
+  }
+  can = canon(tmp);
+  free(tmp);
+
   if (rule->targetsz >= rule->targetcapacity)
   {
     newcapacity = 2*rule->targetcapacity + 1;
     rule->targets = (char**)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
     rule->targetcapacity = newcapacity;
   }
-  rule->targets[rule->targetsz++] = strdup(tgt);
+  rule->targets[rule->targetsz++] = strdup(can);
+  free(can);
 }
 
 static inline void incyy_emplace_rule(struct incyy *incyy)

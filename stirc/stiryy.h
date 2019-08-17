@@ -99,6 +99,15 @@ struct stiryy_main {
   int subdirseen;
   int subdirseen_sameproject;
   int freeform_token_seen;
+
+  struct cdepinclude *cdepincludes;
+  size_t cdepincludesz;
+  size_t cdepincludecapacity;
+};
+
+struct cdepinclude {
+  char *name;
+  char *prefix;
 };
 
 struct stiryy {
@@ -108,9 +117,6 @@ struct stiryy {
   size_t bytecapacity;
   size_t bytesz;
 #endif
-  char **cdepincludes;
-  size_t cdepincludesz;
-  size_t cdepincludecapacity;
 
   struct stiryy_main *main;
   struct amyplan_locvarctx *ctx;
@@ -198,13 +204,15 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
 static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
 {
   size_t newcapacity;
-  if (stiryy->cdepincludesz >= stiryy->cdepincludecapacity)
+  if (stiryy->main->cdepincludesz >= stiryy->main->cdepincludecapacity)
   {
-    newcapacity = 2*stiryy->cdepincludecapacity + 1;
-    stiryy->cdepincludes = (char**)realloc(stiryy->cdepincludes, sizeof(*stiryy->cdepincludes)*newcapacity);
-    stiryy->cdepincludecapacity = newcapacity;
+    newcapacity = 2*stiryy->main->cdepincludecapacity + 1;
+    stiryy->main->cdepincludes = realloc(stiryy->main->cdepincludes, sizeof(*stiryy->main->cdepincludes)*newcapacity);
+    stiryy->main->cdepincludecapacity = newcapacity;
   }
-  stiryy->cdepincludes[stiryy->cdepincludesz++] = strdup(cd);
+  stiryy->main->cdepincludes[stiryy->main->cdepincludesz].name = strdup(cd);
+  stiryy->main->cdepincludes[stiryy->main->cdepincludesz].prefix = strdup(stiryy->curprefix);
+  stiryy->main->cdepincludesz++;
 }
 
 static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec)
@@ -374,12 +382,19 @@ static inline void stiryy_main_free(struct stiryy_main *main)
     free(main->rules[i].targets);
   }
   free(main->rules);
+
+  for (i = 0; i < main->cdepincludesz; i++)
+  {
+    free(main->cdepincludes[i].name);
+    free(main->cdepincludes[i].prefix);
+  }
+  free(main->cdepincludes);
 }
 
 static inline void stiryy_free(struct stiryy *stiryy)
 {
-  size_t i;
 #if 0
+  size_t i;
   size_t j;
   for (i = 0; i < stiryy->main->rulesz; i++)
   {
@@ -397,11 +412,6 @@ static inline void stiryy_free(struct stiryy *stiryy)
   free(stiryy->rules);
   free(stiryy->bytecode);
 #endif
-  for (i = 0; i < stiryy->cdepincludesz; i++)
-  {
-    free(stiryy->cdepincludes[i]);
-  }
-  free(stiryy->cdepincludes);
   memset(stiryy, 0, sizeof(*stiryy));
 }
 

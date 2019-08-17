@@ -3131,11 +3131,11 @@ int main(int argc, char **argv)
     }
   }
 
-  for (i = 0; i < stiryy.cdepincludesz; i++)
+  for (i = 0; i < stiryy.main->cdepincludesz; i++)
   {
-    struct incyy incyy = {};
+    struct incyy incyy = {.prefix = stiryy.main->cdepincludes[i].prefix};
     size_t j;
-    f = fopen(stiryy.cdepincludes[i], "r");
+    f = fopen(stiryy.main->cdepincludes[i].name, "r");
     if (!f)
     {
       printf("25\n");
