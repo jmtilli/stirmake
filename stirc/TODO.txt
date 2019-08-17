@@ -35,3 +35,5 @@
 - hooks for make -c and make -b so that sub-build-systems can be cleaned
 
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
+
+- If a command fails with an exit status, rm its cmdline from DB
