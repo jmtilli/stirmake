@@ -8,8 +8,6 @@
 
 - Order only prerequisites
 
-- when assigning to dynscope, refdn the old dynscope? it's in cache anyway...
-
 - check that incyy includes prefix
 
 - build command DB

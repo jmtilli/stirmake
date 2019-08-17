@@ -740,6 +740,7 @@ stirrules:
   char *prefix2;
   FILE *f;
   struct abce_mb oldscope;
+  size_t oldscopeidx;
   if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $3.str) >= psz)
   {
     abort();
@@ -762,7 +763,9 @@ stirrules:
   }
   prefix2 = canon(prefix);
   oldscope = get_abce(stiryy)->dynscope;
+  oldscopeidx = oldscope.u.area->u.sc.locidx;
   get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
+  abce_mb_refdn(get_abce(stiryy), &oldscope);
   abce_scope_set_userdata(&get_abce(stiryy)->dynscope, prefix2);
   if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
   {
@@ -782,7 +785,8 @@ stirrules:
 
   stiryy_free(&stiryy2);
   abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);
-  get_abce(stiryy)->dynscope = oldscope;
+  get_abce(stiryy)->dynscope = abce_mb_refup(get_abce(stiryy), &get_abce(stiryy)->cachebase[oldscopeidx]);
+  //get_abce(stiryy)->dynscope = oldscope;
   // free(prefix2); // let it leak, FIXME free it someday
   free(prefix);
   free(filename);
