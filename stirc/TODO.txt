@@ -31,8 +31,6 @@
 
 - Actually unlink files in clean
 
-- Checks that non-PHONY rules create their targets
-
 - Holey scopes
 
 - per-rule scopes, so that rules can carry a dynamic scope, adjusting the
