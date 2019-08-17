@@ -33,3 +33,5 @@
   variable assignments
 
 - hooks for make -c and make -b so that sub-build-systems can be cleaned
+
+- What if tgt+dep have exactly same mtime? How does standard make handle it?
