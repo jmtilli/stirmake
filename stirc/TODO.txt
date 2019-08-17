@@ -44,6 +44,7 @@
   variable assignments
 
 - @maybe: "subproj/lib/libsp.a" "subproj/bin/sputil": @recdep "subproj"
-  - or actually not @maybe but @rectgt because the targets are inside @recdep
 
 - hooks for make -c and make -b so that sub-build-systems can be cleaned
+
+- for @rectgtrule, touch the targets to have at least the largest rec_mtim
