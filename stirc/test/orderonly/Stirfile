@@ -1,0 +1,10 @@
+@phonyrule: all: obj/foo.o obj/bar.o
+
+obj/foo.o: src/foo.c @orderonly obj
+	touch obj/foo.o
+
+obj/bar.o: src/bar.c @orderonly obj
+	touch obj/bar.o
+
+obj:
+	mkdir obj
