@@ -58,13 +58,13 @@ CC=clang
 CFLAGS=-O3 -Wall -g -I$(LUAINC)
 
 smka:
-	rm smka
+	rm -f smka
 	ln -s stirmake smka
 smkt:
-	rm smkt
+	rm -f smkt
 	ln -s stirmake smkt
 smkp:
-	rm smkp
+	rm -f smkp
 	ln -s stirmake smkp
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
