@@ -3421,8 +3421,7 @@ back:
           {
             if (linked_list_is_empty(&rules_remain_list))
             {
-              merge_db();
-              return 0;
+              goto out;
             }
             else
             {
@@ -3481,6 +3480,7 @@ back:
       //ruleids_to_run.pop_back();
     }
   }
+out:
   if (debug)
   {
     printf("\n");
