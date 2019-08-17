@@ -21,3 +21,6 @@
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 
 - If a command fails with an exit status, rm its cmdline from DB
+
+- Replace main algorithm. It doesn't work with dynamically added targets, and
+  is a total mess, resulting in a failure for a diamond-shaped ruleset.
