@@ -23,5 +23,3 @@
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 
 - If a command fails with an exit status, rm its cmdline from DB
-
-- rm plus-assigning line from amyplanyy and stiryy
