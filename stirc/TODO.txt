@@ -35,9 +35,6 @@
 
 - Holey scopes
 
-- separate "make -cb" so that "-c" cleans objects only, "-b" cleans binaries
-  only and "-cb" required for cleaning all
-
 - per-rule scopes, so that rules can carry a dynamic scope, adjusting the
   variable assignments
 
