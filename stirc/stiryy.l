@@ -74,6 +74,12 @@ struct CSnippet luaSnippet = {
 @DO     return DO;
 @LO     return LO;
 @IO     return IO;
+@DP     return DP;
+@LP     return LP;
+@IP     return IP;
+@DPO     return DPO;
+@LPO     return LPO;
+@IPO     return IPO;
 @dyn   return DYN;
 @lex   return LEX;
 @imm   return IMM;
@@ -132,6 +138,9 @@ struct CSnippet luaSnippet = {
 @scopenew return SCOPE_NEW;
 @getscopedyn return GETSCOPE_DYN;
 @getscopelex return GETSCOPE_LEX;
+@beginscope return BEGINSCOPE;
+@beginholeyscope return BEGINHOLEYSCOPE;
+@endscope return ENDSCOPE;
 
 @addRule   return ADD_RULE;
 @RULE_DIST   return RULE_DIST;
