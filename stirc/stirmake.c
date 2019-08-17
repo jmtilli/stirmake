@@ -2121,6 +2121,7 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     return;
   }
+#if 0 // This seems to be totally bogus code!
   if (!r->is_executing)
   {
     if (debug)
@@ -2129,6 +2130,12 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     return;
   }
+#else
+  if (!r->is_executing)
+  {
+    r->is_executing = 1;
+  }
+#endif
   deps_remain_erase(r, ruleid_executed);
   //if (!linked_list_is_empty(&r->depremainlist))
   if (r->deps_remain_cnt > 0)
