@@ -2577,27 +2577,43 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int objs, int bins)
       {
         char *name = main->rules[i].targets[j].name;
         struct stat statbuf;
-        if (stat(name, &statbuf) != 0)
+        int ret = 0;
+        ret = stat(name, &statbuf);
+        if (ret != 0 && errno == ENOENT)
         {
           continue;
         }
+        if (ret != 0)
+        {
+          perror("stirmake: *** Can't stat file");
+          errxit("Can't stat file %s", name);
+        }
+        ret = 0;
         if (S_ISREG(statbuf.st_mode))
         {
           printf("unlink regular: %s\n", name);
+          ret = unlink(name);
         }
-        if (S_ISLNK(statbuf.st_mode))
+        else if (S_ISLNK(statbuf.st_mode))
         {
           printf("unlink symlink: %s\n", name);
+          ret = unlink(name);
         }
-        if (S_ISSOCK(statbuf.st_mode))
+        else if (S_ISSOCK(statbuf.st_mode))
         {
           printf("unlink socket: %s\n", name);
+          ret = unlink(name);
         }
-        if (S_ISFIFO(statbuf.st_mode))
+        else if (S_ISFIFO(statbuf.st_mode))
         {
           printf("unlink fifo: %s\n", name);
+          ret = unlink(name);
         }
-        // FIXME do the actual unlinking
+        if (ret != 0)
+        {
+          perror("stirmake: *** Can't unlink file");
+          errxit("Can't unlink file %s", name);
+        }
       }
     }
   }
