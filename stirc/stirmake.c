@@ -2059,7 +2059,11 @@ int consider(int ruleid)
     int idbytgt = get_ruleid_by_tgt(e->nameidx);
     if (idbytgt >= 0)
     {
-      execed_some = execed_some || consider(idbytgt);
+      if (consider(idbytgt))
+      {
+        execed_some = 1;
+      }
+      //execed_some = execed_some || consider(idbytgt); // BAD! DON'T DO THIS!
       if (!rules[idbytgt]->is_executed)
       {
         if (debug)
@@ -2121,8 +2125,6 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     return;
   }
-  // FIXME or is this guarding against a in case of a: b, b: c and smka b?
-#if 0 // This seems to be totally bogus code!
   if (!r->is_executing)
   {
     if (debug)
@@ -2131,12 +2133,6 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     return;
   }
-#else
-  if (!r->is_executing)
-  {
-    r->is_executing = 1;
-  }
-#endif
   deps_remain_erase(r, ruleid_executed);
   //if (!linked_list_is_empty(&r->depremainlist))
   if (r->deps_remain_cnt > 0)
@@ -3322,6 +3318,10 @@ back:
     int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
     if (consider(ruleid))
     {
+      if (debug)
+      {
+        printf("goto back\n");
+      }
       goto back; // this can edit the list, need to re-start iteration
     }
   }
