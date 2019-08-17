@@ -1,6 +1,0 @@
-#!/bin/sh
-echo "sleeping for touch $@"
-sleep 1
-echo "touching $@"
-touch "$@"
-echo "touched $@"
