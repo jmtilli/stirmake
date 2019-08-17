@@ -397,6 +397,22 @@ size_t st_cnt;
 
 size_t stringtab_cnt = 0;
 
+size_t stringtab_get(const char *symbol)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hashval;
+  size_t hashloc;
+  hashval = abce_murmur_buf(0x12345678U, symbol, strlen(symbol));
+  hashloc = hashval % (sizeof(st)/sizeof(*st));
+  n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym,
+NULL, symbol);
+  if (n != NULL)
+  {
+    return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
+  }
+  return (size_t)-1;
+}
+
 size_t stringtab_add(const char *symbol)
 {
   struct abce_rb_tree_node *n;
@@ -592,13 +608,16 @@ struct stirtgt {
 struct rule {
   struct linked_list_node remainllnode;
   unsigned is_phony:1;
+  unsigned is_rectgt:1;
   unsigned is_executed:1;
   unsigned is_actually_executed:1; // command actually invoked
   unsigned is_executing:1;
   unsigned is_queued:1;
   unsigned remain:1;
+  unsigned st_mtim_valid:1;
   size_t diridx;
   struct cmd cmd;
+  struct timespec st_mtim;
   int ruleid;
   struct abce_rb_tree_nocmp tgts[TGTS_SIZE];
   struct linked_list_head tgtlist;
@@ -643,6 +662,20 @@ static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   return 0;
 }
 
+static inline int tgt_cmp_asym(size_t tgtidx, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
+  if (tgtidx > e2->tgtidx)
+  {
+    return 1;
+  }
+  if (tgtidx < e2->tgtidx)
+  {
+    return -1;
+  }
+  return 0;
+}
+
 static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
   struct stirdep *e1 = ABCE_CONTAINER_OF(n1, struct stirdep, node);
@@ -676,6 +709,20 @@ void ins_tgt(struct rule *rule, size_t tgtidx)
     abort();
   }
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
+}
+
+struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  struct abce_rb_tree_nocmp *head;
+  head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tgt_cmp_asym, NULL, tgtidx);
+  if (n != NULL)
+  {
+    return ABCE_CONTAINER_OF(n, struct stirtgt, node);
+  }
+  return NULL;
 }
 
 size_t stirdep_cnt;
@@ -1217,6 +1264,7 @@ void process_additional_deps(void)
         ins_dep(rule, dep->depidx, 0);
       }
       rule->is_phony = !!entry->phony;
+      rule->is_rectgt = 0;
       LINKED_LIST_FOR_EACH(node2, &rule->deplist)
       {
         struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
@@ -1246,7 +1294,8 @@ void process_additional_deps(void)
 
 void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
-              char ***cmdargs, size_t cmdargsz, int phony, char *prefix)
+              char ***cmdargs, size_t cmdargsz, int phony, int rectgt,
+              char *prefix)
 {
   struct rule *rule;
   struct cmd cmd;
@@ -1277,6 +1326,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->ruleid = rules_size++;
   rule->cmd = cmd;
   rule->is_phony = !!phony;
+  rule->is_rectgt = !!rectgt;
 
   for (i = 0; i < tgtsz; i++)
   {
@@ -1585,7 +1635,7 @@ pid_t fork_child(int ruleid)
 
 void mark_executed(int ruleid, int was_actually_executed);
 
-struct timespec rec_mtim(const char *name)
+struct timespec rec_mtim(struct rule *r, const char *name)
 {
   struct timespec max;
   struct stat statbuf;
@@ -1640,7 +1690,7 @@ struct timespec rec_mtim(const char *name)
     //if (de->d_type == DT_DIR)
     if (0)
     {
-      cur = rec_mtim(nam2);
+      cur = rec_mtim(r, nam2);
     }
     else
     {
@@ -1660,14 +1710,26 @@ struct timespec rec_mtim(const char *name)
         cur = statbuf.st_mtim;
       }
     }
-    if (ts_cmp(cur, max) > 0)
+    int found_rectgt = 0;
+    if (r->is_rectgt)
+    {
+      size_t stidx = stringtab_get(nam2);
+      if (stidx != (size_t)-1)
+      {
+        if (rule_get_tgt(r, stidx) != NULL)
+        {
+          found_rectgt = 1;
+        }
+      }
+    }
+    if (ts_cmp(cur, max) > 0 && !found_rectgt)
     {
       //printf("nam2 file new %s\n", nam2);
       max = cur;
     }
     if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
     {
-      cur = rec_mtim(nam2);
+      cur = rec_mtim(r, nam2);
       if (ts_cmp(cur, max) > 0)
       {
         //printf("nam2 dir new %s\n", nam2);
@@ -1728,7 +1790,7 @@ int do_exec(int ruleid)
         }
         if (e->is_recursive)
         {
-          struct timespec st_rectim = rec_mtim(sttable[e->nameidx]);
+          struct timespec st_rectim = rec_mtim(r, sttable[e->nameidx]);
           if (!seen_nonphony || ts_cmp(st_rectim, st_mtim) > 0)
           {
             st_mtim = st_rectim;
@@ -1739,7 +1801,8 @@ int do_exec(int ruleid)
         if (stat(sttable[e->nameidx], &statbuf) != 0)
         {
           has_to_exec = 1;
-          break;
+          // break; // No break, we want to get accurate st_mtim
+          continue;
           //perror("can't stat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //abort();
@@ -1752,7 +1815,8 @@ int do_exec(int ruleid)
         if (lstat(sttable[e->nameidx], &statbuf) != 0)
         {
           has_to_exec = 1;
-          break;
+          // break; // No break, we want to get accurate st_mtim
+          continue;
           //perror("can't lstat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //abort();
@@ -1762,6 +1826,11 @@ int do_exec(int ruleid)
           st_mtim = statbuf.st_mtim;
         }
         seen_nonphony = 1;
+      }
+      r->st_mtim_valid = seen_nonphony;
+      if (seen_nonphony)
+      {
+        r->st_mtim = st_mtim;
       }
       LINKED_LIST_FOR_EACH(node, &r->tgtlist)
       {
@@ -1992,6 +2061,40 @@ void mark_executed(int ruleid, int was_actually_executed)
     return;
   }
 #endif
+  if (r->is_rectgt && r->st_mtim_valid)
+  {
+    LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+    {
+      struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      struct timeval times[2];
+      int utimeret;
+      times[0].tv_sec = r->st_mtim.tv_sec;
+      times[0].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
+      times[1].tv_sec = r->st_mtim.tv_sec;
+      times[1].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
+      utimeret = utimes(sttable[e->tgtidx], times);
+      if (debug)
+      {
+        printf("utime %s succeeded? %d\n", sttable[e->tgtidx], (utimeret == 0));
+      }
+    }
+  }
+  else if (!r->is_phony) // FIXME add is_maybe here too?
+  {
+    struct stat statbuf;
+    LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+    {
+      struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      if (stat(sttable[e->tgtidx], &statbuf) != 0)
+      {
+        errxit("Target %s was not created by rule\n", sttable[e->tgtidx]);
+      }
+      if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0)
+      {
+        errxit("Target %s was not updated by rule\n", sttable[e->tgtidx]);
+      }
+    }
+  }
   /* FIXME we need to handle:
    * a: b
    * b: c
@@ -2791,7 +2894,8 @@ int main(int argc, char **argv)
       }
       add_rule(main.rules[i].targets, main.rules[i].targetsz,
                main.rules[i].deps, main.rules[i].depsz,
-               main.rules[i].shells, main.rules[i].shellsz, main.rules[i].phony,
+               main.rules[i].shells, main.rules[i].shellsz,
+               main.rules[i].phony, main.rules[i].rectgt,
                main.rules[i].prefix);
       if (   (!ruleid_first_set)
           && (   strcmp(fwd_path, ".") == 0

@@ -83,6 +83,7 @@ struct stiryyrule {
   size_t lastshellcapacity;
   char *prefix;
   unsigned phony:1;
+  unsigned rectgt:1;
 };
 
 struct stiryy_main {
@@ -320,12 +321,17 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
   stiryy->main->rules[stiryy->main->rulesz].shells = NULL;
   stiryy->main->rules[stiryy->main->rulesz].prefix = strdup(stiryy->curprefix);
   stiryy->main->rules[stiryy->main->rulesz].phony = 0;
+  stiryy->main->rules[stiryy->main->rulesz].rectgt = 0;
   stiryy->main->rulesz++;
 }
 
 static inline void stiryy_mark_phony(struct stiryy *stiryy)
 {
   stiryy->main->rules[stiryy->main->rulesz-1].phony = 1;
+}
+static inline void stiryy_mark_rectgt(struct stiryy *stiryy)
+{
+  stiryy->main->rules[stiryy->main->rulesz-1].rectgt = 1;
 }
 
 static inline void stiryy_main_free(struct stiryy_main *main)

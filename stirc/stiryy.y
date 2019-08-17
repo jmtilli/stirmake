@@ -149,6 +149,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token PHONYRULE
 %token DISTRULE
 %token PATRULE
+%token RECTGTRULE
 %token FILEINCLUDE
 %token DIRINCLUDE PROJDIRINCLUDE
 %token CDEPINCLUDESCURDIR
@@ -330,6 +331,10 @@ expr NEWLINE
 
 stirrule:
   targetspec COLON depspec NEWLINE shell_commands
+| RECTGTRULE COLON targetspec COLON depspec NEWLINE shell_commands
+{
+  stiryy_mark_rectgt(stiryy);
+}
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   stiryy_mark_phony(stiryy);
