@@ -3135,12 +3135,25 @@ int main(int argc, char **argv)
   {
     struct incyy incyy = {.prefix = stiryy.main->cdepincludes[i].prefix};
     size_t j;
-    f = fopen(stiryy.main->cdepincludes[i].name, "r");
+    size_t fnamesz =
+      strlen(incyy.prefix) + strlen(stiryy.main->cdepincludes[i].name) + 2;
+    char *fname = malloc(fnamesz);
+    if (snprintf(fname, fnamesz, "%s/%s", incyy.prefix, stiryy.main->cdepincludes[i].name) >= fnamesz)
+    {
+      printf("24.5\n");
+      abort();
+    }
+    if (debug)
+    {
+      printf("reading cdepincludes from %s\n", fname);
+    }
+    f = fopen(fname, "r");
     if (!f)
     {
       printf("25\n");
       abort();
     }
+    free(fname);
     incyydoparse(f, &incyy);
     //for (auto it = incyy.rules; it != incyy.rules + incyy.rulesz; it++)
     for (j = 0; j < incyy.rulesz; j++)
