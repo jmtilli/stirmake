@@ -1,8 +1,3 @@
-- Replace $CCCMDS = [[$CC<>, @$CFLAGS<>, "-c", "-o", $@, $<]] with
-  $CCCMDS<> = [[$CC<>, @$CFLAGS<>, "-c", "-o", $@, $<]] and support it in abce
-  too. Make $CCCMDS = [[$CC<>, @$CFLAGS<>, "-c", "-o", $@, $<]] evalute its
-  argument immediately. XXX has this been done already?
-
 - Top-level marker to mark that "stirmake" can parse it directly and it's not
   just for inclusion within other upper-level Stirfiles???
 
