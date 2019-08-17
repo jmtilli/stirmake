@@ -2138,16 +2138,27 @@ void mark_executed(int ruleid, int was_actually_executed)
 #endif
   if (r->is_rectgt && r->st_mtim_valid)
   {
+    // XXX should do new rec_mtim
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      struct timespec timespecs[2];
       struct timeval times[2];
       int utimeret;
+      timespecs[0] = r->st_mtim;
+      timespecs[1] = r->st_mtim;
       times[0].tv_sec = r->st_mtim.tv_sec;
       times[0].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
       times[1].tv_sec = r->st_mtim.tv_sec;
       times[1].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
-      utimeret = utimes(sttable[e->tgtidx], times);
+      if (1)
+      {
+        utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx], timespecs, 0);
+      }
+      else
+      {
+        utimeret = utimes(sttable[e->tgtidx], times);
+      }
       if (debug)
       {
         printf("utime %s succeeded? %d\n", sttable[e->tgtidx], (utimeret == 0));
