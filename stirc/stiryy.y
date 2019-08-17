@@ -618,20 +618,20 @@ targets:
     stiryy->main->freeform_token_seen=1;
   }
   //printf("target1 %s\n", $1);
-  stiryy_emplace_rule(stiryy);
+  stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
   stiryy_set_tgt(stiryy, $1);
   free($1);
 }
 | STRING_LITERAL
 {
   //printf("target1 %s\n", $1.str);
-  stiryy_emplace_rule(stiryy);
+  stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
   stiryy_set_tgt(stiryy, $1.str);
   free($1.str);
 }
 | VARREF_LITERAL
 {
-  stiryy_emplace_rule(stiryy);
+  stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
   printf("target1ref\n");
   free($1);
 }

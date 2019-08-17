@@ -29,9 +29,6 @@
 
 - Holey scopes
 
-- per-rule scopes, so that rules can carry a dynamic scope, adjusting the
-  variable assignments
-
 - hooks for make -c and make -b so that sub-build-systems can be cleaned
 
 - What if tgt+dep have exactly same mtime? How does standard make handle it?

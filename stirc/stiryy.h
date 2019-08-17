@@ -81,6 +81,7 @@ struct stiryyrule {
   size_t shellcapacity;
   size_t lastshellsz;
   size_t lastshellcapacity;
+  size_t scopeidx;
   char *prefix;
   unsigned phony:1;
   unsigned rectgt:1;
@@ -304,7 +305,7 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
   rule->lastshellcapacity = 0;
 }
 
-static inline void stiryy_emplace_rule(struct stiryy *stiryy)
+static inline void stiryy_emplace_rule(struct stiryy *stiryy, size_t scopeidx)
 {
   size_t newcapacity;
   if (stiryy->main->rulesz >= stiryy->main->rulecapacity)
@@ -328,6 +329,7 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
   stiryy->main->rules[stiryy->main->rulesz].maybe = 0;
   stiryy->main->rules[stiryy->main->rulesz].dist = 0;
   stiryy->main->rules[stiryy->main->rulesz].deponly = 0;
+  stiryy->main->rules[stiryy->main->rulesz].scopeidx = scopeidx;
   stiryy->main->rulesz++;
 }
 

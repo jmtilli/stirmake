@@ -693,6 +693,7 @@ struct rule {
   struct linked_list_head deplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   size_t deps_remain_cnt; // XXX return this for less memory use?
+  size_t scopeidx;
 };
 
 struct linked_list_head rules_remain_list =
@@ -1205,7 +1206,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
 
 size_t add_deps_cnt;
 
-struct add_deps *add_deps_ensure(size_t tgtidx, int require)
+struct add_deps *add_deps_ensure(size_t tgtidx)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -1217,11 +1218,6 @@ struct add_deps *add_deps_ensure(size_t tgtidx, int require)
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
-  }
-  if (require)
-  {
-    fprintf(stderr, "stirmake: rule for target %s not found\n", sttable[tgtidx]);
-    exit(1);
   }
   add_deps_cnt++;
   struct add_deps *entry = my_malloc(sizeof(struct add_deps));
@@ -1243,12 +1239,12 @@ struct add_deps *add_deps_ensure(size_t tgtidx, int require)
 
 void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
                         struct dep *deps, size_t depsz,
-                        int phony, int require)
+                        int phony)
 {
   size_t i, j;
   for (i = 0; i < tgtsz; i++)
   {
-    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i].name), require);
+    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i].name));
     if (phony)
     {
       entry->phony = 1;
@@ -1262,12 +1258,12 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
 
 void add_dep(char **tgts, size_t tgts_sz,
              char **deps, size_t deps_sz,
-             int phony, int require)
+             int phony)
 {
   size_t i, j;
   for (i = 0; i < tgts_sz; i++)
   {
-    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i]), require);
+    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i]));
     if (phony)
     {
       entry->phony = 1;
@@ -1323,7 +1319,7 @@ char ***argsdupcnt(char ***cmdargs, size_t cnt)
 
 size_t rule_cnt;
 
-void process_additional_deps(void)
+void process_additional_deps(size_t global_scopeidx)
 {
   struct linked_list_node *node, *node2;
   LINKED_LIST_FOR_EACH(node, &add_deplist)
@@ -1347,6 +1343,7 @@ void process_additional_deps(void)
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
 
+      rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgtidx, rule->ruleid);
       ins_tgt(rule, entry->tgtidx);
@@ -1388,7 +1385,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
               char ***cmdargs, size_t cmdargsz,
               int phony, int rectgt, int maybe,
-              char *prefix)
+              char *prefix, size_t scopeidx)
 {
   struct rule *rule;
   struct cmd cmd;
@@ -1416,6 +1413,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rules[rules_size] = rule;
 
   zero_rule(rule);
+  rule->scopeidx = scopeidx;
   rule->ruleid = rules_size++;
   rule->cmd = cmd;
   rule->is_phony = !!phony;
@@ -2290,10 +2288,10 @@ void pathological_test(void)
   for (rule = 0; rule < 3000; rule++)
   {
     rulestr = myitoa(rule);
-    add_dep(&rulestr, 1, v_rules, v_rules_sz, 0, 0);
+    add_dep(&rulestr, 1, v_rules, v_rules_sz, 0);
     v_rules[v_rules_sz++] = rulestr;
   }
-  process_additional_deps();
+  process_additional_deps(0);
   printf("starting DFS2\n");
   gettimeofday(&tv1, NULL);
   free(better_cycle_detect(get_ruleid_by_tgt(stringtab_add(rulestr))));
@@ -3016,7 +3014,7 @@ int main(int argc, char **argv)
                main.rules[i].deps, main.rules[i].depsz,
                main.rules[i].shells, main.rules[i].shellsz,
                main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
-               main.rules[i].prefix);
+               main.rules[i].prefix, main.rules[i].scopeidx);
       if (   (!ruleid_first_set)
           && (   strcmp(fwd_path, ".") == 0
               || strcmp(fwd_path, main.rules[i].prefix) == 0))
@@ -3043,7 +3041,7 @@ int main(int argc, char **argv)
         printf("ADDING DEP\n");
       }
       add_dep_from_rules(main.rules[i].targets, main.rules[i].targetsz,
-                         main.rules[i].deps, main.rules[i].depsz, 0, 1);
+                         main.rules[i].deps, main.rules[i].depsz, 0);
     }
   }
   if (!ruleid_first_set)
@@ -3153,7 +3151,7 @@ int main(int argc, char **argv)
       //std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
       add_dep(incyy.rules[j].targets, incyy.rules[j].targetsz,
               incyy.rules[j].deps, incyy.rules[j].depsz,
-              0, 0);
+              0);
       //add_dep(tgt, dep, 0);
     }
     fclose(f);
@@ -3163,7 +3161,7 @@ int main(int argc, char **argv)
 
   //add_dep(v_l3e, v_l1g, 0); // offending rule
 
-  process_additional_deps();
+  process_additional_deps(abce.dynscope.u.area->u.sc.locidx);
 
 #if 0
   unsigned char *no_cycles = better_cycle_detect(0); // FIXME 0 incorrect!
