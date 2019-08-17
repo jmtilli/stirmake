@@ -2160,7 +2160,18 @@ void mark_executed(int ruleid, int was_actually_executed)
 #endif
   if (r->is_rectgt && r->st_mtim_valid)
   {
-    // XXX should do new rec_mtim
+    LINKED_LIST_FOR_EACH(node, &r->deplist)
+    {
+      struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+      if (e->is_recursive)
+      {
+        struct timespec st_mtim2 = rec_mtim(r, sttable[e->nameidx]);
+        if (ts_cmp(st_mtim2, r->st_mtim) > 0)
+        {
+          r->st_mtim = st_mtim2;
+        }
+      }
+    }
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
