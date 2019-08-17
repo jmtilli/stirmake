@@ -345,6 +345,9 @@ stirrule:
   stiryy_mark_maybe(stiryy);
 }
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
+{
+  stiryy_mark_dist(stiryy);
+}
 | PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands
 ;
 

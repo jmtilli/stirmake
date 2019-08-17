@@ -2440,7 +2440,7 @@ int process_jobserver(int fds[2])
 }
 
 // FIXME cleanbinaries
-void do_clean(struct stiryy_main *main, char *fwd_path, int cleanbinaries)
+void do_clean(struct stiryy_main *main, char *fwd_path, int objs, int bins)
 {
   size_t i, j, fp_len;
   int all;
@@ -2463,11 +2463,12 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int cleanbinaries)
     }
     for (j = 0; j < main->rules[i].targetsz; j++)
     {
+      int dist = main->rules[i].dist;
       if (main->rules[i].phony)
       {
         continue;
       }
-      if (doit)
+      if (doit && ((objs && !dist) || (bins && dist)))
       {
         char *name = main->rules[i].targets[j].name;
         struct stat statbuf;
@@ -2922,7 +2923,7 @@ int main(int argc, char **argv)
     free(better_cycle_detect(ruleid_first));
     if (clean || cleanbinaries)
     {
-      do_clean(&main, fwd_path, cleanbinaries);
+      do_clean(&main, fwd_path, clean, cleanbinaries);
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
@@ -2942,7 +2943,7 @@ int main(int argc, char **argv)
     }
     if (clean || cleanbinaries)
     {
-      do_clean(&main, ".", cleanbinaries);
+      do_clean(&main, ".", clean, cleanbinaries);
     }
   }
   else if (mode == MODE_THIS)
@@ -2969,7 +2970,7 @@ int main(int argc, char **argv)
     }
     if (clean || cleanbinaries)
     {
-      do_clean(&main, fwd_path, cleanbinaries);
+      do_clean(&main, fwd_path, clean, cleanbinaries);
     }
   }
   else
@@ -2996,7 +2997,7 @@ int main(int argc, char **argv)
     }
     if (clean || cleanbinaries)
     {
-      do_clean(&main, fwd_path, cleanbinaries);
+      do_clean(&main, fwd_path, clean, cleanbinaries);
     }
   }
 

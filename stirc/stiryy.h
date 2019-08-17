@@ -85,6 +85,7 @@ struct stiryyrule {
   unsigned phony:1;
   unsigned rectgt:1;
   unsigned maybe:1;
+  unsigned dist:1;
 };
 
 struct stiryy_main {
@@ -324,12 +325,17 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
   stiryy->main->rules[stiryy->main->rulesz].phony = 0;
   stiryy->main->rules[stiryy->main->rulesz].rectgt = 0;
   stiryy->main->rules[stiryy->main->rulesz].maybe = 0;
+  stiryy->main->rules[stiryy->main->rulesz].dist = 0;
   stiryy->main->rulesz++;
 }
 
 static inline void stiryy_mark_phony(struct stiryy *stiryy)
 {
   stiryy->main->rules[stiryy->main->rulesz-1].phony = 1;
+}
+static inline void stiryy_mark_dist(struct stiryy *stiryy)
+{
+  stiryy->main->rules[stiryy->main->rulesz-1].dist = 1;
 }
 static inline void stiryy_mark_maybe(struct stiryy *stiryy)
 {

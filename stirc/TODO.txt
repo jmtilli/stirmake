@@ -29,8 +29,6 @@
 
 - Conditional compilation and configurability
 
-- True distclean, now it's the same as clean
-
 - Actually unlink files in clean
 
 - Checks that non-PHONY rules create their targets
