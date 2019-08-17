@@ -1422,7 +1422,7 @@ void print_cmd(const char *prefix, char **argiter_orig)
     argiter++;
     argcnt++;
   }
-  iovs = malloc(sizeof(*iovs)*argcnt*2+4);
+  iovs = malloc(sizeof(*iovs)*(argcnt*2+4));
   iovs[0].iov_base = "[";
   iovs[0].iov_len = 1;
   iovs[1].iov_base = (void*)prefix;
