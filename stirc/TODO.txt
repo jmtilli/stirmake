@@ -25,3 +25,4 @@
 - Replace main algorithm? May not work with dynamically added targets.
 
 - Topological sort to enable rmdir()
+  - reverse it with a linked list traversed in reverse order
