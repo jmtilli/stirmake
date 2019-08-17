@@ -571,8 +571,8 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_tgt_entry_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
-    printf("ruleid by tgt %s already exists\n", sttable[tgtidx]);
-    abort();
+    printf("stirmake: *** ruleid by tgt %s already exists\n", sttable[tgtidx]);
+    exit(1); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
 }

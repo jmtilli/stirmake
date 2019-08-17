@@ -34,5 +34,3 @@
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 
 - If a command fails with an exit status, rm its cmdline from DB
-
-- What if there are two rules having same target?
