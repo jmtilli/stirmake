@@ -147,6 +147,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token STRAPPEND
 %token SUFSUB
 %token PHONYRULE
+%token MAYBERULE
 %token DISTRULE
 %token PATRULE
 %token RECTGTRULE
@@ -338,6 +339,10 @@ stirrule:
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   stiryy_mark_phony(stiryy);
+}
+| MAYBERULE COLON targetspec COLON depspec NEWLINE shell_commands
+{
+  stiryy_mark_maybe(stiryy);
 }
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 | PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands

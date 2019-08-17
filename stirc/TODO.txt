@@ -43,8 +43,4 @@
 - per-rule scopes, so that rules can carry a dynamic scope, adjusting the
   variable assignments
 
-- @maybe: "subproj/lib/libsp.a" "subproj/bin/sputil": @recdep "subproj"
-
 - hooks for make -c and make -b so that sub-build-systems can be cleaned
-
-- for @rectgtrule, touch the targets to have at least the largest rec_mtim

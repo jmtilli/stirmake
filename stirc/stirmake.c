@@ -608,6 +608,7 @@ struct stirtgt {
 struct rule {
   struct linked_list_node remainllnode;
   unsigned is_phony:1;
+  unsigned is_maybe:1;
   unsigned is_rectgt:1;
   unsigned is_executed:1;
   unsigned is_actually_executed:1; // command actually invoked
@@ -1294,7 +1295,8 @@ void process_additional_deps(void)
 
 void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
-              char ***cmdargs, size_t cmdargsz, int phony, int rectgt,
+              char ***cmdargs, size_t cmdargsz,
+              int phony, int rectgt, int maybe,
               char *prefix)
 {
   struct rule *rule;
@@ -1326,6 +1328,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->ruleid = rules_size++;
   rule->cmd = cmd;
   rule->is_phony = !!phony;
+  rule->is_maybe = !!maybe;
   rule->is_rectgt = !!rectgt;
 
   for (i = 0; i < tgtsz; i++)
@@ -2079,7 +2082,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       }
     }
   }
-  else if (!r->is_phony) // FIXME add is_maybe here too?
+  else if (!r->is_phony && !r->is_maybe)
   {
     struct stat statbuf;
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
@@ -2895,7 +2898,7 @@ int main(int argc, char **argv)
       add_rule(main.rules[i].targets, main.rules[i].targetsz,
                main.rules[i].deps, main.rules[i].depsz,
                main.rules[i].shells, main.rules[i].shellsz,
-               main.rules[i].phony, main.rules[i].rectgt,
+               main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
                main.rules[i].prefix);
       if (   (!ruleid_first_set)
           && (   strcmp(fwd_path, ".") == 0
