@@ -23,3 +23,5 @@
 - If a command fails with an exit status, rm its cmdline from DB
 
 - Replace main algorithm? May not work with dynamically added targets.
+
+- Topological sort to enable rmdir()
