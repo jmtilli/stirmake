@@ -157,6 +157,35 @@ struct cmd {
   char ***args;
 };
 
+int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
+{
+  size_t cnt1, cnt2, i;
+  for (cnt1 = 0; cmd1->args[cnt1]; cnt1++);
+  for (cnt2 = 0; cmd2->args[cnt2]; cnt2++);
+  if (cnt1 != cnt2)
+  {
+    return 0;
+  }
+  for (i = 0; i < cnt1; i++)
+  {
+    size_t argcnt1, argcnt2, j;
+    for (argcnt1 = 0; cmd1->args[i][argcnt1]; argcnt1++);
+    for (argcnt2 = 0; cmd2->args[i][argcnt2]; argcnt2++);
+    if (argcnt1 != argcnt2)
+    {
+      return 0;
+    }
+    for (j = 0; j < argcnt1; j++)
+    {
+      if (strcmp(cmd1->args[i][j], cmd2->args[i][j]) != 0)
+      {
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
 struct dbe {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
@@ -208,6 +237,8 @@ struct db {
   struct abce_rb_tree_nocmp byname[DB_SIZE];
   struct linked_list_head ll;
 };
+
+struct db db = {};
 
 void ins_dbe(struct db *db, struct dbe *dbe)
 {
@@ -447,6 +478,42 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
     abort(); // RFE what to do?
   }
   return stringtab_add(symbol);
+}
+
+int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
+{
+  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  struct abce_rb_tree_nocmp *head;
+  struct abce_rb_tree_node *n;
+  struct dbe *dbe;
+  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, tgtidx);
+  if (n == NULL)
+  {
+    if (debug)
+    {
+      printf("target %s not found in cmd DB\n", sttable[tgtidx]);
+    }
+    return 0;
+  }
+  dbe = ABCE_CONTAINER_OF(n, struct dbe, node);
+  if (dbe->diridx != diridx)
+  {
+    if (debug)
+    {
+      printf("target %s has different dir in cmd DB\n", sttable[tgtidx]);
+    }
+    return 0;
+  }
+  if (!cmd_equal(cmd, &dbe->cmds))
+  {
+    if (debug)
+    {
+      printf("target %s has different cmd in cmd DB\n", sttable[tgtidx]);
+    }
+    return 0;
+  }
+  return 1;
 }
 
 
@@ -1839,6 +1906,10 @@ int do_exec(int ruleid)
       {
         struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
         struct stat statbuf;
+        if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
+        {
+          has_to_exec = 1;
+        }
         if (debug)
         {
           printf("statting %s\n", sttable[e->tgtidx]);
@@ -1846,7 +1917,8 @@ int do_exec(int ruleid)
         if (stat(sttable[e->tgtidx], &statbuf) != 0)
         {
           has_to_exec = 1;
-          break;
+          //break; // can't break, has to compare all commands from DB
+          continue;
         }
         if (!seen_tgt || ts_cmp(statbuf.st_mtim, st_mtimtgt) < 0)
         {
@@ -2517,14 +2589,10 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
   return ret;
 }
 
-void merge_db(void)
+void load_db(void)
 {
-  size_t i;
   struct dbyy dbyy = {};
-  struct db db = {};
-  struct linked_list_node *node;
-  FILE *f;
-  int firstrule = 1;
+  size_t i;
   linked_list_head_init(&db.ll);
   dbyynameparse(".stir.db", &dbyy, 0);
   for (i = 0; i < dbyy.rulesz; i++)
@@ -2535,6 +2603,14 @@ void merge_db(void)
     dbe->cmds = dbyycmd_add(dbyy.rules[i].cmds, dbyy.rules[i].cmdssz);
     ins_dbe(&db, dbe);
   }
+}
+
+void merge_db(void)
+{
+  size_t i;
+  struct linked_list_node *node;
+  FILE *f;
+  int firstrule = 1;
   for (i = 0; i < rules_size; i++)
   {
     struct rule *rule = rules[i];
@@ -2854,6 +2930,7 @@ int main(int argc, char **argv)
     }
   }
 
+  load_db();
   abce_init(&abce);
   main.abce = &abce;
   main.freeform_token_seen = 0;

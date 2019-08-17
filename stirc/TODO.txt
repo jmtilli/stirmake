@@ -10,8 +10,6 @@
 
 - check that incyy includes prefix
 
-- build command DB
-
 - LuaJIT
 
 - Adding rules from Amyplan
