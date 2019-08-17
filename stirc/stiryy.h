@@ -86,6 +86,7 @@ struct stiryyrule {
   unsigned rectgt:1;
   unsigned maybe:1;
   unsigned dist:1;
+  unsigned deponly:1;
 };
 
 struct stiryy_main {
@@ -326,6 +327,7 @@ static inline void stiryy_emplace_rule(struct stiryy *stiryy)
   stiryy->main->rules[stiryy->main->rulesz].rectgt = 0;
   stiryy->main->rules[stiryy->main->rulesz].maybe = 0;
   stiryy->main->rules[stiryy->main->rulesz].dist = 0;
+  stiryy->main->rules[stiryy->main->rulesz].deponly = 0;
   stiryy->main->rulesz++;
 }
 
@@ -344,6 +346,10 @@ static inline void stiryy_mark_maybe(struct stiryy *stiryy)
 static inline void stiryy_mark_rectgt(struct stiryy *stiryy)
 {
   stiryy->main->rules[stiryy->main->rulesz-1].rectgt = 1;
+}
+static inline void stiryy_mark_deponly(struct stiryy *stiryy)
+{
+  stiryy->main->rules[stiryy->main->rulesz-1].deponly = 1;
 }
 
 static inline void stiryy_main_free(struct stiryy_main *main)

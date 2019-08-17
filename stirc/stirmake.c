@@ -1205,7 +1205,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
 
 size_t add_deps_cnt;
 
-struct add_deps *add_deps_ensure(size_t tgtidx)
+struct add_deps *add_deps_ensure(size_t tgtidx, int require)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -1217,6 +1217,11 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
+  }
+  if (require)
+  {
+    fprintf(stderr, "stirmake: rule for target %s not found\n", sttable[tgtidx]);
+    exit(1);
   }
   add_deps_cnt++;
   struct add_deps *entry = my_malloc(sizeof(struct add_deps));
@@ -1236,14 +1241,33 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   return entry;
 }
 
+void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
+                        struct dep *deps, size_t depsz,
+                        int phony, int require)
+{
+  size_t i, j;
+  for (i = 0; i < tgtsz; i++)
+  {
+    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i].name), require);
+    if (phony)
+    {
+      entry->phony = 1;
+    }
+    for (j = 0; j < depsz; j++)
+    {
+      add_dep_ensure(entry, stringtab_add(deps[j].name));
+    }
+  }
+}
+
 void add_dep(char **tgts, size_t tgts_sz,
              char **deps, size_t deps_sz,
-             int phony)
+             int phony, int require)
 {
   size_t i, j;
   for (i = 0; i < tgts_sz; i++)
   {
-    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i]));
+    struct add_deps *entry = add_deps_ensure(stringtab_add(tgts[i]), require);
     if (phony)
     {
       entry->phony = 1;
@@ -2266,7 +2290,7 @@ void pathological_test(void)
   for (rule = 0; rule < 3000; rule++)
   {
     rulestr = myitoa(rule);
-    add_dep(&rulestr, 1, v_rules, v_rules_sz, 0);
+    add_dep(&rulestr, 1, v_rules, v_rules_sz, 0, 0);
     v_rules[v_rules_sz++] = rulestr;
   }
   process_additional_deps();
@@ -2980,6 +3004,10 @@ int main(int argc, char **argv)
   {
     if (main.rules[i].targetsz > 0) // FIXME chg to if (1)
     {
+      if (main.rules[i].deponly)
+      {
+        continue;
+      }
       if (debug)
       {
         printf("ADDING RULE\n");
@@ -3000,6 +3028,22 @@ int main(int argc, char **argv)
         ruleid_first = rules_size - 1;
         ruleid_first_set = 1;
       }
+    }
+  }
+  for (i = 0; i < main.rulesz; i++)
+  {
+    if (main.rules[i].targetsz > 0) // FIXME chg to if (1)
+    {
+      if (!main.rules[i].deponly)
+      {
+        continue;
+      }
+      if (debug)
+      {
+        printf("ADDING DEP\n");
+      }
+      add_dep_from_rules(main.rules[i].targets, main.rules[i].targetsz,
+                         main.rules[i].deps, main.rules[i].depsz, 0, 1);
     }
   }
   if (!ruleid_first_set)
@@ -3109,7 +3153,7 @@ int main(int argc, char **argv)
       //std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
       add_dep(incyy.rules[j].targets, incyy.rules[j].targetsz,
               incyy.rules[j].deps, incyy.rules[j].depsz,
-              0);
+              0, 0);
       //add_dep(tgt, dep, 0);
     }
     fclose(f);

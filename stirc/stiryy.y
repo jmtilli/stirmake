@@ -138,6 +138,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token ENDFUNCTION
 %token LOCVAR
 %token RECDEP
+%token DEPONLY
 
 %token DELAYVAR
 %token DELAYEXPR
@@ -347,6 +348,10 @@ stirrule:
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   stiryy_mark_dist(stiryy);
+}
+| DEPONLY COLON targetspec COLON depspec NEWLINE
+{
+  stiryy_mark_deponly(stiryy);
 }
 | PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands
 ;

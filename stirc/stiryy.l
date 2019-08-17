@@ -66,6 +66,7 @@ struct CSnippet luaSnippet = {
 @stderr return STDERR;
 @error return ERROR;
 @dump return DUMP;
+@deponly return DEPONLY;
 @exit return EXIT;
 @D     return D;
 @L     return L;
