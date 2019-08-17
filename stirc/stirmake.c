@@ -2195,11 +2195,11 @@ void mark_executed(int ruleid, int was_actually_executed)
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
       if (stat(sttable[e->tgtidx], &statbuf) != 0)
       {
-        errxit("Target %s was not created by rule\n", sttable[e->tgtidx]);
+        errxit("Target %s was not created by rule", sttable[e->tgtidx]);
       }
       if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0)
       {
-        errxit("Target %s was not updated by rule\n", sttable[e->tgtidx]);
+        errxit("Target %s was not updated by rule", sttable[e->tgtidx]);
       }
     }
   }
