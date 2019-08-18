@@ -30,3 +30,5 @@
 
 - don't delete targets if the list of cmds is empty? There's no way the target
   is created given an empty list of cmds.
+
+- don't delete rectgtrule targets? or at least those that are within recdep.
