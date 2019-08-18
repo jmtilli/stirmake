@@ -122,6 +122,7 @@ struct stiryy {
   struct stiryy_main *main;
   struct amyplan_locvarctx *ctx;
   char *curprefix;
+  char *curprojprefix;
   size_t curscopeidx;
   struct abce_mb curscope;
   int sameproject;
@@ -145,13 +146,15 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
 }
 
 static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
-                               char *prefix, struct abce_mb curscope)
+                               char *prefix, char *projprefix,
+                               struct abce_mb curscope)
 {
   yy->main = main;
   yy->sameproject = 1;
   //abce_init(&yy->abce);
   yy->ctx = NULL;
   yy->curprefix = strdup(prefix);
+  yy->curprojprefix = strdup(projprefix);
   yy->curscopeidx = abce_cache_add(yy->main->abce, &curscope); // avoid GC abort
   yy->curscope = curscope;
 }

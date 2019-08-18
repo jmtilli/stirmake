@@ -263,14 +263,20 @@ custom_rule:
   struct stiryy stiryy2 = {};
   size_t fsz = strlen(stiryy->curprefix) + strlen($2.str) + 8 + 3;
   size_t psz = strlen(stiryy->curprefix) + strlen($2.str) + 2;
+  size_t ppsz = strlen(stiryy->curprojprefix) + strlen($2.str) + 2;
   char *prefix = malloc(psz);
+  char *projprefix = malloc(ppsz);
   char *filename = malloc(fsz);
   char realpathname[PATH_MAX];
-  char *prefix2;
+  char *prefix2, *projprefix2;
   FILE *f;
   struct abce_mb oldscope;
   size_t oldscopeidx;
   if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $2.str) >= psz)
+  {
+    abort();
+  }
+  if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, $2.str) >= ppsz)
   {
     abort();
   }
@@ -291,16 +297,24 @@ custom_rule:
     }
   }
   prefix2 = canon(prefix);
+  projprefix2 = canon(projprefix);
+  if (!$1)
+  {
+    // replace projprefix2
+    free(projprefix2);
+    projprefix2 = strdup(".");
+  }
   oldscope = get_abce(stiryy)->dynscope;
   oldscopeidx = oldscope.u.area->u.sc.locidx;
   get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
   abce_mb_refdn(get_abce(stiryy), &oldscope);
-  abce_scope_set_userdata(&get_abce(stiryy)->dynscope, prefix2);
+  //printf("projprefix2: %s\n", projprefix2);
+  abce_scope_set_userdata(&get_abce(stiryy)->dynscope, projprefix2);
   if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
   {
     abort();
   }
-  stiryy_init(&stiryy2, stiryy->main, prefix2, get_abce(stiryy)->dynscope);
+  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope);
   stiryy2.sameproject = stiryy->sameproject && $1;
 
   f = fopen(filename, "r");
@@ -317,7 +331,9 @@ custom_rule:
   get_abce(stiryy)->dynscope = abce_mb_refup(get_abce(stiryy), &get_abce(stiryy)->cachebase[oldscopeidx]);
   //get_abce(stiryy)->dynscope = oldscope;
   // free(prefix2); // let it leak, FIXME free it someday
+  // free(projprefix2); // let it leak, FIXME free it someday
   free(prefix);
+  free(projprefix);
   free(filename);
   free($2.str);
 }

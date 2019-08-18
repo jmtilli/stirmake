@@ -3137,7 +3137,7 @@ int main(int argc, char **argv)
       init_main_for_realpath(&main, storcwd); // FIXME leaks
       main.abce = &abce;
       main.freeform_token_seen = 1;
-      stiryy_init(&stiryy, &main, ".", abce.dynscope);
+      stiryy_init(&stiryy, &main, ".", ".", abce.dynscope);
       f = fopen("Stirfile", "r");
       if (f)
       {
@@ -3178,7 +3178,7 @@ int main(int argc, char **argv)
   abce.trap = stir_trap;
   main.abce = &abce;
   main.freeform_token_seen = 0;
-  stiryy_init(&stiryy, &main, ".", abce.dynscope);
+  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope);
 
   f = fopen(filename, "r");
   if (!f)
