@@ -482,6 +482,7 @@ int read_jobserver(void)
     new_value.it_value.tv_sec = 0;
     new_value.it_value.tv_usec = 10*1000;
     setitimer(ITIMER_REAL, &new_value, NULL);
+    // TODO to a re-poll?
     ret = read(jobserver_fd[0], &ch, 1);
     new_value.it_interval.tv_sec = 0;
     new_value.it_interval.tv_usec = 0;
