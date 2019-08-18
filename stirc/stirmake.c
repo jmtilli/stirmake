@@ -3465,7 +3465,7 @@ int main(int argc, char **argv)
   f = fopen(filename, "r");
   if (!f)
   {
-    printf("24\n");
+    errxit("Stirfile not found");
     my_abort();
   }
   stiryydoparse(f, &stiryy);
