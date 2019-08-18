@@ -675,6 +675,7 @@ struct stirtgt {
  */
 struct rule {
   struct linked_list_node remainllnode;
+  struct linked_list_node cleanllnode;
   unsigned is_phony:1;
   unsigned is_maybe:1;
   unsigned is_rectgt:1;
@@ -682,8 +683,11 @@ struct rule {
   unsigned is_actually_executed:1; // command actually invoked
   unsigned is_executing:1;
   unsigned is_queued:1;
+  unsigned is_cleanqueued:1;
   unsigned remain:1;
   unsigned st_mtim_valid:1;
+  unsigned is_inc:1; // whether this is included from dependency file
+  unsigned is_dist:1;
   size_t diridx;
   struct cmd cmd;
   struct timespec st_mtim;
@@ -1344,6 +1348,7 @@ void process_additional_deps(size_t global_scopeidx)
       //printf("adding tgt: %s\n", entry->tgt);
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
+      rule->is_inc = 1;
 
       rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
@@ -1386,7 +1391,7 @@ void process_additional_deps(size_t global_scopeidx)
 void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
               char ***cmdargs, size_t cmdargsz,
-              int phony, int rectgt, int maybe,
+              int phony, int rectgt, int maybe, int dist,
               char *prefix, size_t scopeidx)
 {
   struct rule *rule;
@@ -1421,6 +1426,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->is_phony = !!phony;
   rule->is_maybe = !!maybe;
   rule->is_rectgt = !!rectgt;
+  rule->is_dist = !!dist;
 
   for (i = 0; i < tgtsz; i++)
   {
@@ -2567,20 +2573,39 @@ int process_jobserver(int fds[2])
   return 0;
 }
 
-// FIXME cleanbinaries
-void do_clean(struct stiryy_main *main, char *fwd_path, int objs, int bins)
+struct linked_list_head cleanlist = STIR_LINKED_LIST_HEAD_INITER(cleanlist);
+
+char *dir_up(char *old)
 {
-  size_t i, j, fp_len;
+  size_t oldlen = strlen(old);
+  size_t uncanonized_capacity = oldlen + 4;
+  char *uncanonized = malloc(uncanonized_capacity);
+  char *canonized;
+  if (snprintf(uncanonized, uncanonized_capacity, "%s/..", old) >=
+      uncanonized_capacity)
+  {
+    abort();
+  }
+  canonized = canon(uncanonized);
+  free(uncanonized);
+  return canonized;
+}
+
+// FIXME cleanbinaries
+void do_clean(char *fwd_path, int objs, int bins)
+{
+  size_t i, fp_len;
   int all;
+  struct linked_list_node *node, *node2, *node3, *nodetmp;
   all = (strcmp(fwd_path, ".") == 0);
   fp_len = strlen(fwd_path);
-  for (i = 0; i < main->rulesz; i++)
+  for (i = 0; i < rules_size; i++)
   {
     int doit = all;
-    if (strncmp(main->rules[i].prefix, fwd_path, fp_len) == 0)
+    char *prefix = sttable[rules[i]->diridx];
+    if (strncmp(prefix, fwd_path, fp_len) == 0)
     {
-      if (main->rules[i].prefix[fp_len] == '/' ||
-          main->rules[i].prefix[fp_len] == '\0')
+      if (prefix[fp_len] == '/' || prefix[fp_len] == '\0')
       {
         doit = 1;
       }
@@ -2589,16 +2614,99 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int objs, int bins)
     {
       continue; // optimization
     }
-    for (j = 0; j < main->rules[i].targetsz; j++)
+    if (rules[i]->is_phony)
     {
-      int dist = main->rules[i].dist;
-      if (main->rules[i].phony)
+      continue;
+    }
+    if (rules[i]->is_inc)
+    {
+      continue;
+    }
+    if (rules[i]->is_cleanqueued)
+    {
+      continue;
+    }
+    LINKED_LIST_FOR_EACH(node2, &rules[i]->tgtlist)
+    {
+      struct stirtgt *tgt = ABCE_CONTAINER_OF(node2, struct stirtgt, llnode);
+      char *oldname = strdup(sttable[tgt->tgtidx]);
+      char *name;
+      size_t stidx;
+      int ruleid;
+      struct linked_list_head tmplist; // extra list for reversing
+      linked_list_head_init(&tmplist);
+      if (debug)
       {
-        continue;
+        printf("itering tgt %s\n", oldname);
       }
-      if (doit && ((objs && !dist) || (bins && dist)))
+      for (;;)
       {
-        char *name = main->rules[i].targets[j].name;
+        if (debug)
+        {
+          printf("itering dir %s\n", oldname);
+        }
+        name = dir_up(oldname);
+        if (debug)
+        {
+          printf("dir-up %s\n", name);
+        }
+        free(oldname);
+        oldname = name;
+        stidx = stringtab_get(name);
+        if (stidx == (size_t)-1)
+        {
+          break;
+        }
+        ruleid = get_ruleid_by_tgt(stidx);
+        if (ruleid < 0)
+        {
+          break;
+        }
+        if (rules[ruleid]->is_phony)
+        {
+          break;
+        }
+        if (rules[ruleid]->is_inc)
+        {
+          break;
+        }
+        if (rules[ruleid]->is_cleanqueued)
+        {
+          break;
+        }
+        rules[ruleid]->is_cleanqueued = 1;
+        if (debug)
+        {
+          printf("adding rule %d to rm list\n", ruleid);
+        }
+        linked_list_add_head(&rules[ruleid]->cleanllnode, &tmplist);
+      }
+      free(oldname);
+      LINKED_LIST_FOR_EACH_SAFE(node3, nodetmp, &tmplist)
+      {
+        struct rule *rule = ABCE_CONTAINER_OF(node3, struct rule, cleanllnode);
+        linked_list_delete(&rule->cleanllnode);
+        linked_list_add_head(&rule->cleanllnode, &cleanlist);
+        if (!rule->is_cleanqueued)
+        {
+          printf("rule %d not cleanqueued\n", rule->ruleid);
+          abort();
+        }
+      }
+    }
+    rules[i]->is_cleanqueued = 1;
+    linked_list_add_head(&rules[i]->cleanllnode, &cleanlist);
+  }
+  LINKED_LIST_FOR_EACH(node, &cleanlist)
+  {
+    struct rule *rule = ABCE_CONTAINER_OF(node, struct rule, cleanllnode);
+    int dist = rule->is_dist;
+    LINKED_LIST_FOR_EACH(node2, &rule->tgtlist)
+    {
+      struct stirtgt *tgt = ABCE_CONTAINER_OF(node2, struct stirtgt, llnode);
+      if ((objs && !dist) || (bins && dist))
+      {
+        char *name = sttable[tgt->tgtidx];
         struct stat statbuf;
         int ret = 0;
         ret = stat(name, &statbuf);
@@ -2631,6 +2739,16 @@ void do_clean(struct stiryy_main *main, char *fwd_path, int objs, int bins)
         {
           printf("unlink fifo: %s\n", name);
           ret = unlink(name);
+        }
+        else if (S_ISDIR(statbuf.st_mode))
+        {
+          printf("rmdir: %s\n", name);
+          ret = rmdir(name);
+          if (ret != 0)
+          {
+            perror("stirmake: (ignoring) can't rmdir");
+            ret = 0;
+          }
         }
         if (ret != 0)
         {
@@ -3053,6 +3171,7 @@ int main(int argc, char **argv)
                main.rules[i].deps, main.rules[i].depsz,
                main.rules[i].shells, main.rules[i].shellsz,
                main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
+               main.rules[i].dist,
                main.rules[i].prefix, main.rules[i].scopeidx);
       if (   (!ruleid_first_set)
           && (   strcmp(fwd_path, ".") == 0
@@ -3092,7 +3211,7 @@ int main(int argc, char **argv)
     free(better_cycle_detect(ruleid_first));
     if (clean || cleanbinaries)
     {
-      do_clean(&main, fwd_path, clean, cleanbinaries);
+      do_clean(fwd_path, clean, cleanbinaries);
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
@@ -3112,7 +3231,7 @@ int main(int argc, char **argv)
     }
     if (clean || cleanbinaries)
     {
-      do_clean(&main, ".", clean, cleanbinaries);
+      do_clean(".", clean, cleanbinaries);
     }
   }
   else if (mode == MODE_THIS)
@@ -3139,7 +3258,7 @@ int main(int argc, char **argv)
     }
     if (clean || cleanbinaries)
     {
-      do_clean(&main, fwd_path, clean, cleanbinaries);
+      do_clean(fwd_path, clean, cleanbinaries);
     }
   }
   else
@@ -3166,7 +3285,7 @@ int main(int argc, char **argv)
     }
     if (clean || cleanbinaries)
     {
-      do_clean(&main, fwd_path, clean, cleanbinaries);
+      do_clean(fwd_path, clean, cleanbinaries);
     }
   }
 

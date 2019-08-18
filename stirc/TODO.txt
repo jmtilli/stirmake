@@ -24,9 +24,6 @@
 
 - Replace main algorithm? May not work with dynamically added targets.
 
-- Topological sort to enable rmdir()
-  - reverse it with a linked list traversed in reverse order
-
 - cannot clean anomaly for self-modifying build systems
 
 - verify cdepincludes are not unlinked when there are rules having no cmds/deps
