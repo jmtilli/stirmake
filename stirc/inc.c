@@ -2,6 +2,11 @@
 #include "incyyutils.h"
 #include "incyy.h"
 
+void my_abort(void)
+{
+  abort();
+}
+
 int main(int argc, char **argv)
 {
   FILE *f = fopen("depfile.dep", "r");

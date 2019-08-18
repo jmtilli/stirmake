@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+void my_abort(void);
+
 struct escaped_string {
   size_t sz;
   char *str;
@@ -135,11 +137,11 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
   memset(main, 0, sizeof(*main));
   if (realpath(cwd, buf2) == NULL)
   {
-    abort();
+    my_abort();
   }
   if (snprintf(buf3, sizeof(buf3), "%s/Stirfile", buf2) >= sizeof(buf3))
   {
-    abort();
+    my_abort();
   }
   main->realpathname = canon(buf3);
   main->subdirseen = 0;
@@ -229,14 +231,14 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   {
     if (snprintf(tmp, sz, "%s", dep) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   else
   {
     if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, dep) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   can = canon(tmp);
@@ -265,14 +267,14 @@ static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
   {
     if (snprintf(tmp, sz, "%s", tgt) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   else
   {
     if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, tgt) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   can = canon(tmp);

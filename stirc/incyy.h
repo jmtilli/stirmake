@@ -30,6 +30,8 @@ struct incyy {
   char *prefix;
 };
 
+void my_abort(void);
+
 static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
 {
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
@@ -41,14 +43,14 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
   {
     if (snprintf(tmp, sz, "%s", dep) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   else
   {
     if (snprintf(tmp, sz, "%s/%s", incyy->prefix, dep) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   can = canon(tmp);
@@ -75,14 +77,14 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
   {
     if (snprintf(tmp, sz, "%s", tgt) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   else
   {
     if (snprintf(tmp, sz, "%s/%s", incyy->prefix, tgt) >= sz)
     {
-      abort();
+      my_abort();
     }
   }
   can = canon(tmp);

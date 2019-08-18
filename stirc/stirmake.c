@@ -25,6 +25,18 @@
 #include "dbyyutils.h"
 #include "stirtrap.h"
 
+struct abce abce = {};
+int abce_inited = 0;
+
+void my_abort(void)
+{
+  if (abce_inited)
+  {
+    abce_compact(&abce);
+  }
+  abort();
+}
+
 enum mode {
   MODE_NONE = 0,
   MODE_THIS = 1,
@@ -101,7 +113,7 @@ void errxit(const char *fmt, ...)
     if (children <= 0)
     {
       printf("27.E\n");
-      abort();
+      my_abort();
     }
     children--;
     if (children != 0)
@@ -116,7 +128,7 @@ void errxit(const char *fmt, ...)
     if (pid == 0)
     {
       printf("28.E\n");
-      abort();
+      my_abort();
     }
     if (children <= 0)
     {
@@ -127,21 +139,21 @@ void errxit(const char *fmt, ...)
         exit(1);
       }
       printf("29.E\n");
-      abort();
+      my_abort();
     }
     if (pid < 0)
     {
       printf("30.E\n");
       perror("Error was");
       printf("number of children: %d\n", children);
-      abort();
+      my_abort();
     }
 #if 0 // Let's not do this, just in case the data is messed up.
     int ruleid = ruleid_by_pid_erase(pid);
     if (ruleid < 0)
     {
       printf("31.E\n");
-      abort();
+      my_abort();
     }
 #endif
     children--;
@@ -267,14 +279,14 @@ void ins_dbe(struct db *db, struct dbe *dbe)
     n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, dbe->tgtidx);
     if (n == NULL)
     {
-      abort();
+      my_abort();
     }
     abce_rb_tree_nocmp_delete(head, n);
     linked_list_delete(&ABCE_CONTAINER_OF(n, struct dbe, node)->llnode);
     ret = abce_rb_tree_nocmp_insert_nonexist(head, dbe_cmp_sym, NULL, &dbe->node);
     if (ret != 0)
     {
-      abort();
+      my_abort();
     }
   }
   linked_list_add_tail(&dbe->llnode, &db->ll);
@@ -369,8 +381,24 @@ void *my_malloc(size_t sz)
   my_arena_ptr += (sz+7)/8*8;
   if (my_arena_ptr >= my_arena + sizeof_my_arena)
   {
-    printf("OOM\n");
-    abort();
+    if (debug)
+    {
+      printf("allocating new arena\n");
+    }
+    my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+    if (my_arena == NULL || my_arena == MAP_FAILED)
+    {
+      errxit("Can't mmap new arena");
+      exit(1);
+    }
+    my_arena_ptr = my_arena;
+  }
+  result = my_arena_ptr;
+  my_arena_ptr += (sz+7)/8*8;
+  if (my_arena_ptr >= my_arena + sizeof_my_arena)
+  {
+    fprintf(stderr, "out of memory\n");
+    my_abort();
   }
   return result;
 }
@@ -400,11 +428,11 @@ int read_jobserver(void)
   }
   if (ret < 0)
   {
-    abort();
+    my_abort();
   }
   if (!(pfd.revents & POLLIN))
   {
-    abort();
+    my_abort();
   }
 
   ret = recv(jobserver_fd[0], &ch, 1, MSG_DONTWAIT);
@@ -429,7 +457,7 @@ int read_jobserver(void)
 
     if (ret > 1)
     {
-      abort();
+      my_abort();
     }
     return (ret == 1);
   }
@@ -479,7 +507,7 @@ NULL, symbol);
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
   {
     printf("23\n");
-    abort();
+    my_abort();
   }
   return stringtabentry->idx;
 }
@@ -489,7 +517,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
   if (strlen(symbol) != symlen)
   {
     printf("22\n");
-    abort(); // RFE what to do?
+    my_abort(); // RFE what to do?
   }
   return stringtab_add(symbol);
 }
@@ -795,7 +823,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx)
   if (ret != 0)
   {
     printf("2\n");
-    abort();
+    my_abort();
   }
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
 }
@@ -832,7 +860,7 @@ void ins_dep(struct rule *rule, size_t depidx, int is_recursive, int orderonly)
   if (ret != 0)
   {
     printf("3\n");
-    abort();
+    my_abort();
   }
   linked_list_add_tail(&e->llnode, &rule->deplist);
 }
@@ -887,7 +915,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
   {
     printf("4\n");
-    abort();
+    my_abort();
   }
   //linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
   rule->deps_remain_cnt++;
@@ -1034,7 +1062,7 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
   if (ret != 0)
   {
     printf("5\n");
-    abort();
+    my_abort();
   }
   linked_list_add_tail(&e->llnode, &ruleids_by_dep_list);
   return e;
@@ -1066,7 +1094,7 @@ void ins_ruleid_by_dep(size_t depidx, int ruleid)
   if (ret != 0)
   {
     printf("6\n");
-    abort();
+    my_abort();
   }
   return;
 }
@@ -1219,7 +1247,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
   if (abce_rb_tree_nocmp_insert_nonexist(&entry->add_deps[hashloc], add_dep_cmp_sym, NULL, &entry2->node) != 0)
   {
     printf("7\n");
-    abort();
+    my_abort();
   }
   linked_list_add_tail(&entry2->llnode, &entry->add_deplist);
   return entry2;
@@ -1252,7 +1280,7 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   if (abce_rb_tree_nocmp_insert_nonexist(&add_deps[hashloc], add_deps_cmp_sym, NULL, &entry->node) != 0)
   {
     printf("8\n");
-    abort();
+    my_abort();
   }
   linked_list_add_tail(&entry->llnode, &add_deplist);
   return entry;
@@ -1416,12 +1444,12 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   if (tgtsz <= 0)
   {
     printf("9\n");
-    abort();
+    my_abort();
   }
   if (phony && tgtsz != 1)
   {
     printf("10\n");
-    abort();
+    my_abort();
   }
   cmd.args = argsdupcnt(cmdargs, cmdargsz);
   if (rules_size >= rules_capacity)
@@ -1691,14 +1719,15 @@ pid_t fork_child(int ruleid)
   if (argcnt == 0)
   {
     printf("no arguments\n");
-    abort();
+    my_abort();
   }
 
   pid = fork();
   if (pid < 0)
   {
     printf("11\n");
-    abort();
+    my_abort();
+    exit(1);
   }
   else if (pid == 0)
   {
@@ -1742,7 +1771,7 @@ pid_t fork_child(int ruleid)
     if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
     {
       printf("12\n");
-      abort();
+      my_abort();
     }
     rules[ruleid]->is_forked = 1;
     return pid;
@@ -1786,7 +1815,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
     {
       printf("13\n");
-      abort();
+      my_abort();
     }
     if (de == NULL)
     {
@@ -1801,7 +1830,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
                  "/%s", de->d_name) >= sizeof(nam2)-oldlen)
     {
       printf("14\n");
-      abort();
+      my_abort();
     }
     //if (de->d_type == DT_DIR)
     if (0)
@@ -1921,7 +1950,7 @@ int do_exec(int ruleid)
           continue;
           //perror("can't stat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
-          //abort();
+          //my_abort();
         }
         if (!e->is_orderonly)
         {
@@ -1938,7 +1967,7 @@ int do_exec(int ruleid)
           continue;
           //perror("can't lstat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
-          //abort();
+          //my_abort();
         }
         if (!e->is_orderonly)
         {
@@ -1983,7 +2012,7 @@ int do_exec(int ruleid)
         if (!seen_tgt)
         {
           printf("15\n");
-          abort();
+          my_abort();
         }
         if (seen_nonphony && ts_cmp(st_mtimtgt, st_mtim) < 0)
         {
@@ -2176,12 +2205,12 @@ void mark_executed(int ruleid, int was_actually_executed)
   if (r->is_executed)
   {
     printf("16\n");
-    abort();
+    my_abort();
   }
   if (!r->is_executing)
   {
     printf("17\n");
-    abort();
+    my_abort();
   }
   ruleremain_rm(r);
   r->is_executed = 1;
@@ -2308,13 +2337,13 @@ void set_nonblock(int fd)
   if (flags < 0)
   {
     printf("18\n");
-    abort();
+    my_abort();
   }
   flags |= O_NONBLOCK;
   if (fcntl(fd, F_SETFL, flags) < 0)
   {
     printf("19\n");
-    abort();
+    my_abort();
   }
 }
 
@@ -2365,7 +2394,7 @@ void stack_conf(void)
   if (result != 0)
   {
     printf("20\n");
-    abort();
+    my_abort();
   }
   if (rl.rlim_cur < stackSize)
   {
@@ -2374,7 +2403,7 @@ void stack_conf(void)
     if (result != 0)
     {
       printf("21\n");
-      abort();
+      my_abort();
     }
   }
 }
@@ -2610,7 +2639,7 @@ char *dir_up(char *old)
   if (snprintf(uncanonized, uncanonized_capacity, "%s/..", old) >=
       uncanonized_capacity)
   {
-    abort();
+    my_abort();
   }
   canonized = canon(uncanonized);
   free(uncanonized);
@@ -2730,7 +2759,7 @@ void do_clean(char *fwd_path, int objs, int bins)
         if (!rule->is_cleanqueued)
         {
           printf("rule %d not cleanqueued\n", rule->ruleid);
-          abort();
+          my_abort();
         }
       }
     }
@@ -2930,7 +2959,7 @@ void create_pipe(int jobcnt)
   if (socketpair(AF_UNIX, SOCK_STREAM, 0, jobserver_fd) != 0)
   {
     printf("28\n");
-    abort();
+    my_abort();
   }
   //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
   set_nonblock(jobserver_fd[1]);
@@ -2962,7 +2991,7 @@ void create_pipe(int jobcnt)
   if (pipe(jobserver_fd) != 0)
   {
     printf("28.2\n");
-    abort();
+    my_abort();
   }
   //set_nonblock(jobserver_fd[0]); // Blocking on purpose (because of GNU make)
   set_nonblock(jobserver_fd[1]);
@@ -2982,13 +3011,33 @@ void create_pipe(int jobcnt)
   printf("stirmake: Could not write all tokens to jobserver (only %d)\n", i);
 }
 
+void do_setrlimit(void)
+{
+  struct rlimit corelimit;
+  if (getrlimit(RLIMIT_CORE, &corelimit))
+  {
+    perror("can't getrlimit");
+    exit(1);
+  }
+  corelimit.rlim_cur = 128*1024*1024;
+  if (   corelimit.rlim_max != RLIM_INFINITY
+      && corelimit.rlim_max < corelimit.rlim_cur)
+  {
+    corelimit.rlim_cur = corelimit.rlim_max;
+  }
+  if (setrlimit(RLIMIT_CORE, &corelimit))
+  {
+    perror("can't getrlimit");
+    exit(1);
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
   pathological_test();
 #endif
   FILE *f;
-  struct abce abce = {};
   struct stiryy_main main = {.abce = &abce};
   struct stiryy stiryy = {};
   size_t i;
@@ -3013,14 +3062,21 @@ int main(int argc, char **argv)
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
 
-  sizeof_my_arena = 1536*1024*1024;
-  my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  do_setrlimit();
+
+  sizeof_my_arena = 1024*1024;
+  my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
   if (my_arena == NULL || my_arena == MAP_FAILED)
   {
     errxit("Can't mmap arena");
     exit(1);
   }
   my_arena_ptr = my_arena;
+  if (madvise(my_arena, sizeof_my_arena, MADV_DONTNEED) != 0)
+  {
+    fprintf(stderr, "can't madvise\n");
+    exit(1);
+  }
 
   if (strcmp(basenm, "smka") == 0)
   {
@@ -3102,19 +3158,19 @@ int main(int argc, char **argv)
     size_t curupcnt = 0;
     if (getcwd(cwd, sizeof(cwd)) == NULL)
     {
-      abort();
+      my_abort();
     }
     if (getcwd(storcwd, sizeof(storcwd)) == NULL)
     {
-      abort();
+      my_abort();
     }
     if (getcwd(curcwd, sizeof(curcwd)) == NULL)
     {
-      abort();
+      my_abort();
     }
     if (getcwd(cwd_sameproj, sizeof(cwd_sameproj)) == NULL)
     {
-      abort();
+      my_abort();
     }
     for (;;)
     {
@@ -3124,15 +3180,16 @@ int main(int argc, char **argv)
       }
       if (chdir("..") != 0)
       {
-        abort();
+        my_abort();
       }
       if (getcwd(curcwd, sizeof(curcwd)) == NULL)
       {
         printf("can't getcwd\n");
-        abort();
+        my_abort();
       }
       curupcnt++;
       abce_init(&abce);
+      abce_inited = 1;
       abce.trap = stir_trap;
       init_main_for_realpath(&main, storcwd); // FIXME leaks
       main.abce = &abce;
@@ -3149,7 +3206,7 @@ int main(int argc, char **argv)
           if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= sizeof(cwd))
           {
             printf("can't snprintf\n");
-            abort();
+            my_abort();
           }
         }
         if (main.subdirseen_sameproject)
@@ -3159,22 +3216,24 @@ int main(int argc, char **argv)
               >= sizeof(cwd_sameproj))
           {
             printf("can't snprintf\n");
-            abort();
+            my_abort();
           }
         }
       }
       stiryy_free(&stiryy);
       abce_free(&abce);
+      abce_inited = 0;
     }
     printf("stirmake: Using directory %s\n", cwd);
     if (chdir(cwd) != 0)
     {
-      abort();
+      my_abort();
     }
   }
 
   load_db();
   abce_init(&abce);
+  abce_inited = 1;
   abce.trap = stir_trap;
   main.abce = &abce;
   main.freeform_token_seen = 0;
@@ -3184,7 +3243,7 @@ int main(int argc, char **argv)
   if (!f)
   {
     printf("24\n");
-    abort();
+    my_abort();
   }
   stiryydoparse(f, &stiryy);
   fclose(f);
@@ -3207,7 +3266,7 @@ int main(int argc, char **argv)
   }
   else
   {
-    abort();
+    my_abort();
   }
   for (i = 0; i < main.rulesz; i++)
   {
@@ -3233,7 +3292,7 @@ int main(int argc, char **argv)
       {
         if (rules_size == 0)
         {
-          abort();
+          my_abort();
         }
         ruleid_first = rules_size - 1;
         ruleid_first_set = 1;
@@ -3353,7 +3412,7 @@ int main(int argc, char **argv)
     if (snprintf(fname, fnamesz, "%s/%s", incyy.prefix, stiryy.main->cdepincludes[i].name) >= fnamesz)
     {
       printf("24.5\n");
-      abort();
+      my_abort();
     }
     if (debug)
     {
@@ -3363,7 +3422,7 @@ int main(int argc, char **argv)
     if (!f)
     {
       printf("25\n");
-      abort();
+      my_abort();
     }
     free(fname);
     incyydoparse(f, &incyy);
@@ -3408,7 +3467,7 @@ int main(int argc, char **argv)
     {
       continue;
       printf("26\n");
-      abort();
+      my_abort();
     }
     if (no_cycles[bytgt])
     {
@@ -3462,7 +3521,7 @@ int main(int argc, char **argv)
   if (pipe(self_pipe_fd) != 0)
   {
     printf("27\n");
-    abort();
+    my_abort();
   }
   set_nonblock(self_pipe_fd[0]);
   set_nonblock(self_pipe_fd[1]);
@@ -3569,7 +3628,7 @@ back:
             if (ruleid < 0)
             {
               printf("31.1\n");
-              abort();
+              my_abort();
             }
             children--;
             fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
@@ -3585,7 +3644,7 @@ back:
             {
               errxit("Unknown error");
             }
-            abort();
+            my_abort();
           }
         }
         if (children <= 0 && ruleids_to_run_size == 0)
@@ -3599,11 +3658,11 @@ back:
             else
             {
               fprintf(stderr, "out of children, yet not all targets made\n");
-              abort();
+              my_abort();
             }
           }
           printf("29\n");
-          abort();
+          my_abort();
         }
         if (pid < 0)
         {
@@ -3612,13 +3671,13 @@ back:
             break;
           }
           printf("30\n");
-          abort();
+          my_abort();
         }
         int ruleid = ruleid_by_pid_erase(pid);
         if (ruleid < 0)
         {
           printf("31\n");
-          abort();
+          my_abort();
         }
         //ruleremain_rm(rules[ruleid]);
         mark_executed(ruleid, 1);

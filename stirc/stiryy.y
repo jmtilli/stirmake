@@ -33,6 +33,8 @@ typedef void *yyscan_t;
 #include "abce/amyplanlocvarctx.h"
 #include <arpa/inet.h>
 
+void my_abort(void);
+
 void stiryyerror(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, const char *str)
 {
         //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
@@ -274,19 +276,19 @@ custom_rule:
   size_t oldscopeidx;
   if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $2.str) >= psz)
   {
-    abort();
+    my_abort();
   }
   if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, $2.str) >= ppsz)
   {
-    abort();
+    my_abort();
   }
   if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, $2.str, "Stirfile") >= fsz)
   {
-    abort();
+    my_abort();
   }
   if (realpath(filename, realpathname) == NULL)
   {
-    abort();
+    my_abort();
   }
   if (strcmp(realpathname, stiryy->main->realpathname) == 0)
   {
@@ -312,7 +314,7 @@ custom_rule:
   abce_scope_set_userdata(&get_abce(stiryy)->dynscope, projprefix2);
   if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
   {
-    abort();
+    my_abort();
   }
   stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope);
   stiryy2.sameproject = stiryy->sameproject && $1;
@@ -321,7 +323,7 @@ custom_rule:
   if (!f)
   {
     printf("can't open substirfile %s\n", filename);
-    abort();
+    my_abort();
   }
   stiryydoparse(f, &stiryy2);
   fclose(f);
@@ -402,7 +404,7 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
 
   if (get_abce(amyplanyy)->dynscope.typ == ABCE_T_N)
   {
-    abort();
+    my_abort();
   }
   if ($3)
   {
@@ -466,7 +468,7 @@ expr NEWLINE
     }
     if (get_abce(amyplanyy)->sp != 1)
     {
-      abort();
+      my_abort();
     }
     struct abce_mb key = abce_mb_create_string(get_abce(amyplanyy), $1, strlen($1));
     abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, &key, &get_abce(amyplanyy)->stackbase[0]);
@@ -524,7 +526,7 @@ expr NEWLINE
     }
     if (get_abce(amyplanyy)->sp != 1)
     {
-      abort();
+      my_abort();
     }
     struct abce_mb key = abce_mb_create_string(get_abce(amyplanyy), $1, strlen($1));
     abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, &key, &get_abce(amyplanyy)->stackbase[0]);
@@ -991,7 +993,7 @@ varref:
     else
     {
       printf("var %s not found\n", $1);
-      abort();
+      my_abort();
     }
     free($1);
     $$ = ABCE_OPCODE_PUSH_STACK;
@@ -1410,66 +1412,66 @@ expr0:
 }
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  my_abort();
 }
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  my_abort();
 }
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  my_abort();
 }
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  my_abort();
 }
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  my_abort();
 }
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  my_abort();
 }
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  my_abort();
 }
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  my_abort();
 }
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  my_abort();
 }
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  my_abort();
 }
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  my_abort();
 }
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  my_abort();
 }
 | LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist
 {
   free($3.str);
-  abort();
+  my_abort();
 }
 | LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
   free($3.str);
-  abort();
+  my_abort();
 }
 | LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
   free($3.str);
-  abort();
+  my_abort();
 }
 | custom_expr0
 ;
@@ -1627,7 +1629,7 @@ shell_command:
     {
       if (i+1 >= len)
       {
-        abort();
+        my_abort();
       }
       if (outsz >= outcap)
       {
@@ -1648,7 +1650,7 @@ shell_command:
         if (rule->depsz <= 0)
         {
           fprintf(stderr, "$< on rule with no dependencies\n");
-          abort();
+          my_abort();
         }
         dep = rule->deps[0].namenodir;
         deplen = strlen(dep);
@@ -1670,7 +1672,7 @@ shell_command:
         if (rule->targetsz <= 0)
         {
           fprintf(stderr, "$@ on rule with no targets\n");
-          abort();
+          my_abort();
         }
         tgt = rule->targets[0].namenodir;
         tgtlen = strlen(tgt);
@@ -1732,7 +1734,7 @@ shell_command:
         i++;
         continue;
       }
-      abort();
+      my_abort();
     }
     else if ($1[i] == ' ')
     {

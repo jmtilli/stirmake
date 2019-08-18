@@ -2,6 +2,8 @@
 #include <string.h>
 #include "canon.h"
 
+void my_abort(void);
+
 char *canon(const char *old)
 {
   char *neu = malloc(strlen(old) + 1);
@@ -11,7 +13,7 @@ char *canon(const char *old)
   int is_abspath = 0;
   if (old[0] == '\0')
   {
-    abort(); // Must give some path
+    my_abort(); // Must give some path
   }
   if (old[0] == '.' && old[1] == '\0')
   {
@@ -150,11 +152,11 @@ char *construct_backpath(const char *frontpath)
   }
   if (can[0] == '/')
   {
-    abort(); // we don't support this use case
+    my_abort(); // we don't support this use case
   }
   if (can[0] == '.' && can[1] == '.' && (can[2] == '\0' || can[2] == '/'))
   {
-    abort(); // we don't support this use case
+    my_abort(); // we don't support this use case
   }
   cnt = strcnt(can, '/') + 1;
   free(can);

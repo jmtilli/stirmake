@@ -3,6 +3,11 @@
 #include "yyutils.h"
 #include "stiryy.h"
 
+void my_abort(void)
+{
+  abort();
+}
+
 size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
   abort();

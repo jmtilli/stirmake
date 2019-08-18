@@ -106,7 +106,7 @@
     {
       if (idx+1 >= len)
       {
-        abort();
+        my_abort();
       }
       *cp++ = *++in;
       in++;
@@ -120,7 +120,7 @@
     {
       if (idx+1 >= len)
       {
-        abort();
+        my_abort();
       }
       *cp++ = yytext[++idx];
     }

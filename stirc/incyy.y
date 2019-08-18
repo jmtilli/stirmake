@@ -29,7 +29,7 @@ void incyyerror(/*YYLTYPE *yylloc, */yyscan_t scanner, struct incyy *incyy, cons
         //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
         // FIXME we need better location info!
         fprintf(stderr, "inc error: %s at line %d\n", str, incyyget_lineno(scanner));
-	abort();
+	my_abort();
 }
 
 int incyywrap(yyscan_t scanner)
