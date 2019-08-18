@@ -13,22 +13,22 @@ extern int stiryylex_init(yyscan_t *scanner);
 extern void stiryyset_in(FILE *in_str, yyscan_t yyscanner);
 extern int stiryylex_destroy(yyscan_t yyscanner);
 
-void stiryydoparse(FILE *filein, struct stiryy *stiryy)
+int stiryydoparse(FILE *filein, struct stiryy *stiryy)
 {
   yyscan_t scanner;
   stiryylex_init(&scanner);
   stiryyset_in(filein, scanner);
   if (stiryyparse(scanner, stiryy) != 0)
   {
-    fprintf(stderr, "parsing failed\n");
-    exit(1);
+    return -EBADMSG;
   }
   stiryylex_destroy(scanner);
   if (!feof(filein))
   {
-    fprintf(stderr, "error: additional data at end of stiryy data\n");
-    exit(1);
+    fprintf(stderr, "stirmake: Additional data at end of Stirfile.\n");
+    return -EBADMSG;
   }
+  return 0;
 }
 
 void stiryydomemparse(char *filedata, size_t filesize, struct stiryy *stiryy)
@@ -224,9 +224,10 @@ uint32_t yy_get_ip(char *orig)
   return ntohl(addr.s_addr);
 }
 
-void stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
+int stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
 {
   FILE *stiryyfile;
+  int ret;
   stiryyfile = fopen(fname, "r");
   if (stiryyfile == NULL)
   {
@@ -241,9 +242,9 @@ void stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
       exit(1);
     }
 #endif
-    return;
+    return -ENOENT;
   }
-  stiryydoparse(stiryyfile, stiryy);
+  ret = stiryydoparse(stiryyfile, stiryy);
 #if 0
   if (stiryy_postprocess(stiryy) != 0)
   {
@@ -251,9 +252,10 @@ void stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
   }
 #endif
   fclose(stiryyfile);
+  return ret;
 }
 
-void stiryydirparse(
+int stiryydirparse(
   const char *argv0, const char *fname, struct stiryy *stiryy, int require)
 {
   const char *dir;
@@ -262,5 +264,5 @@ void stiryydirparse(
   dir = dirname(copy); // NB: not for multi-threaded operation!
   snprintf(pathbuf, sizeof(pathbuf), "%s/%s", dir, fname);
   free(copy);
-  stiryynameparse(pathbuf, stiryy, require);
+  return stiryynameparse(pathbuf, stiryy, require);
 }

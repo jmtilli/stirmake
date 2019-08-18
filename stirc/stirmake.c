@@ -3428,13 +3428,13 @@ int main(int argc, char **argv)
       init_main_for_realpath(&main, storcwd); // FIXME leaks
       main.abce = &abce;
       main.freeform_token_seen = 1;
-      stiryy_init(&stiryy, &main, ".", ".", abce.dynscope);
+      stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, curcwd, "Stirfile");
       f = fopen("Stirfile", "r");
       if (f)
       {
-        stiryydoparse(f, &stiryy);
+        int ret = stiryydoparse(f, &stiryy);
         fclose(f);
-        if (main.subdirseen)
+        if (ret == 0 && main.subdirseen)
         {
           upcnt = curupcnt;
           if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= sizeof(cwd))
@@ -3443,7 +3443,7 @@ int main(int argc, char **argv)
             my_abort();
           }
         }
-        if (main.subdirseen_sameproject)
+        if (ret == 0 && main.subdirseen_sameproject)
         {
           upcnt_sameproj = curupcnt;
           if (snprintf(cwd_sameproj, sizeof(cwd_sameproj), "%s", curcwd)
@@ -3471,7 +3471,7 @@ int main(int argc, char **argv)
   abce.trap = stir_trap;
   main.abce = &abce;
   main.freeform_token_seen = 0;
-  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope);
+  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, NULL, filename);
 
   f = fopen(filename, "r");
   if (!f)
@@ -3479,7 +3479,10 @@ int main(int argc, char **argv)
     errxit("Stirfile not found");
     my_abort();
   }
-  stiryydoparse(f, &stiryy);
+  if (stiryydoparse(f, &stiryy) != 0)
+  {
+    errxit("Parsing failed");
+  }
   fclose(f);
 
   stack_conf();

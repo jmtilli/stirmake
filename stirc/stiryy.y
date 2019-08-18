@@ -37,9 +37,16 @@ void my_abort(void);
 
 void stiryyerror(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, const char *str)
 {
-        //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
-        // FIXME we need better location info!
-        fprintf(stderr, "stir error: %s at line %d col %d\n", str, stiryyget_lineno(scanner), stiryyget_column(scanner));
+  //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
+  // FIXME we need better location info!
+  if (stiryy->dirname == NULL)
+  {
+    fprintf(stderr, "stirmake: %s at file %s line %d col %d.\n", str, stiryy->filename, stiryyget_lineno(scanner), stiryyget_column(scanner));
+  }
+  else
+  {
+    fprintf(stderr, "stirmake: %s at file %s/%s line %d col %d\n", str, stiryy->dirname, stiryy->filename, stiryyget_lineno(scanner), stiryyget_column(scanner));
+  }
 }
 
 int stiryywrap(yyscan_t scanner)
@@ -271,6 +278,7 @@ custom_rule:
   char *filename = malloc(fsz);
   char realpathname[PATH_MAX];
   char *prefix2, *projprefix2;
+  int ret;
   FILE *f;
   struct abce_mb oldscope;
   size_t oldscopeidx;
@@ -316,17 +324,22 @@ custom_rule:
   {
     my_abort();
   }
-  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope);
+  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope, NULL, filename);
   stiryy2.sameproject = stiryy->sameproject && $1;
 
   f = fopen(filename, "r");
   if (!f)
   {
-    printf("can't open substirfile %s\n", filename);
+    fprintf(stderr, "stirmake: Can't open substirfile %s.\n", filename);
     my_abort();
   }
-  stiryydoparse(f, &stiryy2);
+  ret = stiryydoparse(f, &stiryy2);
   fclose(f);
+  if (ret)
+  {
+    fprintf(stderr, "stirmake: Can't parse substirfile %s.\n", filename);
+    YYABORT;
+  }
 
   stiryy_free(&stiryy2);
   abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);

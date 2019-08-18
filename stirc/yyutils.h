@@ -10,13 +10,13 @@ extern "C" {
 #endif
 
 
-void stiryydoparse(FILE *filein, struct stiryy *stiryy);
+int stiryydoparse(FILE *filein, struct stiryy *stiryy);
 
 void stiryydomemparse(char *filedata, size_t filesize, struct stiryy *stiryy);
 
-void stiryynameparse(const char *fname, struct stiryy *stiryy, int require);
+int stiryynameparse(const char *fname, struct stiryy *stiryy, int require);
 
-void stiryydirparse(
+int stiryydirparse(
   const char *argv0, const char *fname, struct stiryy *stiryy, int require);
 
 struct escaped_string yy_escape_string(char *orig);

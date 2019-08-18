@@ -128,6 +128,8 @@ struct stiryy {
   size_t curscopeidx;
   struct abce_mb curscope;
   int sameproject;
+  const char *dirname;
+  const char *filename;
 };
 
 static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
@@ -149,7 +151,8 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
 
 static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
                                char *prefix, char *projprefix,
-                               struct abce_mb curscope)
+                               struct abce_mb curscope,
+                               const char *dirname, const char *filename)
 {
   yy->main = main;
   yy->sameproject = 1;
@@ -159,6 +162,8 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
   yy->curprojprefix = strdup(projprefix);
   yy->curscopeidx = abce_cache_add(yy->main->abce, &curscope); // avoid GC abort
   yy->curscope = curscope;
+  yy->filename = filename;
+  yy->dirname = dirname;
 }
 
 static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
