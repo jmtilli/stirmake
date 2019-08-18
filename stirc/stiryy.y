@@ -49,6 +49,19 @@ void stiryyerror(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, c
   }
 }
 
+void recommend(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, const char *str)
+{
+  // FIXME we need better location info!
+  if (stiryy->dirname == NULL)
+  {
+    fprintf(stderr, "stirmake: %s at file %s line %d col %d.\n", str, stiryy->filename, stiryyget_lineno(scanner), stiryyget_column(scanner));
+  }
+  else
+  {
+    fprintf(stderr, "stirmake: %s at file %s/%s line %d col %d\n", str, stiryy->dirname, stiryy->filename, stiryyget_lineno(scanner), stiryyget_column(scanner));
+  }
+}
+
 int stiryywrap(yyscan_t scanner)
 {
         return 1;
@@ -1830,7 +1843,7 @@ pattargets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
+    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
     stiryy->main->freeform_token_seen=1;
   }
   printf("target1 %s\n", $1);
@@ -1855,7 +1868,7 @@ pattargets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
+    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
     stiryy->main->freeform_token_seen=1;
   }
   printf("target %s\n", $2);
@@ -1881,7 +1894,7 @@ targets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
+    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
     stiryy->main->freeform_token_seen=1;
   }
   //printf("target1 %s\n", $1);
@@ -1906,7 +1919,7 @@ targets:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
+    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
     stiryy->main->freeform_token_seen=1;
   }
   //printf("target %s\n", $2);
@@ -1945,7 +1958,7 @@ patdeps:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
+    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
     stiryy->main->freeform_token_seen=1;
   }
   printf("dep %s rec? %d\n", $3, (int)$2);
@@ -1970,7 +1983,7 @@ deps:
 {
   if (!stiryy->main->freeform_token_seen)
   {
-    printf("stirmake: Recommend using string literals instead of free-form tokens\n");
+    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
     stiryy->main->freeform_token_seen=1;
   }
   //printf("dep %s rec? %d\n", $3, (int)$2);
