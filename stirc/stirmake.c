@@ -32,6 +32,7 @@ void st_compact(void);
 
 void my_abort(void)
 {
+  signal(SIGABRT, SIG_DFL);
   if (abce_inited)
   {
     abce_compact(&abce);
@@ -2371,6 +2372,18 @@ void set_nonblock(int fd)
   }
 }
 
+void sigsegv_handler(int x)
+{
+  my_abort();
+}
+void sigabrt_handler(int x)
+{
+  my_abort();
+}
+void sigbus_handler(int x)
+{
+  my_abort();
+}
 void sigchld_handler(int x)
 {
   write(self_pipe_fd[1], ".", 1);
@@ -3085,6 +3098,24 @@ int main(int argc, char **argv)
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
+
+  struct sigaction saseg;
+  sigemptyset(&saseg.sa_mask);
+  saseg.sa_flags = 0;
+  saseg.sa_handler = sigsegv_handler;
+  sigaction(SIGSEGV, &saseg, NULL);
+
+  struct sigaction saabrt;
+  sigemptyset(&saabrt.sa_mask);
+  saabrt.sa_flags = 0;
+  saabrt.sa_handler = sigabrt_handler;
+  sigaction(SIGABRT, &saabrt, NULL);
+
+  struct sigaction sabus;
+  sigemptyset(&sabus.sa_mask);
+  sabus.sa_flags = 0;
+  sabus.sa_handler = sigbus_handler;
+  sigaction(SIGBUS, &sabus, NULL);
 
   do_setrlimit();
 
