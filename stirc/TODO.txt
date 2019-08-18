@@ -27,3 +27,6 @@
 - cannot clean anomaly for self-modifying build systems
 
 - verify cdepincludes are not unlinked when there are rules having no cmds/deps
+
+- don't delete targets if the list of cmds is empty? There's no way the target
+  is created given an empty list of cmds.
