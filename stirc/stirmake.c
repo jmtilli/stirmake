@@ -403,6 +403,11 @@ void *my_malloc(size_t sz)
 {
   void *result = my_arena_ptr;
   my_arena_ptr += (sz+7)/8*8;
+  if (sz > sizeof_my_arena)
+  {
+    fprintf(stderr, "too large alloc: %zu bytes\n", sz);
+    my_abort();
+  }
   if (my_arena_ptr >= my_arena + sizeof_my_arena)
   {
     if (debug)
