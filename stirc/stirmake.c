@@ -2380,6 +2380,30 @@ void sigabrt_handler(int x)
 {
   my_abort();
 }
+void sigfpe_handler(int x)
+{
+  my_abort();
+}
+void sigill_handler(int x)
+{
+  my_abort();
+}
+void sigquit_handler(int x)
+{
+  my_abort();
+}
+void sigsys_handler(int x)
+{
+  my_abort();
+}
+void sigxcpu_handler(int x)
+{
+  my_abort();
+}
+void sigxfsz_handler(int x)
+{
+  my_abort();
+}
 void sigbus_handler(int x)
 {
   my_abort();
@@ -3104,6 +3128,42 @@ int main(int argc, char **argv)
   saseg.sa_flags = 0;
   saseg.sa_handler = sigsegv_handler;
   sigaction(SIGSEGV, &saseg, NULL);
+
+  struct sigaction safpe;
+  sigemptyset(&safpe.sa_mask);
+  safpe.sa_flags = 0;
+  safpe.sa_handler = sigfpe_handler;
+  sigaction(SIGFPE, &safpe, NULL);
+
+  struct sigaction saill;
+  sigemptyset(&saill.sa_mask);
+  saill.sa_flags = 0;
+  saill.sa_handler = sigill_handler;
+  sigaction(SIGILL, &saill, NULL);
+
+  struct sigaction saquit;
+  sigemptyset(&saquit.sa_mask);
+  saquit.sa_flags = 0;
+  saquit.sa_handler = sigquit_handler;
+  sigaction(SIGQUIT, &saquit, NULL);
+
+  struct sigaction sasys;
+  sigemptyset(&sasys.sa_mask);
+  sasys.sa_flags = 0;
+  sasys.sa_handler = sigsys_handler;
+  sigaction(SIGSYS, &sasys, NULL);
+
+  struct sigaction saxcpu;
+  sigemptyset(&saxcpu.sa_mask);
+  saxcpu.sa_flags = 0;
+  saxcpu.sa_handler = sigxcpu_handler;
+  sigaction(SIGXCPU, &saxcpu, NULL);
+
+  struct sigaction saxfsz;
+  sigemptyset(&saxfsz.sa_mask);
+  saxfsz.sa_flags = 0;
+  saxfsz.sa_handler = sigxfsz_handler;
+  sigaction(SIGXFSZ, &saxfsz, NULL);
 
   struct sigaction saabrt;
   sigemptyset(&saabrt.sa_mask);
