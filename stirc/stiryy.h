@@ -369,6 +369,33 @@ static inline void stiryy_mark_rectgt(struct stiryy *stiryy)
 {
   stiryy->main->rules[stiryy->main->rulesz-1].rectgt = 1;
 }
+static inline int stiryy_check_rule(struct stiryy *stiryy)
+{
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+  size_t j ;
+  if (rule->rectgt)
+  {
+    return 0;
+  }
+  for (j = 0; j < rule->depsz; j++)
+  {
+    const char *can = rule->deps[j].name;
+    if (rule->deps[j].rec)
+    {
+      size_t i;
+      for (i = 0; i < rule->targetsz; i++)
+      {
+        if (   strncmp(can, rule->targets[i].name, strlen(can)) == 0
+            && (   rule->targets[i].name[strlen(can)] == '\0'
+                || rule->targets[i].name[strlen(can)] == '/'))
+        {
+          return -1;
+        }
+      }
+    }
+  }
+  return 0;
+}
 static inline void stiryy_mark_deponly(struct stiryy *stiryy)
 {
   stiryy->main->rules[stiryy->main->rulesz-1].deponly = 1;

@@ -1613,6 +1613,15 @@ valuelistentry:
 
 stirrule:
   targetspec COLON depspec NEWLINE shell_commands
+{
+  if (stiryy_check_rule(stiryy) != 0)
+  {
+    char buf[2048] = {0};
+    snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+             stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+    recommend(scanner, stiryy, buf);
+  }
+}
 | RECTGTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   stiryy_mark_rectgt(stiryy);
@@ -1624,10 +1633,24 @@ stirrule:
 | MAYBERULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   stiryy_mark_maybe(stiryy);
+  if (stiryy_check_rule(stiryy) != 0)
+  {
+    char buf[2048] = {0};
+    snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+             stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+    recommend(scanner, stiryy, buf);
+  }
 }
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   stiryy_mark_dist(stiryy);
+  if (stiryy_check_rule(stiryy) != 0)
+  {
+    char buf[2048] = {0};
+    snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+             stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+    recommend(scanner, stiryy, buf);
+  }
 }
 | DEPONLY COLON targetspec COLON depspec NEWLINE
 {

@@ -25,5 +25,3 @@
   is created given an empty list of cmds.
 
 - don't delete rectgtrule targets? or at least those that are within recdep.
-
-- if a target is inside recdep but rule not rectgtrule, emit a warning
