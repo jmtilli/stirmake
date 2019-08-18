@@ -20,8 +20,6 @@
 
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 
-- If a command fails with an exit status, rm its cmdline from DB
-
 - Replace main algorithm? May not work with dynamically added targets.
 
 - cannot clean anomaly for self-modifying build systems
@@ -32,3 +30,5 @@
   is created given an empty list of cmds.
 
 - don't delete rectgtrule targets? or at least those that are within recdep.
+
+- if a target is inside recdep but rule not rectgtrule, emit a warning

@@ -238,6 +238,21 @@ struct db {
 
 struct db db = {};
 
+void maybe_del_dbe(struct db *db, size_t tgtidx)
+{
+  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  struct abce_rb_tree_node *n;
+  struct abce_rb_tree_nocmp *head;
+  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, tgtidx);
+  if (n == NULL)
+  {
+    return;
+  }
+  abce_rb_tree_nocmp_delete(head, n);
+  linked_list_delete(&ABCE_CONTAINER_OF(n, struct dbe, node)->llnode);
+}
+
 void ins_dbe(struct db *db, struct dbe *dbe)
 {
   uint32_t hash = abce_murmur32(0x12345678U, dbe->tgtidx);
@@ -686,6 +701,7 @@ struct rule {
   unsigned st_mtim_valid:1;
   unsigned is_inc:1; // whether this is included from dependency file
   unsigned is_dist:1;
+  unsigned is_forked:1;
   size_t diridx;
   struct cmd cmd;
   struct timespec st_mtim;
@@ -1727,6 +1743,7 @@ pid_t fork_child(int ruleid)
       printf("12\n");
       abort();
     }
+    rules[ruleid]->is_forked = 1;
     return pid;
   }
 }
@@ -2828,6 +2845,18 @@ void merge_db(void)
     struct rule *rule = rules[i];
     if (!rule->is_actually_executed)
     {
+      if (rule->is_forked)
+      {
+        LINKED_LIST_FOR_EACH(node, &rule->tgtlist)
+        {
+          struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+          if (debug)
+          {
+            printf("removing %s from DB\n", sttable[e->tgtidx]);
+          }
+          maybe_del_dbe(&db, e->tgtidx);
+        }
+      }
       continue;
     }
     LINKED_LIST_FOR_EACH(node, &rule->tgtlist)
