@@ -25,6 +25,26 @@
 #include "dbyyutils.h"
 #include "stirtrap.h"
 
+sig_atomic_t sigterm_atomic;
+sig_atomic_t sigint_atomic;
+sig_atomic_t sighup_atomic;
+sig_atomic_t subproc_sigterm_atomic;
+sig_atomic_t subproc_sigint_atomic;
+sig_atomic_t subproc_sighup_atomic;
+
+void subproc_sigterm_handler(int x)
+{
+  subproc_sigterm_atomic = 1;
+}
+void subproc_sigint_handler(int x)
+{
+  subproc_sigint_atomic = 1;
+}
+void subproc_sighup_handler(int x)
+{
+  subproc_sighup_atomic = 1;
+}
+
 struct abce abce = {};
 int abce_inited = 0;
 
@@ -1517,6 +1537,7 @@ size_t ruleids_to_run_capacity;
 
 struct ruleid_by_pid {
   struct abce_rb_tree_node node;
+  struct linked_list_node llnode;
   pid_t pid;
   int ruleid;
 };
@@ -1551,6 +1572,8 @@ static inline int ruleid_by_pid_cmp_sym(struct abce_rb_tree_node *n1, struct abc
 }
 
 struct abce_rb_tree_nocmp ruleid_by_pid[RULEID_BY_PID_SIZE];
+struct linked_list_head ruleid_by_pid_list =
+  STIR_LINKED_LIST_HEAD_INITER(ruleid_by_pid_list);
 
 int ruleid_by_pid_erase(pid_t pid)
 {
@@ -1568,6 +1591,7 @@ int ruleid_by_pid_erase(pid_t pid)
   struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
   abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
   ruleid = bypid->ruleid;
+  linked_list_delete(&bypid->llnode);
   my_free(bypid);
   return ruleid;
 }
@@ -1679,6 +1703,27 @@ void child_execvp_wait(const char *prefix, const char *cmd, char **args)
     pid_t ret;
     do {
       ret = waitpid(pid, &wstatus, 0);
+      if (subproc_sigint_atomic)
+      {
+        kill(pid, SIGINT);
+        signal(SIGINT, SIG_DFL);
+        raise(SIGINT);
+        _exit(1);
+      }
+      if (subproc_sigterm_atomic)
+      {
+        kill(pid, SIGTERM);
+        signal(SIGTERM, SIG_DFL);
+        raise(SIGTERM);
+        _exit(1);
+      }
+      if (subproc_sighup_atomic)
+      {
+        kill(pid, SIGHUP);
+        signal(SIGHUP, SIG_DFL);
+        raise(SIGHUP);
+        _exit(1);
+      }
     } while (ret == -1 && errno == -EINTR);
     if (ret == -1)
     {
@@ -1756,11 +1801,33 @@ pid_t fork_child(int ruleid)
   }
   else if (pid == 0)
   {
-    struct sigaction sa;
+    struct sigaction sa, saint, saterm, sahup;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
     sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
     sigaction(SIGCHLD, &sa, NULL);
+    sigemptyset(&saint.sa_mask);
+    saint.sa_flags = 0;
+    saint.sa_handler = subproc_sigint_handler;
+    sigaction(SIGINT, &saint, NULL);
+    sigemptyset(&saterm.sa_mask);
+    saterm.sa_flags = 0;
+    saterm.sa_handler = subproc_sigterm_handler;
+    sigaction(SIGTERM, &saterm, NULL);
+    sigemptyset(&sahup.sa_mask);
+    sahup.sa_flags = 0;
+    sahup.sa_handler = subproc_sighup_handler;
+    sigaction(SIGHUP, &sahup, NULL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGSYS, SIG_DFL);
+    signal(SIGXCPU, SIG_DFL);
+    signal(SIGXFSZ, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGALRM, SIG_DFL);
     if (chdir(dir) != 0)
     {
       write(1, "CHDIRERR\n", 9);
@@ -1785,7 +1852,7 @@ pid_t fork_child(int ruleid)
   else
   {
     ruleid_by_pid_cnt++;
-    struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid));
+    struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
     uint32_t hashval;
     size_t hashloc;
     bypid->pid = pid;
@@ -1798,6 +1865,7 @@ pid_t fork_child(int ruleid)
       printf("12\n");
       my_abort();
     }
+    linked_list_add_tail(&bypid->llnode, &ruleid_by_pid_list);
     rules[ruleid]->is_forked = 1;
     return pid;
   }
@@ -2412,9 +2480,26 @@ void sigchld_handler(int x)
 {
   write(self_pipe_fd[1], ".", 1);
 }
+
+void sigterm_handler(int x)
+{
+  sigterm_atomic = 1;
+  write(self_pipe_fd[1], ".", 1);
+}
+void sigint_handler(int x)
+{
+  sigint_atomic = 1;
+  write(self_pipe_fd[1], ".", 1);
+}
+void sighup_handler(int x)
+{
+  sighup_atomic = 1;
+  write(self_pipe_fd[1], ".", 1);
+}
 void sigalrm_handler(int x)
 {
 }
+void handle_signal(int signum);
 
 char *myitoa(int i)
 {
@@ -3093,6 +3178,17 @@ void do_setrlimit(void)
   }
 }
 
+void handle_signal(int signum)
+{
+  struct linked_list_node *node;
+  LINKED_LIST_FOR_EACH(node, &ruleid_by_pid_list)
+  {
+    struct ruleid_by_pid *bypid =
+      ABCE_CONTAINER_OF(node, struct ruleid_by_pid, llnode);
+    kill(bypid->pid, signum);
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -3664,11 +3760,25 @@ int main(int argc, char **argv)
   sa.sa_handler = sigchld_handler;
   sigaction(SIGCHLD, &sa, NULL);
 
-  struct sigaction saint;
+  struct sigaction salrm;
+  sigemptyset(&salrm.sa_mask);
+  salrm.sa_flags = 0;
+  salrm.sa_handler = sigalrm_handler;
+  sigaction(SIGALRM, &salrm, NULL);
+
+  struct sigaction saint, saterm, sahup;
   sigemptyset(&saint.sa_mask);
   saint.sa_flags = 0;
-  saint.sa_handler = sigalrm_handler;
-  sigaction(SIGALRM, &saint, NULL);
+  saint.sa_handler = sigint_handler;
+  sigaction(SIGINT, &saint, NULL);
+  sigemptyset(&saterm.sa_mask);
+  saterm.sa_flags = 0;
+  saterm.sa_handler = sigterm_handler;
+  sigaction(SIGTERM, &saterm, NULL);
+  sigemptyset(&sahup.sa_mask);
+  sahup.sa_flags = 0;
+  sahup.sa_handler = sighup_handler;
+  sigaction(SIGHUP, &sahup, NULL);
 
   struct linked_list_node *node;
 back:
@@ -3736,6 +3846,24 @@ back:
     if (debug)
     {
       printf("select returned\n");
+    }
+    if (sigterm_atomic)
+    {
+      handle_signal(SIGTERM);
+      errxit("Got SIGTERM.");
+      exit(1);
+    }
+    if (sigint_atomic)
+    {
+      handle_signal(SIGINT);
+      errxit("Got SIGINT.");
+      exit(1);
+    }
+    if (sighup_atomic)
+    {
+      handle_signal(SIGHUP);
+      errxit("Got SIGHUP.");
+      exit(1);
     }
     if (read(self_pipe_fd[0], chbuf, 100))
     {
