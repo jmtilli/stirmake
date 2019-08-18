@@ -423,7 +423,7 @@ void *my_malloc(size_t sz)
     my_arena_ptr = my_arena;
     if (madvise(my_arena, sizeof_my_arena, MADV_DONTNEED) != 0)
     {
-      fprintf(stderr, "can't madvise\n");
+      errxit("Can't madvise");
       exit(1);
     }
   }
@@ -669,7 +669,7 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_tgt_entry_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
-    printf("stirmake: *** ruleid by tgt %s already exists\n", sttable[tgtidx]);
+    errxit("ruleid by tgt %s already exists", sttable[tgtidx]);
     exit(1); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
@@ -3197,7 +3197,7 @@ void do_setrlimit(void)
   }
   if (setrlimit(RLIMIT_CORE, &corelimit))
   {
-    perror("can't getrlimit");
+    perror("can't setrlimit");
     exit(1);
   }
 }
@@ -3307,7 +3307,7 @@ int main(int argc, char **argv)
   }
   if (madvise(sttable, st_cap*sizeof(*sttable), MADV_DONTNEED) != 0)
   {
-    fprintf(stderr, "can't madvise\n");
+    errxit("Can't madvise");
     exit(1);
   }
 
@@ -3321,7 +3321,7 @@ int main(int argc, char **argv)
   my_arena_ptr = my_arena;
   if (madvise(my_arena, sizeof_my_arena, MADV_DONTNEED) != 0)
   {
-    fprintf(stderr, "can't madvise\n");
+    errxit("Can't madvise");
     exit(1);
   }
 
