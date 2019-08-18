@@ -28,12 +28,15 @@
 struct abce abce = {};
 int abce_inited = 0;
 
+void st_compact(void);
+
 void my_abort(void)
 {
   if (abce_inited)
   {
     abce_compact(&abce);
   }
+  st_compact();
   abort();
 }
 
@@ -465,8 +468,24 @@ int read_jobserver(void)
 }
 
 struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
-char *sttable[1048576]; // RFE make variable sized
+char **sttable = NULL;
+size_t st_cap = 1024*1024;
 size_t st_cnt;
+
+void st_compact(void)
+{
+  char *ptr2;
+  int errno_save;
+  size_t bytes_total, bytes_in_use;
+  bytes_total = abce_topages(st_cap * sizeof(*sttable));
+  bytes_in_use = abce_topages(st_cnt * sizeof(*sttable));
+  ptr2 = (void*)sttable;
+  ptr2 += bytes_in_use;
+  errno_save = errno;
+  munmap(ptr2, bytes_total - bytes_in_use);
+  errno = errno_save;
+  // don't report errors
+}
 
 size_t stringtab_cnt = 0;
 
@@ -502,6 +521,11 @@ NULL, symbol);
   stringtab_cnt++;
   struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
   stringtabentry->string = my_strdup(symbol);
+  if (st_cnt >= st_cap)
+  {
+    printf("stringtab full\n");
+    my_abort();
+  }
   sttable[st_cnt] = stringtabentry->string;
   stringtabentry->idx = st_cnt++;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
@@ -3019,7 +3043,7 @@ void do_setrlimit(void)
     perror("can't getrlimit");
     exit(1);
   }
-  corelimit.rlim_cur = 128*1024*1024;
+  corelimit.rlim_cur = 256*1024*1024;
   if (   corelimit.rlim_max != RLIM_INFINITY
       && corelimit.rlim_max < corelimit.rlim_cur)
   {
@@ -3063,6 +3087,18 @@ int main(int argc, char **argv)
   char *basenm = basename(dupargv0);
 
   do_setrlimit();
+
+  sttable = mmap(NULL, st_cap*sizeof(*sttable), PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+  if (sttable == NULL || sttable == MAP_FAILED)
+  {
+    errxit("Can't mmap sttable");
+    exit(1);
+  }
+  if (madvise(sttable, st_cap*sizeof(*sttable), MADV_DONTNEED) != 0)
+  {
+    fprintf(stderr, "can't madvise\n");
+    exit(1);
+  }
 
   sizeof_my_arena = 1024*1024;
   my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
