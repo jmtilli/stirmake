@@ -2056,6 +2056,13 @@ int do_exec(int ruleid)
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //my_abort();
         }
+        int recommended = 0;
+        if (S_ISDIR(statbuf.st_mode) && !e->is_orderonly && !recommended)
+        {
+          char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx];
+          printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx], tgtname);
+          recommended = 1;
+        }
         if (!e->is_orderonly)
         {
           if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
@@ -2072,6 +2079,12 @@ int do_exec(int ruleid)
           //perror("can't lstat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //my_abort();
+        }
+        if (S_ISDIR(statbuf.st_mode) && !e->is_orderonly && !recommended)
+        {
+          char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx];
+          printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx], tgtname);
+          recommended = 1;
         }
         if (!e->is_orderonly)
         {
