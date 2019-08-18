@@ -2676,7 +2676,7 @@ void do_clean(char *fwd_path, int objs, int bins)
         {
           break;
         }
-        prefixok = 0;
+        prefixok = all;
         rprefix = sttable[rules[ruleid]->diridx];
         if (strncmp(rprefix, fwd_path, fp_len) == 0)
         {
