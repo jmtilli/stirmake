@@ -52,6 +52,7 @@ char *canon(const char *old)
         if (idx != 0 && (idx != 2 || neu[idx-1] != '.' || neu[idx-2] != '.'))
         {
           idx = 0;
+          neu[idx] = '\0';
           old = (*old2 == '\0') ? old2 : (old2 + 1);
           continue;
         }
@@ -105,6 +106,11 @@ char *canon(const char *old)
   if (is_abspath)
   {
     return neu - 1;
+  }
+  if (idx == 0)
+  {
+    neu[0] = '.';
+    neu[1] = '\0';
   }
   return neu;
 }
