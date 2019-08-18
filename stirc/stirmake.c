@@ -2634,6 +2634,8 @@ void do_clean(char *fwd_path, int objs, int bins)
       size_t stidx;
       int ruleid;
       struct linked_list_head tmplist; // extra list for reversing
+      int prefixok;
+      char *rprefix;
       linked_list_head_init(&tmplist);
       if (debug)
       {
@@ -2671,6 +2673,19 @@ void do_clean(char *fwd_path, int objs, int bins)
           break;
         }
         if (rules[ruleid]->is_cleanqueued)
+        {
+          break;
+        }
+        prefixok = 0;
+        rprefix = sttable[rules[ruleid]->diridx];
+        if (strncmp(rprefix, fwd_path, fp_len) == 0)
+        {
+          if (rprefix[fp_len] == '/' || rprefix[fp_len] == '\0')
+          {
+            prefixok = 1;
+          }
+        }
+        if (!prefixok)
         {
           break;
         }
