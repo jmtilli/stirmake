@@ -130,8 +130,6 @@ void errxit(const char *fmt, ...)
     }
     if (pid < 0)
     {
-      // FIXME this happens, although very rarely. smka -j4 and number of
-      // children is 1 here, error is: "No child process"
       printf("30.E\n");
       perror("Error was");
       printf("number of children: %d\n", children);
@@ -697,7 +695,7 @@ struct rule {
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
-  size_t deps_remain_cnt; // XXX return this for less memory use?
+  size_t deps_remain_cnt;
   size_t scopeidx;
 };
 
@@ -2591,7 +2589,6 @@ char *dir_up(char *old)
   return canonized;
 }
 
-// FIXME cleanbinaries
 void do_clean(char *fwd_path, int objs, int bins)
 {
   size_t i, fp_len;
