@@ -416,6 +416,11 @@ void *my_malloc(size_t sz)
       exit(1);
     }
     my_arena_ptr = my_arena;
+    if (madvise(my_arena, sizeof_my_arena, MADV_DONTNEED) != 0)
+    {
+      fprintf(stderr, "can't madvise\n");
+      exit(1);
+    }
   }
   result = my_arena_ptr;
   my_arena_ptr += (sz+7)/8*8;
