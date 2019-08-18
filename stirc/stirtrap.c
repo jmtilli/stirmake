@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "abce/abce.h"
 #include "stiropcodes.h"
+#include "stirtrap.h"
 #include "canon.h"
 
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)

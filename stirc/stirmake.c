@@ -23,6 +23,7 @@
 #include "incyyutils.h"
 #include "dbyy.h"
 #include "dbyyutils.h"
+#include "stirtrap.h"
 
 enum mode {
   MODE_NONE = 0,
@@ -3132,6 +3133,7 @@ int main(int argc, char **argv)
       }
       curupcnt++;
       abce_init(&abce);
+      abce.trap = stir_trap;
       init_main_for_realpath(&main, storcwd); // FIXME leaks
       main.abce = &abce;
       main.freeform_token_seen = 1;
@@ -3173,6 +3175,7 @@ int main(int argc, char **argv)
 
   load_db();
   abce_init(&abce);
+  abce.trap = stir_trap;
   main.abce = &abce;
   main.freeform_token_seen = 0;
   stiryy_init(&stiryy, &main, ".", abce.dynscope);

@@ -143,6 +143,9 @@ struct CSnippet luaSnippet = {
 @beginholeyscope return BEGINHOLEYSCOPE;
 @endscope return ENDSCOPE;
 
+@dirup return DIRUP;
+@dirdown return DIRDOWN;
+
 @addRule   return ADD_RULE;
 @RULE_DIST   return RULE_DIST;
 @RULE_PHONY   return RULE_PHONY;

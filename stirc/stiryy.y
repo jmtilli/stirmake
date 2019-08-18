@@ -22,7 +22,7 @@ typedef void *yyscan_t;
 #include "yyutils.h"
 #include "stiryy.tab.h"
 #include "stiryy.lex.h"
-#include "opcodesonly.h"
+#include "stiropcodes.h"
 #if 0
 #include "abce/stiryy.h"
 #include "abce/stiryyutils.h"
@@ -193,6 +193,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token TONUMBER SCOPE_PARENT SCOPE_NEW GETSCOPE_DYN GETSCOPE_LEX
 
 
+%token DIRUP DIRDOWN
 
 %token IF
 %token ELSE
@@ -235,7 +236,16 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 st: amyplanrules;
 
 custom_stmt: DUMMY_TOK1;
-custom_expr0: DUMMY_TOK2;
+custom_expr0:
+  DIRUP
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_TOP_DIR);
+}
+| DIRDOWN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_CUR_DIR_FROM_TOP);
+}
+;
 
 custom_rule:
   stirrule
