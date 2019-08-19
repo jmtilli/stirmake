@@ -26,4 +26,4 @@
 
 - multiple rule types in one, check for saneness
 
-- init main properly every iteration
+- memory leaks
