@@ -145,6 +145,14 @@ hierarchy. Example:
         make -C subproj
 ```
 
+The @rectgtrule is executed whenever either `subproj/bin/cmd` or
+`subproj/lib/libsp.a` is older than other files within the hierarchy. However,
+if the rule is executed, the files `subproj/bin/cmd` and `subproj/lib/libsp.a`
+are automatically touched if the sub-make didn't touch them so that subsequent
+invocations do not execute the rule anymore. Note the condition that files are
+not touched by sub-make can happen if one does `touch subproj/README.txt` which
+obviously does not cause the sub-make to do anything.
+
 Phony-rules are well-known from make.
 
 Maybe-rules do not check that the target is always updated. Example:
