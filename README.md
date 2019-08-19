@@ -77,7 +77,7 @@ As example of nested scoping:
 ```
 @beginholeyscope
   $CCCMD = @LP $CCCMD
-  @dirinclude "subproject"
+  @projdirinclude "subproject"
 @endscope
 ```
 
