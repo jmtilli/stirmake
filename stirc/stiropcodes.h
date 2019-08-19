@@ -4,6 +4,8 @@
 enum stir_opcode {
   STIR_OPCODE_TOP_DIR = 64,
   STIR_OPCODE_CUR_DIR_FROM_TOP = 65,
+  STIR_OPCODE_DEP_ADD = 66,
+  STIR_OPCODE_RULE_ADD = 67,
 };
 
 #endif

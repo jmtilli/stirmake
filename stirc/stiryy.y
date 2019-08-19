@@ -23,6 +23,7 @@ typedef void *yyscan_t;
 #include "stiryy.tab.h"
 #include "stiryy.lex.h"
 #include "stiropcodes.h"
+#include "stirtrap.h"
 #if 0
 #include "abce/stiryy.h"
 #include "abce/stiryyutils.h"
@@ -208,6 +209,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token APPEND_LIST
 %token RETURN
 %token ADD_RULE
+%token ADD_DEPS
 %token RULE_DIST
 %token RULE_PHONY
 %token RULE_ORDINARY
@@ -262,7 +264,16 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 
 st: amyplanrules;
 
-custom_stmt: DUMMY_TOK1;
+custom_stmt:
+  ADD_DEPS OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, STIR_OPCODE_DEP_ADD);
+  }
+}
+;
+
 custom_expr0:
   DIRUP
 {
@@ -342,7 +353,11 @@ custom_rule:
     get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
     abce_mb_refdn(get_abce(stiryy), &oldscope);
     //printf("projprefix2: %s\n", projprefix2);
-    abce_scope_set_userdata(&get_abce(stiryy)->dynscope, projprefix2);
+    struct scope_ud ud = {
+      .prefix = prefix2,
+      .prjprefix = projprefix2,
+    };
+    abce_scope_set_userdata(&get_abce(stiryy)->dynscope, &ud);
     if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
     {
       my_abort();
@@ -396,13 +411,20 @@ custom_rule:
   double oldval = amyplanyy->do_emit;
   if (amyplanyy_do_emit(amyplanyy))
   {
+    unsigned char tmpbuf[64] = {};
+    size_t tmpsiz;
+
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    get_abce(amyplanyy)->ip = $<d>2;
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+    //get_abce(amyplanyy)->ip = $<d>2;
+    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
     if (get_abce(amyplanyy)->sp != 0)
     {
       abort();
     }
-    if (abce_engine(get_abce(amyplanyy), NULL, 0) != 0)
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
       printf("Error executing bytecode for @if directive\n");
       printf("error %d\n", get_abce(amyplanyy)->err.code);

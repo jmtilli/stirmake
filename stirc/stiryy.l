@@ -146,7 +146,8 @@ struct CSnippet luaSnippet = {
 @dirup return DIRUP;
 @dirdown return DIRDOWN;
 
-@addRule   return ADD_RULE;
+@addrule   return ADD_RULE;
+@adddeps   return ADD_DEPS;
 @RULE_DIST   return RULE_DIST;
 @RULE_PHONY   return RULE_PHONY;
 @RULE_ORDINARY   return RULE_ORDINARY;

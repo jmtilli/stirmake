@@ -102,6 +102,7 @@ struct stiryy_main {
   int subdirseen;
   int subdirseen_sameproject;
   int freeform_token_seen;
+  int parsing;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;
@@ -228,11 +229,11 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd)
   stiryy->main->cdepincludesz++;
 }
 
-static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly)
+static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly)
 {
-  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(stiryy->curprefix) + strlen(dep) + 2;
+  size_t sz = strlen(curprefix) + strlen(dep) + 2;
   char *can, *tmp = malloc(sz);
   if (dep[0] == '/')
   {
@@ -243,7 +244,7 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, dep) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= sz)
     {
       my_abort();
     }
@@ -264,11 +265,16 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   free(can);
 }
 
-static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
+static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly)
 {
-  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+  stiryy_main_set_dep(stiryy->main, stiryy->curprefix, dep, rec, orderonly);
+}
+
+static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
+{
+  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(stiryy->curprefix) + strlen(tgt) + 2;
+  size_t sz = strlen(curprefix) + strlen(tgt) + 2;
   char *can, *tmp = malloc(sz);
   if (tgt[0] == '/')
   {
@@ -279,7 +285,7 @@ static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", stiryy->curprefix, tgt) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
     {
       my_abort();
     }
@@ -296,6 +302,11 @@ static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
   rule->targets[rule->targetsz].namenodir = strdup(tgt);
   rule->targetsz++;
   free(can);
+}
+
+static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
+{
+  stiryy_main_set_tgt(stiryy->main, stiryy->curprefix, tgt);
 }
 
 static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
@@ -327,32 +338,37 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
   rule->lastshellcapacity = 0;
 }
 
-static inline void stiryy_emplace_rule(struct stiryy *stiryy, size_t scopeidx)
+static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char *curprefix, size_t scopeidx)
 {
   size_t newcapacity;
-  if (stiryy->main->rulesz >= stiryy->main->rulecapacity)
+  if (main->rulesz >= main->rulecapacity)
   {
-    newcapacity = 2*stiryy->main->rulecapacity + 1;
-    stiryy->main->rules = (struct stiryyrule*)realloc(stiryy->main->rules, sizeof(*stiryy->main->rules)*newcapacity);
-    stiryy->main->rulecapacity = newcapacity;
+    newcapacity = 2*main->rulecapacity + 1;
+    main->rules = (struct stiryyrule*)realloc(main->rules, sizeof(*main->rules)*newcapacity);
+    main->rulecapacity = newcapacity;
   }
-  stiryy->main->rules[stiryy->main->rulesz].depsz = 0;
-  stiryy->main->rules[stiryy->main->rulesz].depcapacity = 0;
-  stiryy->main->rules[stiryy->main->rulesz].deps = NULL;
-  stiryy->main->rules[stiryy->main->rulesz].targetsz = 0;
-  stiryy->main->rules[stiryy->main->rulesz].targetcapacity = 0;
-  stiryy->main->rules[stiryy->main->rulesz].targets = NULL;
-  stiryy->main->rules[stiryy->main->rulesz].shellsz = 0;
-  stiryy->main->rules[stiryy->main->rulesz].shellcapacity = 0;
-  stiryy->main->rules[stiryy->main->rulesz].shells = NULL;
-  stiryy->main->rules[stiryy->main->rulesz].prefix = strdup(stiryy->curprefix);
-  stiryy->main->rules[stiryy->main->rulesz].phony = 0;
-  stiryy->main->rules[stiryy->main->rulesz].rectgt = 0;
-  stiryy->main->rules[stiryy->main->rulesz].maybe = 0;
-  stiryy->main->rules[stiryy->main->rulesz].dist = 0;
-  stiryy->main->rules[stiryy->main->rulesz].deponly = 0;
-  stiryy->main->rules[stiryy->main->rulesz].scopeidx = scopeidx;
-  stiryy->main->rulesz++;
+  main->rules[main->rulesz].depsz = 0;
+  main->rules[main->rulesz].depcapacity = 0;
+  main->rules[main->rulesz].deps = NULL;
+  main->rules[main->rulesz].targetsz = 0;
+  main->rules[main->rulesz].targetcapacity = 0;
+  main->rules[main->rulesz].targets = NULL;
+  main->rules[main->rulesz].shellsz = 0;
+  main->rules[main->rulesz].shellcapacity = 0;
+  main->rules[main->rulesz].shells = NULL;
+  main->rules[main->rulesz].prefix = strdup(curprefix);
+  main->rules[main->rulesz].phony = 0;
+  main->rules[main->rulesz].rectgt = 0;
+  main->rules[main->rulesz].maybe = 0;
+  main->rules[main->rulesz].dist = 0;
+  main->rules[main->rulesz].deponly = 0;
+  main->rules[main->rulesz].scopeidx = scopeidx;
+  main->rulesz++;
+}
+
+static inline void stiryy_emplace_rule(struct stiryy *stiryy, size_t scopeidx)
+{
+  stiryy_main_emplace_rule(stiryy->main, stiryy->curprefix, scopeidx);
 }
 
 static inline void stiryy_mark_phony(struct stiryy *stiryy)
@@ -398,9 +414,13 @@ static inline int stiryy_check_rule(struct stiryy *stiryy)
   }
   return 0;
 }
+static inline void stiryy_main_mark_deponly(struct stiryy_main *main)
+{
+  main->rules[main->rulesz-1].deponly = 1;
+}
 static inline void stiryy_mark_deponly(struct stiryy *stiryy)
 {
-  stiryy->main->rules[stiryy->main->rulesz-1].deponly = 1;
+  stiryy_main_mark_deponly(stiryy->main);
 }
 
 static inline void stiryy_main_free(struct stiryy_main *main)

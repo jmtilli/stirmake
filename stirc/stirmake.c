@@ -3438,8 +3438,10 @@ int main(int argc, char **argv)
       abce_init(&abce);
       abce_inited = 1;
       abce.trap = stir_trap;
+      abce.trap_baton = &main;
       init_main_for_realpath(&main, storcwd); // FIXME leaks
       main.abce = &abce;
+      main.parsing = 1;
       main.freeform_token_seen = 1;
       stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, curcwd, "Stirfile");
       f = fopen("Stirfile", "r");
@@ -3482,7 +3484,9 @@ int main(int argc, char **argv)
   abce_init(&abce);
   abce_inited = 1;
   abce.trap = stir_trap;
+  abce.trap_baton = &main;
   main.abce = &abce;
+  main.parsing = 1;
   main.freeform_token_seen = 0;
   stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, NULL, filename);
 
@@ -3496,6 +3500,7 @@ int main(int argc, char **argv)
   {
     errxit("Parsing failed");
   }
+  main.parsing = 0;
   fclose(f);
 
   stack_conf();
