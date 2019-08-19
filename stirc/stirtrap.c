@@ -49,6 +49,12 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb rec = {};
       struct abce_mb *orderonlyres = NULL;
       struct abce_mb *recres = NULL;
+      if (!main->parsing)
+      {
+        fprintf(stderr, "stirmake: trying to add dep after parsing stage\n");
+        abce->err.code = STIR_E_RULECHANGE_NOT_PERMITTED;
+        return -EINVAL;
+      }
       if (abce_scope_get_userdata(&abce->dynscope))
       {
         prefix =

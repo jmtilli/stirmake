@@ -8,4 +8,8 @@ struct scope_ud {
 
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz);
 
+enum {
+  STIR_E_RULECHANGE_NOT_PERMITTED = 0x1001,
+};
+
 #endif
