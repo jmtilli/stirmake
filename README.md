@@ -139,9 +139,57 @@ object file.
 
 ## Invoking stirmake
 
-### Parallel builds
+Suppose there is the following hierarchy:
+
+* `project/Stirfile`
+    * `project/dir/Stirfile`
+        * `project/dir/subproj/Stirfile`
+            * `project/dir/subproj/subdir/Stirfile`
+
+...and suppose `subproj` is a git submodule.
+
+Suppose one is currently at `project/dir/subproj/subdir/`.
+
+Then one invokes `stirmake` as `stirmake -a` (synonym: `smka`) to build
+something relative to the entire project hierarchy, or `stirmake -p` (synonym:
+`smkp`) to build something relative to the subproject, or `stirmake -t`
+(synonym: `smkt`) to build something relative to the current directory.
+
+As an example, the following are equal:
+
+* `cd project/dir/subproj/subdir; smkt ../all`
+* `cd project/dir/subproj/subdir; smkp all`
+* `cd project/dir/subproj/subdir; smka project/dir/subproj/all`
+
+where it is assumed that all of the Stirfiles include a phony target `all`.
+
+If the target is not given, stirmake automatically uses the first target within
+the project hierarchy / subproject / subdirectory.
 
 ### Autoclean
+
+Cleaning should never be necessary. However, stirmake automatically figures out
+the rules for cleaning object files and binaries. To clean, do some of these:
+
+* `smka -bc`: clean binaries and object files of whole project hierarchy, then exit
+* `smka -b`: clean binaries of whole project hierarchy, then exit
+* `smka -c`: clean object files of whole project hierarchy, then exit
+* `smka -bc all`: clean binaries and object files of whole project hierarchy, then build phony target `all`
+* `smkp -bc`: clean binaries and object files of whole project
+* `smkt -bc`: clean binaries and object files of current directory
+
+What is currently missing is hooks for automatically cleaning results of
+sub-makes. TODO do this someday
+
+### Parallel builds
+
+Parallel build uses the familiar syntax: `stirmake -j8`
+
+### Other useful arguments
+
+Stirmake has a debug mode that is enabled by using the `-d` command line
+argument. It is very verbose and explains what stirmake does and why it does
+that.
 
 ## Importing make auto-dependencies
 
