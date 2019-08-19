@@ -30,7 +30,7 @@ language, and Shake uses a strange Haskell-based input syntax.
 * Multiple targets per rules
 * Dependency on a whole directory hierarchy, using its latest mtime
 * Compatibility with `gcc -M` format dependency files
-* TODO: Conditional compilaton
+* Conditional compilaton
 * Build command database, with dependency on build command
 * Automatically deduced cleaning rules
 * Fast bytecode based variable expansion
