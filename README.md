@@ -241,11 +241,59 @@ that.
 
 ## Build command database
 
+Stirmake automatically stores a list of commands used to build targets into the
+file `.stir.db`. Whenever a command fails, it is removed from `.stir.db`;
+whenever a command succeeds, it is added/updated to `.stir.db`.
+
+All rules depend on the exact command used to build the targets. If the command
+has changed, a re-build for the rule is done even though all targets may be
+up-to-date based on mtime.
+
+Because of this property, `stirmake` should never require `make clean`, and one
+does not need an explicit dependency on `Stirfile` for all rules.
+
 ## Examples
 
 ## LuaJIT integration
 
 ## GNU make jobserver integration
+
+Stirmake automatically integrates with GNU make jobserver. Several tricks are
+done to get non-blocking behavior on a blocking file descriptor. Stirmake can
+be a jobserver host or a jobserver guest. Commands are automatically compared
+to a built-in list of commands that represent sub-makes:
+
+* `make`
+* `gmake`
+* `/usr/bin/make`
+* `/usr/bin/gmake`
+* `/usr/local/bin/make`
+* `/usr/local/bin/gmake`
+* `/usr/pkg/bin/make`
+* `/usr/pkg/bin/gmake`
+* `/opt/bin/make`
+* `/opt/bin/gmake`
+* `/opt/gnu/bin/make`
+* `/opt/gnu/bin/gmake`
+* `/bin/make`
+* `/bin/gmake`
+
+If the command is detected to be a sub-make, the `MAKEFLAGS` environment
+variable is set to contain the jobserver details.
+
+## Custom progamming language
+
+Stirmake is programmed by a custom programming language Amyplan using the
+bytecode engine abce. It is a strongly and dynamically typed interpreted
+programming language.
+
+There are several reasons why a custom language is used:
+
+* The use of a language where every reserved word begins with the sigil `@` allows smoothly embedding the embedded language syntax into Stirfiles
+* A custom language can support recursive nested scoping creatable from the C API, which is something that e.g. Lua lacks
+* The custom language allows compiling variable assignments with delayed evaluation to bytecode
+
+To see documentation of Amyplan, go to `stirc/abce` directory of the project.
 
 ## Why does stirmake output message X?
 
