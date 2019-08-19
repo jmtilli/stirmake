@@ -157,7 +157,7 @@ Phony-rules are well-known from make.
 
 Maybe-rules do not check that the target is always updated. Example:
 ```
-@maybe: foo: Makefile.foo foo.c
+@mayberule: foo: Makefile.foo foo.c
         make -f Makefile.foo
 ```
 
@@ -167,6 +167,21 @@ cleaning object files and binaries: dist-rule creates a binary instead of
 object file.
 
 ## Nesting Stirfiles
+
+One can include Stirfiles of subdirectories with the `@dirinclude` directive,
+and the Stirfiles of subprojects with the `@projdirinclude` directive. It is
+recommended to use `@projdirinclude` with a `@beginholeyscope` so that only
+defined variables are visible to the subproject. An example:
+
+```
+@dirinclude "subdir1"
+@dirinclude "subdir2"
+
+@beginholeyscope
+  $CCCMD = @LP $CCCMD
+  @projdirinclude "subproject"
+@endscope
+```
 
 ## Invoking stirmake
 
@@ -231,6 +246,86 @@ that.
 ## LuaJIT integration
 
 ## GNU make jobserver integration
+
+## Why does stirmake output message X?
+
+There are several warnings and helpful suggestions stirmake may emit. This
+section explains those in detail.
+
+`Recommend using string literals instead of free-form tokens`
+
+This means one should instead of:
+
+```
+foo.o: foo.c
+        cc -o foo.c
+```
+
+Do this:
+
+```
+"foo.o": "foo.c"
+        cc -o foo.c
+```
+
+The reason is that stirmake has support for proper data types, so one should
+use them. Later versions may change the behaviour of unquoted free-form tokens.
+For example, the free-form tokens cause a problem for maximal munch tokenizing.
+Answer quickly: is `4/2` a filename or a mathematical expression? What about `4
+/ 2`, then?
+
+`Recommend setting rule for X to @rectgtrule`
+
+A rule where some targets are inside a `@recdep` dependency should be marked
+`@rectgtrule` for smooth operation of incremental build. Without specifying it
+as `@rectgtrule`, one can have a system that builds too much for subsequent
+invocations of stirmake.
+
+`Recommend making directory dep X of Y either @orderonly or @recdep.`
+
+A dependency was detected to be a directory. Almost always, one should not
+depend on the mtime of the directory (which means the last time a direct child
+file was added or removed), but rather the recursive newest mtime within the
+directory (`@recdep`), or whether the directory exists at all (`@orderonly`).
+
+`Can't find old symbol function for X`
+
+The `$VAR += [...]` syntax can only be used if `$VAR` is already defined.
+
+`var X not found`
+
+Functions must refer to non-local variable `$X` using dynamic scope `@D$X` or
+lexical scope `@L$X`.
+
+`Recursion misuse detected`
+
+Stirmake is designed to be used non-recursively by including sub-projects
+instead of invoking a separate stirmake instance for sub-projects. If you
+really want to invoke a sub-stirmake, please create a wrapper script that
+un-sets the environment variable `STIRMAKEPID` to allow recursive invocation.
+
+`ruleid by tgt X already exists`
+
+You tried to create the same rule twice. You can specify a rule only once, but
+additional dependencies can be specified using `@deponly: tgt: add deps`.
+
+`cycle found, cannot proceed further`
+
+The dependencies have a cycle. Please break it.
+
+`target X was not created by rule`
+
+The rule must create/update its target. If this does not always happen, you
+must mark it `@mayberule` or `@phonyrule`. Also, `@rectgtrule` may be used for
+rules that have targets inside `@recdep`.
+
+`target X was not updated by rule`
+
+The same.
+
+`No X and rule not found`
+
+The file X does not exist and there is no rule to make it
 
 ## References
 
