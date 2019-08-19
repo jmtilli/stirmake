@@ -184,6 +184,7 @@ struct CSnippet luaSnippet = {
 \<\> return MAYBE_CALL;
 
 @\t return ATTAB;
+@@\t return ATATTAB;
 
 
 [$]^ {

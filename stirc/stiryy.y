@@ -144,7 +144,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token DUMMY_TOK2
 
 %token <s> SHELL_COMMAND
-%token ATTAB
+%token ATTAB ATATTAB
 
 %token NEWLINE
 
@@ -2179,6 +2179,14 @@ shell_command:
   free($1);
 }
 | ATTAB expr NEWLINE
+{
+  // FIXME figure out a way to make expr temporary and exec immediately
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("\tshell expr\n");
+  }
+}
+| ATATTAB expr NEWLINE
 {
   // FIXME figure out a way to make expr temporary and exec immediately
   if (amyplanyy_do_emit(amyplanyy))
