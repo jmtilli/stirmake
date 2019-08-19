@@ -41,6 +41,29 @@ language, and Shake uses a strange Haskell-based input syntax.
 
 ## Building stirmake
 
+Stirmake is built in the following way using GNU make to bootstrap it:
+
+```
+git submodule init
+git submodule update
+cd stirc
+make
+```
+
+The compiled stirmake executable is fully self-contained. No dynamic libraries
+are required apart from the ones that come with the operating system.
+
+Note there is no make install. One needs to manually copy the stirmake binary
+to some directory and create the symlinks:
+
+```
+cd stirc
+sudo cp stirmake /usr/local/bin
+sudo ln -s stirmake /usr/local/bin/smka
+sudo ln -s stirmake /usr/local/bin/smkp
+sudo ln -s stirmake /usr/local/bin/smkt
+```
+
 ## Data model
 
 Bad programmers start from algorithms. Good programmers start from data
