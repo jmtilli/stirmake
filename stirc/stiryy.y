@@ -69,7 +69,7 @@ int stiryywrap(yyscan_t scanner)
 
 static inline int amyplanyy_do_emit(struct stiryy *amyplanyy)
 {
-  return 1;
+  return amyplanyy->do_emit;
 }
 
 static inline int is_autocall(struct stiryy *amyplanyy)
@@ -278,7 +278,10 @@ custom_rule:
   stirrule
 | PRINT NUMBER NEWLINE
 {
-  printf("%g\n", $2);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("%g\n", $2);
+  }
 }
 | FILEINCLUDE STRING_LITERAL NEWLINE
 {
@@ -287,96 +290,147 @@ custom_rule:
 | FILEINCLUDE VARREF_LITERAL NEWLINE
 | dirinclude STRING_LITERAL NEWLINE
 {
-  struct stiryy stiryy2 = {};
-  size_t fsz = strlen(stiryy->curprefix) + strlen($2.str) + 8 + 3;
-  size_t psz = strlen(stiryy->curprefix) + strlen($2.str) + 2;
-  size_t ppsz = strlen(stiryy->curprojprefix) + strlen($2.str) + 2;
-  char *prefix = malloc(psz);
-  char *projprefix = malloc(ppsz);
-  char *filename = malloc(fsz);
-  char realpathname[PATH_MAX];
-  char *prefix2, *projprefix2;
-  int ret;
-  FILE *f;
-  struct abce_mb oldscope;
-  size_t oldscopeidx;
-  if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $2.str) >= psz)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    my_abort();
-  }
-  if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, $2.str) >= ppsz)
-  {
-    my_abort();
-  }
-  if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, $2.str, "Stirfile") >= fsz)
-  {
-    my_abort();
-  }
-  if (realpath(filename, realpathname) == NULL)
-  {
-    my_abort();
-  }
-  if (strcmp(realpathname, stiryy->main->realpathname) == 0)
-  {
-    stiryy->main->subdirseen = 1;
-    if ($1 && stiryy->sameproject)
+    struct stiryy stiryy2 = {};
+    size_t fsz = strlen(stiryy->curprefix) + strlen($2.str) + 8 + 3;
+    size_t psz = strlen(stiryy->curprefix) + strlen($2.str) + 2;
+    size_t ppsz = strlen(stiryy->curprojprefix) + strlen($2.str) + 2;
+    char *prefix = malloc(psz);
+    char *projprefix = malloc(ppsz);
+    char *filename = malloc(fsz);
+    char realpathname[PATH_MAX];
+    char *prefix2, *projprefix2;
+    int ret;
+    FILE *f;
+    struct abce_mb oldscope;
+    size_t oldscopeidx;
+    if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $2.str) >= psz)
     {
-      stiryy->main->subdirseen_sameproject = 1;
+      my_abort();
     }
-  }
-  prefix2 = canon(prefix);
-  projprefix2 = canon(projprefix);
-  if (!$1)
-  {
-    // replace projprefix2
-    free(projprefix2);
-    projprefix2 = strdup(".");
-  }
-  oldscope = get_abce(stiryy)->dynscope;
-  oldscopeidx = oldscope.u.area->u.sc.locidx;
-  get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
-  abce_mb_refdn(get_abce(stiryy), &oldscope);
-  //printf("projprefix2: %s\n", projprefix2);
-  abce_scope_set_userdata(&get_abce(stiryy)->dynscope, projprefix2);
-  if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
-  {
-    my_abort();
-  }
-  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope, NULL, filename);
-  stiryy2.sameproject = stiryy->sameproject && $1;
+    if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, $2.str) >= ppsz)
+    {
+      my_abort();
+    }
+    if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, $2.str, "Stirfile") >= fsz)
+    {
+      my_abort();
+    }
+    if (realpath(filename, realpathname) == NULL)
+    {
+      my_abort();
+    }
+    if (strcmp(realpathname, stiryy->main->realpathname) == 0)
+    {
+      stiryy->main->subdirseen = 1;
+      if ($1 && stiryy->sameproject)
+      {
+        stiryy->main->subdirseen_sameproject = 1;
+      }
+    }
+    prefix2 = canon(prefix);
+    projprefix2 = canon(projprefix);
+    if (!$1)
+    {
+      // replace projprefix2
+      free(projprefix2);
+      projprefix2 = strdup(".");
+    }
+    oldscope = get_abce(stiryy)->dynscope;
+    oldscopeidx = oldscope.u.area->u.sc.locidx;
+    get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
+    abce_mb_refdn(get_abce(stiryy), &oldscope);
+    //printf("projprefix2: %s\n", projprefix2);
+    abce_scope_set_userdata(&get_abce(stiryy)->dynscope, projprefix2);
+    if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
+    {
+      my_abort();
+    }
+    stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope, NULL, filename);
+    stiryy2.sameproject = stiryy->sameproject && $1;
 
-  f = fopen(filename, "r");
-  if (!f)
-  {
-    fprintf(stderr, "stirmake: Can't open substirfile %s.\n", filename);
-    my_abort();
-  }
-  ret = stiryydoparse(f, &stiryy2);
-  fclose(f);
-  if (ret)
-  {
-    fprintf(stderr, "stirmake: Can't parse substirfile %s.\n", filename);
-    YYABORT;
-  }
+    f = fopen(filename, "r");
+    if (!f)
+    {
+      fprintf(stderr, "stirmake: Can't open substirfile %s.\n", filename);
+      my_abort();
+    }
+    ret = stiryydoparse(f, &stiryy2);
+    fclose(f);
+    if (ret)
+    {
+      fprintf(stderr, "stirmake: Can't parse substirfile %s.\n", filename);
+      YYABORT;
+    }
 
-  stiryy_free(&stiryy2);
-  abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);
-  get_abce(stiryy)->dynscope = abce_mb_refup(get_abce(stiryy), &get_abce(stiryy)->cachebase[oldscopeidx]);
-  //get_abce(stiryy)->dynscope = oldscope;
-  // free(prefix2); // let it leak, FIXME free it someday
-  // free(projprefix2); // let it leak, FIXME free it someday
-  free(prefix);
-  free(projprefix);
-  free(filename);
+    stiryy_free(&stiryy2);
+    abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);
+    get_abce(stiryy)->dynscope = abce_mb_refup(get_abce(stiryy), &get_abce(stiryy)->cachebase[oldscopeidx]);
+    //get_abce(stiryy)->dynscope = oldscope;
+    // free(prefix2); // let it leak, FIXME free it someday
+    // free(projprefix2); // let it leak, FIXME free it someday
+    free(prefix);
+    free(projprefix);
+    free(filename);
+  }
   free($2.str);
 }
 | DIRINCLUDE VARREF_LITERAL NEWLINE
 | CDEPINCLUDESCURDIR STRING_LITERAL NEWLINE
 {
-  stiryy_set_cdepinclude(stiryy, $2.str);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_set_cdepinclude(stiryy, $2.str);
+  }
   free($2.str);
 }
 | CDEPINCLUDESCURDIR VARREF_LITERAL NEWLINE
+| IF
+{
+  size_t exprloc = get_abce(amyplanyy)->bytecodesz;
+  $<d>$ = exprloc;
+}
+  OPEN_PAREN expr CLOSE_PAREN NEWLINE
+{
+  double oldval = amyplanyy->do_emit;
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    get_abce(amyplanyy)->ip = $<d>2;
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    if (abce_engine(get_abce(amyplanyy), NULL, 0) != 0)
+    {
+      printf("Error executing bytecode for @if directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    int b;
+    if (abce_getboolean(&b, get_abce(amyplanyy), 0) != 0)
+    {
+      printf("expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      YYABORT;
+    }
+    if (!b)
+    {
+      amyplanyy->do_emit = 0;
+    }
+    abce_pop(get_abce(amyplanyy));
+    $<d>$ = oldval;
+  }
+}
+  amyplanrules
+  ENDIF NEWLINE
+{
+  amyplanyy->do_emit = (int)$<d>7;
+}
 ;
 
 
@@ -1895,47 +1949,65 @@ valuelistentry:
 stirrule:
   targetspec COLON depspec NEWLINE shell_commands
 {
-  if (stiryy_check_rule(stiryy) != 0)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    char buf[2048] = {0};
-    snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
-             stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
-    recommend(scanner, stiryy, buf);
+    if (stiryy_check_rule(stiryy) != 0)
+    {
+      char buf[2048] = {0};
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+      recommend(scanner, stiryy, buf);
+    }
   }
 }
 | RECTGTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
-  stiryy_mark_rectgt(stiryy);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_mark_rectgt(stiryy);
+  }
 }
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
-  stiryy_mark_phony(stiryy);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_mark_phony(stiryy);
+  }
 }
 | MAYBERULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
-  stiryy_mark_maybe(stiryy);
-  if (stiryy_check_rule(stiryy) != 0)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    char buf[2048] = {0};
-    snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
-             stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
-    recommend(scanner, stiryy, buf);
+    stiryy_mark_maybe(stiryy);
+    if (stiryy_check_rule(stiryy) != 0)
+    {
+      char buf[2048] = {0};
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+      recommend(scanner, stiryy, buf);
+    }
   }
 }
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
-  stiryy_mark_dist(stiryy);
-  if (stiryy_check_rule(stiryy) != 0)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    char buf[2048] = {0};
-    snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
-             stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
-    recommend(scanner, stiryy, buf);
+    stiryy_mark_dist(stiryy);
+    if (stiryy_check_rule(stiryy) != 0)
+    {
+      char buf[2048] = {0};
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+      recommend(scanner, stiryy, buf);
+    }
   }
 }
 | DEPONLY COLON targetspec COLON depspec NEWLINE
 {
-  stiryy_mark_deponly(stiryy);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_mark_deponly(stiryy);
+  }
 }
 | PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands
 ;
@@ -1947,83 +2019,109 @@ shell_commands:
 shell_command:
   SHELL_COMMAND NEWLINE
 {
-  char *outbuf = NULL;
-  size_t outcap = 0;
-  size_t outsz = 0;
-  size_t len = strlen($1);
-  size_t i;
-  stiryy_add_shell_section(stiryy);
-  for (i = 0; i < len; i++)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    if ($1[i] == '\\')
+    char *outbuf = NULL;
+    size_t outcap = 0;
+    size_t outsz = 0;
+    size_t len = strlen($1);
+    size_t i;
+    stiryy_add_shell_section(stiryy);
+    for (i = 0; i < len; i++)
     {
-      if (i+1 >= len)
+      if ($1[i] == '\\')
       {
-        my_abort();
-      }
-      if (outsz >= outcap)
-      {
-        outcap = 2*outcap + 16;
-        outbuf = realloc(outbuf, outcap);
-      }
-      outbuf[outsz++] = $1[i+1];
-      i++;
-      continue;
-    }
-    else if ($1[i] == '$')
-    {
-      if (i+1 < len && $1[i+1] == '<')
-      {
-        char *dep;
-        size_t deplen;
-        struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
-        if (rule->depsz <= 0)
+        if (i+1 >= len)
         {
-          fprintf(stderr, "$< on rule with no dependencies\n");
           my_abort();
         }
-        dep = rule->deps[0].namenodir;
-        deplen = strlen(dep);
-        if (outsz + deplen > outcap)
+        if (outsz >= outcap)
         {
-          outcap = 2*outcap + deplen;
+          outcap = 2*outcap + 16;
           outbuf = realloc(outbuf, outcap);
         }
-        memcpy(&outbuf[outsz], dep, deplen);
-        outsz += deplen;
+        outbuf[outsz++] = $1[i+1];
         i++;
         continue;
       }
-      if (i+1 < len && $1[i+1] == '@')
+      else if ($1[i] == '$')
       {
-        char *tgt;
-        size_t tgtlen;
-        struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
-        if (rule->targetsz <= 0)
+        if (i+1 < len && $1[i+1] == '<')
         {
-          fprintf(stderr, "$@ on rule with no targets\n");
-          my_abort();
+          char *dep;
+          size_t deplen;
+          struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+          if (rule->depsz <= 0)
+          {
+            fprintf(stderr, "$< on rule with no dependencies\n");
+            my_abort();
+          }
+          dep = rule->deps[0].namenodir;
+          deplen = strlen(dep);
+          if (outsz + deplen > outcap)
+          {
+            outcap = 2*outcap + deplen;
+            outbuf = realloc(outbuf, outcap);
+          }
+          memcpy(&outbuf[outsz], dep, deplen);
+          outsz += deplen;
+          i++;
+          continue;
         }
-        tgt = rule->targets[0].namenodir;
-        tgtlen = strlen(tgt);
-        if (outsz + tgtlen > outcap)
+        if (i+1 < len && $1[i+1] == '@')
         {
-          outcap = 2*outcap + tgtlen;
-          outbuf = realloc(outbuf, outcap);
+          char *tgt;
+          size_t tgtlen;
+          struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+          if (rule->targetsz <= 0)
+          {
+            fprintf(stderr, "$@ on rule with no targets\n");
+            my_abort();
+          }
+          tgt = rule->targets[0].namenodir;
+          tgtlen = strlen(tgt);
+          if (outsz + tgtlen > outcap)
+          {
+            outcap = 2*outcap + tgtlen;
+            outbuf = realloc(outbuf, outcap);
+          }
+          memcpy(&outbuf[outsz], tgt, tgtlen);
+          outsz += tgtlen;
+          i++;
+          continue;
         }
-        memcpy(&outbuf[outsz], tgt, tgtlen);
-        outsz += tgtlen;
-        i++;
-        continue;
-      }
-      if (i+1 < len && $1[i+1] == '^')
-      {
-        char *tgt;
-        size_t tgtlen;
-        size_t tgtidx;
-        struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
-        for (tgtidx = 0; tgtidx < rule->targetsz; tgtidx++)
+        if (i+1 < len && $1[i+1] == '^')
         {
+          char *tgt;
+          size_t tgtlen;
+          size_t tgtidx;
+          struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+          for (tgtidx = 0; tgtidx < rule->targetsz; tgtidx++)
+          {
+            if (tgtidx > 0 || outsz > 0)
+            {
+              // Emit new command
+              if (outsz >= outcap)
+              {
+                outcap = 2*outcap + 16;
+                outbuf = realloc(outbuf, outcap);
+              }
+              outbuf[outsz++] = '\0';
+              stiryy_add_shell(stiryy, outbuf);
+              outsz = 0;
+            }
+
+            tgt = rule->targets[tgtidx].namenodir;
+            tgtlen = strlen(tgt);
+            if (outsz + tgtlen > outcap)
+            {
+              outcap = 2*outcap + tgtlen;
+              outbuf = realloc(outbuf, outcap);
+            }
+            memcpy(&outbuf[outsz], tgt, tgtlen);
+            outsz += tgtlen;
+          }
+
           if (tgtidx > 0 || outsz > 0)
           {
             // Emit new command
@@ -2037,76 +2135,56 @@ shell_command:
             outsz = 0;
           }
 
-          tgt = rule->targets[tgtidx].namenodir;
-          tgtlen = strlen(tgt);
-          if (outsz + tgtlen > outcap)
-          {
-            outcap = 2*outcap + tgtlen;
-            outbuf = realloc(outbuf, outcap);
-          }
-          memcpy(&outbuf[outsz], tgt, tgtlen);
-          outsz += tgtlen;
+          i++;
+          continue;
         }
-
-        if (tgtidx > 0 || outsz > 0)
+        my_abort();
+      }
+      else if ($1[i] == ' ')
+      {
+        while ($1[i] == ' ')
         {
-          // Emit new command
-          if (outsz >= outcap)
-          {
-            outcap = 2*outcap + 16;
-            outbuf = realloc(outbuf, outcap);
-          }
-          outbuf[outsz++] = '\0';
-          stiryy_add_shell(stiryy, outbuf);
-          outsz = 0;
+          i++;
         }
-
-        i++;
+        i--; // will be incremented by for
+        if (outsz >= outcap)
+        {
+          outcap = 2*outcap + 16;
+          outbuf = realloc(outbuf, outcap);
+        }
+        outbuf[outsz++] = '\0';
+        stiryy_add_shell(stiryy, outbuf);
+        outsz = 0;
         continue;
       }
-      my_abort();
-    }
-    else if ($1[i] == ' ')
-    {
-      while ($1[i] == ' ')
-      {
-        i++;
-      }
-      i--; // will be incremented by for
       if (outsz >= outcap)
       {
         outcap = 2*outcap + 16;
         outbuf = realloc(outbuf, outcap);
       }
-      outbuf[outsz++] = '\0';
-      stiryy_add_shell(stiryy, outbuf);
-      outsz = 0;
-      continue;
+      outbuf[outsz++] = $1[i];
     }
     if (outsz >= outcap)
     {
       outcap = 2*outcap + 16;
       outbuf = realloc(outbuf, outcap);
     }
-    outbuf[outsz++] = $1[i];
+    outbuf[outsz++] = '\0';
+    //printf("\tshell\n");
+    stiryy_add_shell(stiryy, outbuf);
+    free(outbuf);
+    stiryy_add_shell(stiryy, NULL);
+    // FIXME multiple shell command lines
   }
-  if (outsz >= outcap)
-  {
-    outcap = 2*outcap + 16;
-    outbuf = realloc(outbuf, outcap);
-  }
-  outbuf[outsz++] = '\0';
-  //printf("\tshell\n");
-  stiryy_add_shell(stiryy, outbuf);
   free($1);
-  free(outbuf);
-  stiryy_add_shell(stiryy, NULL);
-  // FIXME multiple shell command lines
 }
 | ATTAB expr NEWLINE
 {
   // FIXME figure out a way to make expr temporary and exec immediately
-  printf("\tshell expr\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("\tshell expr\n");
+  }
 }
 ;
 
@@ -2114,7 +2192,10 @@ pattargetspec:
   pattargets
 | list
 {
-  printf("targetlist\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("targetlist\n");
+  }
 }
 ;
 
@@ -2122,7 +2203,10 @@ patdepspec:
   patdeps
 | list
 {
-  printf("deplist\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("deplist\n");
+  }
 }
 ;
 
@@ -2130,7 +2214,10 @@ targetspec:
   targets
 | list
 {
-  printf("targetlist\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("targetlist\n");
+  }
 }
 ;
   
@@ -2138,56 +2225,77 @@ depspec:
   deps
 | list
 {
-  printf("deplist\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("deplist\n");
+  }
 }
 ;
 
 pattargets:
   FREEFORM_TOKEN
 {
-  if (!stiryy->main->freeform_token_seen)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
-    stiryy->main->freeform_token_seen=1;
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      stiryy->main->freeform_token_seen=1;
+    }
+    printf("target1 %s\n", $1);
+    //stiryy_emplace_rule(stiryy);
+    //stiryy_set_tgt(stiryy, $1);
   }
-  printf("target1 %s\n", $1);
-  //stiryy_emplace_rule(stiryy);
-  //stiryy_set_tgt(stiryy, $1);
   free($1);
 }
 | STRING_LITERAL
 {
-  printf("target1 %s\n", $1.str);
-  //stiryy_emplace_rule(stiryy);
-  //stiryy_set_tgt(stiryy, $1.str);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("target1 %s\n", $1.str);
+    //stiryy_emplace_rule(stiryy);
+    //stiryy_set_tgt(stiryy, $1.str);
+  }
   free($1.str);
 }
 | VARREF_LITERAL
 {
-  //stiryy_emplace_rule(stiryy);
-  printf("target1ref\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    //stiryy_emplace_rule(stiryy);
+    printf("target1ref\n");
+  }
   free($1);
 }
 | pattargets FREEFORM_TOKEN
 {
-  if (!stiryy->main->freeform_token_seen)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
-    stiryy->main->freeform_token_seen=1;
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      stiryy->main->freeform_token_seen=1;
+    }
+    printf("target %s\n", $2);
+    //stiryy_set_tgt(stiryy, $2);
   }
-  printf("target %s\n", $2);
-  //stiryy_set_tgt(stiryy, $2);
   free($2);
 }
 | pattargets STRING_LITERAL
 {
-  printf("target %s\n", $2.str);
-  //stiryy_set_tgt(stiryy, $2.str);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("target %s\n", $2.str);
+    //stiryy_set_tgt(stiryy, $2.str);
+  }
   free($2.str);
 }
 | pattargets VARREF_LITERAL
 {
-  printf("targetref\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("targetref\n");
+  }
   free($2);
 }
 ;
@@ -2196,49 +2304,67 @@ pattargets:
 targets:
   FREEFORM_TOKEN
 {
-  if (!stiryy->main->freeform_token_seen)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
-    stiryy->main->freeform_token_seen=1;
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      stiryy->main->freeform_token_seen=1;
+    }
+    //printf("target1 %s\n", $1);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_set_tgt(stiryy, $1);
   }
-  //printf("target1 %s\n", $1);
-  stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-  stiryy_set_tgt(stiryy, $1);
   free($1);
 }
 | STRING_LITERAL
 {
-  //printf("target1 %s\n", $1.str);
-  stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-  stiryy_set_tgt(stiryy, $1.str);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    //printf("target1 %s\n", $1.str);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_set_tgt(stiryy, $1.str);
+  }
   free($1.str);
 }
 | VARREF_LITERAL
 {
-  stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-  printf("target1ref\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    printf("target1ref\n");
+  }
   free($1);
 }
 | targets FREEFORM_TOKEN
 {
-  if (!stiryy->main->freeform_token_seen)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
-    stiryy->main->freeform_token_seen=1;
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      stiryy->main->freeform_token_seen=1;
+    }
+    //printf("target %s\n", $2);
+    stiryy_set_tgt(stiryy, $2);
   }
-  //printf("target %s\n", $2);
-  stiryy_set_tgt(stiryy, $2);
   free($2);
 }
 | targets STRING_LITERAL
 {
-  //printf("target %s\n", $2.str);
-  stiryy_set_tgt(stiryy, $2.str);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    //printf("target %s\n", $2.str);
+    stiryy_set_tgt(stiryy, $2.str);
+  }
   free($2.str);
 }
 | targets VARREF_LITERAL
 {
-  printf("targetref\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("targetref\n");
+  }
   free($2);
 }
 ;
@@ -2260,24 +2386,33 @@ maybe_rec:
 patdeps:
 | patdeps maybe_rec FREEFORM_TOKEN
 {
-  if (!stiryy->main->freeform_token_seen)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
-    stiryy->main->freeform_token_seen=1;
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      stiryy->main->freeform_token_seen=1;
+    }
+    printf("dep %s rec? %d\n", $3, (int)$2);
+    //stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
   }
-  printf("dep %s rec? %d\n", $3, (int)$2);
-  //stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
   free($3);
 }
 | patdeps maybe_rec STRING_LITERAL
 {
-  printf("dep %s rec? %d\n", $3.str, (int)$2);
-  //stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("dep %s rec? %d\n", $3.str, (int)$2);
+    //stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
+  }
   free($3.str);
 }
 | patdeps maybe_rec VARREF_LITERAL
 {
-  printf("depref\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("depref\n");
+  }
   free($3);
 }
 ;
@@ -2285,24 +2420,33 @@ patdeps:
 deps:
 | deps maybe_rec FREEFORM_TOKEN
 {
-  if (!stiryy->main->freeform_token_seen)
+  if (amyplanyy_do_emit(amyplanyy))
   {
-    recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
-    stiryy->main->freeform_token_seen=1;
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      stiryy->main->freeform_token_seen=1;
+    }
+    //printf("dep %s rec? %d\n", $3, (int)$2);
+    stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
   }
-  //printf("dep %s rec? %d\n", $3, (int)$2);
-  stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
   free($3);
 }
 | deps maybe_rec STRING_LITERAL
 {
-  //printf("dep %s rec? %d\n", $3.str, (int)$2);
-  stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    //printf("dep %s rec? %d\n", $3.str, (int)$2);
+    stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
+  }
   free($3.str);
 }
 | deps maybe_rec VARREF_LITERAL
 {
-  printf("depref\n");
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    printf("depref\n");
+  }
   free($3);
 }
 ;

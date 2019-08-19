@@ -130,6 +130,7 @@ struct stiryy {
   int sameproject;
   const char *dirname;
   const char *filename;
+  int do_emit;
 };
 
 static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
@@ -164,6 +165,7 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
   yy->curscope = curscope;
   yy->filename = filename;
   yy->dirname = dirname;
+  yy->do_emit = 1;
 }
 
 static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
