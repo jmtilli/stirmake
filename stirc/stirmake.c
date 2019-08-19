@@ -94,6 +94,10 @@ enum {
   MAX_JOBCNT = 1000,
 };
 
+enum {
+  HASH_SEED = 0x12345678U,
+};
+
 
 int debug = 0;
 
@@ -277,7 +281,7 @@ struct db db = {};
 
 void maybe_del_dbe(struct db *db, size_t tgtidx)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
   head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
@@ -292,7 +296,7 @@ void maybe_del_dbe(struct db *db, size_t tgtidx)
 
 void ins_dbe(struct db *db, struct dbe *dbe)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, dbe->tgtidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, dbe->tgtidx);
   struct abce_rb_tree_nocmp *head;
   int ret;
   head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
@@ -526,7 +530,7 @@ size_t stringtab_get(const char *symbol)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur_buf(0x12345678U, symbol, strlen(symbol));
+  hashval = abce_murmur_buf(HASH_SEED, symbol, strlen(symbol));
   hashloc = hashval % (sizeof(st)/sizeof(*st));
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym,
 NULL, symbol);
@@ -542,7 +546,7 @@ size_t stringtab_add(const char *symbol)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur_buf(0x12345678U, symbol, strlen(symbol));
+  hashval = abce_murmur_buf(HASH_SEED, symbol, strlen(symbol));
   hashloc = hashval % (sizeof(st)/sizeof(*st));
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, 
 NULL, symbol);
@@ -580,7 +584,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 
 int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct dbe *dbe;
@@ -657,7 +661,7 @@ size_t ruleid_by_tgt_entry_cnt;
 
 void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct ruleid_by_tgt_entry *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
@@ -677,7 +681,7 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
 
 int get_ruleid_by_tgt(size_t tgt)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, tgt);
+  uint32_t hash = abce_murmur32(HASH_SEED, tgt);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   head = &ruleid_by_tgt[hash % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt))];
@@ -867,7 +871,7 @@ size_t tgt_cnt;
 
 void ins_tgt(struct rule *rule, size_t tgtidx)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct stirtgt *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
@@ -887,7 +891,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx)
 struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
 {
   struct abce_rb_tree_node *n;
-  uint32_t hash = abce_murmur32(0x12345678U, tgtidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_nocmp *head;
   head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tgt_cmp_asym, NULL, tgtidx);
@@ -902,7 +906,7 @@ size_t stirdep_cnt;
 
 void ins_dep(struct rule *rule, size_t depidx, int is_recursive, int orderonly)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, depidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct stirdep *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
@@ -926,7 +930,7 @@ int deps_remain_has(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur32(0x12345678U, ruleid);
+  hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
   return n != NULL;
@@ -937,7 +941,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur32(0x12345678U, ruleid);
+  hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
   if (n == NULL)
@@ -958,7 +962,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur32(0x12345678U, ruleid);
+  hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
   if (n != NULL)
@@ -1074,7 +1078,7 @@ struct linked_list_head ruleids_by_dep_list =
 
 struct ruleid_by_dep_entry *find_ruleids_by_dep(size_t depidx)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, depidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
 
@@ -1091,7 +1095,7 @@ size_t ruleid_by_dep_entry_cnt;
 
 struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
 {
-  uint32_t hash = abce_murmur32(0x12345678U, depidx);
+  uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct ruleid_by_dep_entry *e;
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
@@ -1129,7 +1133,7 @@ size_t one_ruleid_by_dep_entry_cnt;
 void ins_ruleid_by_dep(size_t depidx, int ruleid)
 {
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(depidx);
-  uint32_t hash = abce_murmur32(0x12345678U, ruleid);
+  uint32_t hash = abce_murmur32(HASH_SEED, ruleid);
   struct one_ruleid_by_dep_entry *one;
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
@@ -1290,7 +1294,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur32(0x12345678U, depidx);
+  hashval = abce_murmur32(HASH_SEED, depidx);
   hashloc = hashval % (sizeof(entry->add_deps)/sizeof(entry->add_deps));
   n = ABCE_RB_TREE_NOCMP_FIND(&entry->add_deps[hashloc], add_dep_cmp_asym, NULL, depidx);
   if (n != NULL)
@@ -1317,7 +1321,7 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   uint32_t hashval;
   size_t hashloc;
   size_t i;
-  hashval = abce_murmur32(0x12345678U, tgtidx);
+  hashval = abce_murmur32(HASH_SEED, tgtidx);
   hashloc = hashval % (sizeof(add_deps)/sizeof(add_deps));
   n = ABCE_RB_TREE_NOCMP_FIND(&add_deps[hashloc], add_deps_cmp_asym, NULL, tgtidx);
   if (n != NULL)
@@ -1592,7 +1596,7 @@ int ruleid_by_pid_erase(pid_t pid)
   uint32_t hashval;
   size_t hashloc;
   int ruleid;
-  hashval = abce_murmur32(0x12345678U, pid);
+  hashval = abce_murmur32(HASH_SEED, pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, pid);
   if (n == NULL)
@@ -1869,7 +1873,7 @@ pid_t fork_child(int ruleid)
     bypid->pid = pid;
     bypid->ruleid = ruleid;
     children++;
-    hashval = abce_murmur32(0x12345678U, pid);
+    hashval = abce_murmur32(HASH_SEED, pid);
     hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
     if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
     {
@@ -3737,7 +3741,7 @@ int main(int argc, char **argv)
         }
         uint32_t hashval;
         size_t hashloc;
-        hashval = abce_murmur32(0x12345678U, one->ruleid);
+        hashval = abce_murmur32(HASH_SEED, one->ruleid);
         hashloc = hashval % (sizeof(entry->one_ruleid_by_dep)/sizeof(*entry->one_ruleid_by_dep));
         abce_rb_tree_nocmp_delete(&entry->one_ruleid_by_dep[hashloc], &one->node);
         linked_list_delete(&one->llnode);
@@ -3748,7 +3752,7 @@ int main(int argc, char **argv)
     {
       uint32_t hashval;
       size_t hashloc;
-      hashval = abce_murmur32(0x12345678U, entry->depidx);
+      hashval = abce_murmur32(HASH_SEED, entry->depidx);
       hashloc = hashval % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep));
       abce_rb_tree_nocmp_delete(&ruleids_by_dep[hashloc], &entry->node);
       linked_list_delete(&entry->llnode);
@@ -3765,7 +3769,7 @@ int main(int argc, char **argv)
     }
     uint32_t hashval;
     size_t hashloc;
-    hashval = abce_murmur32(0x12345678U, entry->tgtidx);
+    hashval = abce_murmur32(HASH_SEED, entry->tgtidx);
     hashloc = hashval % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt));
     abce_rb_tree_nocmp_delete(&ruleid_by_tgt[hashloc], &entry->node);
     linked_list_delete(&entry->llnode);
