@@ -412,7 +412,7 @@ custom_rule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     unsigned char tmpbuf[64] = {};
-    size_t tmpsiz;
+    size_t tmpsiz = 0;
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
     abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
