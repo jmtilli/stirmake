@@ -9,6 +9,11 @@
 extern "C" {
 #endif
 
+int
+engine_stringlist(struct abce *abce,
+                  size_t ip,
+                  const char *directive,
+                  char ***strs, size_t *strsz);
 
 int stiryydoparse(FILE *filein, struct stiryy *stiryy);
 

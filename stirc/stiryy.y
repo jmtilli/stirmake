@@ -328,70 +328,15 @@ custom_rule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[64] = {};
-    size_t tmpsiz = 0;
-    struct abce_mb mb;
-    size_t i;
-    size_t strsz;
+    size_t strsz, i;
+    int ret;
     char **strs;
 
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
-    //get_abce(amyplanyy)->ip = $<d>2;
-    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
-    if (get_abce(amyplanyy)->sp != 0)
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz);
+    if (ret)
     {
-      abort();
-    }
-    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
-    {
-      printf("Error executing bytecode for dirinclude directive\n");
-      printf("error %d\n", get_abce(amyplanyy)->err.code);
       YYABORT;
     }
-    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
-    {
-      printf("can't get item from stack in dirinclude\n");
-      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
-      YYABORT;
-    }
-    if (mb.typ == ABCE_T_S)
-    {
-      strsz = 1;
-      strs = malloc(sizeof(*strs) * strsz);
-      strs[0] = strdup(mb.u.area->u.str.buf);
-    }
-    else if (mb.typ == ABCE_T_A)
-    {
-      for (i = 0; i < mb.u.area->u.ar.size; i++)
-      {
-        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
-        {
-          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
-          YYABORT;
-        }
-      }
-      strsz = mb.u.area->u.ar.size;
-      strs = malloc(sizeof(*strs) * strsz);
-      for (i = 0; i < strsz; i++)
-      {
-        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
-      }
-    }
-    else
-    {
-      printf("expected str or array, got type %d in dirinclude\n",
-             mb.typ);
-      YYABORT;
-    }
-    abce_mb_refdn(get_abce(amyplanyy), &mb);
-    if (get_abce(amyplanyy)->sp != 1)
-    {
-      abort();
-    }
-    abce_pop(get_abce(amyplanyy));
 
     for (i = 0; i < strsz; i++)
     {
@@ -422,70 +367,16 @@ custom_rule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[64] = {};
-    size_t tmpsiz = 0;
-    struct abce_mb mb;
-    size_t i;
     size_t strsz;
+    size_t i;
+    int ret;
     char **strs;
 
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
-    //get_abce(amyplanyy)->ip = $<d>2;
-    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
-    if (get_abce(amyplanyy)->sp != 0)
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz);
+    if (ret)
     {
-      abort();
-    }
-    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
-    {
-      printf("Error executing bytecode for cdepincludescurdir directive\n");
-      printf("error %d\n", get_abce(amyplanyy)->err.code);
       YYABORT;
     }
-    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
-    {
-      printf("can't get item from stack in cdepincludescurdir\n");
-      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
-      YYABORT;
-    }
-    if (mb.typ == ABCE_T_S)
-    {
-      strsz = 1;
-      strs = malloc(sizeof(*strs) * strsz);
-      strs[0] = strdup(mb.u.area->u.str.buf);
-    }
-    else if (mb.typ == ABCE_T_A)
-    {
-      for (i = 0; i < mb.u.area->u.ar.size; i++)
-      {
-        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
-        {
-          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
-          YYABORT;
-        }
-      }
-      strsz = mb.u.area->u.ar.size;
-      strs = malloc(sizeof(*strs) * strsz);
-      for (i = 0; i < strsz; i++)
-      {
-        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
-      }
-    }
-    else
-    {
-      printf("expected str or array, got type %d in cdepincludescurdir\n",
-             mb.typ);
-      YYABORT;
-    }
-    abce_mb_refdn(get_abce(amyplanyy), &mb);
-    if (get_abce(amyplanyy)->sp != 1)
-    {
-      abort();
-    }
-    abce_pop(get_abce(amyplanyy));
 
     for (i = 0; i < strsz; i++)
     {
@@ -2633,72 +2524,18 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[64] = {};
-    size_t tmpsiz = 0;
-    struct abce_mb mb;
-    size_t i;
     size_t strsz;
+    size_t i;
+    int ret;
     char **strs;
 
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
 
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $1);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
-    //get_abce(amyplanyy)->ip = $<d>2;
-    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
-    if (get_abce(amyplanyy)->sp != 0)
+    ret = engine_stringlist(get_abce(amyplanyy), $1, "dirinclude", &strs, &strsz);
+    if (ret)
     {
-      abort();
-    }
-    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
-    {
-      printf("Error executing bytecode for cdepincludescurdir directive\n");
-      printf("error %d\n", get_abce(amyplanyy)->err.code);
       YYABORT;
     }
-    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
-    {
-      printf("can't get item from stack in cdepincludescurdir\n");
-      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
-      YYABORT;
-    }
-    if (mb.typ == ABCE_T_S)
-    {
-      strsz = 1;
-      strs = malloc(sizeof(*strs) * strsz);
-      strs[0] = strdup(mb.u.area->u.str.buf);
-    }
-    else if (mb.typ == ABCE_T_A)
-    {
-      for (i = 0; i < mb.u.area->u.ar.size; i++)
-      {
-        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
-        {
-          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
-          YYABORT;
-        }
-      }
-      strsz = mb.u.area->u.ar.size;
-      strs = malloc(sizeof(*strs) * strsz);
-      for (i = 0; i < strsz; i++)
-      {
-        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
-      }
-    }
-    else
-    {
-      printf("expected str or array, got type %d in cdepincludescurdir\n",
-             mb.typ);
-      YYABORT;
-    }
-    abce_mb_refdn(get_abce(amyplanyy), &mb);
-    if (get_abce(amyplanyy)->sp != 1)
-    {
-      abort();
-    }
-    abce_pop(get_abce(amyplanyy));
 
     for (i = 0; i < strsz; i++)
     {
@@ -2737,70 +2574,16 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[64] = {};
-    size_t tmpsiz = 0;
-    struct abce_mb mb;
-    size_t i;
     size_t strsz;
+    int ret;
+    size_t i;
     char **strs;
 
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $2);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
-    //get_abce(amyplanyy)->ip = $<d>2;
-    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
-    if (get_abce(amyplanyy)->sp != 0)
+    ret = engine_stringlist(get_abce(amyplanyy), $2, "dirinclude", &strs, &strsz);
+    if (ret)
     {
-      abort();
-    }
-    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
-    {
-      printf("Error executing bytecode for cdepincludescurdir directive\n");
-      printf("error %d\n", get_abce(amyplanyy)->err.code);
       YYABORT;
     }
-    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
-    {
-      printf("can't get item from stack in cdepincludescurdir\n");
-      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
-      YYABORT;
-    }
-    if (mb.typ == ABCE_T_S)
-    {
-      strsz = 1;
-      strs = malloc(sizeof(*strs) * strsz);
-      strs[0] = strdup(mb.u.area->u.str.buf);
-    }
-    else if (mb.typ == ABCE_T_A)
-    {
-      for (i = 0; i < mb.u.area->u.ar.size; i++)
-      {
-        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
-        {
-          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
-          YYABORT;
-        }
-      }
-      strsz = mb.u.area->u.ar.size;
-      strs = malloc(sizeof(*strs) * strsz);
-      for (i = 0; i < strsz; i++)
-      {
-        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
-      }
-    }
-    else
-    {
-      printf("expected str or array, got type %d in cdepincludescurdir\n",
-             mb.typ);
-      YYABORT;
-    }
-    abce_mb_refdn(get_abce(amyplanyy), &mb);
-    if (get_abce(amyplanyy)->sp != 1)
-    {
-      abort();
-    }
-    abce_pop(get_abce(amyplanyy));
 
     for (i = 0; i < strsz; i++)
     {
@@ -2908,70 +2691,16 @@ deps:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[64] = {};
-    size_t tmpsiz = 0;
-    struct abce_mb mb;
-    size_t i;
     size_t strsz;
+    size_t i;
+    int ret;
     char **strs;
 
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $3);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
-    //get_abce(amyplanyy)->ip = $<d>2;
-    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
-    if (get_abce(amyplanyy)->sp != 0)
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "dirinclude", &strs, &strsz);
+    if (ret)
     {
-      abort();
-    }
-    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
-    {
-      printf("Error executing bytecode for cdepincludescurdir directive\n");
-      printf("error %d\n", get_abce(amyplanyy)->err.code);
       YYABORT;
     }
-    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
-    {
-      printf("can't get item from stack in cdepincludescurdir\n");
-      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
-      YYABORT;
-    }
-    if (mb.typ == ABCE_T_S)
-    {
-      strsz = 1;
-      strs = malloc(sizeof(*strs) * strsz);
-      strs[0] = strdup(mb.u.area->u.str.buf);
-    }
-    else if (mb.typ == ABCE_T_A)
-    {
-      for (i = 0; i < mb.u.area->u.ar.size; i++)
-      {
-        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
-        {
-          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
-          YYABORT;
-        }
-      }
-      strsz = mb.u.area->u.ar.size;
-      strs = malloc(sizeof(*strs) * strsz);
-      for (i = 0; i < strsz; i++)
-      {
-        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
-      }
-    }
-    else
-    {
-      printf("expected str or array, got type %d in cdepincludescurdir\n",
-             mb.typ);
-      YYABORT;
-    }
-    abce_mb_refdn(get_abce(amyplanyy), &mb);
-    if (get_abce(amyplanyy)->sp != 1)
-    {
-      abort();
-    }
-    abce_pop(get_abce(amyplanyy));
 
     for (i = 0; i < strsz; i++)
     {

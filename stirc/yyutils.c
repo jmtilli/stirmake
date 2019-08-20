@@ -357,3 +357,76 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   free(filename);
   return 0;
 }
+
+int
+engine_stringlist(struct abce *abce,
+                  size_t ip,
+                  const char *directive,
+                  char ***strs, size_t *strsz)
+{
+  unsigned char tmpbuf[64] = {};
+  size_t tmpsiz = 0;
+  size_t i;
+  struct abce_mb mb = {};
+
+  *strs = NULL;
+  *strsz = 0;
+
+  abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+  abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ip);
+  abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+
+  if (abce->sp != 0)
+  {
+    abort();
+  }
+  if (abce_engine(abce, tmpbuf, tmpsiz) != 0)
+  {
+    printf("Error executing bytecode for %s directive\n", directive);
+    printf("error %d\n", abce->err.code);
+    return -EINVAL;
+  }
+  if (abce_getmb(&mb, abce, 0) != 0)
+  {
+    printf("can't get item from stack in %s\n", directive);
+    return -EINVAL;
+    //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+  }
+  if (mb.typ == ABCE_T_S)
+  {
+    *strsz = 1;
+    *strs = malloc(sizeof(**strs) * (*strsz));
+    (*strs)[0] = strdup(mb.u.area->u.str.buf);
+  }
+  else if (mb.typ == ABCE_T_A)
+  {
+    for (i = 0; i < mb.u.area->u.ar.size; i++)
+    {
+      if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+      {
+        printf("expected string, got type %d for directive %s\n",
+               mb.u.area->u.ar.mbs[i].typ, directive);
+        return -EINVAL;
+      }
+    }
+    *strsz = mb.u.area->u.ar.size;
+    *strs = malloc(sizeof(**strs) * (*strsz));
+    for (i = 0; i < *strsz; i++)
+    {
+      (*strs)[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+    }
+  }
+  else
+  {
+    printf("expected str or array, got type %d in %s\n",
+           mb.typ, directive);
+    return -EINVAL;
+  }
+  abce_mb_refdn(abce, &mb);
+  if (abce->sp != 1)
+  {
+    abort();
+  }
+  abce_pop(abce);
+  return 0;
+}
