@@ -92,6 +92,7 @@ struct stiryyrule {
   unsigned maybe:1;
   unsigned dist:1;
   unsigned deponly:1;
+  unsigned iscleanhook:1;
 };
 
 struct stiryy_main {
@@ -271,6 +272,52 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   stiryy_main_set_dep(stiryy->main, stiryy->curprefix, dep, rec, orderonly);
 }
 
+static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
+{
+  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  size_t newcapacity;
+  size_t sz = strlen(curprefix) + strlen(tgt) + 2;
+  char *can, *tmp = malloc(sz);
+  char *slashes;
+  size_t slashessz;
+  char *slashesnodir;
+  size_t slashesnodirsz;
+  if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
+  {
+    my_abort();
+  }
+  can = canon(tmp);
+  free(tmp);
+  slashessz = strlen(can) + 4;
+  slashes = malloc(slashessz);
+  if (snprintf(slashes, slashessz, "%s///", can) >= slashessz)
+  {
+    my_abort();
+  }
+  free(can);
+
+  slashesnodirsz = strlen(tgt) + 4;
+  slashesnodir = malloc(slashesnodirsz);
+  if (snprintf(slashesnodir, slashesnodirsz, "%s///", can) >= slashesnodirsz)
+  {
+    my_abort();
+  }
+
+  if (rule->targetsz >= rule->targetcapacity)
+  {
+    newcapacity = 2*rule->targetcapacity + 1;
+    rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
+    rule->targetcapacity = newcapacity;
+  }
+  rule->targets[rule->targetsz].name = strdup(slashes);
+  rule->targets[rule->targetsz].namenodir = strdup(slashesnodir);
+  rule->targetsz++;
+  free(slashes);
+  free(slashesnodir);
+  rule->phony = 1;
+  rule->iscleanhook = 1;
+}
+
 static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
@@ -308,6 +355,11 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *cur
 static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
 {
   stiryy_main_set_tgt(stiryy->main, stiryy->curprefix, tgt);
+}
+
+static inline void stiryy_set_cleanhooktgt(struct stiryy *stiryy, const char *tgt)
+{
+  stiryy_main_set_cleanhooktgt(stiryy->main, stiryy->curprefix, tgt);
 }
 
 static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
@@ -363,6 +415,7 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
   main->rules[main->rulesz].maybe = 0;
   main->rules[main->rulesz].dist = 0;
   main->rules[main->rulesz].deponly = 0;
+  main->rules[main->rulesz].iscleanhook = 0;
   main->rules[main->rulesz].scopeidx = scopeidx;
   main->rulesz++;
 }

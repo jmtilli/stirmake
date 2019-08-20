@@ -149,6 +149,8 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 
 %token NEWLINE
 
+%token CLEANHOOK DISTCLEANHOOK
+
 %token BEGINSCOPE BEGINHOLEYSCOPE ENDSCOPE
 %token ONCE ENDONCE STDOUT STDERR ERROR DUMP EXIT
 %token EQUALS
@@ -1986,6 +1988,26 @@ stirrule:
     }
   }
 }
+| CLEANHOOK COLON
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    //printf("target1 %s\n", $1);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_set_cleanhooktgt(stiryy, "CLEAN");
+  }
+}
+  depspec NEWLINE shell_commands
+| DISTCLEANHOOK COLON
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    //printf("target1 %s\n", $1);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_set_cleanhooktgt(stiryy, "DISTCLEAN");
+  }
+}
+  depspec NEWLINE shell_commands
 | RECTGTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))

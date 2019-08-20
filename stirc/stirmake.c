@@ -3553,6 +3553,10 @@ int main(int argc, char **argv)
         {
           my_abort();
         }
+        if (main.rules[i].iscleanhook)
+        {
+          continue;
+        }
         ruleid_first = rules_size - 1;
         ruleid_first_set = 1;
       }
