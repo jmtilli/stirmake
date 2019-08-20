@@ -93,7 +93,10 @@ struct CSnippet luaSnippet = {
 @loc   return LOC;
 @if   return IF;
 @else   return ELSE;
+@elseif   return ELSEIF;
 @endif   return ENDIF;
+@for   return FOR;
+@endfor   return ENDFOR;
 @while return WHILE;
 @endwhile return ENDWHILE;
 @break return BREAK;

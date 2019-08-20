@@ -228,7 +228,10 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 
 %token IF
 %token ELSE
+%token ELSEIF
 %token ENDIF
+%token FOR
+%token ENDFOR
 %token WHILE
 %token ENDWHILE
 %token BREAK
@@ -240,6 +243,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token ERROR_TOK
 
 %type<d> value
+%type<d> tgtdepref
 %type<d> lvalue
 %type<d> arglist
 %type<d> valuelistentry
@@ -267,7 +271,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 st: amyplanrules;
 
 custom_stmt:
-  ADD_DEPS OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN NEWLINE
+  ADD_DEPS OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -296,11 +300,13 @@ custom_rule:
     printf("%g\n", $2);
   }
 }
+/*
 | FILEINCLUDE STRING_LITERAL NEWLINE
 {
   free($2.str);
 }
-| FILEINCLUDE VARREF_LITERAL NEWLINE
+*/
+| FILEINCLUDE expr NEWLINE
 /* // shift-reduce conflict!
 | dirinclude STRING_LITERAL NEWLINE
 {
@@ -398,6 +404,7 @@ custom_rule:
     free(strs);
   }
 }
+/*
 | CDEPINCLUDESCURDIR STRING_LITERAL NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -406,7 +413,88 @@ custom_rule:
   }
   free($2.str);
 }
-| CDEPINCLUDESCURDIR VARREF_LITERAL NEWLINE
+*/
+| CDEPINCLUDESCURDIR
+{
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+  expr NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    unsigned char tmpbuf[64] = {};
+    size_t tmpsiz = 0;
+    struct abce_mb mb;
+    size_t i;
+    size_t strsz;
+    char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+    //get_abce(amyplanyy)->ip = $<d>2;
+    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for cdepincludescurdir directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
+    {
+      printf("can't get item from stack in cdepincludescurdir\n");
+      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      YYABORT;
+    }
+    if (mb.typ == ABCE_T_S)
+    {
+      strsz = 1;
+      strs = malloc(sizeof(*strs) * strsz);
+      strs[0] = strdup(mb.u.area->u.str.buf);
+    }
+    else if (mb.typ == ABCE_T_A)
+    {
+      for (i = 0; i < mb.u.area->u.ar.size; i++)
+      {
+        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
+          YYABORT;
+        }
+      }
+      strsz = mb.u.area->u.ar.size;
+      strs = malloc(sizeof(*strs) * strsz);
+      for (i = 0; i < strsz; i++)
+      {
+        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+      }
+    }
+    else
+    {
+      printf("expected str or array, got type %d in cdepincludescurdir\n",
+             mb.typ);
+      YYABORT;
+    }
+    abce_mb_refdn(get_abce(amyplanyy), &mb);
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    abce_pop(get_abce(amyplanyy));
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_cdepinclude(stiryy, strs[i]);
+      free(strs[i]);
+    }
+    free(strs);
+  }
+}
 | IF
 {
   size_t exprloc = get_abce(amyplanyy)->bytecodesz;
@@ -528,7 +616,8 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
 
     if (get_abce(amyplanyy)->dynscope.typ == ABCE_T_N)
     {
-      abort();
+      fprintf(stderr, "out of memory\n");
+      YYABORT;
     }
     if ($3)
     {
@@ -585,6 +674,10 @@ expr NEWLINE
 
     if (!$2)
     {
+      if (get_abce(amyplanyy)->sp != 0)
+      {
+        abort();
+      }
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
       abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
         abce_sc_get_rec_str_fun(&get_abce(amyplanyy)->dynscope, $1, 1));
@@ -649,6 +742,10 @@ expr NEWLINE
 
     if (!$2)
     {
+      if (get_abce(amyplanyy)->sp != 0)
+      {
+        abort();
+      }
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
       abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
         abce_sc_get_rec_str_fun(&get_abce(amyplanyy)->dynscope, $1, 1));
@@ -719,16 +816,16 @@ locvarlines:
 ;
 
 bodylines:
-| statement bodylinescont
+| statement NEWLINE bodylinescont
 ;
 
 bodylinescont:
-| bodylinescont statement
+| bodylinescont statement NEWLINE
 | bodylinescont NEWLINE
 ;
 
 statement:
-  lvalue EQUALS SUB NEWLINE
+  lvalue EQUALS SUB
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -740,7 +837,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DICTDEL);
   }
 }
-| lvalue EQUALS expr NEWLINE
+| lvalue EQUALS expr
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -782,7 +879,7 @@ statement:
     }
   }
 }
-| RETURN expr NEWLINE
+| RETURN expr
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -793,7 +890,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RETEX2);
   }
 }
-| BREAK NEWLINE
+| BREAK
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -804,7 +901,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
   }
 }
-| CONTINUE NEWLINE
+| CONTINUE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -814,7 +911,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
   }
 }
-| BREAK NUMBER NEWLINE
+| BREAK NUMBER
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -832,7 +929,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
   }
 }
-| CONTINUE NUMBER NEWLINE
+| CONTINUE NUMBER
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -849,7 +946,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
   }
 }
-| expr NEWLINE
+| expr
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -874,8 +971,76 @@ statement:
     $<d>$ = $<d>6; // For overwrite by maybe_else
   }
 }
+  maybe_elseifs
   maybe_else
-  ENDIF NEWLINE
+  ENDIF
+| FOR OPEN_PAREN statement COMMA
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    $<d>$ = get_abce(amyplanyy)->bytecodesz; // midpoint, $5
+  }
+}
+  expr
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    $<d>$ = get_abce(amyplanyy)->bytecodesz; // addressof_breakpoint, $7
+    amyplanyy_add_double(amyplanyy, -50); // to be overwritten
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
+  }
+}
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    $<d>$ = get_abce(amyplanyy)->bytecodesz; // startpoint, $8
+  }
+}
+  COMMA statement CLOSE_PAREN NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    struct amyplan_locvarctx *ctx;
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, $<d>5); // addressof_midpoint
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
+    ctx =
+      amyplan_locvarctx_alloc(amyplanyy->ctx, 0, get_abce(amyplanyy)->bytecodesz, $<d>8);
+    if (ctx == NULL)
+    {
+      printf("Out of memory\n");
+      YYABORT;
+    }
+    amyplanyy->ctx = ctx;
+    amyplanyy_set_double(amyplanyy, $<d>7, get_abce(amyplanyy)->bytecodesz);
+    $<d>$ = get_abce(amyplanyy)->bytecodesz; // breakpoint
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+  }
+}
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    $<d>$ = get_abce(amyplanyy)->bytecodesz;
+    amyplanyy_add_double(amyplanyy, -50); // addressof_endpoint, $14
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_IF_NOT_JMP);
+  }
+}
+  bodylinescont
+  ENDFOR
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    struct amyplan_locvarctx *ctx = amyplanyy->ctx->parent;
+    free(amyplanyy->ctx);
+    amyplanyy->ctx = ctx;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, $<d>8); // addressof_startpoint
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
+    amyplanyy_set_double(amyplanyy, $<d>14, get_abce(amyplanyy)->bytecodesz);
+  }
+}
 | WHILE
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -902,7 +1067,7 @@ statement:
   }
 }
   bodylinescont
-  ENDWHILE NEWLINE
+  ENDWHILE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -942,7 +1107,7 @@ statement:
   }
 }
   bodylinescont
-  ENDONCE NEWLINE
+  ENDONCE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -952,7 +1117,7 @@ statement:
     amyplanyy_set_double(amyplanyy, $<d>4 + 1, get_abce(amyplanyy)->bytecodesz);
   }
 }
-| APPEND OPEN_PAREN expr COMMA expr CLOSE_PAREN NEWLINE
+| APPEND OPEN_PAREN expr COMMA expr CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -960,7 +1125,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
   }
 }
-| APPEND_LIST OPEN_PAREN expr COMMA expr CLOSE_PAREN NEWLINE
+| APPEND_LIST OPEN_PAREN expr COMMA expr CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -968,7 +1133,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
   }
 }
-| STDOUT OPEN_PAREN expr CLOSE_PAREN NEWLINE
+| STDOUT OPEN_PAREN expr CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -977,7 +1142,7 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_OUT);
   }
 }
-| STDERR OPEN_PAREN expr CLOSE_PAREN NEWLINE
+| STDERR OPEN_PAREN expr CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -986,13 +1151,49 @@ statement:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_OUT);
   }
 }
-| ERROR OPEN_PAREN expr CLOSE_PAREN NEWLINE
+| ERROR OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_ERROR); }
-| DUMP OPEN_PAREN expr CLOSE_PAREN NEWLINE
+| DUMP OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DUMP); }
-| EXIT OPEN_PAREN CLOSE_PAREN NEWLINE
+| EXIT OPEN_PAREN CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT); }
 | custom_stmt
+;
+
+maybe_elseifs:
+{
+  $<d>$ = $<d>0;
+}
+| maybe_elseifs ELSEIF
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    $<d>$ = get_abce(amyplanyy)->bytecodesz;
+    amyplanyy_add_double(amyplanyy, -50); // to be overwritten
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
+    amyplanyy_set_double(amyplanyy, $<d>1, get_abce(amyplanyy)->bytecodesz); // Overwrite, mid1
+  }
+}
+  OPEN_PAREN expr CLOSE_PAREN NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    $<d>$ = get_abce(amyplanyy)->bytecodesz;
+    amyplanyy_add_double(amyplanyy, -50); // to be overwritten, FIXME!
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_IF_NOT_JMP);
+  }
+}
+  bodylinescont
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_set_double(amyplanyy, $<d>8, get_abce(amyplanyy)->bytecodesz);
+    amyplanyy_set_double(amyplanyy, $<d>3, get_abce(amyplanyy)->bytecodesz);
+  }
+  $<d>$ = $<d>8; // for overwrite by maybe_else
+}
 ;
 
 maybe_else:
@@ -1231,7 +1432,7 @@ varref:
       else
       {
         printf("var %s not found\n", $1);
-        abort();
+        YYABORT;
       }
       free($1);
       $$ = ABCE_OPCODE_PUSH_STACK;
@@ -1431,7 +1632,7 @@ scopetype:
 expr: expr11;
 
 expr1:
-  expr0
+  expr0_or_string
 | LOGICAL_NOT expr1
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -1622,8 +1823,22 @@ expr11:
 }
 ;
 
+expr0_or_string:
+  expr0_without_string
+| STRING_LITERAL
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, idx);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
+  }
+  free($1.str);
+}
+;
 
-expr0:
+expr0_without_string:
   OPEN_PAREN expr CLOSE_PAREN
 | OPEN_PAREN expr CLOSE_PAREN OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
@@ -1643,17 +1858,6 @@ expr0:
 }
 | dict maybe_bracketexprlist
 | list maybe_bracketexprlist
-| STRING_LITERAL
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
-    amyplanyy_add_double(amyplanyy, idx);
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
-  }
-  free($1.str);
-}
 | NUMBER
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -1783,66 +1987,81 @@ expr0:
 }
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | IMM OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | DYNO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | LEXO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | IMMO OPEN_BRACKET expr CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
-  abort();
+  fprintf(stderr, "unsupported syntax\n");
+  YYABORT;
 }
 | LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist
 {
+  fprintf(stderr, "unsupported syntax\n");
   free($3.str);
-  abort();
+  YYABORT;
 }
 | LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist OPEN_PAREN maybe_arglist CLOSE_PAREN
 {
+  fprintf(stderr, "unsupported syntax\n");
   free($3.str);
-  abort();
+  YYABORT;
 }
 | LOC OPEN_BRACKET STRING_LITERAL CLOSE_BRACKET maybe_bracketexprlist MAYBE_CALL
 {
+  fprintf(stderr, "unsupported syntax\n");
   free($3.str);
-  abort();
+  YYABORT;
 }
 | custom_expr0
 ;
@@ -2365,7 +2584,46 @@ pattargets:
   free($2);
 }
 ;
-  
+
+tgtdepref:
+  VARREF_LITERAL
+{
+  $$ = get_abce(amyplanyy)->bytecodesz;
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    // Outside of function, search for dynamic symbol
+    // Doesn't really happen with standard syntax, but somebody may embed it
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETSCOPE_DYN);
+
+    int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1, strlen($1));
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, idx);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
+    free($1);
+    $$ = ABCE_OPCODE_SCOPEVAR;
+  }
+}
+| STRING_LITERAL
+{
+  $$ = get_abce(amyplanyy)->bytecodesz;
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, idx);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
+  }
+  free($1.str);
+}
+| OPEN_PAREN
+{
+  $$ = get_abce(amyplanyy)->bytecodesz;
+}
+  expr CLOSE_PAREN
+{
+  $$ = $<d>2;
+}
+;
 
 targets:
   FREEFORM_TOKEN
@@ -2383,16 +2641,92 @@ targets:
   }
   free($1);
 }
-| STRING_LITERAL
+|
+/* // FIXME !
+{
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+*/
+  tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    //printf("target1 %s\n", $1.str);
+    unsigned char tmpbuf[64] = {};
+    size_t tmpsiz = 0;
+    struct abce_mb mb;
+    size_t i;
+    size_t strsz;
+    char **strs;
+
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-    stiryy_set_tgt(stiryy, $1.str);
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $1);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+    //get_abce(amyplanyy)->ip = $<d>2;
+    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for cdepincludescurdir directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
+    {
+      printf("can't get item from stack in cdepincludescurdir\n");
+      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      YYABORT;
+    }
+    if (mb.typ == ABCE_T_S)
+    {
+      strsz = 1;
+      strs = malloc(sizeof(*strs) * strsz);
+      strs[0] = strdup(mb.u.area->u.str.buf);
+    }
+    else if (mb.typ == ABCE_T_A)
+    {
+      for (i = 0; i < mb.u.area->u.ar.size; i++)
+      {
+        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
+          YYABORT;
+        }
+      }
+      strsz = mb.u.area->u.ar.size;
+      strs = malloc(sizeof(*strs) * strsz);
+      for (i = 0; i < strsz; i++)
+      {
+        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+      }
+    }
+    else
+    {
+      printf("expected str or array, got type %d in cdepincludescurdir\n",
+             mb.typ);
+      YYABORT;
+    }
+    abce_mb_refdn(get_abce(amyplanyy), &mb);
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    abce_pop(get_abce(amyplanyy));
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_tgt(stiryy, strs[i]);
+      free(strs[i]);
+    }
+    free(strs);
   }
-  free($1.str);
 }
+/*
 | VARREF_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2402,6 +2736,7 @@ targets:
   }
   free($1);
 }
+*/
 | targets FREEFORM_TOKEN
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2416,15 +2751,84 @@ targets:
   }
   free($2);
 }
-| targets STRING_LITERAL
+| targets tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    //printf("target %s\n", $2.str);
-    stiryy_set_tgt(stiryy, $2.str);
+    unsigned char tmpbuf[64] = {};
+    size_t tmpsiz = 0;
+    struct abce_mb mb;
+    size_t i;
+    size_t strsz;
+    char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $2);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+    //get_abce(amyplanyy)->ip = $<d>2;
+    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for cdepincludescurdir directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
+    {
+      printf("can't get item from stack in cdepincludescurdir\n");
+      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      YYABORT;
+    }
+    if (mb.typ == ABCE_T_S)
+    {
+      strsz = 1;
+      strs = malloc(sizeof(*strs) * strsz);
+      strs[0] = strdup(mb.u.area->u.str.buf);
+    }
+    else if (mb.typ == ABCE_T_A)
+    {
+      for (i = 0; i < mb.u.area->u.ar.size; i++)
+      {
+        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
+          YYABORT;
+        }
+      }
+      strsz = mb.u.area->u.ar.size;
+      strs = malloc(sizeof(*strs) * strsz);
+      for (i = 0; i < strsz; i++)
+      {
+        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+      }
+    }
+    else
+    {
+      printf("expected str or array, got type %d in cdepincludescurdir\n",
+             mb.typ);
+      YYABORT;
+    }
+    abce_mb_refdn(get_abce(amyplanyy), &mb);
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    abce_pop(get_abce(amyplanyy));
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_tgt(stiryy, strs[i]);
+      free(strs[i]);
+    }
+    free(strs);
   }
-  free($2.str);
 }
+/*
 | targets VARREF_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2433,6 +2837,7 @@ targets:
   }
   free($2);
 }
+*/
 ;
 
 maybe_rec:
@@ -2498,6 +2903,7 @@ deps:
   }
   free($3);
 }
+/*
 | deps maybe_rec STRING_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2514,6 +2920,84 @@ deps:
     printf("depref\n");
   }
   free($3);
+}
+*/
+| deps maybe_rec tgtdepref
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    unsigned char tmpbuf[64] = {};
+    size_t tmpsiz = 0;
+    struct abce_mb mb;
+    size_t i;
+    size_t strsz;
+    char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $3);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+    //get_abce(amyplanyy)->ip = $<d>2;
+    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for cdepincludescurdir directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
+    {
+      printf("can't get item from stack in cdepincludescurdir\n");
+      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      YYABORT;
+    }
+    if (mb.typ == ABCE_T_S)
+    {
+      strsz = 1;
+      strs = malloc(sizeof(*strs) * strsz);
+      strs[0] = strdup(mb.u.area->u.str.buf);
+    }
+    else if (mb.typ == ABCE_T_A)
+    {
+      for (i = 0; i < mb.u.area->u.ar.size; i++)
+      {
+        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
+          YYABORT;
+        }
+      }
+      strsz = mb.u.area->u.ar.size;
+      strs = malloc(sizeof(*strs) * strsz);
+      for (i = 0; i < strsz; i++)
+      {
+        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+      }
+    }
+    else
+    {
+      printf("expected str or array, got type %d in cdepincludescurdir\n",
+             mb.typ);
+      YYABORT;
+    }
+    abce_mb_refdn(get_abce(amyplanyy), &mb);
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    abce_pop(get_abce(amyplanyy));
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_dep(stiryy, strs[i], $2 == 1, $2 == 2);
+      free(strs[i]);
+    }
+    free(strs);
+  }
 }
 ;
 
