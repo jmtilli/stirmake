@@ -1,0 +1,58 @@
+.\" Manpage for stirmake.
+.\" Contact juha-matti.tilli@iki.fi to correct errors or typos.
+.TH man 1 "20 Aug 2019" "1.0" "stirmake man page"
+.SH NAME
+stirmake \- scalable true implementation of recursive make
+.SH SYNOPSIS
+stirmake [-vdcb] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]
+
+smka [-vdcb] [-j jobcnt] [target...]
+
+smkp [-vdcb] [-j jobcnt] [target...]
+
+smkt [-vdcb] [-j jobcnt] [target...]
+.SH DESCRIPTION
+.I stirmake
+is a replacement for make that aims for precise builds and ease of
+build system maintenance.
+.SH OPTIONS
+.sp 1
+.TP 0.5i
+.B \-a
+Build things relative to project hierarchy root. This is automatic if
+.I stirmake
+is invoked as \fIsmka\fR.
+.TP 0.5i
+.B \-b
+Clean all binaries and exit, except if targets were specified, in which case
+build the targets afterwards.
+.TP 0.5i
+.B \-c
+Clean all objects and exit, except if targets were specified, in which case
+build the targets afterwards.
+.TP 0.5i
+.B \-d
+Print debugging information.
+.TP 0.5i
+.B \-j \fIjobcnt\fR
+Use \fIjobcnt\fR jobs. If \fIjobcnt\fR begins with \fIa\fR, detect CPU count
+in the system automatically and use that as job count.
+.TP 0.5i
+.B \-p
+Build things relative to project root. This is automatic if
+.I stirmake
+is invoked as \fIsmkp\fR.
+.TP 0.5i
+.B \-t
+Build things relative to current directory. This is automatic if
+.I stirmake
+is invoked as \fIsmkt\fR.
+.TP 0.5i
+.B \-v
+Print version information and exit.
+.SH SEE ALSO
+make(1)
+.SH BUGS
+The software is in beta, so bugs are plentiful.
+.SH AUTHOR
+Juha-Matti Tilli (juha-matti.tilli@iki.fi)
