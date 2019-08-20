@@ -445,8 +445,8 @@ custom_rule:
       amyplanyy->do_emit = 0;
     }
     abce_pop(get_abce(amyplanyy));
-    $<d>$ = oldval;
   }
+  $<d>$ = oldval;
 }
   amyplanrules
   ENDIF NEWLINE
