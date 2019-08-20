@@ -372,7 +372,7 @@ custom_rule:
     int ret;
     char **strs;
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludescurdir", &strs, &strsz);
     if (ret)
     {
       YYABORT;
@@ -2531,7 +2531,7 @@ targets:
 
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $1, "dirinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $1, "target", &strs, &strsz);
     if (ret)
     {
       YYABORT;
@@ -2579,7 +2579,7 @@ targets:
     size_t i;
     char **strs;
 
-    ret = engine_stringlist(get_abce(amyplanyy), $2, "dirinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
     if (ret)
     {
       YYABORT;
@@ -2696,7 +2696,7 @@ deps:
     int ret;
     char **strs;
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "dirinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
     if (ret)
     {
       YYABORT;
