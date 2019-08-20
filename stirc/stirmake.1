@@ -14,7 +14,44 @@ smkt [-vdcb] [-j jobcnt] [target...]
 .SH DESCRIPTION
 .I stirmake
 is a replacement for make that aims for precise builds and ease of
-build system maintenance.
+build system maintenance. It supports recursive scoping and is
+programmable in a custom strongly typed language Amyplan created
+for \fIstirmake\fR.
+
+.I stirmake
+aims to have high performance which is achieved by a C-based implementation
+contrary to make of its competitors (SCons, Rake) that are implemented in
+slow interpreted languages (Python, Ruby, respectively).
+
+.I stirmake
+does not even attempt to have the implementation and the input language to be
+the same, contrary to the already mentioned SCons and Rake and most importantly
+contrary to Shake that requires one to learn a purely functional language
+Haskell.
+
+.I stirmake
+aims to be compatible with existing solutions (make) when compatibility is
+critical (jobserver, gcc -M format include files, parallelism with -j argument),
+similar to existing solutions when the existing solutions got things mostly
+right (the rule specification syntax, but now this time rule can have many
+targets) and wildly different from existing solutions where existing solutions
+are inadequate (string based variable substitution replaced with proper strong
+typing, recursive nested scoping supported).
+
+It has been a design goal that
+.I stirmake
+can be depoloyed one project at a time. Projects using make can include
+submodules using
+.I stirmake
+and projects using
+.I stirmake
+can include submodules using GNU make with no difficulty at all.
+
+Similarly to the version control system git, you can invoke
+.I stirmake
+within any directory in the project hierarchy and it detects its current
+directory relative to project hierarchy top automatically.
+
 .SH OPTIONS
 .sp 1
 .TP 0.5i
