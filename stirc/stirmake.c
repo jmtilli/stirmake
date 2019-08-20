@@ -7,6 +7,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#include <sys/sysinfo.h>
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
@@ -3657,14 +3658,31 @@ int main(int argc, char **argv)
       cleanbinaries = 1;
       break;
     case 'j':
-      jobcnt = atoi(optarg);
-      if (jobcnt < 1)
+      if (optarg[0] == 'a') // a for auto
       {
-        usage(argv[0]);
+        jobcnt = get_nprocs();
+        if (jobcnt < 1)
+        {
+          fprintf(stderr, "stirmake: Processor count %d insane, using 1\n",
+                  jobcnt);
+          jobcnt = 1;
+        }
+        if (jobcnt > MAX_JOBCNT)
+        {
+          jobcnt = MAX_JOBCNT;
+        }
       }
-      if (jobcnt > MAX_JOBCNT)
+      else
       {
-        usage(argv[0]);
+        jobcnt = atoi(optarg);
+        if (jobcnt < 1)
+        {
+          usage(argv[0]);
+        }
+        if (jobcnt > MAX_JOBCNT)
+        {
+          usage(argv[0]);
+        }
       }
       break;
     case 't':

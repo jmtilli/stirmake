@@ -257,7 +257,8 @@ the clean hooks of parent-Stirfiles are executed.
 
 ### Parallel builds
 
-Parallel build uses the familiar syntax: `stirmake -j8`
+Parallel build uses the familiar syntax: `stirmake -j8`, but with the exception
+that CPU count autodetection is supported: `stirmake -ja`.
 
 ### Other useful arguments
 
