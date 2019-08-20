@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include "abce/abce.h"
 #include "canon.h"
+#include "stirtrap.h"
 #include "abce/abcescopes.h"
 
 #ifdef __cplusplus
@@ -475,6 +476,8 @@ static inline void stiryy_free(struct stiryy *stiryy)
 #endif
   memset(stiryy, 0, sizeof(*stiryy));
 }
+
+int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname);
 
 #ifdef __cplusplus
 };

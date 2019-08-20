@@ -266,3 +266,94 @@ int stiryydirparse(
   free(copy);
   return stiryynameparse(pathbuf, stiryy, require);
 }
+
+int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
+{
+  struct stiryy stiryy2 = {};
+  size_t fsz = strlen(stiryy->curprefix) + strlen(fname) + 8 + 3;
+  size_t psz = strlen(stiryy->curprefix) + strlen(fname) + 2;
+  size_t ppsz = strlen(stiryy->curprojprefix) + strlen(fname) + 2;
+  char *prefix = malloc(psz);
+  char *projprefix = malloc(ppsz);
+  char *filename = malloc(fsz);
+  char realpathname[PATH_MAX];
+  char *prefix2, *projprefix2;
+  int ret;
+  FILE *f;
+  struct abce_mb oldscope;
+  size_t oldscopeidx;
+  if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, fname) >= psz)
+  {
+    my_abort();
+  }
+  if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, fname) >= ppsz)
+  {
+    my_abort();
+  }
+  if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, fname, "Stirfile") >= fsz)
+  {
+    my_abort();
+  }
+  if (realpath(filename, realpathname) == NULL)
+  {
+    printf("path %s does not exist\n", filename);
+    return -ENOENT;
+  }
+  if (strcmp(realpathname, stiryy->main->realpathname) == 0)
+  {
+    stiryy->main->subdirseen = 1;
+    if (noproj && stiryy->sameproject)
+    {
+      stiryy->main->subdirseen_sameproject = 1;
+    }
+  }
+  prefix2 = canon(prefix);
+  projprefix2 = canon(projprefix);
+  if (!noproj)
+  {
+    // replace projprefix2
+    free(projprefix2);
+    projprefix2 = strdup(".");
+  }
+  oldscope = stiryy->main->abce->dynscope;
+  oldscopeidx = oldscope.u.area->u.sc.locidx;
+  stiryy->main->abce->dynscope = abce_mb_create_scope(stiryy->main->abce, ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
+  abce_mb_refdn(stiryy->main->abce, &oldscope);
+  //printf("projprefix2: %s\n", projprefix2);
+  struct scope_ud ud = {
+    .prefix = prefix2,
+    .prjprefix = projprefix2,
+  };
+  abce_scope_set_userdata(&stiryy->main->abce->dynscope, &ud);
+  if (stiryy->main->abce->dynscope.typ == ABCE_T_N)
+  {
+    my_abort();
+  }
+  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, stiryy->main->abce->dynscope, NULL, filename);
+  stiryy2.sameproject = stiryy->sameproject && noproj;
+
+  f = fopen(filename, "r");
+  if (!f)
+  {
+    fprintf(stderr, "stirmake: Can't open substirfile %s.\n", filename);
+    return -ENOENT;
+  }
+  ret = stiryydoparse(f, &stiryy2);
+  fclose(f);
+  if (ret)
+  {
+    fprintf(stderr, "stirmake: Can't parse substirfile %s.\n", filename);
+    return -EBADMSG;
+  }
+
+  stiryy_free(&stiryy2);
+  abce_mb_refdn(stiryy->main->abce, &stiryy->main->abce->dynscope);
+  stiryy->main->abce->dynscope = abce_mb_refup(stiryy->main->abce, &stiryy->main->abce->cachebase[oldscopeidx]);
+  //get_abce(stiryy)->dynscope = oldscope;
+  // free(prefix2); // let it leak, FIXME free it someday
+  // free(projprefix2); // let it leak, FIXME free it someday
+  free(prefix);
+  free(projprefix);
+  free(filename);
+  return 0;
+}

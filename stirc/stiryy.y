@@ -299,99 +299,103 @@ custom_rule:
   free($2.str);
 }
 | FILEINCLUDE VARREF_LITERAL NEWLINE
+/* // shift-reduce conflict!
 | dirinclude STRING_LITERAL NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    struct stiryy stiryy2 = {};
-    size_t fsz = strlen(stiryy->curprefix) + strlen($2.str) + 8 + 3;
-    size_t psz = strlen(stiryy->curprefix) + strlen($2.str) + 2;
-    size_t ppsz = strlen(stiryy->curprojprefix) + strlen($2.str) + 2;
-    char *prefix = malloc(psz);
-    char *projprefix = malloc(ppsz);
-    char *filename = malloc(fsz);
-    char realpathname[PATH_MAX];
-    char *prefix2, *projprefix2;
-    int ret;
-    FILE *f;
-    struct abce_mb oldscope;
-    size_t oldscopeidx;
-    if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, $2.str) >= psz)
+    if (do_dirinclude(stiryy, $1, $2.str) != 0)
     {
-      my_abort();
-    }
-    if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, $2.str) >= ppsz)
-    {
-      my_abort();
-    }
-    if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, $2.str, "Stirfile") >= fsz)
-    {
-      my_abort();
-    }
-    if (realpath(filename, realpathname) == NULL)
-    {
-      my_abort();
-    }
-    if (strcmp(realpathname, stiryy->main->realpathname) == 0)
-    {
-      stiryy->main->subdirseen = 1;
-      if ($1 && stiryy->sameproject)
-      {
-        stiryy->main->subdirseen_sameproject = 1;
-      }
-    }
-    prefix2 = canon(prefix);
-    projprefix2 = canon(projprefix);
-    if (!$1)
-    {
-      // replace projprefix2
-      free(projprefix2);
-      projprefix2 = strdup(".");
-    }
-    oldscope = get_abce(stiryy)->dynscope;
-    oldscopeidx = oldscope.u.area->u.sc.locidx;
-    get_abce(stiryy)->dynscope = abce_mb_create_scope(get_abce(stiryy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
-    abce_mb_refdn(get_abce(stiryy), &oldscope);
-    //printf("projprefix2: %s\n", projprefix2);
-    struct scope_ud ud = {
-      .prefix = prefix2,
-      .prjprefix = projprefix2,
-    };
-    abce_scope_set_userdata(&get_abce(stiryy)->dynscope, &ud);
-    if (get_abce(stiryy)->dynscope.typ == ABCE_T_N)
-    {
-      my_abort();
-    }
-    stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, get_abce(stiryy)->dynscope, NULL, filename);
-    stiryy2.sameproject = stiryy->sameproject && $1;
-
-    f = fopen(filename, "r");
-    if (!f)
-    {
-      fprintf(stderr, "stirmake: Can't open substirfile %s.\n", filename);
-      my_abort();
-    }
-    ret = stiryydoparse(f, &stiryy2);
-    fclose(f);
-    if (ret)
-    {
-      fprintf(stderr, "stirmake: Can't parse substirfile %s.\n", filename);
       YYABORT;
     }
-
-    stiryy_free(&stiryy2);
-    abce_mb_refdn(get_abce(stiryy), &get_abce(stiryy)->dynscope);
-    get_abce(stiryy)->dynscope = abce_mb_refup(get_abce(stiryy), &get_abce(stiryy)->cachebase[oldscopeidx]);
-    //get_abce(stiryy)->dynscope = oldscope;
-    // free(prefix2); // let it leak, FIXME free it someday
-    // free(projprefix2); // let it leak, FIXME free it someday
-    free(prefix);
-    free(projprefix);
-    free(filename);
   }
   free($2.str);
 }
-| DIRINCLUDE VARREF_LITERAL NEWLINE
+*/
+| dirinclude
+{
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+  expr NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    unsigned char tmpbuf[64] = {};
+    size_t tmpsiz = 0;
+    struct abce_mb mb;
+    size_t i;
+    size_t strsz;
+    char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+    //get_abce(amyplanyy)->ip = $<d>2;
+    //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for dirinclude directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (abce_getmb(&mb, get_abce(amyplanyy), 0) != 0)
+    {
+      printf("can't get item from stack in dirinclude\n");
+      //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      YYABORT;
+    }
+    if (mb.typ == ABCE_T_S)
+    {
+      strsz = 1;
+      strs = malloc(sizeof(*strs) * strsz);
+      strs[0] = strdup(mb.u.area->u.str.buf);
+    }
+    else if (mb.typ == ABCE_T_A)
+    {
+      for (i = 0; i < mb.u.area->u.ar.size; i++)
+      {
+        if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          printf("expected string, got type %d\n", mb.u.area->u.ar.mbs[i].typ);
+          YYABORT;
+        }
+      }
+      strsz = mb.u.area->u.ar.size;
+      strs = malloc(sizeof(*strs) * strsz);
+      for (i = 0; i < strsz; i++)
+      {
+        strs[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+      }
+    }
+    else
+    {
+      printf("expected str or array, got type %d in dirinclude\n",
+             mb.typ);
+      YYABORT;
+    }
+    abce_mb_refdn(get_abce(amyplanyy), &mb);
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    abce_pop(get_abce(amyplanyy));
+
+    for (i = 0; i < strsz; i++)
+    {
+      if (do_dirinclude(stiryy, $1, strs[i]) != 0)
+      {
+        YYABORT;
+      }
+      free(strs[i]);
+    }
+    free(strs);
+  }
+}
 | CDEPINCLUDESCURDIR STRING_LITERAL NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
