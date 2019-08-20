@@ -4065,11 +4065,22 @@ int main(int argc, char **argv)
         errxit("rule '%s' not found", argv[i]);
       }
       free(better_cycle_detect(ruleid));
-      ruleremain_add(rules[ruleid]);
+      //ruleremain_add(rules[ruleid]); // later!
     }
     if (clean || cleanbinaries)
     {
       do_clean(".", clean, cleanbinaries);
+    }
+    for (i = optind; i < argc; i++)
+    {
+      size_t stidx = stringtab_add(argv[i]);
+      int ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
     }
   }
   else if (mode == MODE_THIS)
@@ -4091,12 +4102,32 @@ int main(int argc, char **argv)
         errxit("rule '%s' not found", argv[i]);
       }
       free(better_cycle_detect(ruleid));
-      ruleremain_add(rules[ruleid]);
+      //ruleremain_add(rules[ruleid]); // later!
       free(can);
     }
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
+    }
+    for (i = optind; i < argc; i++)
+    {
+      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
+      char *buf = malloc(bufsz);
+      char *can;
+      size_t stidx;
+      int ruleid;
+      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
+      can = canon(buf);
+      free(buf);
+      stidx = stringtab_add(can);
+      ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+      free(can);
     }
   }
   else
@@ -4118,12 +4149,32 @@ int main(int argc, char **argv)
         errxit("rule '%s' not found", argv[i]);
       }
       free(better_cycle_detect(ruleid));
-      ruleremain_add(rules[ruleid]);
+      //ruleremain_add(rules[ruleid]); // later!
       free(can);
     }
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
+    }
+    for (i = optind; i < argc; i++)
+    {
+      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
+      char *buf = malloc(bufsz);
+      char *can;
+      size_t stidx;
+      int ruleid;
+      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
+      can = canon(buf);
+      free(buf);
+      stidx = stringtab_add(can);
+      ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+      free(can);
     }
   }
 
