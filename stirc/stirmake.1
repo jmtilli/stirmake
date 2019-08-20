@@ -53,9 +53,264 @@ is invoked as \fIsmkt\fR.
 .TP 0.5i
 .B \-v
 Print version information and exit.
-.SH SEE ALSO
+.SH "STIRFILE FORMAT"
+First of all, you want to create the target \fIall\fR which must be marked
+\fI@phonyrule\fR so that you have a default target.
+
+.EX
+@phonyrule: "all": "proga" "progb" "progc" "libd.a"
+.EE
+
+Note how all strings are quoted. In targets and dependencies, unquoted strings
+are supported but it will emit a warning.
+
+Then you specify shell commands for targets:
+
+.EX
+"proga": "proga.o" "libd.a"
+	cc -o $@ $^
+.EE
+
+It's also possible to use an expression-based syntax:
+
+.EX
+(["proga"]): (["proga.o", "libd.a"])
+@	["cc", "-o", $@, @$^]
+.EE
+
+where parentheses are required around expressions for targets and
+dependencies, and the expression support for commands works by having @ before
+the tabulator. The special variable $^ is prefixed by @ to indicate one wants
+to join the full contents of the list $^ into the resulting list and not just
+include the list as one list element.
+
+The expression based syntax allows one to define arrays and functions:
+
+.EX
+$CCCMD<> = ["cc", "-o", $@, @$^]
+
+$DEPS = ["proga.o", "libd.a"]
+
+"proga": $DEPS
+@	$CCCMD<>
+.EE
+
+Here <> in definition mean "define it as one-liner expression function", and <>
+in variable reference means "call it with no arguments if it's a function".
+
+Of course, functions can be defined in a full programming language:
+
+.EX
+@function $CCCMD($compiler)
+  @locvar $appendlist = ["-o", @D $@, @ @D $^]
+  @locvar $resultlist = []
+  @locvar $i = 0
+  @for($i = 0, $i < $appendlist[], $i = $i + 1)
+    @append($resultlist, $appendlist[$i])
+  @endfor
+  @return $resultlist
+@endfunction
+
+$DEPS = ["proga.o", "libd.a"]
+
+"proga": $DEPS
+@	$CCCMD("gcc")
+.EE
+
+Sub-directories can be included in the following manner
+
+.EX
+@dirinclude "module1"
+@dirinclude ["module2", "module3"]
+$ADDMODS = ["module4, "module5"]
+@dirinclude $ADDMODS
+.EE
+
+Sub-projects can be included, too, but it's recommended to control which
+variables are visible so that you won't pollute the variable namespace of the
+sub-project.
+
+.EX
+$ISVISIBLE = "foo"
+$NOTVISIBLE = "bar"
+@beginholeyscope
+  $ISVISIBLE = @LP $ISVISIBLE
+  @projdirinclude "subproject"
+@endscope
+.EE
+
+Rules can have many targets:
+
+.EX
+stiryy.tab.c stiryy.tab.h: stiryy.y
+	byacc -d -p stiryy -o stiryy.tab.c stiryy.y
+.EE
+
+Sub-makes can be invoked in the following manner:
+
+.EX
+@rectgtrule: subproj/bin/cmd subproj/lib/libsp.a: @recdep subproj
+	make -C subproj
+
+@cleanhook:
+	make -C subproj clean
+
+@distcleanhook:
+	false
+
+@bothcleanhook:
+	make -C subproj clobber
+.EE
+
+Here
+.I @recdep
+means depend on the latest mtime within the directory hierarchy and
+.I @rectgtrule
+is required for the rule if some of the targets are inside the same hierarchy.
+
+If you invoke sub-make within the same directory, the targets need to be
+.I @maybe
+like this:
+
+.EX
+@maybe: test: test.c test.mk
+	make -f test.mk
+
+@cleanhook:
+	make -f test.mk clean
+
+@distcleanhook:
+	false
+
+@bothcleanhook:
+	make -f test.mk clobber
+.EE
+
+Stirmake generates cleaning rules automatically for its own targets, but
+cleaning hooks are required for sub-makes. However, stirmake needs to know
+what files are binaries and what are object files, so the rules for binaries
+are marked
+.I @distrule
+like this:
+
+.EX
+@distrule: binfoo: binfoo.c
+	cc -o binfoo binfoo.c
+.EE
+
+Each target can be listed only once, but additional dependencies can be
+specified with
+.I @deponly
+like this:
+
+.EX
+all: foo bar
+	echo all done
+
+@deponly: all: baz
+.EE
+
+Some of the stuff can be conditional:
+
+.EX
+all: foo bar
+	echo all done
+
+$BUILD_BAZ = @false
+
+@if($BUILD_BAZ)
+  @deponly: all: baz
+@endif
+.EE
+
+
+.SH "INVOKING STIRMAKE"
+
+Suppose you have the project hierarchy:
+
+.IP "\(bu" 3
+project/Stirfile
+.IP "  \(bu" 5
+project/dir/Stirfile
+.IP "    \(bu" 7
+project/dir/subproj/Stirfile
+.IP "      \(bu" 9
+project/dir/subproj/subdir/Stirfile
+.IP "" 0
+Then the following commands are equal:
+
+.EX
+cd project/dir/subproj/subdir; smkt ../all
+cd project/dir/subproj/subdir; smkp all
+cd project/dir/subproj/subdir; smka project/dir/subproj/all
+.EE
+
+because
+.I smka
+refers to whole project hierarchy,
+.I smkp
+refers to the current project, and
+.I smkt
+refers to the current diretory. In the example, it was assumed that subproj
+was included with
+.I @projdirinclude
+
+.SH "EXIT STATUS"
+.I stirmake
+exits with zero exit status for success, if all Stirfiles could be read, parsed
+and all targets / clean operations were successfully performed. An exit status
+of one is used for error cases.
+.SH "FILES"
+.IP Stirfile 8
+instructions to build a module
+.IP .stir.db 8
+build command database (automatically maintained)
+.SH "ENVIRONMENT"
+.I stirmake
+gets and sets the following environment variables: MAKEFLAGS (for
+GNU make compatibility), STIRMAKEPID (for communicating parent process
+identifier to sub-processes).
+.SH "COMPATIBILITY"
+.I stirmake
+is mostly incompatible with most make implementations because of the support
+for data typing, support for full programmability and slightly different
+syntax. However,
+.I stirmake
+can read make dependency files in the format make expects them, created by
+e.g. the gcc -M argument. Also,
+.I stirmake
+speaks the GNU make jobserver protocol, being able to operate as a jobserver
+host and guest.
+
+It is expected that most conversions to
+.I stirmake
+involve a complete rewrite of the entire build system of the project.
+.SH "SEE ALSO"
 make(1)
+.SH HISTORY
+.I stirmake
+was created inspired by the influential "Recursive Make Considered
+Harmful" paper[1] and the author's unsuccessful attempts at creating a perfect
+build system using GNU make. It seems the author is not the only one with
+difficulty of creating good build systems[2]. Some of the data structures of
+.I stirmake
+are taken from a packet processing toolkit (PPTK) that has its origins in
+2017-8.
+.I stirmake
+was created in 2019.
+.SH "REFERENCES"
+1. Miller, P.A. (1998), Recursive Make Considered Harmful, AUUGN Journal of AUUG Inc., 19(1), pp. 14-25, http://aegis.sourceforge.net/auug97.pdf
+
+2. Mokhov, A., Mitchell, N., Peyton Jones, S., Marlow, S. (2016), Non-recursive make considered harmful: build systems at scale, ACM SIGPLAN Notices - Haskell '16, 51(12), pp. 170-181, https://www.microsoft.com/en-us/research/wp-content/uploads/2016/03/hadrian.pdf 
 .SH BUGS
 The software is in beta, so bugs are plentiful.
 .SH AUTHOR
 Juha-Matti Tilli (juha-matti.tilli@iki.fi)
+.SH "COPYRIGHT"
+Copyright \(co 2017-9 Aalto University, 2018 Juha-Matti Tilli
+
+Licensed under the MIT license, with the exception of logo that is not
+available under this license and may only be used to represent substantially
+unmodified versions of
+.I stirmake
+distributed under the MIT license.
