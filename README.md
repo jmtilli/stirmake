@@ -224,8 +224,36 @@ the rules for cleaning object files and binaries. To clean, do some of these:
 * `smkp -bc`: clean binaries and object files of whole project
 * `smkt -bc`: clean binaries and object files of current directory
 
-What is currently not in this document is hooks for automatically cleaning
-results of sub-makes. TODO document this someday
+To add hooks for cleaning, do:
+
+```
+@cleanhook:
+        make -C subdir clean
+
+@distcleanhook:
+        make -C subdir binclean
+
+@bothcleanhook:
+        make -C subdir clean binclean
+```
+
+If the sub-Makefile does not support cleaning only binaries and not object
+files, you can set one of the hooks to `false` to fail the operation:
+
+```
+@cleanhook:
+        make -C subdir clean
+
+@distcleanhook:
+        false
+
+@bothcleanhook:
+        make -C subdir clobber
+```
+
+The hooks are recursively executed, and may even have dependencies. There are
+implicit dependencies so that clean hooks of sub-Stirfiles are executed before
+the clean hooks of parent-Stirfiles are executed.
 
 ### Parallel builds
 
