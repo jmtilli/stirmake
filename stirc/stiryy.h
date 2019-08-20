@@ -93,6 +93,8 @@ struct stiryyrule {
   unsigned dist:1;
   unsigned deponly:1;
   unsigned iscleanhook:1;
+  unsigned isdistcleanhook:1;
+  unsigned isbothcleanhook:1;
 };
 
 struct stiryy_main {
@@ -315,7 +317,22 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   free(slashes);
   free(slashesnodir);
   rule->phony = 1;
-  rule->iscleanhook = 1;
+  if (strcmp(tgt, "CLEAN") == 0)
+  {
+    rule->iscleanhook = 1;
+  }
+  else if (strcmp(tgt, "DISTCLEAN") == 0)
+  {
+    rule->isdistcleanhook = 1;
+  }
+  else if (strcmp(tgt, "BOTHCLEAN") == 0)
+  {
+    rule->isbothcleanhook = 1;
+  }
+  else
+  {
+    my_abort();
+  }
 }
 
 static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
@@ -416,6 +433,8 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
   main->rules[main->rulesz].dist = 0;
   main->rules[main->rulesz].deponly = 0;
   main->rules[main->rulesz].iscleanhook = 0;
+  main->rules[main->rulesz].isdistcleanhook = 0;
+  main->rules[main->rulesz].isbothcleanhook = 0;
   main->rules[main->rulesz].scopeidx = scopeidx;
   main->rulesz++;
 }

@@ -53,6 +53,7 @@ struct CSnippet luaSnippet = {
 @distrule return DISTRULE;
 @cleanhook return CLEANHOOK;
 @distcleanhook return DISTCLEANHOOK;
+@bothcleanhook return BOTHCLEANHOOK;
 @patrule return PATRULE;
 @fileinclude return FILEINCLUDE;
 @dirinclude return DIRINCLUDE;

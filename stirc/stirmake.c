@@ -790,6 +790,9 @@ struct rule {
   unsigned st_mtim_valid:1;
   unsigned is_inc:1; // whether this is included from dependency file
   unsigned is_dist:1;
+  unsigned is_cleanhook:1;
+  unsigned is_distcleanhook:1;
+  unsigned is_bothcleanhook:1;
   unsigned is_forked:1;
   size_t diridx;
   struct cmd cmd;
@@ -1495,6 +1498,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
               char ***cmdargs, size_t cmdargsz,
               int phony, int rectgt, int maybe, int dist,
+              int cleanhook, int distcleanhook, int bothcleanhook,
               char *prefix, size_t scopeidx)
 {
   struct rule *rule;
@@ -1530,6 +1534,9 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->is_maybe = !!maybe;
   rule->is_rectgt = !!rectgt;
   rule->is_dist = !!dist;
+  rule->is_cleanhook = !!cleanhook;
+  rule->is_distcleanhook = !!distcleanhook;
+  rule->is_bothcleanhook = !!bothcleanhook;
 
   for (i = 0; i < tgtsz; i++)
   {
@@ -2820,6 +2827,8 @@ char *dir_up(char *old)
   return canonized;
 }
 
+void run_loop(void);
+
 void do_clean(char *fwd_path, int objs, int bins)
 {
   size_t i, fp_len;
@@ -2827,6 +2836,50 @@ void do_clean(char *fwd_path, int objs, int bins)
   struct linked_list_node *node, *node2, *node3, *nodetmp;
   all = (strcmp(fwd_path, ".") == 0);
   fp_len = strlen(fwd_path);
+  for (i = 0; i < rules_size; i++)
+  {
+    int doit = all;
+    char *prefix = sttable[rules[i]->diridx];
+    if (strncmp(prefix, fwd_path, fp_len) == 0)
+    {
+      if (prefix[fp_len] == '/' || prefix[fp_len] == '\0')
+      {
+        doit = 1;
+      }
+    }
+    if (!doit)
+    {
+      continue;
+    }
+    doit = 0;
+    if (objs && !bins)
+    {
+      if (rules[i]->is_cleanhook)
+      {
+        doit = 1;
+      }
+    }
+    else if (bins && !objs)
+    {
+      if (rules[i]->is_distcleanhook)
+      {
+        doit = 1;
+      }
+    }
+    else if (objs && bins)
+    {
+      if (rules[i]->is_bothcleanhook)
+      {
+        doit = 1;
+      }
+    }
+    if (!doit)
+    {
+      continue;
+    }
+    ruleremain_add(rules[i]);
+  }
+  run_loop();
   for (i = 0; i < rules_size; i++)
   {
     int doit = all;
@@ -3217,6 +3270,189 @@ void handle_signal(int signum)
   }
 }
 
+uint32_t forkedchildcnt = 0;
+int narration = 0;
+
+void run_loop(void)
+{
+  struct linked_list_node *node;
+back:
+  LINKED_LIST_FOR_EACH(node, &rules_remain_list)
+  {
+    int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
+    if (consider(ruleid))
+    {
+      if (debug)
+      {
+        printf("goto back\n");
+      }
+      goto back; // this can edit the list, need to re-start iteration
+    }
+  }
+
+  while (ruleids_to_run_size > 0)
+  {
+    if (children)
+    {
+      if (!read_jobserver())
+      {
+        break;
+      }
+    }
+    if (debug)
+    {
+      printf("forking1 child\n");
+    }
+    fork_child(ruleids_to_run[ruleids_to_run_size-1]);
+    ruleids_to_run_size--;
+  }
+
+  int maxfd = 0;
+  if (self_pipe_fd[0] > maxfd)
+  {
+    maxfd = self_pipe_fd[0];
+  }
+  if (jobserver_fd[0] > maxfd)
+  {
+    maxfd = jobserver_fd[0];
+  }
+  char chbuf[100];
+  while (children > 0)
+  {
+    int wstatus = 0;
+    fd_set readfds;
+    FD_SET(self_pipe_fd[0], &readfds);
+    if (ruleids_to_run_size > 0)
+    {
+      FD_SET(jobserver_fd[0], &readfds);
+    }
+    select(maxfd+1, &readfds, NULL, NULL, NULL);
+    if (debug)
+    {
+      printf("select returned\n");
+    }
+    if (sigterm_atomic)
+    {
+      handle_signal(SIGTERM);
+      errxit("Got SIGTERM.");
+      exit(1);
+    }
+    if (sigint_atomic)
+    {
+      handle_signal(SIGINT);
+      errxit("Got SIGINT.");
+      exit(1);
+    }
+    if (sighup_atomic)
+    {
+      handle_signal(SIGHUP);
+      errxit("Got SIGHUP.");
+      exit(1);
+    }
+    if (read(self_pipe_fd[0], chbuf, 100))
+    {
+      for (;;)
+      {
+        pid_t pid;
+        pid = waitpid(-1, &wstatus, WNOHANG);
+        if (pid == 0)
+        {
+          break;
+        }
+        if (wstatus != 0 && pid > 0)
+        {
+          if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
+          {
+            int ruleid = ruleid_by_pid_erase(pid);
+            if (ruleid < 0)
+            {
+              printf("31.1\n");
+              my_abort();
+            }
+            children--;
+            fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
+            if (WIFSIGNALED(wstatus))
+            {
+              errxit("Error: signaled");
+            }
+            else if (WIFEXITED(wstatus))
+            {
+              errxit("Error %d", (int)WEXITSTATUS(wstatus));
+            }
+            else
+            {
+              errxit("Unknown error");
+            }
+            my_abort();
+          }
+        }
+        if (children <= 0 && ruleids_to_run_size == 0)
+        {
+          if (pid < 0 && errno == ECHILD)
+          {
+            if (linked_list_is_empty(&rules_remain_list))
+            {
+              return;
+            }
+            else
+            {
+              fprintf(stderr, "out of children, yet not all targets made\n");
+              my_abort();
+            }
+          }
+          printf("29\n");
+          my_abort();
+        }
+        if (pid < 0)
+        {
+          if (errno == ECHILD)
+          {
+            break;
+          }
+          printf("30\n");
+          my_abort();
+        }
+        int ruleid = ruleid_by_pid_erase(pid);
+        if (ruleid < 0)
+        {
+          printf("31\n");
+          my_abort();
+        }
+        //ruleremain_rm(rules[ruleid]);
+        mark_executed(ruleid, 1);
+        children--;
+        if (children != 0)
+        {
+          write(jobserver_fd[1], ".", 1);
+        }
+        forkedchildcnt++;
+        if (((forkedchildcnt % 10) == 0) && narration)
+        {
+          do_narration();
+        }
+      }
+    }
+    while (ruleids_to_run_size > 0)
+    {
+      if (children)
+      {
+        if (!read_jobserver())
+        {
+          break;
+        }
+      }
+      if (debug)
+      {
+        printf("forking child\n");
+      }
+      //std::cout << "forking child" << std::endl;
+      fork_child(ruleids_to_run[ruleids_to_run_size-1]);
+      ruleids_to_run_size--;
+      //ruleids_to_run.pop_back();
+    }
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -3229,8 +3465,6 @@ int main(int argc, char **argv)
   int opt;
   int filename_set = 0;
   const char *filename = "Stirfile";
-  uint32_t forkedchildcnt = 0;
-  int narration = 0;
   int jobcnt = 1;
   int cleanbinaries = 0;
   int clean = 0;
@@ -3544,6 +3778,8 @@ int main(int argc, char **argv)
                main.rules[i].shells, main.rules[i].shellsz,
                main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
                main.rules[i].dist,
+               main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
+               main.rules[i].isbothcleanhook,
                main.rules[i].prefix, main.rules[i].scopeidx);
       if (   (!ruleid_first_set)
           && (   strcmp(fwd_path, ".") == 0
@@ -3581,88 +3817,6 @@ int main(int argc, char **argv)
   if (!ruleid_first_set)
   {
     errxit("no applicable rules");
-  }
-  if (optind == argc)
-  {
-    free(better_cycle_detect(ruleid_first));
-    if (clean || cleanbinaries)
-    {
-      do_clean(fwd_path, clean, cleanbinaries);
-      exit(0); // don't process first rule
-    }
-    ruleremain_add(rules[ruleid_first]);
-  }
-  else if (mode == MODE_ALL || mode == MODE_NONE)
-  {
-    for (i = optind; i < argc; i++)
-    {
-      size_t stidx = stringtab_add(argv[i]);
-      int ruleid = get_ruleid_by_tgt(stidx);
-      if (ruleid < 0)
-      {
-        errxit("rule '%s' not found", argv[i]);
-      }
-      free(better_cycle_detect(ruleid));
-      ruleremain_add(rules[ruleid]);
-    }
-    if (clean || cleanbinaries)
-    {
-      do_clean(".", clean, cleanbinaries);
-    }
-  }
-  else if (mode == MODE_THIS)
-  {
-    for (i = optind; i < argc; i++)
-    {
-      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
-      char *buf = malloc(bufsz);
-      char *can;
-      size_t stidx;
-      int ruleid;
-      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
-      can = canon(buf);
-      free(buf);
-      stidx = stringtab_add(can);
-      ruleid = get_ruleid_by_tgt(stidx);
-      if (ruleid < 0)
-      {
-        errxit("rule '%s' not found", argv[i]);
-      }
-      free(better_cycle_detect(ruleid));
-      ruleremain_add(rules[ruleid]);
-      free(can);
-    }
-    if (clean || cleanbinaries)
-    {
-      do_clean(fwd_path, clean, cleanbinaries);
-    }
-  }
-  else
-  {
-    for (i = optind; i < argc; i++)
-    {
-      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
-      char *buf = malloc(bufsz);
-      char *can;
-      size_t stidx;
-      int ruleid;
-      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
-      can = canon(buf);
-      free(buf);
-      stidx = stringtab_add(can);
-      ruleid = get_ruleid_by_tgt(stidx);
-      if (ruleid < 0)
-      {
-        errxit("rule '%s' not found", argv[i]);
-      }
-      free(better_cycle_detect(ruleid));
-      ruleremain_add(rules[ruleid]);
-      free(can);
-    }
-    if (clean || cleanbinaries)
-    {
-      do_clean(fwd_path, clean, cleanbinaries);
-    }
   }
 
   for (i = 0; i < stiryy.main->cdepincludesz; i++)
@@ -3820,39 +3974,7 @@ int main(int argc, char **argv)
   sahup.sa_handler = sighup_handler;
   sigaction(SIGHUP, &sahup, NULL);
 
-  struct linked_list_node *node;
-back:
-  LINKED_LIST_FOR_EACH(node, &rules_remain_list)
-  {
-    int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
-    if (consider(ruleid))
-    {
-      if (debug)
-      {
-        printf("goto back\n");
-      }
-      goto back; // this can edit the list, need to re-start iteration
-    }
-  }
-
   //consider(0);
-
-  while (ruleids_to_run_size > 0)
-  {
-    if (children)
-    {
-      if (!read_jobserver())
-      {
-        break;
-      }
-    }
-    if (debug)
-    {
-      printf("forking1 child\n");
-    }
-    fork_child(ruleids_to_run[ruleids_to_run_size-1]);
-    ruleids_to_run_size--;
-  }
 
 /*
   while (children < limit && !ruleids_to_run.empty())
@@ -3863,151 +3985,91 @@ back:
   }
 */
 
-  int maxfd = 0;
-  if (self_pipe_fd[0] > maxfd)
+  if (optind == argc)
   {
-    maxfd = self_pipe_fd[0];
+    free(better_cycle_detect(ruleid_first));
+    if (clean || cleanbinaries)
+    {
+      do_clean(fwd_path, clean, cleanbinaries);
+      exit(0); // don't process first rule
+    }
+    ruleremain_add(rules[ruleid_first]);
   }
-  if (jobserver_fd[0] > maxfd)
+  else if (mode == MODE_ALL || mode == MODE_NONE)
   {
-    maxfd = jobserver_fd[0];
-  }
-  char chbuf[100];
-  while (children > 0)
-  {
-    int wstatus = 0;
-    fd_set readfds;
-    FD_SET(self_pipe_fd[0], &readfds);
-    if (ruleids_to_run_size > 0)
+    for (i = optind; i < argc; i++)
     {
-      FD_SET(jobserver_fd[0], &readfds);
-    }
-    select(maxfd+1, &readfds, NULL, NULL, NULL);
-    if (debug)
-    {
-      printf("select returned\n");
-    }
-    if (sigterm_atomic)
-    {
-      handle_signal(SIGTERM);
-      errxit("Got SIGTERM.");
-      exit(1);
-    }
-    if (sigint_atomic)
-    {
-      handle_signal(SIGINT);
-      errxit("Got SIGINT.");
-      exit(1);
-    }
-    if (sighup_atomic)
-    {
-      handle_signal(SIGHUP);
-      errxit("Got SIGHUP.");
-      exit(1);
-    }
-    if (read(self_pipe_fd[0], chbuf, 100))
-    {
-      for (;;)
+      size_t stidx = stringtab_add(argv[i]);
+      int ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
       {
-        pid_t pid;
-        pid = waitpid(-1, &wstatus, WNOHANG);
-        if (pid == 0)
-        {
-          break;
-        }
-        if (wstatus != 0 && pid > 0)
-        {
-          if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
-          {
-            int ruleid = ruleid_by_pid_erase(pid);
-            if (ruleid < 0)
-            {
-              printf("31.1\n");
-              my_abort();
-            }
-            children--;
-            fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
-            if (WIFSIGNALED(wstatus))
-            {
-              errxit("Error: signaled");
-            }
-            else if (WIFEXITED(wstatus))
-            {
-              errxit("Error %d", (int)WEXITSTATUS(wstatus));
-            }
-            else
-            {
-              errxit("Unknown error");
-            }
-            my_abort();
-          }
-        }
-        if (children <= 0 && ruleids_to_run_size == 0)
-        {
-          if (pid < 0 && errno == ECHILD)
-          {
-            if (linked_list_is_empty(&rules_remain_list))
-            {
-              goto out;
-            }
-            else
-            {
-              fprintf(stderr, "out of children, yet not all targets made\n");
-              my_abort();
-            }
-          }
-          printf("29\n");
-          my_abort();
-        }
-        if (pid < 0)
-        {
-          if (errno == ECHILD)
-          {
-            break;
-          }
-          printf("30\n");
-          my_abort();
-        }
-        int ruleid = ruleid_by_pid_erase(pid);
-        if (ruleid < 0)
-        {
-          printf("31\n");
-          my_abort();
-        }
-        //ruleremain_rm(rules[ruleid]);
-        mark_executed(ruleid, 1);
-        children--;
-        if (children != 0)
-        {
-          write(jobserver_fd[1], ".", 1);
-        }
-        forkedchildcnt++;
-        if (((forkedchildcnt % 10) == 0) && narration)
-        {
-          do_narration();
-        }
+        errxit("rule '%s' not found", argv[i]);
       }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
     }
-    while (ruleids_to_run_size > 0)
+    if (clean || cleanbinaries)
     {
-      if (children)
-      {
-        if (!read_jobserver())
-        {
-          break;
-        }
-      }
-      if (debug)
-      {
-        printf("forking child\n");
-      }
-      //std::cout << "forking child" << std::endl;
-      fork_child(ruleids_to_run[ruleids_to_run_size-1]);
-      ruleids_to_run_size--;
-      //ruleids_to_run.pop_back();
+      do_clean(".", clean, cleanbinaries);
     }
   }
-out:
+  else if (mode == MODE_THIS)
+  {
+    for (i = optind; i < argc; i++)
+    {
+      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
+      char *buf = malloc(bufsz);
+      char *can;
+      size_t stidx;
+      int ruleid;
+      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
+      can = canon(buf);
+      free(buf);
+      stidx = stringtab_add(can);
+      ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+      free(can);
+    }
+    if (clean || cleanbinaries)
+    {
+      do_clean(fwd_path, clean, cleanbinaries);
+    }
+  }
+  else
+  {
+    for (i = optind; i < argc; i++)
+    {
+      size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
+      char *buf = malloc(bufsz);
+      char *can;
+      size_t stidx;
+      int ruleid;
+      snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
+      can = canon(buf);
+      free(buf);
+      stidx = stringtab_add(can);
+      ruleid = get_ruleid_by_tgt(stidx);
+      if (ruleid < 0)
+      {
+        errxit("rule '%s' not found", argv[i]);
+      }
+      free(better_cycle_detect(ruleid));
+      ruleremain_add(rules[ruleid]);
+      free(can);
+    }
+    if (clean || cleanbinaries)
+    {
+      do_clean(fwd_path, clean, cleanbinaries);
+    }
+  }
+
+  run_loop();
+
   if (debug)
   {
     printf("\n");
