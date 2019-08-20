@@ -64,6 +64,15 @@ sudo ln -s stirmake /usr/local/bin/smkp
 sudo ln -s stirmake /usr/local/bin/smkt
 ```
 
+You probably also want to copy `stirmake.1` to somewhere so that `man stirmake`
+works:
+
+```
+sudo mkdir -p /usr/local/share/man/man1/
+sudo cp stirmake.1 /usr/local/share/man/man1/
+sudo mandb
+```
+
 ## Data model
 
 Bad programmers start from algorithms. Good programmers start from data
