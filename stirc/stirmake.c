@@ -2829,13 +2829,32 @@ char *dir_up(char *old)
 
 void run_loop(void);
 
+int deps_remain_calculated = 0;
+
 void do_clean(char *fwd_path, int objs, int bins)
 {
   size_t i, fp_len;
   int all;
+  char *cleanstr = NULL;
   struct linked_list_node *node, *node2, *node3, *nodetmp;
   all = (strcmp(fwd_path, ".") == 0);
   fp_len = strlen(fwd_path);
+  if (bins && objs)
+  {
+    cleanstr = "BOTHCLEAN";
+  }
+  else if (bins)
+  {
+    cleanstr = "DISTCLEAN";
+  }
+  else if (objs)
+  {
+    cleanstr = "CLEAN";
+  }
+  if (!cleanstr)
+  {
+    my_abort();
+  }
   for (i = 0; i < rules_size; i++)
   {
     int doit = all;
@@ -2877,8 +2896,44 @@ void do_clean(char *fwd_path, int objs, int bins)
     {
       continue;
     }
+
+    size_t parentsz = strlen(prefix) + strlen(cleanstr) + 5;
+    char *parent = malloc(parentsz);
+    if (snprintf(parent, parentsz, "%s/../%s", prefix, cleanstr) >= parentsz)
+    {
+      my_abort();
+    }
+    char *cparent = canon(parent);
+    free(parent);
+    parentsz = strlen(cparent) + 4;
+    parent = malloc(parentsz);
+    if (snprintf(parent, parentsz, "%s///", cparent) >= parentsz)
+    {
+      my_abort();
+    }
+    free(cparent);
+
+    if (strncmp(parent, "../", 3) != 0)
+    {
+      size_t tgtidx = ABCE_CONTAINER_OF(rules[i]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
+      add_dep(&parent, 1, &sttable[tgtidx], 1, 0);
+    }
+
+    free(parent);
+
     ruleremain_add(rules[i]);
   }
+
+  // XXX: this is bad, the same calc_deps_remain code is in two places
+  if (!deps_remain_calculated)
+  {
+    for (i = 0; i < rules_size; i++)
+    {
+      calc_deps_remain(rules[i]);
+    }
+    deps_remain_calculated = 1;
+  }
+
   run_loop();
   for (i = 0; i < rules_size; i++)
   {
@@ -3875,10 +3930,6 @@ int main(int argc, char **argv)
 #if 0
   unsigned char *no_cycles = better_cycle_detect(0); // FIXME 0 incorrect!
 #endif
-  for (i = 0; i < rules_size; i++)
-  {
-    calc_deps_remain(rules[i]);
-  }
 
   // Delete unreachable rules from ruleids_by_dep
 #if 0
@@ -4074,6 +4125,15 @@ int main(int argc, char **argv)
     {
       do_clean(fwd_path, clean, cleanbinaries);
     }
+  }
+
+  if (!deps_remain_calculated)
+  {
+    for (i = 0; i < rules_size; i++)
+    {
+      calc_deps_remain(rules[i]);
+    }
+    deps_remain_calculated = 1;
   }
 
   run_loop();

@@ -224,8 +224,8 @@ the rules for cleaning object files and binaries. To clean, do some of these:
 * `smkp -bc`: clean binaries and object files of whole project
 * `smkt -bc`: clean binaries and object files of current directory
 
-What is currently missing is hooks for automatically cleaning results of
-sub-makes. TODO do this someday
+What is currently not in this document is hooks for automatically cleaning
+results of sub-makes. TODO document this someday
 
 ### Parallel builds
 
