@@ -2927,6 +2927,7 @@ void do_clean(char *fwd_path, int objs, int bins)
   // XXX: this is bad, the same calc_deps_remain code is in two places
   if (!deps_remain_calculated)
   {
+    process_additional_deps(abce.dynscope.u.area->u.sc.locidx);
     for (i = 0; i < rules_size; i++)
     {
       calc_deps_remain(rules[i]);
@@ -3925,8 +3926,6 @@ int main(int argc, char **argv)
 
   //add_dep(v_l3e, v_l1g, 0); // offending rule
 
-  process_additional_deps(abce.dynscope.u.area->u.sc.locidx);
-
 #if 0
   unsigned char *no_cycles = better_cycle_detect(0); // FIXME 0 incorrect!
 #endif
@@ -4180,6 +4179,7 @@ int main(int argc, char **argv)
 
   if (!deps_remain_calculated)
   {
+    process_additional_deps(abce.dynscope.u.area->u.sc.locidx);
     for (i = 0; i < rules_size; i++)
     {
       calc_deps_remain(rules[i]);
