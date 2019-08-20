@@ -70,6 +70,9 @@ works:
 ```
 sudo mkdir -p /usr/local/share/man/man1/
 sudo cp stirmake.1 /usr/local/share/man/man1/
+sudo ln -s stirmake.1 /usr/local/share/man/man1/smka.1
+sudo ln -s stirmake.1 /usr/local/share/man/man1/smkp.1
+sudo ln -s stirmake.1 /usr/local/share/man/man1/smkt.1
 sudo mandb
 ```
 
