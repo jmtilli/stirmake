@@ -3793,6 +3793,14 @@ int main(int argc, char **argv)
         {
           continue;
         }
+        if (main.rules[i].isdistcleanhook)
+        {
+          continue;
+        }
+        if (main.rules[i].isbothcleanhook)
+        {
+          continue;
+        }
         ruleid_first = rules_size - 1;
         ruleid_first_set = 1;
       }
