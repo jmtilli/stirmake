@@ -117,7 +117,7 @@ c.txt
 	touch a.txt
 	touch b.txt
 
-["c.txt"]: ['d.txt']
+(["c.txt"]): (['d.txt'])
 	touch c.txt
 
 

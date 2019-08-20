@@ -2475,46 +2475,28 @@ shell_command:
 
 pattargetspec:
   pattargets
-| list
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    printf("targetlist\n");
-  }
-}
 ;
 
 patdepspec:
   patdeps
-| list
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    printf("deplist\n");
-  }
-}
 ;
 
 targetspec:
   targets
-| list
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("targetlist\n");
+    if (stiryy->main->rules[stiryy->main->rulesz - 1].targetsz == 0)
+    {
+      printf("empty target list\n");
+      YYABORT;
+    }
   }
 }
 ;
   
 depspec:
   deps
-| list
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    printf("deplist\n");
-  }
-}
 ;
 
 pattargets:
