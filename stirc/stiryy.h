@@ -551,6 +551,8 @@ static inline void stiryy_free(struct stiryy *stiryy)
 
 int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname);
 
+int do_fileinclude(struct stiryy *stiryy, const char *fname);
+
 #ifdef __cplusplus
 };
 #endif

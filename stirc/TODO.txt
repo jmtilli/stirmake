@@ -8,7 +8,6 @@
 - Make $<, $@, $^ work in Amyplan
 
 - Extend stiryy.y grammar to cover all cases
-  - @fileinclude
   - @patrule
   - ATTAB
   - ATATTAB

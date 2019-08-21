@@ -329,7 +329,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   {
     my_abort();
   }
-  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, stiryy->main->abce->dynscope, NULL, filename);
+  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, stiryy->main->abce->dynscope, stiryy->dirname, filename);
   stiryy2.sameproject = stiryy->sameproject && noproj;
 
   f = fopen(filename, "r");
@@ -355,6 +355,34 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   free(prefix);
   free(projprefix);
   free(filename);
+  return 0;
+}
+
+int do_fileinclude(struct stiryy *stiryy, const char *fname)
+{
+  struct stiryy stiryy2 = {};
+  int ret;
+  FILE *f;
+
+  stiryy_init(&stiryy2, stiryy->main, stiryy->curprefix, stiryy->curprojprefix, stiryy->main->abce->dynscope, stiryy->dirname, fname);
+  stiryy2.sameproject = stiryy->sameproject;
+
+  f = fopen(fname, "r");
+  if (!f)
+  {
+    fprintf(stderr, "stirmake: Can't open substirfile %s.\n", fname);
+    return -ENOENT;
+  }
+  ret = stiryydoparse(f, &stiryy2);
+  fclose(f);
+  if (ret)
+  {
+    fprintf(stderr, "stirmake: Can't parse substirfile %s.\n", fname);
+    return -EBADMSG;
+  }
+
+  stiryy_free(&stiryy2);
+
   return 0;
 }
 

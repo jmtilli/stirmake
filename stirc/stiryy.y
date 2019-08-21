@@ -306,7 +306,37 @@ custom_rule:
   free($2.str);
 }
 */
-| FILEINCLUDE expr NEWLINE
+| FILEINCLUDE
+{
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+  expr NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    size_t strsz, i;
+    int ret;
+    char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "fileinclude", &strs, &strsz);
+    if (ret)
+    {
+      YYABORT;
+    }
+
+    for (i = 0; i < strsz; i++)
+    {
+      if (do_fileinclude(stiryy, strs[i]) != 0)
+      {
+        YYABORT;
+      }
+      free(strs[i]);
+    }
+    free(strs);
+  }
+}
 /* // shift-reduce conflict!
 | dirinclude STRING_LITERAL NEWLINE
 {
@@ -331,6 +361,8 @@ custom_rule:
     size_t strsz, i;
     int ret;
     char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
     ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz);
     if (ret)
@@ -371,6 +403,8 @@ custom_rule:
     size_t i;
     int ret;
     char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
     ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludescurdir", &strs, &strsz);
     if (ret)
@@ -2531,6 +2565,8 @@ targets:
 
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
 
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
     ret = engine_stringlist(get_abce(amyplanyy), $1, "target", &strs, &strsz);
     if (ret)
     {
@@ -2578,6 +2614,8 @@ targets:
     int ret;
     size_t i;
     char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
     ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
     if (ret)
@@ -2695,6 +2733,8 @@ deps:
     size_t i;
     int ret;
     char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
     ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
     if (ret)
