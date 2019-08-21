@@ -8,6 +8,10 @@
 - Make $<, $@, $^ work in Amyplan
 
 - Extend stiryy.y grammar to cover all cases
+  - @fileinclude
+  - @patrule
+  - ATTAB
+  - ATATTAB
 
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 
