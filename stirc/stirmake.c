@@ -3447,15 +3447,7 @@ back:
         {
           if (pid < 0 && errno == ECHILD)
           {
-            if (linked_list_is_empty(&rules_remain_list))
-            {
-              return;
-            }
-            else
-            {
-              fprintf(stderr, "out of children, yet not all targets made\n");
-              my_abort();
-            }
+            goto out;
           }
           printf("29\n");
           my_abort();
@@ -3508,6 +3500,22 @@ back:
       //ruleids_to_run.pop_back();
     }
   }
+out:
+  if (linked_list_is_empty(&rules_remain_list))
+  {
+    return;
+  }
+  else
+  {
+    fprintf(stderr, "stirmake: *** Out of children, yet not all targets made.\n");
+    LINKED_LIST_FOR_EACH(node, &rules_remain_list)
+    {
+      int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
+      free(better_cycle_detect(ruleid));
+    }
+    my_abort();
+  }
+
 }
 
 int main(int argc, char **argv)
