@@ -33,3 +33,5 @@
   is built before b
 
 - Use expr0_without_string instead of expr in places where string can be
+
+- @call directive
