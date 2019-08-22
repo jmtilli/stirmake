@@ -16,6 +16,7 @@
 #include <locale.h>
 #include <libgen.h>
 #include <poll.h>
+#include <sys/select.h>
 #include "yyutils.h"
 #include "linkedlist.h"
 #include "abce/abcemurmur.h"
