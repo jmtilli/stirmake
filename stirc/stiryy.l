@@ -40,6 +40,7 @@ struct CSnippet luaSnippet = {
 
 @         return AT;
 @print    return PRINT;
+@call    return CALL;
 @delayvar return DELAYVAR;
 @delaylistexpand return DELAYLISTEXPAND;
 @delayexpr return DELAYEXPR;

@@ -34,6 +34,4 @@
 
 - Use expr0_without_string instead of expr in places where string can be
 
-- @call directive
-
 - @addrule so that it supports fn and ctx

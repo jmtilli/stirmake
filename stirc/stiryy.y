@@ -166,6 +166,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token <s> VARREF_LITERAL
 %token <s> FREEFORM_TOKEN
 %token MAYBE_CALL
+%token CALL
 %token LT
 %token GT
 %token LE
@@ -291,6 +292,48 @@ custom_expr0:
 }
 ;
 
+custom_callable:
+  STDOUT OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, 0);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_OUT);
+  }
+}
+| STDERR OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, 1);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_OUT);
+  }
+}
+| ERROR OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_ERROR);
+  }
+}
+| DUMP OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DUMP);
+  }
+}
+| expr
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
+  }
+}
+;
+
 custom_rule:
   stirrule
 | PRINT NUMBER NEWLINE
@@ -298,6 +341,35 @@ custom_rule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     printf("%g\n", $2);
+  }
+}
+| CALL
+{
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+  custom_callable NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    unsigned char tmpbuf[256] = {};
+    size_t tmpsiz = 0;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      printf("Error executing bytecode for call directive\n");
+      printf("error %d\n", get_abce(amyplanyy)->err.code);
+      YYABORT;
+    }
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
   }
 }
 /*
