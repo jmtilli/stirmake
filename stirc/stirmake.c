@@ -17,6 +17,7 @@
 #include <libgen.h>
 #include <poll.h>
 #include <sys/select.h>
+#include <sys/mman.h>
 #include "yyutils.h"
 #include "linkedlist.h"
 #include "abce/abcemurmur.h"
@@ -475,7 +476,12 @@ int read_jobserver(void)
     my_abort();
   }
 
+#ifdef MSG_DONTWAIT
   ret = recv(jobserver_fd[0], &ch, 1, MSG_DONTWAIT);
+#else
+  ret = -1;
+  errno = ENOTSOCK;
+#endif
   if (ret == -1 && errno == ENOTSOCK)
   {
     //fprintf(stderr, "UGH\n");
