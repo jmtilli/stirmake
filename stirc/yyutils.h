@@ -28,8 +28,6 @@ struct escaped_string yy_escape_string(char *orig);
 
 struct escaped_string yy_escape_string_single(char *orig);
 
-uint32_t yy_get_ip(char *orig);
-
 #ifdef __cplusplus
 };
 #endif

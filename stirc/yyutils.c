@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <libgen.h>
-#include <arpa/inet.h>
 #include "stiryy.h"
 #include "yyutils.h"
 
@@ -212,16 +211,6 @@ struct escaped_string yy_escape_string_single(char *orig)
   resultstruct.str = result;
   free(buf);
   return resultstruct;
-}
-
-uint32_t yy_get_ip(char *orig)
-{
-  struct in_addr addr;
-  if (inet_aton(orig, &addr) == 0)
-  {
-    return 0;
-  }
-  return ntohl(addr.s_addr);
 }
 
 int stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
