@@ -516,13 +516,27 @@ char **sttable = NULL;
 size_t st_cap = 1024*1024;
 size_t st_cnt;
 
+static inline size_t stir_topages(size_t limit)
+{
+  long pagesz = sysconf(_SC_PAGE_SIZE);
+  size_t pages, actlimit;
+  if (pagesz <= 0)
+  {
+    abort();
+  }
+  pages = (limit + (pagesz-1)) / pagesz;
+  actlimit = pages * pagesz;
+  return actlimit;
+}
+
+
 void st_compact(void)
 {
   char *ptr2;
   int errno_save;
   size_t bytes_total, bytes_in_use;
-  bytes_total = abce_topages(st_cap * sizeof(*sttable));
-  bytes_in_use = abce_topages(st_cnt * sizeof(*sttable));
+  bytes_total = stir_topages(st_cap * sizeof(*sttable));
+  bytes_in_use = stir_topages(st_cnt * sizeof(*sttable));
   ptr2 = (void*)sttable;
   ptr2 += bytes_in_use;
   errno_save = errno;
