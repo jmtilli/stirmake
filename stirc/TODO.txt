@@ -2,8 +2,6 @@
 
 - Adding rules from Amyplan
 
-- Make $<, $@, $^ work in Amyplan
-
 - Extend stiryy.y grammar to cover all cases
   - @patrule
 

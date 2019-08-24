@@ -832,12 +832,17 @@ struct rule {
 
 char **argdup(char **cmdargs);
 
-char ***cmdsrc_eval(struct abce *abce, struct cmdsrc *cmdsrc)
+char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
 {
   size_t i, j, k;
+  struct cmdsrc *cmdsrc = &rule->cmdsrc;
   char ***result = NULL;
   size_t resultsz = 0;
   size_t resultcap = 16;
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(rule->tgtlist.node.next, struct stirtgt, llnode);
+  char *tgt = sttable[first_tgt->tgtidx];
+  struct linked_list_node *node;
 
   result = malloc(resultcap * sizeof(*result));
   for (i = 0; i < cmdsrc->itemsz; i++)
@@ -847,6 +852,104 @@ char ***cmdsrc_eval(struct abce *abce, struct cmdsrc *cmdsrc)
       unsigned char tmpbuf[64] = {};
       size_t tmpsiz = 0;
       struct abce_mb mb = {};
+      struct abce_mb mbkey = {};
+      struct abce_mb mbval = {};
+      int first = 1;
+
+      mbkey = abce_mb_create_string(abce, "@", 1);
+      if (mbkey.typ == ABCE_T_N)
+      {
+        return NULL;
+      }
+      mbval = abce_mb_create_string(abce, tgt, strlen(tgt));
+      if (mbval.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &abce->dynscope, &mbkey, &mbval) != 0)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        abce_mb_refdn(abce, &mbval);
+        return NULL;
+      }
+      abce_mb_refdn(abce, &mbkey);
+      abce_mb_refdn(abce, &mbval);
+
+      mbkey = abce_mb_create_string(abce, "^", 1);
+      if (mbkey.typ == ABCE_T_N)
+      {
+        return NULL;
+      }
+      mbval = abce_mb_create_array(abce);
+      if (mbval.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &abce->dynscope, &mbkey, &mbval) != 0)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        abce_mb_refdn(abce, &mbval);
+        return NULL;
+      }
+      abce_mb_refdn(abce, &mbkey);
+      LINKED_LIST_FOR_EACH(node, &rule->deplist)
+      {
+        struct stirdep *dep = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+        mb = abce_mb_create_string(abce, sttable[dep->nameidx],
+                                   strlen(sttable[dep->nameidx]));
+        if (mb.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &mbval);
+          return NULL;
+        }
+        if (abce_mb_array_append(abce, &mbval, &mb) != 0)
+        {
+          abce_mb_refdn(abce, &mbval);
+          abce_mb_refdn(abce, &mb);
+          return NULL;
+        }
+        if (first)
+        {
+          mbkey = abce_mb_create_string(abce, "<", 1);
+          if (mbkey.typ == ABCE_T_N)
+          {
+            abce_mb_refdn(abce, &mbval);
+            return NULL;
+          }
+          if (abce_sc_replace_val_mb(abce, &abce->dynscope, &mbkey, &mb) != 0)
+          {
+            abce_mb_refdn(abce, &mbval);
+            abce_mb_refdn(abce, &mbkey);
+            abce_mb_refdn(abce, &mb);
+            return NULL;
+          }
+          abce_mb_refdn(abce, &mbkey);
+          first = 0;
+        }
+        abce_mb_refdn(abce, &mb);
+      }
+      abce_mb_refdn(abce, &mbval);
+      if (first) // set it to nil if no targets
+      {
+        mb.typ = ABCE_T_N;
+        mb.u.d = 0;
+        mbkey = abce_mb_create_string(abce, "<", 1);
+        if (mbkey.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &mbval);
+          return NULL;
+        }
+        if (abce_sc_replace_val_mb(abce, &abce->dynscope, &mbkey, &mb) != 0)
+        {
+          abce_mb_refdn(abce, &mbval);
+          abce_mb_refdn(abce, &mbkey);
+          return NULL;
+        }
+        abce_mb_refdn(abce, &mbkey);
+        first = 0;
+      }
 
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
       abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
@@ -2167,7 +2270,7 @@ void calc_cmd(int ruleid)
   {
     return;
   }
-  r->cmd.args = cmdsrc_eval(&abce, &r->cmdsrc);
+  r->cmd.args = cmdsrc_eval(&abce, r);
   if (r->cmd.args == NULL)
   {
     errxit("evaluating shell commands for %s failed",
