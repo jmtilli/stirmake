@@ -45,7 +45,7 @@ struct CSnippet luaSnippet = {
 @delayexpr return DELAYEXPR;
 @sufsubone return SUFSUBONE;
 @strappend return STRAPPEND;
-@sufsub return SUFSUB;
+@sufsuball return SUFSUBALL;
 @suffilter return SUFFILTER;
 @phonyrule return PHONYRULE;
 @mayberule return MAYBERULE;

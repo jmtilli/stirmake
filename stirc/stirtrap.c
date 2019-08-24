@@ -39,6 +39,111 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   struct stiryy_main *main = *pbaton;
   switch (ins)
   {
+    case STIR_OPCODE_SUFSUBALL:
+    {
+      struct abce_mb oldsuf = {};
+      struct abce_mb newsuf = {};
+      struct abce_mb bases = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, osz, nsz, i;
+      VERIFYMB(-1, ABCE_T_S); // newsuffix
+      VERIFYMB(-2, ABCE_T_S); // oldsuffix
+      VERIFYMB(-3, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&newsuf, -2); // now the indices are different
+      GETMB(&oldsuf, -3);
+      GETMB(&bases, -4);
+      bcnt = bases.u.area->u.ar.size;
+      osz = oldsuf.u.area->u.str.size;
+      nsz = newsuf.u.area->u.str.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &oldsuf);
+          abce_mb_refdn(abce, &newsuf);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        if (   bsz < osz
+            || memcmp(&bases.u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-osz],
+                      oldsuf.u.area->u.str.buf, osz) != 0)
+        {
+          fprintf(stderr, "stirmake: %s does not end with %s\n",
+                  bases.u.area->u.ar.mbs[i].u.area->u.str.buf,
+                  oldsuf.u.area->u.str.buf);
+          abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &oldsuf);
+          abce_mb_refdn(abce, &newsuf);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+      }
+      for (i = 0; i < bcnt; i++)
+      {
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        newstr = abce_mb_create_string_to_be_filled(abce, bsz-osz+nsz);
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &oldsuf);
+          abce_mb_refdn(abce, &newsuf);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        memcpy(newstr.u.area->u.str.buf,
+               bases.u.area->u.ar.mbs[i].u.area->u.str.buf, bsz-osz);
+        memcpy(newstr.u.area->u.str.buf + (bsz - osz),
+               newsuf.u.area->u.str.buf, nsz);
+        newstr.u.area->u.str.buf[bsz-osz+nsz] = '\0';
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &oldsuf);
+          abce_mb_refdn(abce, &newsuf);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &oldsuf);
+      abce_mb_refdn(abce, &newsuf);
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
     case STIR_OPCODE_SUFSUBONE:
     {
       struct abce_mb oldsuf = {};

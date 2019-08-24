@@ -185,7 +185,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token SUFFILTER
 %token SUFSUBONE
 %token STRAPPEND
-%token SUFSUB
+%token SUFSUBALL
 %token PHONYRULE
 %token MAYBERULE
 %token DISTRULE
@@ -293,6 +293,10 @@ custom_expr0:
 | SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBONE);
+}
+| SUFSUBALL OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBALL);
 }
 ;
 
