@@ -6,8 +6,6 @@
 
 - Extend stiryy.y grammar to cover all cases
   - @patrule
-  - ATTAB
-  - ATATTAB
 
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 

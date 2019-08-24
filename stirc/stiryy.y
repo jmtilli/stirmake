@@ -2493,20 +2493,28 @@ shell_command:
   }
   free($1);
 }
-| ATTAB expr NEWLINE
+| ATTAB
 {
-  // FIXME figure out a way to make expr temporary and exec immediately
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+  expr NEWLINE
+{
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("\tshell expr\n");
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    stiryy_add_shell_attab(stiryy, $<d>2);
   }
 }
-| ATATTAB expr NEWLINE
+| ATATTAB
 {
-  // FIXME figure out a way to make expr temporary and exec immediately
+  $<d>$ = get_abce(amyplanyy)->bytecodesz;
+}
+  expr NEWLINE
+{
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("\tshell expr\n");
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    stiryy_add_shell_atattab(stiryy, $<d>2);
   }
 }
 ;

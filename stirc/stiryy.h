@@ -62,6 +62,24 @@ static inline void csaddstr(struct CSnippet *cs, char *str)
   cs->data[cs->len] = '\0';
 }
 
+struct cmdsrcitem {
+  unsigned merge:1;
+  unsigned iscode:1;
+  size_t sz; // for args
+  size_t capacity; // for args
+  union {
+    size_t locidx;
+    char **args; // NULL-terminated list
+    char ***cmds; // NULL-terminated list of NULL-terminated lists
+  } u;
+};
+
+struct cmdsrc {
+  size_t itemsz;
+  size_t itemcapacity;
+  struct cmdsrcitem *items;
+};
+
 struct dep {
   char *name;
   char *namenodir;
@@ -80,11 +98,7 @@ struct stiryyrule {
   struct tgt *targets;
   size_t targetsz;
   size_t targetcapacity;
-  char ***shells;
-  size_t shellsz;
-  size_t shellcapacity;
-  size_t lastshellsz;
-  size_t lastshellcapacity;
+  struct cmdsrc shells;
   size_t scopeidx;
   char *prefix;
   unsigned phony:1;
@@ -387,29 +401,78 @@ static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 {
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
-  if (rule->lastshellsz >= rule->lastshellcapacity)
+  struct cmdsrcitem *item = &rule->shells.items[rule->shells.itemsz - 1];
+  if (rule->shells.itemsz == 0)
   {
-    newcapacity = 2*rule->lastshellcapacity + 1;
-    rule->shells[rule->shellsz - 1] = (char**)realloc(rule->shells[rule->shellsz - 1], sizeof(*rule->shells[rule->shellsz - 1])*newcapacity);
-    rule->lastshellcapacity = newcapacity;
+    abort();
   }
-  rule->shells[rule->shellsz - 1][rule->lastshellsz++] = shell ? strdup(shell) : NULL;
+  if (item->sz >= item->capacity)
+  {
+    newcapacity = 2*item->capacity + 2;
+    item->u.args = realloc(item->u.args, sizeof(*item->u.args)*newcapacity);
+    item->capacity = newcapacity;
+  }
+  item->u.args[item->sz++] = shell ? strdup(shell) : NULL;
+  item->u.args[item->sz] = NULL;
+}
+
+static inline void stiryy_add_shell_attab(struct stiryy *stiryy, size_t locidx)
+{
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+  size_t newcapacity;
+  struct cmdsrc *cmdsrc = &rule->shells;
+  if (cmdsrc->itemsz >= cmdsrc->itemcapacity)
+  {
+    newcapacity = 2*cmdsrc->itemcapacity + 2;
+    cmdsrc->items = realloc(cmdsrc->items, sizeof(*cmdsrc->items)*newcapacity);
+    cmdsrc->itemcapacity = newcapacity;
+  }
+  //printf("section\n");
+  cmdsrc->items[cmdsrc->itemsz].merge = 0;
+  cmdsrc->items[cmdsrc->itemsz].iscode = 1;
+  cmdsrc->items[cmdsrc->itemsz].sz = 0;
+  cmdsrc->items[cmdsrc->itemsz].capacity = 0;
+  cmdsrc->items[cmdsrc->itemsz].u.locidx = locidx;
+  cmdsrc->itemsz++;
+}
+static inline void stiryy_add_shell_atattab(struct stiryy *stiryy, size_t locidx)
+{
+  struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+  size_t newcapacity;
+  struct cmdsrc *cmdsrc = &rule->shells;
+  if (cmdsrc->itemsz >= cmdsrc->itemcapacity)
+  {
+    newcapacity = 2*cmdsrc->itemcapacity + 2;
+    cmdsrc->items = realloc(cmdsrc->items, sizeof(*cmdsrc->items)*newcapacity);
+    cmdsrc->itemcapacity = newcapacity;
+  }
+  //printf("section\n");
+  cmdsrc->items[cmdsrc->itemsz].merge = 1;
+  cmdsrc->items[cmdsrc->itemsz].iscode = 1;
+  cmdsrc->items[cmdsrc->itemsz].sz = 0;
+  cmdsrc->items[cmdsrc->itemsz].capacity = 0;
+  cmdsrc->items[cmdsrc->itemsz].u.locidx = locidx;
+  cmdsrc->itemsz++;
 }
 
 static inline void stiryy_add_shell_section(struct stiryy *stiryy)
 {
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
-  if (rule->shellsz >= rule->shellcapacity)
+  struct cmdsrc *cmdsrc = &rule->shells;
+  if (cmdsrc->itemsz >= cmdsrc->itemcapacity)
   {
-    newcapacity = 2*rule->shellcapacity + 1;
-    rule->shells = (char***)realloc(rule->shells, sizeof(*rule->shells)*newcapacity);
-    rule->shellcapacity = newcapacity;
+    newcapacity = 2*cmdsrc->itemcapacity + 2;
+    cmdsrc->items = realloc(cmdsrc->items, sizeof(*cmdsrc->items)*newcapacity);
+    cmdsrc->itemcapacity = newcapacity;
   }
   //printf("section\n");
-  rule->shells[rule->shellsz++] = NULL;
-  rule->lastshellsz = 0;
-  rule->lastshellcapacity = 0;
+  cmdsrc->items[cmdsrc->itemsz].merge = 0;
+  cmdsrc->items[cmdsrc->itemsz].iscode = 0;
+  cmdsrc->items[cmdsrc->itemsz].sz = 0;
+  cmdsrc->items[cmdsrc->itemsz].capacity = 0;
+  cmdsrc->items[cmdsrc->itemsz].u.args = NULL;
+  cmdsrc->itemsz++;
 }
 
 static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char *curprefix, size_t scopeidx)
@@ -427,9 +490,9 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
   main->rules[main->rulesz].targetsz = 0;
   main->rules[main->rulesz].targetcapacity = 0;
   main->rules[main->rulesz].targets = NULL;
-  main->rules[main->rulesz].shellsz = 0;
-  main->rules[main->rulesz].shellcapacity = 0;
-  main->rules[main->rulesz].shells = NULL;
+  main->rules[main->rulesz].shells.items = NULL;
+  main->rules[main->rulesz].shells.itemsz = 0;
+  main->rules[main->rulesz].shells.itemcapacity = 0;
   main->rules[main->rulesz].prefix = strdup(curprefix);
   main->rules[main->rulesz].phony = 0;
   main->rules[main->rulesz].rectgt = 0;

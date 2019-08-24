@@ -817,7 +817,8 @@ struct rule {
   unsigned is_bothcleanhook:1;
   unsigned is_forked:1;
   size_t diridx;
-  struct cmd cmd;
+  struct cmdsrc cmdsrc;
+  struct cmd cmd; // calculated from cmdsrc
   struct timespec st_mtim;
   int ruleid;
   struct abce_rb_tree_nocmp tgts[TGTS_SIZE];
@@ -828,6 +829,142 @@ struct rule {
   size_t deps_remain_cnt;
   size_t scopeidx;
 };
+
+char **argdup(char **cmdargs);
+
+char ***cmdsrc_eval(struct abce *abce, struct cmdsrc *cmdsrc)
+{
+  size_t i, j, k;
+  char ***result = NULL;
+  size_t resultsz = 0;
+  size_t resultcap = 16;
+
+  result = malloc(resultcap * sizeof(*result));
+  for (i = 0; i < cmdsrc->itemsz; i++)
+  {
+    if (cmdsrc->items[i].iscode)
+    {
+      unsigned char tmpbuf[64] = {};
+      size_t tmpsiz = 0;
+      struct abce_mb mb = {};
+
+      abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+      abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+                          cmdsrc->items[i].u.locidx);
+      abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+      if (abce->sp != 0)
+      {
+        abort();
+      }
+      if (abce_engine(abce, tmpbuf, tmpsiz) != 0)
+      {
+        return NULL;
+      }
+      if (abce_getmb(&mb, abce, 0) != 0)
+      {
+        return NULL;
+      }
+      abce_pop(abce);
+      if (abce->sp != 0)
+      {
+        abort();
+      }
+      // Beware. Now only ref is out of stack. Can't alloc abce memory!
+      if (mb.typ != ABCE_T_A)
+      {
+        abce->err.code = ABCE_E_EXPECT_ARRAY;
+        abce->err.mb = abce_mb_refup(abce, &mb);
+        abce_mb_refdn(abce, &mb);
+        return NULL;
+      }
+      if (cmdsrc->items[i].merge)
+      {
+        for (j = 0; j < mb.u.area->u.ar.size; j++)
+        {
+          if (mb.u.area->u.ar.mbs[j].typ != ABCE_T_A)
+          {
+            abce->err.code = ABCE_E_EXPECT_ARRAY;
+            abce->err.mb = abce_mb_refup(abce, &mb.u.area->u.ar.mbs[j]);
+            abce_mb_refdn(abce, &mb);
+            return NULL;
+          }
+          char **cmd = my_malloc((mb.u.area->u.ar.mbs[j].u.area->u.ar.size+1)*sizeof(*cmd));
+          for (k = 0; k < mb.u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
+          {
+            if (mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
+            {
+              abce->err.code = ABCE_E_EXPECT_STR;
+              abce->err.mb =
+                abce_mb_refup(
+                  abce, &mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k]);
+              abce_mb_refdn(abce, &mb);
+              return NULL;
+            }
+            cmd[k] =
+              my_strdup(
+                mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
+          }
+          cmd[mb.u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
+          if (resultsz >= resultcap)
+          {
+            resultcap = 2*resultsz + 16;
+            result = realloc(result, resultcap * sizeof(*result));
+          }
+          result[resultsz++] = cmd;
+        }
+      }
+      else
+      {
+        char **cmd = my_malloc((mb.u.area->u.ar.size+1)*sizeof(*cmd));
+        for (j = 0; j < mb.u.area->u.ar.size; j++)
+        {
+          if (mb.u.area->u.ar.mbs[j].typ != ABCE_T_S)
+          {
+            abce->err.code = ABCE_E_EXPECT_STR;
+            abce->err.mb = abce_mb_refup(abce, &mb.u.area->u.ar.mbs[j]);
+            abce_mb_refdn(abce, &mb);
+            return NULL;
+          }
+          cmd[j] = my_strdup(mb.u.area->u.ar.mbs[j].u.area->u.str.buf);
+        }
+        cmd[mb.u.area->u.ar.size] = NULL;
+        if (resultsz >= resultcap)
+        {
+          resultcap = 2*resultsz + 16;
+          result = realloc(result, resultcap * sizeof(*result));
+        }
+        result[resultsz++] = cmd;
+      }
+      continue;
+    }
+    if (!cmdsrc->items[i].merge)
+    {
+      if (resultsz >= resultcap)
+      {
+        resultcap = 2*resultsz + 16;
+        result = realloc(result, resultcap * sizeof(*result));
+      }
+      result[resultsz++] = argdup(cmdsrc->items[i].u.args);
+      continue;
+    }
+    for (j = 0; cmdsrc->items[i].u.cmds[j] != NULL; j++)
+    {
+      if (resultsz >= resultcap)
+      {
+        resultcap = 2*resultsz + 16;
+        result = realloc(result, resultcap * sizeof(*result));
+      }
+      result[resultsz++] = argdup(cmdsrc->items[i].u.cmds[j]);
+    }
+  }
+  if (resultsz >= resultcap)
+  {
+    resultcap = 2*resultsz + 16;
+    result = realloc(result, resultcap * sizeof(*result));
+  }
+  result[resultsz++] = NULL;
+  return result;
+}
 
 struct linked_list_head rules_remain_list =
   STIR_LINKED_LIST_HEAD_INITER(rules_remain_list);
@@ -1518,13 +1655,12 @@ void process_additional_deps(size_t global_scopeidx)
 
 void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
-              char ***cmdargs, size_t cmdargsz,
+              struct cmdsrc *shells,
               int phony, int rectgt, int maybe, int dist,
               int cleanhook, int distcleanhook, int bothcleanhook,
               char *prefix, size_t scopeidx)
 {
   struct rule *rule;
-  struct cmd cmd;
   size_t i;
 
   if (tgtsz <= 0)
@@ -1537,7 +1673,6 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
     printf("10\n");
     my_abort();
   }
-  cmd.args = argsdupcnt(cmdargs, cmdargsz);
   if (rules_size >= rules_capacity)
   {
     size_t new_capacity = 2*rules_capacity + 16;
@@ -1549,9 +1684,9 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rules[rules_size] = rule;
 
   zero_rule(rule);
+  rule->cmdsrc = *shells; // FIXME duplicate?
   rule->scopeidx = scopeidx;
   rule->ruleid = rules_size++;
-  rule->cmd = cmd;
   rule->is_phony = !!phony;
   rule->is_maybe = !!maybe;
   rule->is_rectgt = !!rectgt;
@@ -2023,6 +2158,23 @@ struct timespec rec_mtim(struct rule *r, const char *name)
   return max;
 }
 
+void calc_cmd(int ruleid)
+{
+  struct rule *r = rules[ruleid];
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
+  if (r->cmd.args != NULL)
+  {
+    return;
+  }
+  r->cmd.args = cmdsrc_eval(&abce, &r->cmdsrc);
+  if (r->cmd.args == NULL)
+  {
+    errxit("evaluating shell commands for %s failed",
+           sttable[first_tgt->tgtidx]);
+  }
+}
+
 int do_exec(int ruleid)
 {
   struct rule *r = rules[ruleid];
@@ -2036,6 +2188,7 @@ int do_exec(int ruleid)
   if (!r->is_queued)
   {
     int has_to_exec = 0;
+    calc_cmd(ruleid);
     if (!r->is_phony && !linked_list_is_empty(&r->deplist))
     {
       int seen_nonphony = 0;
@@ -3915,7 +4068,7 @@ int main(int argc, char **argv)
       }
       add_rule(main.rules[i].targets, main.rules[i].targetsz,
                main.rules[i].deps, main.rules[i].depsz,
-               main.rules[i].shells, main.rules[i].shellsz,
+               &main.rules[i].shells, //main.rules[i].shellsz,
                main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
                main.rules[i].dist,
                main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
