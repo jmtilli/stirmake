@@ -10,8 +10,6 @@
 - Extend stiryy.y grammar to cover all cases
   - @patrule
 
-- What if tgt+dep have exactly same mtime? How does standard make handle it?
-
 - Replace main algorithm? May not work with dynamically added targets.
   - we could continue using it if only deps are dynamically added
 

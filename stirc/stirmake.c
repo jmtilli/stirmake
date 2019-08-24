@@ -15,6 +15,7 @@
 #include <locale.h>
 #include <libgen.h>
 #include <poll.h>
+#include <time.h>
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
@@ -2674,7 +2675,20 @@ void mark_executed(int ruleid, int was_actually_executed)
       }
       else
       {
+        struct timespec req;
+        struct timespec rem;
         utimeret = utimes(sttable[e->tgtidx], times);
+        req.tv_sec = 0;
+        req.tv_nsec = 2000; // let's sleep for 2 us to be rather safe than sorry
+        for (;;)
+        {
+          int ret = nanosleep(&req, &rem);
+          if (ret == 0 || (ret != 0 && errno != EINTR))
+          {
+            break;
+          }
+          req = rem;
+        }
       }
       if (debug)
       {
