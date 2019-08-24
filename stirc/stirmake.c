@@ -3153,12 +3153,42 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
   return ret;
 }
 
+FILE *dbf = NULL;
+
 void load_db(void)
 {
   struct dbyy dbyy = {};
   size_t i;
+  struct flock fl = {};
   linked_list_head_init(&db.ll);
-  dbyynameparse(".stir.db", &dbyy, 0);
+  //dbyynameparse(".stir.db", &dbyy, 0);
+  dbf = fopen(".stir.db", "a+");
+  if (dbf == NULL)
+  {
+    fprintf(stderr, "stirmake: *** Can't open DB. Exiting.\n");
+    exit(1);
+  }
+  int dbfd = fileno(dbf);
+  if (dbfd < 0)
+  {
+    fprintf(stderr, "stirmake: *** Can't get DB fileno. Exiting.\n");
+    exit(1);
+  }
+  fl.l_type = F_WRLCK;
+  fl.l_whence = SEEK_SET;
+  fl.l_start = 0;
+  fl.l_len = 0; // XXX or 1?
+  if (fcntl(dbfd, F_SETLK, &fl) != 0)
+  {
+    fprintf(stderr, "stirmake: *** Can't lock DB. Other stirmake running? Exiting.\n");
+    exit(1);
+  }
+  dbyydoparse(dbf, &dbyy);
+  if (ftruncate(dbfd, 0) != 0)
+  {
+    fprintf(stderr, "stirmake: *** Can't truncate DB. Exiting.\n");
+    exit(1);
+  }
   for (i = 0; i < dbyy.rulesz; i++)
   {
     struct dbe *dbe = my_malloc(sizeof(struct dbe));
@@ -3204,12 +3234,15 @@ void merge_db(void)
       ins_dbe(&db, dbe);
     }
   }
+  /*
   f = fopen(".stir.db", "w");
   if (f == NULL)
   {
     fprintf(stderr, "Can't open .stir.db"); // can't use errxit
     exit(1);
   }
+  */
+  f = dbf;
   LINKED_LIST_FOR_EACH(node, &db.ll)
   {
     struct dbe *dbe = ABCE_CONTAINER_OF(node, struct dbe, llnode);
@@ -3253,6 +3286,8 @@ void merge_db(void)
     }
   }
   fclose(f);
+  f = NULL;
+  dbf = NULL;
 }
 
 
