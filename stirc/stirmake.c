@@ -426,6 +426,62 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
   return 0;
 }
 
+static inline size_t stir_topages(size_t limit)
+{
+  long pagesz = sysconf(_SC_PAGE_SIZE);
+  size_t pages, actlimit;
+  if (pagesz <= 0)
+  {
+    abort();
+  }
+  pages = (limit + (pagesz-1)) / pagesz;
+  actlimit = pages * pagesz;
+  return actlimit;
+}
+
+void *stir_do_mmap_madvise(size_t bytes)
+{
+  void *ptr;
+  bytes = stir_topages(bytes);
+  // Ugh. I wish all systems had simple and compatible interface.
+#ifdef MAP_ANON
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+#else
+  #ifdef MAP_ANONYMOUS
+    #ifdef MAP_NORESERVE
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+    #else
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    #endif
+  #else
+  {
+    int fd;
+    fd = open("/dev/zero", O_RDWR);
+    if (fd < 0)
+    {
+      abort();
+    }
+    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, fd, 0);
+    close(fd);
+  }
+  #endif
+#endif
+#ifdef MADV_DONTNEED
+  #ifdef __linux__
+  if (ptr && ptr != MAP_FAILED)
+  {
+    madvise(ptr, bytes, MADV_DONTNEED); // Linux-ism
+  }
+  #endif
+#endif
+  if (ptr == MAP_FAILED)
+  {
+    return NULL;
+  }
+  return ptr;
+}
+
+
 char *my_arena;
 char *my_arena_ptr;
 size_t sizeof_my_arena;
@@ -445,18 +501,13 @@ void *my_malloc(size_t sz)
     {
       printf("allocating new arena\n");
     }
-    my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+    my_arena = stir_do_mmap_madvise(sizeof_my_arena);
     if (my_arena == NULL || my_arena == MAP_FAILED)
     {
       errxit("Can't mmap new arena");
       exit(1);
     }
     my_arena_ptr = my_arena;
-    if (madvise(my_arena, sizeof_my_arena, MADV_DONTNEED) != 0)
-    {
-      errxit("Can't madvise");
-      exit(1);
-    }
   }
   result = my_arena_ptr;
   my_arena_ptr += (sz+7)/8*8;
@@ -539,20 +590,6 @@ struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 char **sttable = NULL;
 size_t st_cap = 1024*1024;
 size_t st_cnt;
-
-static inline size_t stir_topages(size_t limit)
-{
-  long pagesz = sysconf(_SC_PAGE_SIZE);
-  size_t pages, actlimit;
-  if (pagesz <= 0)
-  {
-    abort();
-  }
-  pages = (limit + (pagesz-1)) / pagesz;
-  actlimit = pages * pagesz;
-  return actlimit;
-}
-
 
 void st_compact(void)
 {
@@ -3996,31 +4033,21 @@ int main(int argc, char **argv)
 
   do_setrlimit();
 
-  sttable = mmap(NULL, st_cap*sizeof(*sttable), PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+  sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
   if (sttable == NULL || sttable == MAP_FAILED)
   {
     errxit("Can't mmap sttable");
     exit(1);
   }
-  if (madvise(sttable, st_cap*sizeof(*sttable), MADV_DONTNEED) != 0)
-  {
-    errxit("Can't madvise");
-    exit(1);
-  }
 
   sizeof_my_arena = 1024*1024;
-  my_arena = mmap(NULL, sizeof_my_arena, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+  my_arena = stir_do_mmap_madvise(sizeof_my_arena);
   if (my_arena == NULL || my_arena == MAP_FAILED)
   {
     errxit("Can't mmap arena");
     exit(1);
   }
   my_arena_ptr = my_arena;
-  if (madvise(my_arena, sizeof_my_arena, MADV_DONTNEED) != 0)
-  {
-    errxit("Can't madvise");
-    exit(1);
-  }
 
   if (strcmp(basenm, "smka") == 0)
   {
