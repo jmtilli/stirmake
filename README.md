@@ -26,6 +26,7 @@ language, and Shake uses a strange Haskell-based input syntax.
 * Executes shell commands in subdirectories, like recursive make and unlike inclusive whole-project make
 * Proper data types; finally, filenames can have spaces
 * Programmablity with a custom language
+* Prevention of running two simultaneous instances for same project hierarchy
 * TODO: LuaJIT integration
 * Multiple targets per rules
 * Dependency on a whole directory hierarchy, using its latest mtime
@@ -415,6 +416,11 @@ The same.
 `No X and rule not found`
 
 The file X does not exist and there is no rule to make it
+
+`Can't lock DB. Other stirmake running? Exiting.`
+
+Stirmake was unable to obtain a lock on the command database. This means likely
+another stirmake instance is running for the same project hierarchy.
 
 ## References
 
