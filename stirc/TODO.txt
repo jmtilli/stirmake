@@ -3,6 +3,8 @@
 - Adding rules from Amyplan
   - Implement @addrule so that it supports fn and ctx
 
+- Adding deps from Amyplan during execution
+
 - Extend stiryy.y grammar to cover all cases
   - @patrule
 
