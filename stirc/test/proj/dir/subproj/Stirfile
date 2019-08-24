@@ -1,12 +1,14 @@
-all: a b c subdir/all
+@toplevel
+
+@phonyrule: all: a b c subdir/all
 
 @dirinclude "subdir"
 
-a:
+@phonyrule: a:
 	echo a
 
-b:
+@phonyrule: b:
 	echo b
 
-c:
+@phonyrule: c:
 	echo c

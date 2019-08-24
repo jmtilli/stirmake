@@ -240,6 +240,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 
 %token DIV MUL ADD SUB SHL SHR NE EQ LOGICAL_AND LOGICAL_OR LOGICAL_NOT MOD BITWISE_AND BITWISE_OR BITWISE_NOT BITWISE_XOR
 
+%token TOPLEVEL SUBFILE
 
 %token ERROR_TOK
 
@@ -269,7 +270,39 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 
 %%
 
-st: amyplanrules;
+st: stirrules;
+
+stirrules:
+  newlines topmarker NEWLINE amyplanrules;
+
+newlines:
+| newlines NEWLINE
+;
+
+topmarker:
+  TOPLEVEL
+{
+  if (!stiryy->expect_toplevel)
+  {
+    if (!stiryy->main->trial)
+    {
+      recommend(scanner, stiryy, "Expected @subfile, got @toplevel. Exiting.\n");
+    }
+    YYABORT;
+  }
+}
+| SUBFILE
+{
+  if (stiryy->expect_toplevel)
+  {
+    if (!stiryy->main->trial)
+    {
+      recommend(scanner, stiryy, "Expected @toplevel, got @subfile. Exiting.\n");
+    }
+    YYABORT;
+  }
+}
+;
 
 custom_stmt:
   ADD_DEPS OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN

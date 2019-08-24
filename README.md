@@ -196,6 +196,10 @@ defined variables are visible to the subproject. An example:
 @endscope
 ```
 
+Note that each Stirfile must begin with either `@toplevel` or `@subfile`
+depending on whether it's the top-level Stirfile of a project, or a Stirfile
+belonging to a subdirectory of a project.
+
 ## Invoking stirmake
 
 Suppose there is the following hierarchy:
@@ -421,6 +425,12 @@ The file X does not exist and there is no rule to make it
 
 Stirmake was unable to obtain a lock on the command database. This means likely
 another stirmake instance is running for the same project hierarchy.
+
+`stirmake: syntax error at file Stirfile line 1 col Y.`
+
+This probably means you didn't start the Stirfile with the `@toplevel` or the
+`@subfile` marker. Please select the correct marker and place it to the first
+line of the Stirfile.
 
 ## References
 

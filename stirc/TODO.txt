@@ -1,6 +1,3 @@
-- Top-level marker to mark that "stirmake" can parse it directly and it's not
-  just for inclusion within other upper-level Stirfiles???
-
 - LuaJIT
 
 - Adding rules from Amyplan

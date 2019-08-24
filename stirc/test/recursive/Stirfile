@@ -1,2 +1,5 @@
-a: b/c
+@toplevel
+
+@phonyrule: a: b/all
+
 @dirinclude 'b'

@@ -1,3 +1,5 @@
+@toplevel
+
 @phonyrule: all: obj/foo.o obj/bar.o
 
 obj/foo.o: src/foo.c @orderonly obj

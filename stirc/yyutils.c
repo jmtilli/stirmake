@@ -318,7 +318,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   {
     my_abort();
   }
-  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, stiryy->main->abce->dynscope, stiryy->dirname, filename);
+  stiryy_init(&stiryy2, stiryy->main, prefix2, projprefix2, stiryy->main->abce->dynscope, stiryy->dirname, filename, !noproj);
   stiryy2.sameproject = stiryy->sameproject && noproj;
 
   f = fopen(filename, "r");
@@ -353,7 +353,7 @@ int do_fileinclude(struct stiryy *stiryy, const char *fname)
   int ret;
   FILE *f;
 
-  stiryy_init(&stiryy2, stiryy->main, stiryy->curprefix, stiryy->curprojprefix, stiryy->main->abce->dynscope, stiryy->dirname, fname);
+  stiryy_init(&stiryy2, stiryy->main, stiryy->curprefix, stiryy->curprojprefix, stiryy->main->abce->dynscope, stiryy->dirname, fname, 0);
   stiryy2.sameproject = stiryy->sameproject;
 
   f = fopen(fname, "r");

@@ -1,10 +1,12 @@
-all: a b c
+@subfile
 
-a:
+@phonyrule: all: a b c
+
+@phonyrule: a:
 	echo a
 
-b:
+@phonyrule: b:
 	echo b
 
-c:
+@phonyrule: c:
 	echo c

@@ -107,6 +107,7 @@ struct stiryy_main {
   int subdirseen_sameproject;
   int freeform_token_seen;
   int parsing;
+  int trial;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;
@@ -133,6 +134,7 @@ struct stiryy {
   size_t curscopeidx;
   struct abce_mb curscope;
   int sameproject;
+  int expect_toplevel;
   const char *dirname;
   const char *filename;
   int do_emit;
@@ -158,7 +160,8 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
 static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
                                char *prefix, char *projprefix,
                                struct abce_mb curscope,
-                               const char *dirname, const char *filename)
+                               const char *dirname, const char *filename,
+                               int expect_toplevel)
 {
   yy->main = main;
   yy->sameproject = 1;
@@ -171,6 +174,7 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
   yy->filename = filename;
   yy->dirname = dirname;
   yy->do_emit = 1;
+  yy->expect_toplevel = !!expect_toplevel;
 }
 
 static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)

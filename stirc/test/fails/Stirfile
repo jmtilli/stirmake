@@ -1,11 +1,13 @@
-all: a b c d
+@toplevel
 
-a: b
+@phonyrule: all: a b c d
+
+@phonyrule: a: b
 	echo a
-b:
+@phonyrule: b:
 	echo b
-c: d
+@phonyrule: c: d
 	echo c
-d:
-	echo d
 	false
+@phonyrule: d:
+	echo d

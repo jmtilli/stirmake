@@ -1,2 +1,8 @@
-c:
+@subfile
+
+@phonyrule: all: c ../d
+
+@phonyrule: c:
 	echo c
+@phonyrule: ../d:
+	echo ../d

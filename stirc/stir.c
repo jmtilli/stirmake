@@ -26,7 +26,7 @@ int main(int argc, char **argv)
   struct stiryy_main main = {.abce = &abce};
   struct stiryy stiryy = {};
   abce_init(&abce);
-  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, NULL, "Stirfile");
+  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, NULL, "Stirfile", 1);
   if (!f)
   {
     abort();

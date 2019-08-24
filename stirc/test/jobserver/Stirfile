@@ -1,2 +1,4 @@
+@toplevel
+
 all:
 	make

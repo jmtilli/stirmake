@@ -91,10 +91,19 @@ is invoked as \fIsmkt\fR.
 .B \-v
 Print version information and exit.
 .SH "STIRFILE FORMAT"
+Each Stirfile must begin with a marker \fI@toplevel\fR or \fI@subfile\fR on
+the first non-empty line, with the marker saying whether the file is to be
+processed on its own or included as part of some other
+.I stirmake
+instance.
+
 First of all, you want to create the target \fIall\fR which must be marked
-\fI@phonyrule\fR so that you have a default target.
+\fI@phonyrule\fR so that you have a default target. This target should be the
+first so that it's the default target.
 
 .EX
+@toplevel
+
 @phonyrule: "all": "proga" "progb" "progc" "libd.a"
 .EE
 

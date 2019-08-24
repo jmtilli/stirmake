@@ -38,6 +38,8 @@ struct CSnippet luaSnippet = {
 %}
 
 @         return AT;
+@toplevel  return TOPLEVEL;
+@subfile  return SUBFILE;
 @print    return PRINT;
 @call    return CALL;
 @delayvar return DELAYVAR;

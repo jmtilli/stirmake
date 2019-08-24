@@ -1,3 +1,5 @@
+@toplevel
+
 a: b
 	echo a
 b:
