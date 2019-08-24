@@ -10,6 +10,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 
 enum {
   STIR_E_RULECHANGE_NOT_PERMITTED = 0x1001,
+  STIR_E_SUFFIX_NOT_FOUND = 0x1002,
 };
 
 #endif

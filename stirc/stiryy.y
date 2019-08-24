@@ -290,6 +290,10 @@ custom_expr0:
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_CUR_DIR_FROM_TOP);
 }
+| SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBONE);
+}
 ;
 
 custom_callable:

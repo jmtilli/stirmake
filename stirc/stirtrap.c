@@ -39,6 +39,63 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   struct stiryy_main *main = *pbaton;
   switch (ins)
   {
+    case STIR_OPCODE_SUFSUBONE:
+    {
+      struct abce_mb oldsuf = {};
+      struct abce_mb newsuf = {};
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      size_t bsz, osz, nsz;
+      VERIFYMB(-1, ABCE_T_S); // newsuffix
+      VERIFYMB(-2, ABCE_T_S); // oldsuffix
+      VERIFYMB(-3, ABCE_T_S); // base
+      GETMB(&newsuf, -1);
+      GETMB(&oldsuf, -2);
+      GETMB(&base, -3);
+      bsz = base.u.area->u.str.size;
+      osz = oldsuf.u.area->u.str.size;
+      nsz = newsuf.u.area->u.str.size;
+      if (   bsz < osz
+          || memcmp(&base.u.area->u.str.buf[bsz-osz], oldsuf.u.area->u.str.buf,
+                    osz) != 0)
+      {
+        fprintf(stderr, "stirmake: %s does not end with %s\n",
+                base.u.area->u.str.buf, oldsuf.u.area->u.str.buf);
+        abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
+        abce->err.mb = abce_mb_refup(abce, &base);
+        abce_mb_refdn(abce, &oldsuf);
+        abce_mb_refdn(abce, &newsuf);
+        abce_mb_refdn(abce, &base);
+        return -EINVAL;
+      }
+      newstr = abce_mb_create_string_to_be_filled(abce, bsz-osz+nsz);
+      if (newstr.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &oldsuf);
+        abce_mb_refdn(abce, &newsuf);
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        abce_pop(abce);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      memcpy(newstr.u.area->u.str.buf, base.u.area->u.str.buf, bsz-osz);
+      memcpy(newstr.u.area->u.str.buf + (bsz - osz),
+             newsuf.u.area->u.str.buf, nsz);
+      newstr.u.area->u.str.buf[bsz-osz+nsz] = '\0';
+      abce_pop(abce);
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &newstr) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &oldsuf);
+      abce_mb_refdn(abce, &newsuf);
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &newstr);
+      return 0;
+    }
     // FIXME what if there are many deps? Is it added for all rules?
     case STIR_OPCODE_DEP_ADD:
     {
