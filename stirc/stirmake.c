@@ -3447,19 +3447,19 @@ back:
     if (sigterm_atomic)
     {
       handle_signal(SIGTERM);
-      errxit("Got SIGTERM.");
+      errxit("Got SIGTERM");
       exit(1);
     }
     if (sigint_atomic)
     {
       handle_signal(SIGINT);
-      errxit("Got SIGINT.");
+      errxit("Got SIGINT");
       exit(1);
     }
     if (sighup_atomic)
     {
       handle_signal(SIGHUP);
-      errxit("Got SIGHUP.");
+      errxit("Got SIGHUP");
       exit(1);
     }
     if (read(self_pipe_fd[0], chbuf, 100))
