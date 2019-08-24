@@ -1,6 +1,7 @@
 - LuaJIT
 
 - Adding rules from Amyplan
+  - Implement @addrule so that it supports fn and ctx
 
 - Extend stiryy.y grammar to cover all cases
   - @patrule
@@ -8,8 +9,10 @@
 - What if tgt+dep have exactly same mtime? How does standard make handle it?
 
 - Replace main algorithm? May not work with dynamically added targets.
+  - we could continue using it if only deps are dynamically added
 
 - cannot clean anomaly for self-modifying build systems
+  - not an issue if only deps are dynamically added
 
 - verify cdepincludes are not unlinked when there are rules having no cmds/deps
 
@@ -26,7 +29,5 @@
   is built before b
 
 - Use expr0_without_string instead of expr in places where string can be
-
-- @addrule so that it supports fn and ctx
 
 - fcntl lock for output, gather child-process outputs together
