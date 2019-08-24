@@ -7,7 +7,6 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
-#include <sys/sysinfo.h>
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
@@ -16,6 +15,22 @@
 #include <locale.h>
 #include <libgen.h>
 #include <poll.h>
+
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+#ifdef __linux__
+#include <sys/sysinfo.h>
+#endif
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+#ifdef __NetBSD__
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#endif
+
 #include <sys/select.h>
 #include <sys/mman.h>
 #include "yyutils.h"
@@ -3830,6 +3845,52 @@ out:
 
 }
 
+int my_get_nprocs(void)
+{
+#ifdef __linux__
+  return get_nprocs();
+#else
+  #ifdef __APPLE__
+  int count = 1;
+  size_t count_len = sizeof(count);
+  if (sysctlbyname("hw.logicalcpu", &count, &count_len, NULL, 0) != 0 ||
+      count < 1)
+  {
+    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
+    return 1;
+  }
+  return count;
+  #else
+    #ifdef __FreeBSD__
+  int count = 1;
+  size_t count_len = sizeof(count);
+  if (sysctlbyname("hw.ncpu", &count, &count_len, NULL, 0) != 0 ||
+      count < 1)
+  {
+    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
+    return 1;
+  }
+  return count;
+    #else
+      #ifdef __NetBSD__
+  int count = 1;
+  size_t count_len = sizeof(count);
+  if (sysctlbyname("hw.ncpuonline", &count, &count_len, NULL, 0) != 0 ||
+      count < 1)
+  {
+    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
+    return 1;
+  }
+  return count;
+      #else
+  fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
+  return 1;
+      #endif
+    #endif
+  #endif
+#endif
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -3980,7 +4041,7 @@ int main(int argc, char **argv)
     case 'j':
       if (optarg[0] == 'a') // a for auto
       {
-        jobcnt = get_nprocs();
+        jobcnt = my_get_nprocs();
         if (jobcnt < 1)
         {
           fprintf(stderr, "stirmake: Processor count %d insane, using 1\n",
