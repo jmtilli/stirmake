@@ -20,16 +20,24 @@
 #ifdef __FreeBSD__
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#if __FreeBSD_version >= 1003000
+#define HAS_UTIMENSAT 1
+#endif
 #endif
 #ifdef __linux__
 #include <sys/sysinfo.h>
+#define HAS_UTIMENSAT 1
 #endif
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+// Don't know how to detect MacOS version, so HAS_UTIMENSAT not set
 #endif
 #ifdef __NetBSD__
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#if __NetBSD_Version__ >= 600000000
+#define HAS_UTIMENSAT 1
+#endif
 #endif
 
 #include <sys/select.h>
@@ -2669,11 +2677,9 @@ void mark_executed(int ruleid, int was_actually_executed)
       times[0].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
       times[1].tv_sec = r->st_mtim.tv_sec;
       times[1].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
-      if (1)
-      {
-        utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx], timespecs, 0);
-      }
-      else
+#ifdef HAS_UTIMENSAT
+      utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx], timespecs, 0);
+#else
       {
         struct timespec req;
         struct timespec rem;
@@ -2690,6 +2696,7 @@ void mark_executed(int ruleid, int was_actually_executed)
           req = rem;
         }
       }
+#endif
       if (debug)
       {
         printf("utime %s succeeded? %d\n", sttable[e->tgtidx], (utimeret == 0));
