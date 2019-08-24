@@ -37,3 +37,5 @@
 - @addrule so that it supports fn and ctx
 
 - fcntl lock for output, gather child-process outputs together
+
+- Implement @sufsubone and @sufsuball
