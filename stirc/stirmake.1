@@ -334,20 +334,28 @@ involve a complete rewrite of the entire build system of the project.
 .SH "SEE ALSO"
 make(1)
 .SH HISTORY
+No history section of
+.I stirmake
+would be complete without mentioning the venerable make[1], created by Stuart
+Feldman of AT&T Bell Laboratories. However, most users of make have found it
+is a rather limited tool.
+
 .I stirmake
 was created inspired by the influential "Recursive Make Considered
-Harmful" paper[1] and the author's unsuccessful attempts at creating a perfect
+Harmful" paper[2] and the author's unsuccessful attempts at creating a perfect
 build system using GNU make. It seems the author is not the only one with
-difficulty of creating good build systems[2]. Some of the data structures of
+difficulty of creating good build systems[3]. Some of the data structures of
 .I stirmake
 are taken from a packet processing toolkit (PPTK) that has its origins in
 2017-8.
 .I stirmake
 was created in 2019.
 .SH "REFERENCES"
-1. Miller, P.A. (1998), Recursive Make Considered Harmful, AUUGN Journal of AUUG Inc., 19(1), pp. 14-25, http://aegis.sourceforge.net/auug97.pdf
+1. Feldman, S.I. (1979), Make -- a program for maintaining computer programs, Software: Practice and Experience, 9(4), pp. 255-265.
 
-2. Mokhov, A., Mitchell, N., Peyton Jones, S., Marlow, S. (2016), Non-recursive make considered harmful: build systems at scale, ACM SIGPLAN Notices - Haskell '16, 51(12), pp. 170-181, https://www.microsoft.com/en-us/research/wp-content/uploads/2016/03/hadrian.pdf 
+2. Miller, P.A. (1998), Recursive Make Considered Harmful, AUUGN Journal of AUUG Inc., 19(1), pp. 14-25, http://aegis.sourceforge.net/auug97.pdf
+
+3. Mokhov, A., Mitchell, N., Peyton Jones, S., Marlow, S. (2016), Non-recursive make considered harmful: build systems at scale, ACM SIGPLAN Notices - Haskell '16, 51(12), pp. 170-181, https://www.microsoft.com/en-us/research/wp-content/uploads/2016/03/hadrian.pdf
 
 .SH "DISTRIBUTION"
 stirmake is available at https://github.com/Aalto5G/stirmake
