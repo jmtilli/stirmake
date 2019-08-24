@@ -1,0 +1,18 @@
+@toplevel
+
+@phonyrule: all: a b c
+
+@phonyrule: a:
+	sleep 1
+	sleep 2
+	sleep 3
+
+@phonyrule: b:
+	sleep 3
+	sleep 2
+	sleep 1
+
+@phonyrule: c:
+	sleep 1
+	sleep 2
+	sleep 1

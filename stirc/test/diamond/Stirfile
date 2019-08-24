@@ -1,0 +1,12 @@
+@toplevel
+
+@phonyrule: all: a b
+
+a: deep
+	touch a
+
+b: deep
+	touch b
+
+deep:
+	touch deep

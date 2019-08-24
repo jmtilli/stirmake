@@ -1,0 +1,12 @@
+@toplevel
+
+@cleanhook:
+	echo cleanhook
+
+@distcleanhook:
+	echo distcleanhook
+
+@phonyrule: all:
+	echo all
+
+@dirinclude 'b'

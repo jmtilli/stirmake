@@ -1,0 +1,13 @@
+@subfile
+
+@cleanhook:
+	echo cleanhook
+
+@distcleanhook:
+	echo distcleanhook
+
+@bothcleanhook:
+	echo bothcleanhook
+
+@phonyrule: all:
+	echo all b

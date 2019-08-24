@@ -1,0 +1,7 @@
+@toplevel
+
+@phonyrule: a: b
+	echo a
+
+@phonyrule: b: a
+	echo b

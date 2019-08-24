@@ -1,0 +1,9 @@
+@toplevel
+
+@phonyrule: all: c
+
+@distrule: c: a/foo a/bar
+	touch c
+
+@rectgtrule: a/foo a/bar: @recdep a
+	make -C a
