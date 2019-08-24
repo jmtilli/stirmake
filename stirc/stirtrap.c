@@ -29,6 +29,62 @@
 #define GETMB(mb, idx) GETGENERIC(abce_getmb, mb, idx)
 #define GETMBAR(mb, idx) GETGENERIC(abce_getmbar, mb, idx)
 
+/*
+  Planned argument for STIR_OPCODE_RULE_ADD:
+{
+  "tgts": [ // "name" has no default
+    {"name": "a"},
+    {"name": "b"}
+  ],
+  "deps": [ // default: []
+    // default for all: false except "name" has no default
+    // "rec" and "orderonly" can't be set simultaneously
+    {"name": "c", "rec": false, "orderonly": false},
+    {"name": "d", "rec": false, "orderonly": false}
+  ],
+  "attrs": { // default for all: false, default for "attrs": {}
+    "phony": false, // if true, "rectgt", "maybe", "dist" must be false
+    "rectgt": false, // if true, "maybe" must be false
+    "maybe": false,
+    "dist": false,
+    "deponly": false, // if set, "phony"/"rectgt"/"maybe"/"dist" must be false
+    // zero or one of these must be true, two being true not permitted:
+    // if any of these is true, "phony" xor "deponly" must be true
+    // if any of these is true, "dist" must be false
+    // if any of these is true, "rectgt" must be false
+    // if any of these is true, "maybe" must be false
+    // if any of these is true, "tgts" must be omitted
+    "iscleanhook": false,
+    "isdistcleanhook": false,
+    "isbothcleanhook": false,
+  },
+  "shells": [ // default: []
+    {
+      "embed": true, // default: false
+      "isfun": false, // default: false
+      "cmds": [["true"], ["true"]]
+    },
+    {
+      "embed": false,
+      "isfun": false,
+      "cmd": ["true"]
+    },
+    {
+      "embed": true,
+      "isfun": true,
+      "fun": $FNMANY,
+      "arg": $FNMANYARG
+    },
+    {
+      "embed": false,
+      "isfun": true,
+      "fun": $FN,
+      "arg": $FNARG
+    }
+  ]
+}
+ */
+
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 {
   int ret = 0;
