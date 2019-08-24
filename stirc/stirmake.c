@@ -364,7 +364,7 @@ void escape_string(FILE *f, const char *str)
       fprintf(f, "\\n");
       continue;
     }
-    fprintf(f, "%c", (char)uch);
+    putc((char)uch, f);
   }
 }
 
