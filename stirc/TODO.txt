@@ -2,6 +2,8 @@
   - Consider separating order-only prerequisites to $|
   - Consider supporting $+ to allow linking multiple times
 
+- Option to check heap after every engine invocation to reveal refcnt bugs
+
 - Fix basename and suffix for paths containing ".." but no extension
 
 - Extra opcodes:
