@@ -1,5 +1,6 @@
 - Consider adding all prerequisites to $^ just like make does
   - Consider separating order-only prerequisites to $|
+  - Consider supporting $+ to allow linking multiple times
 
 - LuaJIT
 
