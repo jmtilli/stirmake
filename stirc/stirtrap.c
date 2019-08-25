@@ -10,6 +10,7 @@
 #include "stirtrap.h"
 #include "canon.h"
 #include "stiryy.h"
+#include "jsonyyutils.h"
 
 void *my_memrchr(const void *s, int c, size_t n);
 
@@ -473,6 +474,62 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
       abce_mb_refdn(abce, &bases);
       abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_JSON_IN:
+    {
+      struct abce_mb base = {};
+      struct abce_mb mb = {};
+      struct jsonyy jsonyy = {.abce = abce};
+      int fdolddir;
+      VERIFYMB(-1, ABCE_T_S); // base
+      fdolddir = open(".", O_RDONLY);
+      if (fdolddir < 0)
+      {
+        abce->err.code = STIR_E_DIR_NOT_FOUND;
+        abce->err.mb.typ = ABCE_T_N;
+        return -ENOTDIR;
+      }
+      if (abce_scope_get_userdata(&abce->dynscope))
+      {
+        prefix =
+          ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+      }
+      else
+      {
+        prefix = ".";
+      }
+      if (chdir(prefix) != 0)
+      {
+        abce->err.code = STIR_E_DIR_NOT_FOUND;
+        abce->err.mb.typ = ABCE_T_N;
+        return -ENOTDIR;
+      }
+      GETMB(&base, -1);
+      if (jsonyynameparse(base.u.area->u.str.buf, &jsonyy) != 0)
+      {
+        abce->err.code = STIR_E_BAD_JSON;
+        abce->err.mb.typ = ABCE_T_N;
+        abce_mb_refdn(abce, &base);
+        return -EBADMSG;
+      }
+      if (fchdir(fdolddir) != 0)
+      {
+        abce->err.code = STIR_E_DIR_NOT_FOUND;
+        abce->err.mb.typ = ABCE_T_N;
+        abce_mb_refdn(abce, &base);
+        return -ENOTDIR;
+      }
+      close(fdolddir);
+      GETMB(&mb, -1);
+      abce_pop(abce); // mb
+      abce_pop(abce); // base
+      if (abce_push_mb(abce, &mb) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &mb);
       return 0;
     }
     case STIR_OPCODE_GLOB:

@@ -194,6 +194,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token PATHDIRALL
 %token PATHNOTDIRALL
 %token GLOB
+%token JSONIN
 %token SUFSUBONE
 %token STRAPPEND
 %token SUFSUBALL
@@ -389,6 +390,10 @@ custom_expr0:
 | GLOB OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_GLOB);
+}
+| JSONIN OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_JSON_IN);
 }
 ;
 

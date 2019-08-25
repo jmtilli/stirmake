@@ -4,6 +4,9 @@
 #include <limits.h>
 #include <libgen.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "jsonyy.h"
 #include "jsonyyutils.h"
 
@@ -16,17 +19,28 @@ extern int jsonyylex_destroy(yyscan_t yyscanner);
 int jsonyydoparse(FILE *filein, struct jsonyy *jsonyy)
 {
   yyscan_t scanner;
+  int fd;
+  struct stat statbuf;
+
+  fd = fileno(filein);
+  if (fstat(fd, &statbuf) != 0)
+  {
+    return -EBADF;
+  }
+  if (!S_ISREG(statbuf.st_mode))
+  {
+    return -EBADF;
+  }
+
   jsonyylex_init(&scanner);
   jsonyyset_in(filein, scanner);
   if (jsonyyparse(scanner, jsonyy) != 0)
   {
-    fprintf(stderr, "jsonmake: bad msg.\n");
     return -EBADMSG;
   }
   jsonyylex_destroy(scanner);
   if (!feof(filein))
   {
-    fprintf(stderr, "jsonmake: Additional data at end of Stirfile.\n");
     return -EBADMSG;
   }
   return 0;
@@ -39,14 +53,12 @@ int jsonyydomemparse(char *filedata, size_t filesize, struct jsonyy *jsonyy)
   myfile = fmemopen(filedata, filesize, "r");
   if (myfile == NULL)
   {
-    fprintf(stderr, "can't open memory file\n");
-    exit(1);
+    return -ENOMEM;
   }
   ret = jsonyydoparse(myfile, jsonyy);
   if (fclose(myfile) != 0)
   {
-    fprintf(stderr, "can't close memory file\n");
-    exit(1);
+    return -EBADF;
   }
   return ret;
 }
@@ -190,19 +202,40 @@ struct json_escaped_string jsonyy_escape_string(char *orig)
   return resultstruct;
 }
 
-int jsonyynameparse(const char *fname, struct jsonyy *jsonyy, int require)
+int jsonyynameparse(const char *fname, struct jsonyy *jsonyy)
 {
   FILE *jsonyyfile;
   int ret;
+  int fd;
+  struct stat statbuf;
+  if (stat(fname, &statbuf) != 0)
+  {
+    return -ENOENT;
+  }
+  if (!S_ISREG(statbuf.st_mode))
+  {
+    return -EBADF;
+  }
   jsonyyfile = fopen(fname, "r");
+  fd = fileno(jsonyyfile);
+  if (fstat(fd, &statbuf) != 0)
+  {
+    fclose(jsonyyfile);
+    return -EBADF;
+  }
+  if (!S_ISREG(statbuf.st_mode))
+  {
+    fclose(jsonyyfile);
+    return -EBADF;
+  }
   if (jsonyyfile == NULL)
   {
+#if 0
     if (require)
     {
       fprintf(stderr, "File %s cannot be opened\n", fname);
       exit(1);
     }
-#if 0
     if (jsonyy_postprocess(jsonyy) != 0)
     {
       exit(1);
@@ -222,7 +255,7 @@ int jsonyynameparse(const char *fname, struct jsonyy *jsonyy, int require)
 }
 
 int jsonyydirparse(
-  const char *argv0, const char *fname, struct jsonyy *jsonyy, int require)
+  const char *argv0, const char *fname, struct jsonyy *jsonyy)
 {
   const char *dir;
   char *copy = strdup(argv0);
@@ -230,5 +263,5 @@ int jsonyydirparse(
   dir = dirname(copy); // NB: not for multi-threaded operation!
   snprintf(pathbuf, sizeof(pathbuf), "%s/%s", dir, fname);
   free(copy);
-  return jsonyynameparse(pathbuf, jsonyy, require);
+  return jsonyynameparse(pathbuf, jsonyy);
 }

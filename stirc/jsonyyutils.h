@@ -13,10 +13,10 @@ int jsonyydoparse(FILE *filein, struct jsonyy *jsonyy);
 
 int jsonyydomemparse(char *filedata, size_t filesize, struct jsonyy *jsonyy);
 
-int jsonyynameparse(const char *fname, struct jsonyy *jsonyy, int require);
+int jsonyynameparse(const char *fname, struct jsonyy *jsonyy);
 
 int jsonyydirparse(
-  const char *argv0, const char *fname, struct jsonyy *jsonyy, int require);
+  const char *argv0, const char *fname, struct jsonyy *jsonyy);
 
 struct json_escaped_string jsonyy_escape_string(char *orig);
 
