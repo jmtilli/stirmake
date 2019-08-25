@@ -76,6 +76,7 @@ json:
     YYABORT;
   }
   abce_push_mb(jsonyy->abce, &mb);
+  abce_mb_refdn(jsonyy->abce, &mb);
 }
 | object
 | array
@@ -93,6 +94,7 @@ object:
     YYABORT;
   }
   abce_push_mb(jsonyy->abce, &mb);
+  abce_mb_refdn(jsonyy->abce, &mb);
 }
   maybe_objlist CLOSE_BRACE ;
 
@@ -105,6 +107,7 @@ array:
     YYABORT;
   }
   abce_push_mb(jsonyy->abce, &mb);
+  abce_mb_refdn(jsonyy->abce, &mb);
 }
   maybe_jsonlist CLOSE_BRACKET ;
 
@@ -159,6 +162,7 @@ objentry:
     YYABORT;
   }
   abce_push_mb(jsonyy->abce, &mb);
+  abce_mb_refdn(jsonyy->abce, &mb);
 }
   COLON json
 {
