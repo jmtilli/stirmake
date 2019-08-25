@@ -642,8 +642,8 @@ NULL, symbol);
   stringtabentry->string = my_strdup(symbol);
   if (st_cnt >= st_cap)
   {
-    printf("stringtab full\n");
-    my_abort();
+    errxit("stringtab full");
+    exit(1);
   }
   sttable[st_cnt] = stringtabentry->string;
   stringtabentry->idx = st_cnt++;
@@ -1316,8 +1316,8 @@ void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, tgt_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
-    printf("2\n");
-    my_abort();
+    errxit("Target %s already exists in rule", sttable[tgtidx]);
+    exit(1); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
 }
