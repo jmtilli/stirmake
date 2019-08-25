@@ -5,7 +5,6 @@
 - Option to check heap after every engine invocation to reveal refcnt bugs
 
 - Extra opcodes:
-  - glob
   - path_absolutify
 
 - LuaJIT

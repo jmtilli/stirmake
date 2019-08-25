@@ -1,4 +1,9 @@
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdint.h>
+#include <glob.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "abce/abce.h"
 #include "abce/abcetrees.h"
 #include "stiropcodes.h"
@@ -467,6 +472,100 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         my_abort();
       }
       abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_GLOB:
+    {
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      glob_t globbuf;
+      size_t i;
+      int fdolddir;
+      VERIFYMB(-1, ABCE_T_S); // base
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      fdolddir = open(".", O_RDONLY);
+      if (fdolddir < 0)
+      {
+        abce->err.code = STIR_E_DIR_NOT_FOUND;
+        abce->err.mb.typ = ABCE_T_N;
+        return -ENOTDIR;
+      }
+      globbuf.gl_offs = 0;
+      if (abce_scope_get_userdata(&abce->dynscope))
+      {
+        prefix =
+          ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+      }
+      else
+      {
+        prefix = ".";
+      }
+      if (chdir(prefix) != 0)
+      {
+        abce->err.code = STIR_E_DIR_NOT_FOUND;
+        abce->err.mb.typ = ABCE_T_N;
+        return -ENOTDIR;
+      }
+      GETMB(&base, -2); // now the indices are different
+      int ret = glob(base.u.area->u.str.buf, 0, NULL, &globbuf);
+      if (ret != 0 && ret != GLOB_NOMATCH)
+      {
+        abce->err.code = STIR_E_GLOB_FAILED;
+        abce->err.mb.typ = ABCE_T_N;
+        return -EINVAL;
+      }
+      else if (ret == GLOB_NOMATCH)
+      {
+        globbuf.gl_pathc = 0;
+      }
+      if (fchdir(fdolddir) != 0)
+      {
+        abce->err.code = STIR_E_DIR_NOT_FOUND;
+        abce->err.mb.typ = ABCE_T_N;
+        globfree(&globbuf);
+        abce_mb_refdn(abce, &base);
+        return -ENOTDIR;
+      }
+      close(fdolddir);
+      for (i = 0; i < globbuf.gl_pathc; i++)
+      {
+        newstr = abce_mb_create_string(abce, globbuf.gl_pathv[i],
+                                       strlen(globbuf.gl_pathv[i]));
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &base);
+          abce_mb_refdn(abce, &mods);
+          return -ENOMEM;
+        }
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &base);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      globfree(&globbuf);
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
       abce_mb_refdn(abce, &mods);
       return 0;
     }

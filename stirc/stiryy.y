@@ -193,6 +193,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token PATHSIMPLIFYALL
 %token PATHDIRALL
 %token PATHNOTDIRALL
+%token GLOB
 %token SUFSUBONE
 %token STRAPPEND
 %token SUFSUBALL
@@ -384,6 +385,10 @@ custom_expr0:
 | PATHSIMPLIFYALL OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSIMPLIFYALL);
+}
+| GLOB OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_GLOB);
 }
 ;
 
