@@ -1,3 +1,5 @@
+- Consider adding all prerequisites to $^ just like make does
+
 - LuaJIT
 
 - Adding rules from Amyplan
