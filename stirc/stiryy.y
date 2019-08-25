@@ -188,6 +188,11 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token PATHSIMPLIFY
 %token PATHDIR
 %token PATHNOTDIR
+%token PATHSUFFIXALL
+%token PATHBASENAMEALL
+%token PATHSIMPLIFYALL
+%token PATHDIRALL
+%token PATHNOTDIRALL
 %token SUFSUBONE
 %token STRAPPEND
 %token SUFSUBALL
@@ -359,6 +364,26 @@ custom_expr0:
 | PATHSIMPLIFY OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSIMPLIFY);
+}
+| PATHSUFFIXALL OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSUFFIXALL);
+}
+| PATHBASENAMEALL OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHBASENAMEALL);
+}
+| PATHDIRALL OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHDIRALL);
+}
+| PATHNOTDIRALL OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHNOTDIRALL);
+}
+| PATHSIMPLIFYALL OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSIMPLIFYALL);
 }
 ;
 

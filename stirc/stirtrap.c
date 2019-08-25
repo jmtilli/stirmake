@@ -159,6 +159,375 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_mb_refdn(abce, &mods);
       return 0;
     }
+    case STIR_OPCODE_PATHBASENAMEALL:
+    {
+      struct abce_mb bases = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, i;
+      VERIFYMB(-1, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&bases, -2); // now the indices are different
+      bcnt = bases.u.area->u.ar.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        char *cutpoint, *buf;
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        cutpoint = my_memrchr(buf, '.', bsz);
+        if (cutpoint == NULL)
+        {
+          if (abce_mb_array_append(abce, &mods,
+                                   &bases.u.area->u.ar.mbs[i]) != 0)
+          {
+            abce_mb_refdn(abce, &bases);
+            abce_mb_refdn(abce, &mods);
+            abce_mb_refdn(abce, &newstr);
+            abce_pop(abce);
+            abce_pop(abce);
+            return -ENOMEM;
+          }
+          continue;
+        }
+        newstr = abce_mb_create_string(abce, buf, cutpoint-buf);
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -ENOMEM;
+        }
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_PATHSUFFIXALL:
+    {
+      struct abce_mb bases = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, i;
+      VERIFYMB(-1, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&bases, -2); // now the indices are different
+      bcnt = bases.u.area->u.ar.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        char *cutpoint, *buf;
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        cutpoint = my_memrchr(buf, '.', bsz);
+        if (cutpoint == NULL)
+        {
+          newstr = abce_mb_create_string(abce, "", 0);
+          if (newstr.typ == ABCE_T_N)
+          {
+            abce_mb_refdn(abce, &bases);
+            abce_mb_refdn(abce, &mods);
+            return -ENOMEM;
+          }
+          if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+          {
+            abce_mb_refdn(abce, &bases);
+            abce_mb_refdn(abce, &mods);
+            abce_mb_refdn(abce, &newstr);
+            abce_pop(abce);
+            abce_pop(abce);
+            return -ENOMEM;
+          }
+          abce_mb_refdn(abce, &newstr);
+          continue;
+        }
+        newstr = abce_mb_create_string(abce, cutpoint, bsz-(cutpoint-buf));
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -ENOMEM;
+        }
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_PATHNOTDIRALL:
+    {
+      struct abce_mb bases = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, i;
+      VERIFYMB(-1, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&bases, -2); // now the indices are different
+      bcnt = bases.u.area->u.ar.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        char *cutpoint, *buf;
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        cutpoint = my_memrchr(buf, '/', bsz);
+        if (cutpoint == NULL)
+        {
+          if (abce_mb_array_append(abce, &mods,
+                                   &bases.u.area->u.ar.mbs[i]) != 0)
+          {
+            abce_mb_refdn(abce, &bases);
+            abce_mb_refdn(abce, &mods);
+            abce_pop(abce);
+            abce_pop(abce);
+            return -ENOMEM;
+          }
+          continue;
+        }
+        newstr = abce_mb_create_string(abce, cutpoint+1, bsz-(cutpoint+1-buf));
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -ENOMEM;
+        }
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_PATHDIRALL:
+    {
+      struct abce_mb bases = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, i;
+      VERIFYMB(-1, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&bases, -2); // now the indices are different
+      bcnt = bases.u.area->u.ar.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        char *cutpoint, *buf;
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        cutpoint = my_memrchr(buf, '/', bsz);
+        if (cutpoint == NULL)
+        {
+          newstr = abce_mb_create_string(abce, "./", 2);
+          if (newstr.typ == ABCE_T_N)
+          {
+            abce_mb_refdn(abce, &bases);
+            abce_mb_refdn(abce, &mods);
+            return -ENOMEM;
+          }
+          if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+          {
+            abce_mb_refdn(abce, &bases);
+            abce_mb_refdn(abce, &mods);
+            abce_mb_refdn(abce, &newstr);
+            abce_pop(abce);
+            abce_pop(abce);
+            return -ENOMEM;
+          }
+          abce_mb_refdn(abce, &newstr);
+          continue;
+        }
+        newstr = abce_mb_create_string(abce, buf, cutpoint + 1 - buf);
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -ENOMEM;
+        }
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_PATHSIMPLIFYALL:
+    {
+      struct abce_mb bases = {};
+      struct abce_mb newstr = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, i;
+      VERIFYMB(-1, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&bases, -2); // now the indices are different
+      bcnt = bases.u.area->u.ar.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        char *can;
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        can = canon(bases.u.area->u.ar.mbs[i].u.area->u.str.buf);
+        newstr = abce_mb_create_string(abce, can, strlen(can));
+        free(can);
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -ENOMEM;
+        }
+        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        {
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_mb_refdn(abce, &newstr);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+        abce_mb_refdn(abce, &newstr);
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
     case STIR_OPCODE_SUFSUBALL:
     {
       struct abce_mb oldsuf = {};

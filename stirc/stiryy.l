@@ -54,6 +54,11 @@ struct CSnippet luaSnippet = {
 @pathbasename return PATHBASENAME;
 @pathdir return PATHDIR;
 @pathnotdir return PATHNOTDIR;
+@pathsuffixall return PATHSUFFIXALL;
+@pathsimplifyall return PATHSIMPLIFYALL;
+@pathbasenameall return PATHBASENAMEALL;
+@pathdirall return PATHDIRALL;
+@pathnotdirall return PATHNOTDIRALL;
 @phonyrule return PHONYRULE;
 @mayberule return MAYBERULE;
 @rectgtrule return RECTGTRULE;

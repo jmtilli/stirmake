@@ -2,13 +2,10 @@
   - Consider separating order-only prerequisites to $|
   - Consider supporting $+ to allow linking multiple times
 
+- Fix basename and suffix for paths containing ".." but no extension
+
 - Extra opcodes:
   - glob
-  - path_suffix for lists
-  - path_basename for lists
-  - path_dir for lists
-  - path_notdir for lists
-  - path_simplify for lists
   - path_absolutify
 
 - LuaJIT
