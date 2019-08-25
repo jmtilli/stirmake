@@ -29,3 +29,5 @@
 - Use expr0_without_string instead of expr in places where string can be
 
 - fcntl lock for output, gather child-process outputs together
+
+- meatnodir approach for setting namenodir
