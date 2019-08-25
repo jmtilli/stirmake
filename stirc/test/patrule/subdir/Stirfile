@@ -1,0 +1,10 @@
+@subfile
+
+@phonyrule: all: a.o b.o
+
+@patrule: a.o b.o: '%.o': '%.c'
+	touch $@
+
+@phonyrule: a.c:
+
+@phonyrule: b.c:

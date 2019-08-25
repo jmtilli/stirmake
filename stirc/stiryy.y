@@ -2388,7 +2388,21 @@ stirrule:
     stiryy_mark_deponly(stiryy);
   }
 }
-| PATRULE COLON pattargetspec COLON pattargetspec COLON patdepspec NEWLINE shell_commands
+| PATRULE COLON
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_emplace_patrule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+  }
+}
+  pattargetspec COLON
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_freeze_patrule(stiryy);
+  }
+}
+  pattargetspec COLON patdepspec NEWLINE shell_commands
 ;
 
 shell_commands:
@@ -2611,30 +2625,32 @@ pattargets:
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
       stiryy->main->freeform_token_seen=1;
     }
-    printf("target1 %s\n", $1);
-    //stiryy_emplace_rule(stiryy);
-    //stiryy_set_tgt(stiryy, $1);
+    stiryy_set_pattgt(amyplanyy, $1);
   }
-  free($1);
 }
-| STRING_LITERAL
+| tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("target1 %s\n", $1.str);
-    //stiryy_emplace_rule(stiryy);
-    //stiryy_set_tgt(stiryy, $1.str);
+    int ret;
+    char **strs;
+    size_t i, strsz;
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(amyplanyy), $1, "target", &strs, &strsz);
+
+    if (ret)
+    {
+      YYABORT;
+    }
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_pattgt(stiryy, strs[i]);
+      free(strs[i]);
+    }
+    free(strs);
   }
-  free($1.str);
-}
-| VARREF_LITERAL
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    //stiryy_emplace_rule(stiryy);
-    printf("target1ref\n");
-  }
-  free($1);
 }
 | pattargets FREEFORM_TOKEN
 {
@@ -2645,27 +2661,32 @@ pattargets:
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
       stiryy->main->freeform_token_seen=1;
     }
-    printf("target %s\n", $2);
-    //stiryy_set_tgt(stiryy, $2);
+    stiryy_set_pattgt(amyplanyy, $2);
   }
-  free($2);
 }
-| pattargets STRING_LITERAL
+| pattargets tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("target %s\n", $2.str);
-    //stiryy_set_tgt(stiryy, $2.str);
+    int ret;
+    char **strs;
+    size_t i, strsz;
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
+
+    if (ret)
+    {
+      YYABORT;
+    }
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_pattgt(stiryy, strs[i]);
+      free(strs[i]);
+    }
+    free(strs);
   }
-  free($2.str);
-}
-| pattargets VARREF_LITERAL
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    printf("targetref\n");
-  }
-  free($2);
 }
 ;
 
@@ -2844,27 +2865,35 @@ patdeps:
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
       stiryy->main->freeform_token_seen=1;
     }
-    printf("dep %s rec? %d\n", $3, (int)$2);
-    //stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
+    //printf("dep %s rec? %d\n", $3, (int)$2);
+    stiryy_set_patdep(stiryy, $3, $2 == 1, $2 == 2);
   }
   free($3);
 }
-| patdeps maybe_rec STRING_LITERAL
+| patdeps maybe_rec tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("dep %s rec? %d\n", $3.str, (int)$2);
-    //stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
+    size_t strsz;
+    size_t i;
+    int ret;
+    char **strs;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
+    if (ret)
+    {
+      YYABORT;
+    }
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_patdep(stiryy, strs[i], $2 == 1, $2 == 2);
+      free(strs[i]);
+    }
+    free(strs);
   }
-  free($3.str);
-}
-| patdeps maybe_rec VARREF_LITERAL
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    printf("depref\n");
-  }
-  free($3);
 }
 ;
 

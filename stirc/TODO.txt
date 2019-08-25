@@ -8,9 +8,6 @@
 - Adding rules from Amyplan
   - Implement @addrule so that it supports fn and ctx
 
-- Extend stiryy.y grammar to cover all cases
-  - @patrule
-
 - Replace main algorithm? May not work with dynamically added targets.
   - we could continue using it if only deps are dynamically added
 

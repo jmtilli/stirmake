@@ -1,0 +1,12 @@
+@toplevel
+
+@phonyrule: all: a.o b.o subdir/all
+
+@patrule: a.o b.o: '%.o': '%.c'
+	touch $@
+
+@phonyrule: a.c:
+
+@phonyrule: b.c:
+
+@dirinclude 'subdir'

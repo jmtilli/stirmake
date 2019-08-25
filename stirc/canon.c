@@ -117,7 +117,7 @@ char *canon(const char *old)
   return neu;
 }
 
-static size_t strcnt(const char *haystack, char needle)
+size_t strcnt(const char *haystack, char needle)
 {
   size_t ret = 0;
   while (*haystack)
