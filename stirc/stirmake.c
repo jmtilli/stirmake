@@ -800,6 +800,7 @@ int ts_cmp(struct timespec ta, struct timespec tb)
 struct stirdep {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
+  struct linked_list_node primaryllnode;
   size_t nameidx;
   size_t nameidxnodir;
   unsigned is_recursive:1;
@@ -888,6 +889,7 @@ struct rule {
   struct linked_list_head tgtlist;
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
+  struct linked_list_head primarydeplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   size_t deps_remain_cnt;
   size_t scopeidx;
@@ -964,9 +966,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
       abce_mb_refdn(abce, &mbkey);
-      LINKED_LIST_FOR_EACH(node, &rule->deplist)
+      LINKED_LIST_FOR_EACH(node, &rule->primarydeplist)
       {
-        struct stirdep *dep = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+        struct stirdep *dep =
+          ABCE_CONTAINER_OF(node, struct stirdep, primaryllnode);
         mb = abce_mb_create_string(abce, sttable[dep->nameidxnodir],
                                    strlen(sttable[dep->nameidxnodir]));
         if (mb.typ == ABCE_T_N)
@@ -1245,7 +1248,7 @@ size_t stirdep_cnt;
 
 void ins_dep(struct rule *rule,
              size_t depidx, size_t diridx, size_t depidxnodir,
-             int is_recursive, int orderonly)
+             int is_recursive, int orderonly, int primary)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct stirdep *e;
@@ -1286,6 +1289,10 @@ void ins_dep(struct rule *rule,
     my_abort();
   }
   linked_list_add_tail(&e->llnode, &rule->deplist);
+  if (primary)
+  {
+    linked_list_add_tail(&e->primaryllnode, &rule->primarydeplist);
+  }
 }
 
 int deps_remain_has(struct rule *rule, int ruleid)
@@ -1758,6 +1765,7 @@ void zero_rule(struct rule *rule)
 {
   memset(rule, 0, sizeof(*rule));
   linked_list_head_init(&rule->deplist);
+  linked_list_head_init(&rule->primarydeplist);
   linked_list_head_init(&rule->tgtlist);
   rule->deps_remain_cnt = 0;
   //linked_list_head_init(&rule->depremainlist);
@@ -1831,7 +1839,7 @@ void process_additional_deps(size_t global_scopeidx)
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-        ins_dep(rule, dep->depidx, rule->diridx, dep->depidxnodir, 0, 0);
+        ins_dep(rule, dep->depidx, rule->diridx, dep->depidxnodir, 0, 0, 0);
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
@@ -1851,7 +1859,7 @@ void process_additional_deps(size_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      ins_dep(rule, dep->depidx, rule->diridx, dep->depidxnodir, 0, 0);
+      ins_dep(rule, dep->depidx, rule->diridx, dep->depidxnodir, 0, 0, 0);
     }
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
@@ -1916,7 +1924,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     size_t nameidx = stringtab_add(deps[i].name);
     size_t nameidxnodir = stringtab_add(deps[i].namenodir);
-    ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly);
+    ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, 1);
     ins_ruleid_by_dep(nameidx, rule->ruleid);
   }
 }
