@@ -95,6 +95,68 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   struct stiryy_main *main = *pbaton;
   switch (ins)
   {
+    case STIR_OPCODE_SUFFILTER:
+    {
+      struct abce_mb suf = {};
+      struct abce_mb bases = {};
+      struct abce_mb mods = {};
+      size_t bcnt, bsz, ssz, i;
+      VERIFYMB(-1, ABCE_T_S); // suffix
+      VERIFYMB(-2, ABCE_T_A); // bases
+      mods = abce_mb_create_array(abce);
+      if (mods.typ == ABCE_T_N)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        return -EOVERFLOW;
+      }
+      GETMB(&suf, -2); // now the indices are different
+      GETMB(&bases, -3);
+      bcnt = bases.u.area->u.ar.size;
+      ssz = suf.u.area->u.str.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
+          abce_mb_refdn(abce, &suf);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          return -EINVAL;
+        }
+        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        if (   bsz < ssz
+            || memcmp(&bases.u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
+                      suf.u.area->u.str.buf, ssz) != 0)
+        {
+          continue;
+        }
+        if (abce_mb_array_append(abce, &mods, &bases.u.area->u.ar.mbs[i]) != 0)
+        {
+          abce_mb_refdn(abce, &suf);
+          abce_mb_refdn(abce, &bases);
+          abce_mb_refdn(abce, &mods);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          return -ENOMEM;
+        }
+      }
+      abce_pop(abce);
+      abce_pop(abce);
+      abce_pop(abce);
+      if (abce_push_mb(abce, &mods) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &suf);
+      abce_mb_refdn(abce, &bases);
+      abce_mb_refdn(abce, &mods);
+      return 0;
+    }
     case STIR_OPCODE_SUFSUBALL:
     {
       struct abce_mb oldsuf = {};

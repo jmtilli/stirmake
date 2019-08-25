@@ -327,6 +327,10 @@ custom_expr0:
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBONE);
 }
+| SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFFILTER);
+}
 | SUFSUBALL OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBALL);
