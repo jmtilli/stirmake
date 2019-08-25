@@ -117,6 +117,18 @@ Then you specify shell commands for targets:
 	cc -o $@ $^
 .EE
 
+Note that $^ only lists the dependencies on the rule specification, not
+any dependencies that might be defined later. So, for example, this:
+
+.EX
+"proga": "proga.o"
+	cc -o $@ $^
+
+@deponly: "proga": "libd.a"
+.EE
+
+doesn't link to the library \fIlibd.a\fR.
+
 It's also possible to use an expression-based syntax:
 
 .EX
