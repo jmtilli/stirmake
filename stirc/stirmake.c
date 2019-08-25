@@ -801,6 +801,7 @@ struct stirdep {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
   struct linked_list_node primaryllnode;
+  struct linked_list_node dupellnode;
   size_t nameidx;
   size_t nameidxnodir;
   unsigned is_recursive:1;
@@ -890,6 +891,7 @@ struct rule {
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
   struct linked_list_head primarydeplist;
+  struct linked_list_head dupedeplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   size_t deps_remain_cnt;
   size_t scopeidx;
@@ -1246,9 +1248,9 @@ struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
 
 size_t stirdep_cnt;
 
-void ins_dep(struct rule *rule,
-             size_t depidx, size_t diridx, size_t depidxnodir,
-             int is_recursive, int orderonly, int primary)
+int ins_dep(struct rule *rule,
+            size_t depidx, size_t diridx, size_t depidxnodir,
+            int is_recursive, int orderonly, int primary)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct stirdep *e;
@@ -1283,16 +1285,27 @@ void ins_dep(struct rule *rule,
   e->is_orderonly = !!orderonly;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
-  if (ret != 0)
+  if (ret == 0)
   {
-    printf("3\n");
-    my_abort();
+    linked_list_add_tail(&e->llnode, &rule->deplist);
   }
-  linked_list_add_tail(&e->llnode, &rule->deplist);
+  else
+  {
+    if (debug)
+    {
+      size_t tgtidx = ABCE_CONTAINER_OF(rule->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
+      fprintf(stderr, "stirmake: duplicate dep %s: %s detected\n",
+              sttable[tgtidx], sttable[depidx]);
+    }
+    //my_abort();
+    ret = -EEXIST;
+  }
+  linked_list_add_tail(&e->dupellnode, &rule->dupedeplist);
   if (primary)
   {
     linked_list_add_tail(&e->primaryllnode, &rule->primarydeplist);
   }
+  return ret;
 }
 
 int deps_remain_has(struct rule *rule, int ruleid)
@@ -1766,6 +1779,7 @@ void zero_rule(struct rule *rule)
   memset(rule, 0, sizeof(*rule));
   linked_list_head_init(&rule->deplist);
   linked_list_head_init(&rule->primarydeplist);
+  linked_list_head_init(&rule->dupedeplist);
   linked_list_head_init(&rule->tgtlist);
   rule->deps_remain_cnt = 0;
   //linked_list_head_init(&rule->depremainlist);
@@ -1924,8 +1938,10 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     size_t nameidx = stringtab_add(deps[i].name);
     size_t nameidxnodir = stringtab_add(deps[i].namenodir);
-    ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, 1);
-    ins_ruleid_by_dep(nameidx, rule->ruleid);
+    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, 1) == 0)
+    {
+      ins_ruleid_by_dep(nameidx, rule->ruleid);
+    }
   }
 }
 

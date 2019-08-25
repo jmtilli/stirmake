@@ -1,0 +1,7 @@
+@toplevel
+
+@phonyrule: all: a a b a
+
+@phonyrule: a:
+
+@phonyrule: b:
