@@ -185,6 +185,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token SUFFILTER
 %token PATHSUFFIX
 %token PATHBASENAME
+%token PATHSIMPLIFY
 %token PATHDIR
 %token PATHNOTDIR
 %token SUFSUBONE
@@ -354,6 +355,10 @@ custom_expr0:
 | PATHNOTDIR OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHNOTDIR);
+}
+| PATHSIMPLIFY OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSIMPLIFY);
 }
 ;
 

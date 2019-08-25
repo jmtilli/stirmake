@@ -264,6 +264,32 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_mb_refdn(abce, &mods);
       return 0;
     }
+    case STIR_OPCODE_PATHSIMPLIFY:
+    {
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      char *can;
+      VERIFYMB(-1, ABCE_T_S); // base
+      GETMB(&base, -1);
+
+      can = canon(base.u.area->u.str.buf); // RFE '\0' in filename
+      newstr = abce_mb_create_string(abce, can, strlen(can));
+      free(can);
+      if (newstr.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      abce_pop(abce);
+      if (abce_push_mb(abce, &newstr) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &newstr);
+      return 0;
+    }
     case STIR_OPCODE_PATHBASENAME:
     {
       struct abce_mb base = {};

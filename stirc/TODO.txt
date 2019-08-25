@@ -8,8 +8,8 @@
   - path_basename for lists
   - path_dir for lists
   - path_notdir for lists
+  - path_simplify for lists
   - path_absolutify
-  - path_simplify
 
 - LuaJIT
 
