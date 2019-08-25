@@ -2,6 +2,15 @@
   - Consider separating order-only prerequisites to $|
   - Consider supporting $+ to allow linking multiple times
 
+- Extra opcodes:
+  - glob
+  - path_absolutify
+  - path_basename
+  - path_dir
+  - path_notdir
+  - path_simplify
+  - path_suffix
+
 - LuaJIT
 
 - Adding rules from Amyplan
