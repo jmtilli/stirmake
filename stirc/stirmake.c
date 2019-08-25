@@ -950,6 +950,92 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       abce_mb_refdn(abce, &mbkey);
       abce_mb_refdn(abce, &mbval);
 
+      mbkey = abce_mb_create_string(abce, "+", 1);
+      if (mbkey.typ == ABCE_T_N)
+      {
+        return NULL;
+      }
+      mbval = abce_mb_create_array(abce);
+      if (mbval.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mbval) != 0)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        abce_mb_refdn(abce, &mbval);
+        return NULL;
+      }
+      abce_mb_refdn(abce, &mbkey);
+      LINKED_LIST_FOR_EACH(node, &rule->dupedeplist)
+      {
+        struct stirdep *dep =
+          ABCE_CONTAINER_OF(node, struct stirdep, dupellnode);
+        if (dep->is_orderonly)
+        {
+          continue;
+        }
+        mb = abce_mb_create_string(abce, sttable[dep->nameidxnodir],
+                                   strlen(sttable[dep->nameidxnodir]));
+        if (mb.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &mbval);
+          return NULL;
+        }
+        if (abce_mb_array_append(abce, &mbval, &mb) != 0)
+        {
+          abce_mb_refdn(abce, &mbval);
+          abce_mb_refdn(abce, &mb);
+          return NULL;
+        }
+        abce_mb_refdn(abce, &mb);
+      }
+      abce_mb_refdn(abce, &mbval);
+
+      mbkey = abce_mb_create_string(abce, "|", 1);
+      if (mbkey.typ == ABCE_T_N)
+      {
+        return NULL;
+      }
+      mbval = abce_mb_create_array(abce);
+      if (mbval.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mbval) != 0)
+      {
+        abce_mb_refdn(abce, &mbkey);
+        abce_mb_refdn(abce, &mbval);
+        return NULL;
+      }
+      abce_mb_refdn(abce, &mbkey);
+      LINKED_LIST_FOR_EACH(node, &rule->deplist)
+      {
+        struct stirdep *dep =
+          ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+        if (!dep->is_orderonly)
+        {
+          continue;
+        }
+        mb = abce_mb_create_string(abce, sttable[dep->nameidxnodir],
+                                   strlen(sttable[dep->nameidxnodir]));
+        if (mb.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &mbval);
+          return NULL;
+        }
+        if (abce_mb_array_append(abce, &mbval, &mb) != 0)
+        {
+          abce_mb_refdn(abce, &mbval);
+          abce_mb_refdn(abce, &mb);
+          return NULL;
+        }
+        abce_mb_refdn(abce, &mb);
+      }
+      abce_mb_refdn(abce, &mbval);
+
       mbkey = abce_mb_create_string(abce, "^", 1);
       if (mbkey.typ == ABCE_T_N)
       {
@@ -968,10 +1054,14 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
       abce_mb_refdn(abce, &mbkey);
-      LINKED_LIST_FOR_EACH(node, &rule->primarydeplist)
+      LINKED_LIST_FOR_EACH(node, &rule->deplist)
       {
         struct stirdep *dep =
-          ABCE_CONTAINER_OF(node, struct stirdep, primaryllnode);
+          ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+        if (dep->is_orderonly)
+        {
+          continue;
+        }
         mb = abce_mb_create_string(abce, sttable[dep->nameidxnodir],
                                    strlen(sttable[dep->nameidxnodir]));
         if (mb.typ == ABCE_T_N)
