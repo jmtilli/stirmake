@@ -1243,7 +1243,8 @@ struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
 
 size_t stirdep_cnt;
 
-void ins_dep(struct rule *rule, size_t depidx, size_t depidxnodir,
+void ins_dep(struct rule *rule,
+             size_t depidx, size_t diridx, size_t depidxnodir,
              int is_recursive, int orderonly)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
@@ -1254,6 +1255,27 @@ void ins_dep(struct rule *rule, size_t depidx, size_t depidxnodir,
   e = my_malloc(sizeof(*e));
   e->nameidx = depidx;
   e->nameidxnodir = depidxnodir;
+  if (strcmp(sttable[diridx], ".") == 0 || sttable[depidx][0] == '/')
+  {
+    e->nameidxnodir = depidx;
+  }
+  else
+  {
+    char *backpath = construct_backpath(sttable[diridx]);
+    size_t backforthsz = strlen(backpath) + 1 + strlen(sttable[depidx]) + 1;
+    char *backforth = malloc(backforthsz);
+    char *can = NULL;
+    if (snprintf(backforth, backforthsz, "%s/%s", backpath, sttable[depidx])
+        >= backforthsz)
+    {
+      abort();
+    }
+    free(backpath);
+    can = canon(backforth);
+    free(backforth);
+    e->nameidxnodir = stringtab_add(can);
+    free(can);
+  }
   e->is_recursive = !!is_recursive;
   e->is_orderonly = !!orderonly;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
@@ -1800,6 +1822,7 @@ void process_additional_deps(size_t global_scopeidx)
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
       rule->is_inc = 1;
+      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
@@ -1808,7 +1831,7 @@ void process_additional_deps(size_t global_scopeidx)
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-        ins_dep(rule, dep->depidx, dep->depidxnodir, 0, 0);
+        ins_dep(rule, dep->depidx, rule->diridx, dep->depidxnodir, 0, 0);
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
@@ -1828,7 +1851,7 @@ void process_additional_deps(size_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      ins_dep(rule, dep->depidx, dep->depidxnodir, 0, 0);
+      ins_dep(rule, dep->depidx, rule->diridx, dep->depidxnodir, 0, 0);
     }
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
@@ -1880,6 +1903,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->is_cleanhook = !!cleanhook;
   rule->is_distcleanhook = !!distcleanhook;
   rule->is_bothcleanhook = !!bothcleanhook;
+  rule->diridx = stringtab_add(prefix);
 
   for (i = 0; i < tgtsz; i++)
   {
@@ -1892,10 +1916,9 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     size_t nameidx = stringtab_add(deps[i].name);
     size_t nameidxnodir = stringtab_add(deps[i].namenodir);
-    ins_dep(rule, nameidx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly);
+    ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly);
     ins_ruleid_by_dep(nameidx, rule->ruleid);
   }
-  rule->diridx = stringtab_add(prefix);
 }
 
 int *ruleids_to_run;

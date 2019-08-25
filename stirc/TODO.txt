@@ -1,9 +1,8 @@
-- If parent Stirfile sets additional deps for target in child Stirfile, now
-  the paths are incorrectly set for $< etc variables???
-
 - $< etc variable expansion for ordinary shell command uses only immediately
   defined deps, not additional deps; to fix this, the command needs to be
   turned to abce bytecode
+  - ...but perhaps we don't want additional deps at all?
+    - except in this case, we need to fix Amyplan variable expansion
 
 - LuaJIT
 
