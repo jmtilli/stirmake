@@ -183,6 +183,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token DELAYEXPR
 %token DELAYLISTEXPAND
 %token SUFFILTER
+%token PATHSUFFIX
 %token SUFSUBONE
 %token STRAPPEND
 %token SUFSUBALL
@@ -334,6 +335,10 @@ custom_expr0:
 | SUFSUBALL OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBALL);
+}
+| PATHSUFFIX OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSUFFIX);
 }
 ;
 

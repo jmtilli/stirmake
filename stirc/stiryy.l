@@ -49,6 +49,7 @@ struct CSnippet luaSnippet = {
 @strappend return STRAPPEND;
 @sufsuball return SUFSUBALL;
 @suffilter return SUFFILTER;
+@pathsuffix return PATHSUFFIX;
 @phonyrule return PHONYRULE;
 @mayberule return MAYBERULE;
 @rectgtrule return RECTGTRULE;

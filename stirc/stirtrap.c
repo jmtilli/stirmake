@@ -6,6 +6,8 @@
 #include "canon.h"
 #include "stiryy.h"
 
+void *my_memrchr(const void *s, int c, size_t n);
+
 #define VERIFYMB(idx, type) \
   if(1) { \
     int _getdbl_rettmp = abce_verifymb(abce, (idx), (type)); \
@@ -260,6 +262,42 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_mb_refdn(abce, &newsuf);
       abce_mb_refdn(abce, &bases);
       abce_mb_refdn(abce, &mods);
+      return 0;
+    }
+    case STIR_OPCODE_PATHSUFFIX:
+    {
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      size_t bsz;
+      char *cutpoint;
+      VERIFYMB(-1, ABCE_T_S); // base
+      GETMB(&base, -1);
+      bsz = base.u.area->u.str.size;
+
+      cutpoint = my_memrchr(base.u.area->u.str.buf, '.', bsz);
+      if (cutpoint == NULL)
+      {
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        abce_push_nil(abce);
+        return 0;
+      }
+
+      newstr = abce_mb_create_string(abce, cutpoint+1,
+                                     bsz - (cutpoint+1-base.u.area->u.str.buf));
+      if (newstr.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      abce_pop(abce);
+      if (abce_push_mb(abce, &newstr) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &newstr);
       return 0;
     }
     case STIR_OPCODE_SUFSUBONE:
