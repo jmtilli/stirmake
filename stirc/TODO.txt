@@ -4,8 +4,6 @@
 
 - Option to check heap after every engine invocation to reveal refcnt bugs
 
-- Fix basename and suffix for paths containing ".." but no extension
-
 - Extra opcodes:
   - glob
   - path_absolutify

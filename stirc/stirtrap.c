@@ -179,7 +179,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       bcnt = bases.u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
-        char *cutpoint, *buf;
+        char *cutpoint, *buf, *cutpoint2;
         if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
@@ -191,7 +191,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
         buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
         cutpoint = my_memrchr(buf, '.', bsz);
-        if (cutpoint == NULL)
+        cutpoint2 = my_memrchr(buf, '/', bsz);
+        if (cutpoint == NULL || cutpoint < cutpoint2)
         {
           if (abce_mb_array_append(abce, &mods,
                                    &bases.u.area->u.ar.mbs[i]) != 0)
@@ -253,7 +254,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       bcnt = bases.u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
-        char *cutpoint, *buf;
+        char *cutpoint, *buf, *cutpoint2;
         if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
@@ -265,7 +266,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
         buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
         cutpoint = my_memrchr(buf, '.', bsz);
-        if (cutpoint == NULL)
+        cutpoint2 = my_memrchr(buf, '/', bsz);
+        if (cutpoint == NULL || cutpoint < cutpoint2)
         {
           newstr = abce_mb_create_string(abce, "", 0);
           if (newstr.typ == ABCE_T_N)
@@ -664,13 +666,14 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb base = {};
       struct abce_mb newstr = {};
       size_t bsz;
-      char *cutpoint;
+      char *cutpoint, *cutpoint2;
       VERIFYMB(-1, ABCE_T_S); // base
       GETMB(&base, -1);
       bsz = base.u.area->u.str.size;
 
       cutpoint = my_memrchr(base.u.area->u.str.buf, '.', bsz);
-      if (cutpoint == NULL)
+      cutpoint2 = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      if (cutpoint == NULL || cutpoint < cutpoint2)
       {
         abce_pop(abce);
         if (abce_push_mb(abce, &base) != 0)
@@ -785,13 +788,14 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb base = {};
       struct abce_mb newstr = {};
       size_t bsz;
-      char *cutpoint;
+      char *cutpoint, *cutpoint2;
       VERIFYMB(-1, ABCE_T_S); // base
       GETMB(&base, -1);
       bsz = base.u.area->u.str.size;
 
       cutpoint = my_memrchr(base.u.area->u.str.buf, '.', bsz);
-      if (cutpoint == NULL)
+      cutpoint2 = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      if (cutpoint == NULL || cutpoint < cutpoint2)
       {
         abce_mb_refdn(abce, &base);
         abce_pop(abce);
