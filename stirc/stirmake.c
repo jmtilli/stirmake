@@ -1896,13 +1896,13 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
 
   if (tgtsz <= 0)
   {
-    printf("9\n");
-    my_abort();
+    errxit("Rules must have at least 1 target");
+    exit(1);
   }
   if (phony && tgtsz != 1)
   {
-    printf("10\n");
-    my_abort();
+    errxit("Phony rules must not have multiple targets");
+    exit(1);
   }
   if (rules_size >= rules_capacity)
   {
@@ -2209,7 +2209,7 @@ pid_t fork_child(int ruleid)
   pid = fork();
   if (pid < 0)
   {
-    printf("11\n");
+    errxit("Unable to fork child");
     my_abort();
     exit(1);
   }
@@ -2321,7 +2321,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     //std::string nam2(name);
     if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
     {
-      printf("13\n");
+      errxit("Pathname too long");
       my_abort();
     }
     if (de == NULL)
@@ -2336,7 +2336,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
                  "/%s", de->d_name) >= sizeof(nam2)-oldlen)
     {
-      printf("14\n");
+      errxit("Pathname too long");
       my_abort();
     }
     //if (de->d_type == DT_DIR)
@@ -2550,7 +2550,7 @@ int do_exec(int ruleid)
         if (!seen_tgt)
         {
           printf("15\n");
-          my_abort();
+          my_abort(); // shouldn't happen if there's at least 1 tgt
         }
         if (seen_nonphony && ts_cmp(st_mtimtgt, st_mtim) < 0)
         {
@@ -4432,7 +4432,7 @@ int main(int argc, char **argv)
     f = fopen(fname, "r");
     if (!f)
     {
-      printf("25\n");
+      errxit("Can't read cdepincludes from %s", fname);
       my_abort();
     }
     free(fname);
