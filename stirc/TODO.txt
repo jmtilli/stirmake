@@ -1,7 +1,5 @@
 - LuaJIT
 
-- Check that evaluating cmdline has correct dynscope!!!
-
 - Adding rules from Amyplan
   - Implement @addrule so that it supports fn and ctx
 

@@ -18,6 +18,7 @@ struct incyyrule {
   char **deps;
   size_t depsz;
   size_t depcapacity;
+  char **depsnodir;
   char **targets;
   size_t targetsz;
   size_t targetcapacity;
@@ -60,9 +61,12 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
   {
     newcapacity = 2*rule->depcapacity + 1;
     rule->deps = (char**)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
+    rule->depsnodir = (char**)realloc(rule->depsnodir, sizeof(*rule->depsnodir)*newcapacity);
     rule->depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz++] = strdup(can);
+  rule->deps[rule->depsz] = strdup(can);
+  rule->depsnodir[rule->depsz] = strdup(dep);
+  rule->depsz++;
   free(can);
 }
 
@@ -112,6 +116,7 @@ static inline void incyy_emplace_rule(struct incyy *incyy)
   incyy->rules[incyy->rulesz].depsz = 0;
   incyy->rules[incyy->rulesz].depcapacity = 0;
   incyy->rules[incyy->rulesz].deps = NULL;
+  incyy->rules[incyy->rulesz].depsnodir = NULL;
   incyy->rules[incyy->rulesz].targetsz = 0;
   incyy->rules[incyy->rulesz].targetcapacity = 0;
   incyy->rules[incyy->rulesz].targets = NULL;
@@ -127,12 +132,14 @@ static inline void incyy_free(struct incyy *incyy)
     for (j = 0; j < incyy->rules[i].depsz; j++)
     {
       free(incyy->rules[i].deps[j]);
+      free(incyy->rules[i].depsnodir[j]);
     }
     for (j = 0; j < incyy->rules[i].targetsz; j++)
     {
       free(incyy->rules[i].targets[j]);
     }
     free(incyy->rules[i].deps);
+    free(incyy->rules[i].depsnodir);
     free(incyy->rules[i].targets);
   }
   free(incyy->rules);
