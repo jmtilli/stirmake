@@ -1,0 +1,16 @@
+@toplevel
+
+@phonyrule: all: a
+
+@function $ADDDEP()
+  @adddeps(["a"], ["c"], {})
+  @return []
+@endfunction
+
+@phonyrule: a: b
+
+@phonyrule: b:
+@@	$ADDDEP()
+
+@phonyrule: c:
+	echo c

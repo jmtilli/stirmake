@@ -1910,6 +1910,54 @@ char ***argsdupcnt(char ***cmdargs, size_t cnt)
 
 size_t rule_cnt;
 
+int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
+                                char **deps, size_t depsz,
+                                int rec, int orderonly)
+{
+  size_t i, j;
+  for (i = 0; i < tgtsz; i++)
+  {
+    size_t tgtidx = stringtab_add(tgts[i]);
+    int ruleid = get_ruleid_by_tgt(tgtidx);
+    struct rule *rule;
+    if (ruleid < 0)
+    {
+      fprintf(stderr, "stirmake: target %s not found while adding dep\n",
+              tgts[i]);
+      return -ENOENT;
+    }
+    rule = rules[ruleid];
+    if (rule->is_executed)
+    {
+      fprintf(stderr, "stirmake: target %s already executed while adding dep\n",
+              tgts[i]);
+      return -EINVAL;
+    }
+    if (rule->is_queued)
+    {
+      fprintf(stderr, "stirmake: target %s already queued while adding dep\n",
+              tgts[i]);
+      return -EINVAL;
+    }
+    for (j = 0; j < depsz; j++)
+    {
+      size_t depidx = stringtab_add(deps[j]);
+      int otherid;
+      otherid = get_ruleid_by_tgt(depidx);
+      if (otherid < 0)
+      {
+        fprintf(stderr, "stirmake: dep %s not found while adding dep\n",
+                deps[j]);
+        return -ENOENT;
+      }
+      ins_dep(rule, depidx, rule->diridx, (size_t)(-1), rec, orderonly, 0);
+      deps_remain_insert(rule, otherid);
+      ins_ruleid_by_dep(depidx, ruleid);
+    }
+  }
+  return 0;
+}
+
 void process_additional_deps(size_t global_scopeidx)
 {
   struct linked_list_node *node, *node2;

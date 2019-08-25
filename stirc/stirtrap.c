@@ -93,6 +93,10 @@ void *my_memrchr(const void *s, int c, size_t n);
 }
  */
 
+int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
+                                char **deps, size_t depsz,
+                                int rec, int orderonly);
+
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 {
   int ret = 0;
@@ -1051,12 +1055,6 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb rec = {};
       struct abce_mb *orderonlyres = NULL;
       struct abce_mb *recres = NULL;
-      if (!main->parsing)
-      {
-        fprintf(stderr, "stirmake: trying to add dep after parsing stage\n");
-        abce->err.code = STIR_E_RULECHANGE_NOT_PERMITTED;
-        return -EINVAL;
-      }
       if (abce_scope_get_userdata(&abce->dynscope))
       {
         prefix =
@@ -1072,6 +1070,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMB(&tree, -1);
       GETMB(&depar, -2);
       GETMB(&tgtar, -3);
+
       for (i = 0; i < depar.u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &depar.u.area->u.ar.mbs[i];
@@ -1159,6 +1158,42 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce_pop(abce);
         abce_pop(abce);
         return -EINVAL;
+      }
+
+      if (!main->parsing)
+      {
+        char **tgts = malloc(sizeof(*tgts) * tgtar.u.area->u.ar.size);
+        char **deps = malloc(sizeof(*deps) * depar.u.area->u.ar.size);
+        for (i = 0; i < depar.u.area->u.ar.size; i++)
+        {
+          const struct abce_mb *mb = &depar.u.area->u.ar.mbs[i];
+          deps[i] = mb->u.area->u.str.buf;
+        }
+        for (i = 0; i < tgtar.u.area->u.ar.size; i++)
+        {
+          const struct abce_mb *mb = &tgtar.u.area->u.ar.mbs[i];
+          tgts[i] = mb->u.area->u.str.buf;
+        }
+        if (add_dep_after_parsing_stage(tgts, tgtar.u.area->u.ar.size,
+                                        deps, depar.u.area->u.ar.size,
+                                        recres && recres->u.d != 0,
+                                        orderonlyres && orderonlyres->u.d != 0)
+            != 0)
+        {
+          abce->err.code = STIR_E_RULE_NOT_FOUND;
+          abce->err.mb.typ = ABCE_T_N;
+          abce_mb_refdn(abce, &depar);
+          abce_mb_refdn(abce, &tgtar);
+          abce_mb_refdn(abce, &tree);
+          return -ENOENT;
+        }
+        abce_mb_refdn(abce, &depar);
+        abce_mb_refdn(abce, &tgtar);
+        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
+        abce_pop(abce);
+        abce_pop(abce);
+        return 0;
       }
 
       stiryy_main_emplace_rule(main, prefix, abce->dynscope.u.area->u.sc.locidx);

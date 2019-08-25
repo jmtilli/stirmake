@@ -38,7 +38,7 @@ language, and Shake uses a strange Haskell-based input syntax.
 * Many sanity checks; some fatal errors, some helpful suggestions
 * Support for invoking build tool in any directory, much like you can invoke git in any directory and it automatically detects where the `.git` top-level repository is located
 * Full GNU make jobserver integration, allowing parallel sub-makes
-* TODO: Modification of rules on the fly, so that the built system can affect the build system
+* Modification of dependencies on the fly, so that the built system can affect the build system
 
 ## Building stirmake
 
