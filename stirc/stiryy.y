@@ -2463,7 +2463,8 @@ shell_command:
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
+          //abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
           i++;
           continue;
         }
