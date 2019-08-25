@@ -1,8 +1,3 @@
-- Consider adding all prerequisites to $^ just like make does
-  - Consider separating order-only prerequisites to $|
-  - Consider supporting $+ to allow linking multiple times
-  - First steps towards these taken, now TAB command still need work
-
 - Option to check heap after every engine invocation to reveal refcnt bugs
 
 - Extra opcodes:

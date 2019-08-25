@@ -2401,11 +2401,13 @@ shell_command:
   if (amyplanyy_do_emit(amyplanyy))
   {
     char *outbuf = NULL;
+    size_t cidx;
     size_t outcap = 0;
     size_t outsz = 0;
     size_t len = strlen($1);
     size_t i;
-    stiryy_add_shell_section(stiryy);
+    size_t codeloc = amyplanyy->main->abce->bytecodesz;
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_NEW_ARRAY);
     for (i = 0; i < len; i++)
     {
       if ($1[i] == '\\')
@@ -2425,95 +2427,82 @@ shell_command:
       }
       else if ($1[i] == '$')
       {
+        if (outsz)
+        {
+          size_t cidx;
+          if (i > 0 && $1[i] != ' ')
+          {
+            recommend(scanner, stiryy, "Recommend putting space before variable name, because new argument is created");
+          }
+          cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+          outsz = 0;
+        }
         if (i+1 < len && $1[i+1] == '<')
         {
-          char *dep;
-          size_t deplen;
-          struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
-          if (rule->depsz <= 0)
-          {
-            fprintf(stderr, "$< on rule with no dependencies\n");
-            my_abort();
-          }
-          dep = rule->deps[0].namenodir;
-          deplen = strlen(dep);
-          if (outsz + deplen > outcap)
-          {
-            outcap = 2*outcap + deplen;
-            outbuf = realloc(outbuf, outcap);
-          }
-          memcpy(&outbuf[outsz], dep, deplen);
-          outsz += deplen;
+          size_t cidx;
+          cidx = abce_cache_add_str(amyplanyy->main->abce, "<", 1);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
           i++;
           continue;
         }
         if (i+1 < len && $1[i+1] == '@')
         {
-          char *tgt;
-          size_t tgtlen;
-          struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
-          if (rule->targetsz <= 0)
-          {
-            fprintf(stderr, "$@ on rule with no targets\n");
-            my_abort();
-          }
-          tgt = rule->targets[0].namenodir;
-          tgtlen = strlen(tgt);
-          if (outsz + tgtlen > outcap)
-          {
-            outcap = 2*outcap + tgtlen;
-            outbuf = realloc(outbuf, outcap);
-          }
-          memcpy(&outbuf[outsz], tgt, tgtlen);
-          outsz += tgtlen;
+          size_t cidx;
+          cidx = abce_cache_add_str(amyplanyy->main->abce, "@", 1);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
           i++;
           continue;
         }
         if (i+1 < len && $1[i+1] == '^')
         {
-          char *tgt;
-          size_t tgtlen;
-          size_t tgtidx;
-          struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
-          for (tgtidx = 0; tgtidx < rule->targetsz; tgtidx++)
-          {
-            if (tgtidx > 0 || outsz > 0)
-            {
-              // Emit new command
-              if (outsz >= outcap)
-              {
-                outcap = 2*outcap + 16;
-                outbuf = realloc(outbuf, outcap);
-              }
-              outbuf[outsz++] = '\0';
-              stiryy_add_shell(stiryy, outbuf);
-              outsz = 0;
-            }
-
-            tgt = rule->targets[tgtidx].namenodir;
-            tgtlen = strlen(tgt);
-            if (outsz + tgtlen > outcap)
-            {
-              outcap = 2*outcap + tgtlen;
-              outbuf = realloc(outbuf, outcap);
-            }
-            memcpy(&outbuf[outsz], tgt, tgtlen);
-            outsz += tgtlen;
-          }
-
-          if (tgtidx > 0 || outsz > 0)
-          {
-            // Emit new command
-            if (outsz >= outcap)
-            {
-              outcap = 2*outcap + 16;
-              outbuf = realloc(outbuf, outcap);
-            }
-            outbuf[outsz++] = '\0';
-            stiryy_add_shell(stiryy, outbuf);
-            outsz = 0;
-          }
-
+          size_t cidx;
+          cidx = abce_cache_add_str(amyplanyy->main->abce, "^", 1);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+          i++;
+          continue;
+        }
+        if (i+1 < len && $1[i+1] == '+')
+        {
+          size_t cidx;
+          cidx = abce_cache_add_str(amyplanyy->main->abce, "+", 1);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
+          i++;
+          continue;
+        }
+        if (i+1 < len && $1[i+1] == '|')
+        {
+          size_t cidx;
+          cidx = abce_cache_add_str(amyplanyy->main->abce, "|", 1);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
           i++;
           continue;
         }
@@ -2521,18 +2510,18 @@ shell_command:
       }
       else if ($1[i] == ' ')
       {
+        size_t cidx;
         while ($1[i] == ' ')
         {
           i++;
         }
         i--; // will be incremented by for
-        if (outsz >= outcap)
-        {
-          outcap = 2*outcap + 16;
-          outbuf = realloc(outbuf, outcap);
-        }
-        outbuf[outsz++] = '\0';
-        stiryy_add_shell(stiryy, outbuf);
+
+        cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
+        abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+        abce_add_double(amyplanyy->main->abce, cidx);
+        abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+        abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
         outsz = 0;
         continue;
       }
@@ -2543,18 +2532,20 @@ shell_command:
       }
       outbuf[outsz++] = $1[i];
     }
-    if (outsz >= outcap)
+    if (outsz)
     {
-      outcap = 2*outcap + 16;
-      outbuf = realloc(outbuf, outcap);
+      cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
+      abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+      abce_add_double(amyplanyy->main->abce, cidx);
+      abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+      abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+      outsz = 0;
     }
-    outbuf[outsz++] = '\0';
-    //printf("\tshell\n");
-    stiryy_add_shell(stiryy, outbuf);
-    free(outbuf);
-    stiryy_add_shell(stiryy, NULL);
-    // FIXME multiple shell command lines
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+    stiryy_add_shell_attab(stiryy, codeloc);
   }
+
   free($1);
 }
 | ATTAB
