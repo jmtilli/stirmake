@@ -1,0 +1,13 @@
+@toplevel
+
+@phonyrule: all: a
+
+a b a: c d
+	touch a
+	touch b
+
+@phonyrule: c:
+	echo c
+
+@phonyrule: d:
+	echo d
