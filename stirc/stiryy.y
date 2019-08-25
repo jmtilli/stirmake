@@ -184,6 +184,9 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token DELAYLISTEXPAND
 %token SUFFILTER
 %token PATHSUFFIX
+%token PATHBASENAME
+%token PATHDIR
+%token PATHNOTDIR
 %token SUFSUBONE
 %token STRAPPEND
 %token SUFSUBALL
@@ -339,6 +342,18 @@ custom_expr0:
 | PATHSUFFIX OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHSUFFIX);
+}
+| PATHBASENAME OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHBASENAME);
+}
+| PATHDIR OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHDIR);
+}
+| PATHNOTDIR OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PATHNOTDIR);
 }
 ;
 

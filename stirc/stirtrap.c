@@ -264,6 +264,127 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_mb_refdn(abce, &mods);
       return 0;
     }
+    case STIR_OPCODE_PATHBASENAME:
+    {
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      size_t bsz;
+      char *cutpoint;
+      VERIFYMB(-1, ABCE_T_S); // base
+      GETMB(&base, -1);
+      bsz = base.u.area->u.str.size;
+
+      cutpoint = my_memrchr(base.u.area->u.str.buf, '.', bsz);
+      if (cutpoint == NULL)
+      {
+        abce_pop(abce);
+        if (abce_push_mb(abce, &base) != 0)
+        {
+          my_abort();
+        }
+        abce_mb_refdn(abce, &base);
+        return 0;
+      }
+
+      newstr = abce_mb_create_string(abce, base.u.area->u.str.buf,
+                                     cutpoint - base.u.area->u.str.buf);
+      if (newstr.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      abce_pop(abce);
+      if (abce_push_mb(abce, &newstr) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &newstr);
+      return 0;
+    }
+    case STIR_OPCODE_PATHDIR:
+    {
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      size_t bsz;
+      char *cutpoint;
+      VERIFYMB(-1, ABCE_T_S); // base
+      GETMB(&base, -1);
+      bsz = base.u.area->u.str.size;
+
+      cutpoint = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      if (cutpoint == NULL)
+      {
+        abce_pop(abce);
+        newstr = abce_mb_create_string(abce, "./", 2);
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &base);
+          return -ENOMEM;
+        }
+        if (abce_push_mb(abce, &newstr) != 0)
+        {
+          my_abort();
+        }
+        abce_mb_refdn(abce, &newstr);
+        abce_mb_refdn(abce, &base);
+        return 0;
+      }
+
+      newstr = abce_mb_create_string(abce, base.u.area->u.str.buf,
+                                     cutpoint + 1 - base.u.area->u.str.buf);
+      if (newstr.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      abce_pop(abce);
+      if (abce_push_mb(abce, &newstr) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &newstr);
+      return 0;
+    }
+    case STIR_OPCODE_PATHNOTDIR:
+    {
+      struct abce_mb base = {};
+      struct abce_mb newstr = {};
+      size_t bsz;
+      char *cutpoint;
+      VERIFYMB(-1, ABCE_T_S); // base
+      GETMB(&base, -1);
+      bsz = base.u.area->u.str.size;
+
+      cutpoint = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      if (cutpoint == NULL)
+      {
+        abce_pop(abce);
+        abce_push_mb(abce, &base);
+        abce_mb_refdn(abce, &base);
+        return 0;
+      }
+
+      newstr = abce_mb_create_string(abce, cutpoint+1,
+                                     bsz - (cutpoint+1-base.u.area->u.str.buf));
+      if (newstr.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &base);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      abce_pop(abce);
+      if (abce_push_mb(abce, &newstr) != 0)
+      {
+        my_abort();
+      }
+      abce_mb_refdn(abce, &base);
+      abce_mb_refdn(abce, &newstr);
+      return 0;
+    }
     case STIR_OPCODE_PATHSUFFIX:
     {
       struct abce_mb base = {};
@@ -279,12 +400,20 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         abce_mb_refdn(abce, &base);
         abce_pop(abce);
-        abce_push_nil(abce);
+
+        newstr = abce_mb_create_string(abce, "", 0);
+        if (newstr.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &base);
+          return -ENOMEM;
+        }
+        abce_push_mb(abce, &newstr);
+        abce_mb_refdn(abce, &newstr);
         return 0;
       }
 
-      newstr = abce_mb_create_string(abce, cutpoint+1,
-                                     bsz - (cutpoint+1-base.u.area->u.str.buf));
+      newstr = abce_mb_create_string(abce, cutpoint,
+                                     bsz - (cutpoint-base.u.area->u.str.buf));
       if (newstr.typ == ABCE_T_N)
       {
         abce_mb_refdn(abce, &base);
