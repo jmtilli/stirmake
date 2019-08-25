@@ -24,6 +24,10 @@
 /dbyy.lex.h
 /dbyy.tab.c
 /dbyy.tab.h
+/jsonyy.lex.c
+/jsonyy.lex.h
+/jsonyy.tab.c
+/jsonyy.tab.h
 /smka
 /smkt
 /smkp

@@ -1,12 +1,12 @@
 .SUFFIXES:
 
-SRC_LIB := yyutils.c incyyutils.c dbyyutils.c canon.c stirtrap.c
-SRC := $(SRC_LIB) stir.c inc.c stirmake.c
+SRC_LIB := yyutils.c incyyutils.c dbyyutils.c canon.c stirtrap.c jsonyyutils.c
+SRC := $(SRC_LIB) stir.c inc.c stirmake.c jsonyytest.c
 
-LEX_LIB := stiryy.l incyy.l dbyy.l
+LEX_LIB := stiryy.l incyy.l dbyy.l jsonyy.l
 LEX := $(LEX_LIB)
 
-YACC_LIB := stiryy.y incyy.y dbyy.y
+YACC_LIB := stiryy.y incyy.y dbyy.y jsonyy.y
 YACC := $(YACC_LIB)
 
 LEXGEN_LIB := $(patsubst %.l,%.lex.c,$(LEX_LIB))
@@ -38,7 +38,7 @@ DEPGEN := $(patsubst %.c,%.d,$(GEN))
 
 .PHONY: all wc
 
-all: stir inc abce stirmake smka smkt smkp
+all: jsonyytest stir inc abce stirmake smka smkt smkp
 
 .PHONY: abce
 
@@ -71,6 +71,9 @@ stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 stir: stir.o libstirmake.a Makefile $(LUALIB) abce
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+
+jsonyytest: jsonyytest.o libstirmake.a Makefile $(LUALIB) abce
 	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 inc: inc.o libstirmake.a Makefile $(LUALIB)
@@ -145,5 +148,23 @@ dbyy.tab.h: dbyy.y Makefile
 	byacc -d -p dbyy -b dbyy -o .tmph.dbyy.tab.c dbyy.y
 	rm .tmph.dbyy.tab.c
 	mv .tmph.dbyy.tab.h dbyy.tab.h
+
+jsonyy.lex.d: jsonyy.tab.h jsonyy.lex.h
+jsonyy.lex.o: jsonyy.tab.h jsonyy.lex.h
+jsonyy.tab.d: jsonyy.tab.h jsonyy.lex.h
+jsonyy.tab.o: jsonyy.tab.h jsonyy.lex.h
+
+jsonyy.lex.c: jsonyy.l Makefile
+	flex --outfile=jsonyy.lex.c --header-file=/dev/null jsonyy.l
+jsonyy.lex.h: jsonyy.l Makefile
+	flex --outfile=/dev/null --header-file=jsonyy.lex.h jsonyy.l
+jsonyy.tab.c: jsonyy.y Makefile
+	byacc -d -p jsonyy -b jsonyy -o .tmpc.jsonyy.tab.c jsonyy.y
+	rm .tmpc.jsonyy.tab.h
+	mv .tmpc.jsonyy.tab.c jsonyy.tab.c
+jsonyy.tab.h: jsonyy.y Makefile
+	byacc -d -p jsonyy -b jsonyy -o .tmph.jsonyy.tab.c jsonyy.y
+	rm .tmph.jsonyy.tab.c
+	mv .tmph.jsonyy.tab.h jsonyy.tab.h
 
 -include *.d

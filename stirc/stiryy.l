@@ -232,7 +232,7 @@ struct CSnippet luaSnippet = {
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
-[-+]?[0-9]+(.[0-9]+)?([eE][-+]?[0-9]+)? {
+[-+]?[0-9]+(.[0-9]+)?([eE][-+]?[0-9]+)? { // FIXME period incorrect!!!!!
   yylval->d = atof(yytext);
   return NUMBER;
 }
