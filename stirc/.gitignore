@@ -34,3 +34,4 @@
 /stirmake
 .stir.db
 .*.sw?
+/jsonyytest
