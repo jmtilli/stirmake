@@ -75,7 +75,14 @@ void subproc_sighup_handler(int x)
 struct abce abce = {};
 int abce_inited = 0;
 
-int out_sync = 0;
+enum out_sync {
+  OUT_SYNC_NONE = 0,
+  OUT_SYNC_LINE = 1, // unsupported now
+  OUT_SYNC_TARGET = 2,
+  OUT_SYNC_RECURSE = 3,
+};
+
+enum out_sync out_sync = OUT_SYNC_NONE;
 
 void st_compact(void);
 
@@ -2375,23 +2382,68 @@ int is_makecmd(const char *cmd)
   return 0;
 }
 
-void do_makecmd(const char *cmd)
+void do_makecmd(const char *cmd, int create_fd, int create_make_fd, int outpipewr)
 {
   if (is_makecmd(cmd))
   {
     char env[128] = {0};
-    snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j",
-             jobserver_fd[0], jobserver_fd[1]);
+    if (create_make_fd)
+    {
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j -Orecurse",
+               jobserver_fd[0], jobserver_fd[1]);
+    }
+    else if (create_fd)
+    {
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j -Otarget",
+               jobserver_fd[0], jobserver_fd[1]);
+    }
+    else
+    {
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j",
+               jobserver_fd[0], jobserver_fd[1]);
+    }
     setenv("MAKEFLAGS", env, 1);
+    if (create_make_fd)
+    {
+      if (dup2(outpipewr, 1) < 0)
+      {
+        write(2, "DUP2ERR\n", 8);
+        _exit(1);
+      }
+      if (dup2(outpipewr, 2) < 0)
+      {
+        write(2, "DUP2ERR\n", 8);
+        _exit(1);
+      }
+      close(outpipewr);
+    }
+    else if (create_fd)
+    {
+      close(outpipewr);
+    }
   }
   else
   {
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
+    if (create_fd)
+    {
+      if (dup2(outpipewr, 1) < 0)
+      {
+        write(2, "DUP2ERR\n", 8);
+        _exit(1);
+      }
+      if (dup2(outpipewr, 2) < 0)
+      {
+        write(2, "DUP2ERR\n", 8);
+        _exit(1);
+      }
+      close(outpipewr);
+    }
   }
 }
 
-void child_execvp_wait(const char *tgtname, const char *prefix, const char *cmd, char **args)
+void child_execvp_wait(const char *tgtname, const char *prefix, const char *cmd, char **args, int create_fd, int create_make_fd, int outpipewr)
 {
   pid_t pid = fork();
   if (pid < 0)
@@ -2405,7 +2457,7 @@ void child_execvp_wait(const char *tgtname, const char *prefix, const char *cmd,
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
 #endif
-    do_makecmd(cmd);
+    do_makecmd(cmd, create_fd, create_make_fd, outpipewr);
     print_cmd(tgtname, prefix, args);
     execvp(cmd, args);
     //write(1, "Err\n", 4);
@@ -2457,7 +2509,7 @@ void child_execvp_wait(const char *tgtname, const char *prefix, const char *cmd,
 
 void set_nonblock(int fd);
 
-pid_t fork_child(int ruleid, int create_fd, int *fdout)
+pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
   char ***args;
   pid_t pid;
@@ -2570,27 +2622,16 @@ pid_t fork_child(int ruleid, int create_fd, int *fdout)
     if (create_fd)
     {
       close(outpiperd);
-      if (dup2(outpipewr, 1) < 0)
-      {
-        write(2, "DUP2ERR\n", 8);
-        _exit(1);
-      }
-      if (dup2(outpipewr, 2) < 0)
-      {
-        write(2, "DUP2ERR\n", 8);
-        _exit(1);
-      }
-      close(outpipewr);
     }
     update_recursive_pid(0);
     while (argcnt > 1)
     {
-      child_execvp_wait(sttable[first_tgt->tgtidx], dir, (*argiter)[0], &(*argiter)[0]);
+      child_execvp_wait(sttable[first_tgt->tgtidx], dir, (*argiter)[0], &(*argiter)[0], create_fd, create_make_fd, outpipewr);
       argiter++;
       argcnt--;
     }
     update_recursive_pid(1);
-    do_makecmd((*argiter)[0]);
+    do_makecmd((*argiter)[0], create_fd, create_make_fd, outpipewr);
     print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[0]);
     execvp((*argiter)[0], &(*argiter)[0]);
     //write(1, "Err\n", 4);
@@ -4216,7 +4257,7 @@ back:
       printf("forking1 child\n");
     }
     int pipefd = -1;
-    fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync, &pipefd);
+    fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
     if (pipefd >= 0)
     {
       FD_SET(pipefd, &globfds);
@@ -4404,7 +4445,7 @@ back:
       }
       //std::cout << "forking child" << std::endl;
       int pipefd = -1;
-      fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync, &pipefd);
+      fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
       if (pipefd >= 0)
       {
         FD_SET(pipefd, &globfds);
@@ -4607,11 +4648,20 @@ int main(int argc, char **argv)
     case 'O':
       if (optarg[0] == 'n')
       {
-        out_sync = 0;
+        out_sync = OUT_SYNC_NONE;
+      }
+      else if (optarg[0] == 'l')
+      {
+        fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
+        out_sync = OUT_SYNC_TARGET;
       }
       else if (optarg[0] == 't')
       {
-        out_sync = 1;
+        out_sync = OUT_SYNC_TARGET;
+      }
+      else if (optarg[0] == 'r')
+      {
+        out_sync = OUT_SYNC_RECURSE;
       }
       else
       {
