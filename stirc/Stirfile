@@ -46,6 +46,7 @@ $(SYM) = ["smka", "smkt", "smkp"]
 @patrule: $(SYM): '%':
 	ln -s stirmake $@
 
+# FIXME touch abce/libabce.a does not cause relink, why?
 @patrule: $(PROG): '%': '%.o' 'libstirmake.a' 'abce/libabce.a'
 @	[$(CC), @$(CFLAGS), "-o", $@, $<, 'libstirmake.a', 'abce/libabce.a', '-lm']
 
