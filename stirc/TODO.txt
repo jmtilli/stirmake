@@ -33,3 +33,5 @@
 - instead of '%.c' use ''%'.c'
 
 - more human-readable error messages with backtraces
+
+- support copying dependency lists somehow so that gcc -MT option is not needed
