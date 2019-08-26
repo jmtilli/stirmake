@@ -1,130 +1,94 @@
-@if(@true)
+@toplevel
+@strict
 
-# beforefirstrule: longdepall
+$(CC) = "clang"
+$(CFLAGS) = ["-O3", "-Wall", "-g"]
 
-@function $TEST()
-  @stdout("dirup: ")
-  @stdout(@dirup)
-  @stdout("\n")
-  @stdout("dirdown: ")
-  @stdout(@dirdown)
-  @stdout("\n")
-@endfunction
+$(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
+              "stirtrap.c", "jsonyyutils.c", "syncbuf.c"]
+$(SRC_PROG) = ["stir.c", "inc.c", "stirmake.c", "jsonyytest.c"]
 
-firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
+$(LEX_LIB) = ["stiryy.l", "incyy.l", "dbyy.l", "jsonyy.l"]
 
-@cdepincludes "depfile.dep"
-# @cdepincludes "longdepfile.dep"
+$(YACC_LIB) = @sufsuball($(LEX_LIB), ".l", ".y")
 
-# This is a comment
+$(SRC) = [@$(SRC_LIB), @$(SRC_PROG)]
 
-@function $ARCMDS()
-  @locvar $lists = []
-  @locvar $list = []
-  @append($list, "rm")
-  @append($list, "-f")
-  #@append($list, @dyno["@"]<>)
-  @append($list, @dyn["@"]<>)
-  @append($lists, $list<>)
-  $list = []
-  @append($list, "ar")
-  @append($list, "rs")
-  #@append($list, @dyno["@"]<>)
-  @append($list, @dyn["@"]<>)
-  #@appendlist($list, (@suffilter(@dyno["^"], ".o"))<>)
-  #@appendlist($list, (@suffilter(@dyn["^"], ".o"))<>)
-  @append($lists, $list<>)
-  @return $lists
-@endfunction
+$(LEXGEN_LIB) = @sufsuball($(LEX_LIB), ".l", ".lex.c")
+$(LEXHDR_LIB) = @sufsuball($(LEX_LIB), ".l", ".lex.h")
+$(YACCGEN_LIB) = @sufsuball($(YACC_LIB), ".y", ".tab.c")
+$(YACCHDR_LIB) = @sufsuball($(YACC_LIB), ".y", ".tab.h")
 
-@function $addrule()
-  @locvar $deplist = []
-  @locvar $tgtlist = []
-  @locvar $cmd = []
-  @locvar $cmdlist = []
-  @locvar $rulelist = {}
-  @append($cmd, "echo")
-  @append($cmd, "foo")
-  @append($cmdlist, $cmd)
-  @append($tgtlist, "foo")
-#  $rulelist["type"] = @RULE_DIST # alternatives: RULE_PHONY, 0
-  $rulelist["deps"] = $deplist
-  $rulelist["tgts"] = $tgtlist
-  $rulelist["cmds"] = $cmdlist
-#  @addRule(@loc["rulelist"])
-#  @addRule($rulelist) # equivalent
-#  @D$bar = @D$baz["barf"]
-  @dyn["bar"] = @dyn["baz"]["barf"] # equivalent
-#  @L$foo = "y"
-  @lex["foo"] = "y" # equivalent
-@endfunction
+$(GEN_LIB) = [@$(LEXGEN_LIB), @$(YACCGEN_LIB)]
 
-$MYFLAGS = [["-Wall", "-Wextra"]]
-$MYFLAGS += [["foo", "bar"]]
+$(OBJ_LIB) = @sufsuball($(SRC_LIB), ".c", ".o")
+$(OBJ) = @sufsuball($(SRC), ".c", ".o")
+$(OBJGEN_LIB) = @sufsuball($(GEN_LIB), ".c", ".o")
 
-$CC = "cc"
-$CFLAGS = ["-Wall", "-Wextra"]
-$CCCMD = [$CC, @$CFLAGS]
-$TGTS = ["a.txt", "b.txt"]
+$(DEP) = @sufsuball($(SRC), ".c", ".d")
+$(DEPGEN_LIB) = @sufsuball($(GEN_LIB), ".c", ".d")
 
-$CC = "cc"
-$CFLAGS = []
-# FIXME is there implicit <> used? Should be!
-$CCCMDS<> = [[$CC, @$CFLAGS, "-c", "-o", $@, $<]]
-$CCLDCMDS<> = [[$CC, @$CFLAGS, "-o", $@, @$^]]
-$DEPCMDS = []
-#$DEPCMDS = [[$CC, @$CFLAGS, "-MM", "-MP", "-MF", $@, "-MT", $@, "-MT", @sufsubone($@, ".d", ".o"), $<]] # FIXME doesn't work
-#$ARCMDS = [["rm", "-f", $@], ["ar", "rs", $@, @suffilter($^, ".o")]] # FIXME doesn't work
+$(PROG) = @sufsuball($(SRC_PROG), ".c", "")
+$(SYM) = ["smka", "smkt", "smkp"]
 
-$SUBDIRS = ['mod0', 'mod1', 'mod2', 'mod3']
+@phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM)
 
-@phonyrule: 'all1': $(SUBDIRS)
+# FIXME it may not be good to touch the targets here!!!
+# It causes rebuild of the programs in abce...
+# We can avoid that by building specifically only libabce.a
+@rectgtrule: 'abce/libabce.a': @recdep 'abce'
+	make -C abce libabce.a
 
-@fileinclude 'opts.mk'
-@dirinclude $(SUBDIRS)
+# FIXME filter-out needed here!!!!!
+@phonyrule: 'wc':
+@	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@glob("*.h")]
 
-$SRC = ['mod3_main.c', 'mod3.c']
-#$OBJ = @sufsub($(SRC), ".c", ".o")
-#$DEP = @sufsub($(SRC), ".c", ".d")
-$CFLAGS += ["-I$(DIRMOD0)", "-I$(DIRMOD2)"]
-$LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
+@patrule: $(SYM): '%':
+	ln -s stirmake $@
 
-@phonyrule: 'all2': 'libmod3.a' 'mod3'
-
-@distrule: 'mod3': 'mod3_main.o' 'libmod3.a' $(LIBS)
-@	$(CCLDCMDS)
-
-@distrule: 'mod3.a': 'mod3.o'
-@	$(ARCMDS)
+@patrule: $(PROG): '%': '%.o' 'libstirmake.a' 'abce/libabce.a'
+@	[$(CC), @$(CFLAGS), "-o", $@, $<, 'libstirmake.a', 'abce/libabce.a', '-lm']
 
 @patrule: $(OBJ): '%.o': '%.c' '%.d'
-@	$(CCCMDS)
+@	[$(CC), @$(CFLAGS), "-c", "-o", $@, $<]
+
+@patrule: $(OBJGEN_LIB): '%.o': '%.c' '%.h' '%.d'
+@	[$(CC), @$(CFLAGS), "-Wno-sign-compare", "-Wno-missing-prototypes", "-c", "-o", $@, $<]
 
 @patrule: $(DEP): '%.d': '%.c'
-@	$(DEPCMDS)
+@	[$(CC), @$(CFLAGS), "-MM", "-o", $@, $<]
 
-@cdepincludes $(DEP)
+@patrule: $(DEPGEN_LIB): '%.d': '%.c' '%.h'
+@	[$(CC), @$(CFLAGS), "-Wno-sign-compare", "-Wno-missing-prototypes", "-MM", "-o", $@, $<]
 
+'libstirmake.a': $(OBJ_LIB) $(OBJGEN_LIB)
+@	["unlink", $@]
+@	["ar", "rvs", $@, @@suffilter($^, ".o")]
 
+# FIXME automate these somehow...
+@deponly: 'stiryy.lex.d': 'stiryy.tab.h' 'stiryy.lex.h'
+@deponly: 'stiryy.lex.o': 'stiryy.tab.h' 'stiryy.lex.h'
+@deponly: 'stiryy.tab.d': 'stiryy.tab.h' 'stiryy.lex.h'
+@deponly: 'stiryy.tab.o': 'stiryy.tab.h' 'stiryy.lex.h'
+@deponly: 'jsonyy.lex.d': 'jsonyy.tab.h' 'jsonyy.lex.h'
+@deponly: 'jsonyy.lex.o': 'jsonyy.tab.h' 'jsonyy.lex.h'
+@deponly: 'jsonyy.tab.d': 'jsonyy.tab.h' 'jsonyy.lex.h'
+@deponly: 'jsonyy.tab.o': 'jsonyy.tab.h' 'jsonyy.lex.h'
+@deponly: 'dbyy.lex.d': 'dbyy.tab.h' 'dbyy.lex.h'
+@deponly: 'dbyy.lex.o': 'dbyy.tab.h' 'dbyy.lex.h'
+@deponly: 'dbyy.tab.d': 'dbyy.tab.h' 'dbyy.lex.h'
+@deponly: 'dbyy.tab.o': 'dbyy.tab.h' 'dbyy.lex.h'
+@deponly: 'incyy.lex.d': 'incyy.tab.h' 'incyy.lex.h'
+@deponly: 'incyy.lex.o': 'incyy.tab.h' 'incyy.lex.h'
+@deponly: 'incyy.tab.d': 'incyy.tab.h' 'incyy.lex.h'
+@deponly: 'incyy.tab.o': 'incyy.tab.h' 'incyy.lex.h'
 
+# FIXME test breaking long command line to many shorter lines
+@patrule: $(LEXGEN_LIB): '%.lex.c' '%.lex.h': '%.l'
+@	["flex", @strappend("--outfile=", $@), @strappend("--header-file=", @sufsubone($@, ".c", ".h")), $<]
 
+@patrule: $(YACCGEN_LIB): '%.tab.c' '%.tab.h': '%.y'
+@	["byacc", "-d", "-p", @sufsubone($@, ".tab.c", ""), "-b", @sufsubone($@, ".tab.c", ""), "-o", $@, $<]
 
-all3: $TGTS
-	echo ok
-
-$TGTS: \
-c.txt
-	touch a.txt
-	touch b.txt
-
-(["c.txt"]): (['d.txt'])
-	touch c.txt
-
-
-@print 0
-@print +0.1
-@print -0.1e-2
-
-@endif
-
-@phonyrule: "dummy":
+@cdepincludes @autophony @autotarget @ignore $(DEP)
+@cdepincludes @autophony @autotarget @ignore $(DEPGEN_LIB)
