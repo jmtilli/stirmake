@@ -3193,6 +3193,19 @@ void mark_executed(int ruleid, int was_actually_executed)
       struct timespec timespecs[2];
       struct timeval times[2];
       int utimeret;
+      struct stat statbuf;
+      if (stat(sttable[e->tgtidx], &statbuf) != 0)
+      {
+        errxit("Can't stat %s", sttable[e->tgtidx]);
+      }
+      if (ts_cmp(r->st_mtim, statbuf.st_mtim) <= 0)
+      {
+        if (debug)
+        {
+          printf("utime %s won't move clock backwards!\n", sttable[e->tgtidx]);
+        }
+        continue;
+      }
       timespecs[0] = r->st_mtim;
       timespecs[1] = r->st_mtim;
       times[0].tv_sec = r->st_mtim.tv_sec;
