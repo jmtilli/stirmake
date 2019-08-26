@@ -89,6 +89,8 @@ void st_compact(void);
 
 void my_abort(void)
 {
+  fflush(stdout);
+  fflush(stderr);
   signal(SIGABRT, SIG_DFL);
   if (abce_inited)
   {
