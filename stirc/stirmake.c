@@ -75,6 +75,8 @@ void subproc_sighup_handler(int x)
 struct abce abce = {};
 int abce_inited = 0;
 
+int out_sync = 0;
+
 void st_compact(void);
 
 void my_abort(void)
@@ -895,6 +897,9 @@ struct rule {
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   size_t deps_remain_cnt;
   size_t scopeidx;
+  char *output;
+  size_t outputsz;
+  size_t outputcap;
 };
 
 char **argdup(char **cmdargs);
@@ -2171,10 +2176,49 @@ size_t ruleids_to_run_capacity;
 
 struct ruleid_by_pid {
   struct abce_rb_tree_node node;
+  struct abce_rb_tree_node fdnode;
   struct linked_list_node llnode;
   pid_t pid;
   int ruleid;
+  int fd;
 };
+
+static inline int ruleid_by_pid_fd_cmp_asym(int fd, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct ruleid_by_pid *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, fdnode);
+  if (fd < 0 || e->fd < 0)
+  {
+    my_abort();
+  }
+  if (fd > e->fd)
+  {
+    return 1;
+  }
+  if (fd < e->fd)
+  {
+    return -1;
+  }
+  return 0;
+}
+
+static inline int ruleid_by_pid_fd_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct ruleid_by_pid *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_pid, fdnode);
+  struct ruleid_by_pid *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, fdnode);
+  if (e1->fd < 0 || e2->fd < 0)
+  {
+    my_abort();
+  }
+  if (e1->fd > e2->fd)
+  {
+    return 1;
+  }
+  if (e1->fd < e2->fd)
+  {
+    return -1;
+  }
+  return 0;
+}
 
 static inline int ruleid_by_pid_cmp_asym(pid_t pid, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -2206,14 +2250,35 @@ static inline int ruleid_by_pid_cmp_sym(struct abce_rb_tree_node *n1, struct abc
 }
 
 struct abce_rb_tree_nocmp ruleid_by_pid[RULEID_BY_PID_SIZE];
+struct abce_rb_tree_nocmp ruleid_by_pid_fd[RULEID_BY_PID_SIZE];
 struct linked_list_head ruleid_by_pid_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleid_by_pid_list);
 
-int ruleid_by_pid_erase(pid_t pid)
+int ruleid_by_fd(int fd)
 {
   struct abce_rb_tree_node *n;
-  uint32_t hashval;
-  size_t hashloc;
+  uint32_t hashvalfd;
+  size_t hashlocfd;
+  if (fd < 0)
+  {
+    abort();
+  }
+  hashvalfd = abce_murmur32(HASH_SEED, fd);
+  hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
+  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_asym, NULL, fd);
+  if (n == NULL)
+  {
+    return -ENOENT;
+  }
+  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, fdnode);
+  return bypid->ruleid;
+}
+
+int ruleid_by_pid_erase(pid_t pid, int *fd)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hashval, hashvalfd;
+  size_t hashloc, hashlocfd;
   int ruleid;
   hashval = abce_murmur32(HASH_SEED, pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
@@ -2224,8 +2289,18 @@ int ruleid_by_pid_erase(pid_t pid)
   }
   struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
   abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
+  if (bypid->fd >= 0)
+  {
+    hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
+    hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
+    abce_rb_tree_nocmp_delete(&ruleid_by_pid_fd[hashlocfd], &bypid->fdnode);
+  }
   ruleid = bypid->ruleid;
   linked_list_delete(&bypid->llnode);
+  if (fd)
+  {
+    *fd = bypid->fd;
+  }
   my_free(bypid);
   return ruleid;
 }
@@ -2375,7 +2450,9 @@ void child_execvp_wait(const char *prefix, const char *cmd, char **args)
   }
 }
 
-pid_t fork_child(int ruleid)
+void set_nonblock(int fd);
+
+pid_t fork_child(int ruleid, int create_fd, int *fdout)
 {
   char ***args;
   pid_t pid;
@@ -2384,9 +2461,23 @@ pid_t fork_child(int ruleid)
   char ***argiter;
   char **oneargiter;
   size_t argcnt = 0;
+  int outpipe[2] = {-1,-1};
+  int outpiperd = -1, outpipewr = -1;
 
   args = cmd.args;
   argiter = args;
+
+  if (create_fd)
+  {
+    if (pipe(outpipe) != 0)
+    {
+      errxit("can't pipe output of command");
+      my_abort();
+    }
+    outpiperd = outpipe[0];
+    outpipewr = outpipe[1];
+    set_nonblock(outpiperd); // not for outpipewr
+  }
 
   if (debug)
   {
@@ -2469,6 +2560,21 @@ pid_t fork_child(int ruleid)
     }
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
+    if (create_fd)
+    {
+      close(outpiperd);
+      if (dup2(outpipewr, 1) < 0)
+      {
+        write(2, "DUP2ERR\n", 8);
+        _exit(1);
+      }
+      if (dup2(outpipewr, 2) < 0)
+      {
+        write(2, "DUP2ERR\n", 8);
+        _exit(1);
+      }
+      close(outpipewr);
+    }
     update_recursive_pid(0);
     while (argcnt > 1)
     {
@@ -2489,8 +2595,11 @@ pid_t fork_child(int ruleid)
     struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
     uint32_t hashval;
     size_t hashloc;
+    uint32_t hashvalfd;
+    size_t hashlocfd;
     bypid->pid = pid;
     bypid->ruleid = ruleid;
+    bypid->fd = outpiperd;
     children++;
     hashval = abce_murmur32(HASH_SEED, pid);
     hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
@@ -2499,8 +2608,22 @@ pid_t fork_child(int ruleid)
       printf("12\n");
       my_abort();
     }
+    if (bypid->fd >= 0)
+    {
+      hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
+      hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
+      if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_sym, NULL, &bypid->fdnode) != 0)
+      {
+        printf("12.5\n");
+        my_abort();
+      }
+    }
     linked_list_add_tail(&bypid->llnode, &ruleid_by_pid_list);
     rules[ruleid]->is_forked = 1;
+    if (fdout)
+    {
+      *fdout = bypid->fd;
+    }
     return pid;
   }
 }
@@ -4022,6 +4145,9 @@ void handle_signal(int signum)
 uint32_t forkedchildcnt = 0;
 int narration = 0;
 
+fd_set globfds;
+int globmaxfd = -1;
+
 void run_loop(void)
 {
   struct linked_list_node *node;
@@ -4052,30 +4178,40 @@ back:
     {
       printf("forking1 child\n");
     }
-    fork_child(ruleids_to_run[ruleids_to_run_size-1]);
+    int pipefd = -1;
+    fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync, &pipefd);
+    if (pipefd >= 0)
+    {
+      FD_SET(pipefd, &globfds);
+      if (pipefd > globmaxfd)
+      {
+        globmaxfd = pipefd;
+      }
+    }
     ruleids_to_run_size--;
   }
 
-  int maxfd = 0;
-  if (self_pipe_fd[0] > maxfd)
+  int locmaxfd = 0;
+  if (self_pipe_fd[0] > locmaxfd)
   {
-    maxfd = self_pipe_fd[0];
+    locmaxfd = self_pipe_fd[0];
   }
-  if (jobserver_fd[0] > maxfd)
+  if (jobserver_fd[0] > locmaxfd)
   {
-    maxfd = jobserver_fd[0];
+    locmaxfd = jobserver_fd[0];
   }
   char chbuf[100];
   while (children > 0)
   {
     int wstatus = 0;
-    fd_set readfds;
+    fd_set readfds = globfds;
     FD_SET(self_pipe_fd[0], &readfds);
     if (ruleids_to_run_size > 0)
     {
       FD_SET(jobserver_fd[0], &readfds);
     }
-    select(maxfd+1, &readfds, NULL, NULL, NULL);
+    select((locmaxfd > globmaxfd) ? (locmaxfd+1) : (globmaxfd+1),
+           &readfds, NULL, NULL, NULL);
     if (debug)
     {
       printf("select returned\n");
@@ -4098,6 +4234,50 @@ back:
       errxit("Got SIGHUP");
       exit(1);
     }
+    int fdit;
+    for (fdit = 0; fdit <= globmaxfd; fdit++)
+    {
+      if (fdit == self_pipe_fd[0] || fdit == jobserver_fd[0])
+      {
+        continue;
+      }
+      if (!FD_ISSET(fdit, &readfds))
+      {
+        continue;
+      }
+      int ruleid = ruleid_by_fd(fdit);
+      if (ruleid < 0)
+      {
+        abort();
+      }
+      struct rule *rule = rules[ruleid];
+      for (;;)
+      {
+        char buf[10240];
+        ssize_t bytes_read;
+        bytes_read = read(fdit, buf, sizeof(buf));
+        if (bytes_read < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+        {
+          break;
+        }
+        if (bytes_read < 0)
+        {
+          my_abort(); // RFE EINTR?
+        }
+        if (bytes_read == 0)
+        {
+          FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
+          break;
+        }
+        if (rule->outputsz + bytes_read > rule->outputcap)
+        {
+          rule->outputcap = 2*rule->outputcap + bytes_read;
+          rule->output = realloc(rule->output, rule->outputcap);
+        }
+        memcpy(&rule->output[rule->outputsz], buf, bytes_read);
+        rule->outputsz += bytes_read;
+      }
+    }
     if (read(self_pipe_fd[0], chbuf, 100))
     {
       for (;;)
@@ -4112,11 +4292,23 @@ back:
         {
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
-            int ruleid = ruleid_by_pid_erase(pid);
+            int fd = -1;
+            int ruleid = ruleid_by_pid_erase(pid, &fd);
             if (ruleid < 0)
             {
               printf("31.1\n");
               my_abort();
+            }
+            // FIXME do something with fd
+            if (fd >= 0)
+            {
+              write(1, rules[ruleid]->output, rules[ruleid]->outputsz); // FIXME EINTR
+              free(rules[ruleid]->output);
+              rules[ruleid]->output = NULL;
+              rules[ruleid]->outputsz = 0;
+              rules[ruleid]->outputcap = 0;
+              close(fd);
+              FD_CLR(fd, &globfds);
             }
             children--;
             fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
@@ -4153,11 +4345,23 @@ back:
           printf("30\n");
           my_abort();
         }
-        int ruleid = ruleid_by_pid_erase(pid);
+        int fd = -1;
+        int ruleid = ruleid_by_pid_erase(pid, &fd);
         if (ruleid < 0)
         {
           printf("31\n");
           my_abort();
+        }
+        // FIXME do something with fd
+        if (fd >= 0)
+        {
+          write(1, rules[ruleid]->output, rules[ruleid]->outputsz); // FIXME EINTR
+          free(rules[ruleid]->output);
+          rules[ruleid]->output = NULL;
+          rules[ruleid]->outputsz = 0;
+          rules[ruleid]->outputcap = 0;
+          close(fd);
+          FD_CLR(fd, &globfds);
         }
         //ruleremain_rm(rules[ruleid]);
         mark_executed(ruleid, 1);
@@ -4187,7 +4391,16 @@ back:
         printf("forking child\n");
       }
       //std::cout << "forking child" << std::endl;
-      fork_child(ruleids_to_run[ruleids_to_run_size-1]);
+      int pipefd = -1;
+      fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync, &pipefd);
+      if (pipefd >= 0)
+      {
+        FD_SET(pipefd, &globfds);
+        if (pipefd > globmaxfd)
+        {
+          globmaxfd = pipefd;
+        }
+      }
       ruleids_to_run_size--;
       //ruleids_to_run.pop_back();
     }
@@ -4370,7 +4583,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcb")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:")) != -1)
   {
     switch (opt)
     {
@@ -4378,6 +4591,20 @@ int main(int argc, char **argv)
       version(argv[0]);
     case 'd':
       debug = 1;
+      break;
+    case 'O':
+      if (optarg[0] == 'n')
+      {
+        out_sync = 0;
+      }
+      else if (optarg[0] == 't')
+      {
+        out_sync = 1;
+      }
+      else
+      {
+        usage(argv[0]);
+      }
       break;
     case 'H':
       narration = 1;
