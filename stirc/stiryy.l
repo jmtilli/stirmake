@@ -76,6 +76,7 @@ struct CSnippet luaSnippet = {
 @cdepincludes return CDEPINCLUDES;
 @autophony return AUTOPHONY;
 @autotarget return AUTOTARGET;
+@ignore return IGNORE;
 
 @function return FUNCTION;
 @endfunction return ENDFUNCTION;

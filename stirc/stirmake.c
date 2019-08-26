@@ -4806,6 +4806,11 @@ int main(int argc, char **argv)
     f = fopen(fname, "r");
     if (!f)
     {
+      if (stiryy.main->cdepincludes[i].ignore)
+      {
+        free(fname);
+        continue;
+      }
       errxit("Can't read cdepincludes from %s", fname);
       my_abort();
     }

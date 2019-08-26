@@ -208,6 +208,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token CDEPINCLUDES
 %token AUTOPHONY
 %token AUTOTARGET
+%token IGNORE
 %token DYNO
 %token LEXO
 %token IMMO
@@ -577,9 +578,9 @@ custom_rule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if ($1 != 3)
+    if ($1 != 7)
     {
-      recommend(scanner, stiryy, "Recommend @autophony and @autotarget with @cdepincludes");
+      recommend(scanner, stiryy, "Recommend @autophony, @autotarget and @ignore with @cdepincludes");
     }
   }
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
@@ -604,7 +605,8 @@ custom_rule:
     for (i = 0; i < strsz; i++)
     {
       unsigned u1 = (unsigned)$1;
-      stiryy_set_cdepinclude(stiryy, strs[i], !!(u1 & 1), !!(u1 & 2));
+      stiryy_set_cdepinclude(stiryy, strs[i],
+                             !!(u1 & 1), !!(u1 & 2), !!(u1 & 4));
       free(strs[i]);
     }
     free(strs);
@@ -2991,4 +2993,4 @@ cdepspecifiers:
 }
 ;
 
-cdepspecifier: AUTOPHONY {$$ = 1;} | AUTOTARGET {$$ = 2;} ;
+cdepspecifier: AUTOPHONY {$$ = 1;} | AUTOTARGET {$$ = 2;} | IGNORE {$$ = 4;};
