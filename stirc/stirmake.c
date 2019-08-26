@@ -1694,6 +1694,7 @@ struct add_dep {
   struct linked_list_node llnode;
   size_t depidx;
   size_t depidxnodir;
+  unsigned auto_phony:1;
 };
 
 struct add_deps {
@@ -1782,6 +1783,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx, size_t dep
   struct add_dep *entry2 = my_malloc(sizeof(struct add_dep));
   entry2->depidx = depidx;
   entry2->depidxnodir = depidxnodir;
+  entry2->auto_phony = 0;
   if (abce_rb_tree_nocmp_insert_nonexist(&entry->add_deps[hashloc], add_dep_cmp_sym, NULL, &entry2->node) != 0)
   {
     printf("7\n");
@@ -1840,8 +1842,9 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
     }
     for (j = 0; j < depsz; j++)
     {
-      add_dep_ensure(entry, stringtab_add(deps[j].name),
-                     stringtab_add(deps[j].namenodir));
+      struct add_dep *add;
+      add = add_dep_ensure(entry, stringtab_add(deps[j].name),
+                           stringtab_add(deps[j].namenodir));
     }
   }
 }
@@ -1849,7 +1852,7 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
 void add_dep(char **tgts, size_t tgts_sz,
              char **deps, size_t deps_sz,
              char **depsnodir,
-             int phony)
+             int phony, int auto_phony)
 {
   size_t i, j;
   for (i = 0; i < tgts_sz; i++)
@@ -1861,7 +1864,12 @@ void add_dep(char **tgts, size_t tgts_sz,
     }
     for (j = 0; j < deps_sz; j++)
     {
-      add_dep_ensure(entry, stringtab_add(deps[j]), stringtab_add(depsnodir[j]));
+      struct add_dep *add;
+      add = add_dep_ensure(entry, stringtab_add(deps[j]), stringtab_add(depsnodir[j]));
+      if (auto_phony)
+      {
+        add->auto_phony = 1;
+      }
     }
   }
 }
@@ -2052,6 +2060,47 @@ void process_additional_deps(size_t global_scopeidx)
       //printf(" dep: %s\n", dep->name);
     }
   }
+  // Auto-phony-adder
+#if 1
+  LINKED_LIST_FOR_EACH(node, &add_deplist)
+  {
+    struct add_deps *entry = ABCE_CONTAINER_OF(node, struct add_deps, llnode);
+    LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
+    {
+      struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
+      struct rule *rule;
+      int ruleid = get_ruleid_by_tgt(dep->depidx);
+      if (ruleid >= 0)
+      {
+        continue;
+      }
+      if (!dep->auto_phony)
+      {
+        continue;
+      }
+      if (rules_size >= rules_capacity)
+      {
+        size_t new_capacity = 2*rules_capacity + 16;
+        rules = realloc(rules, new_capacity * sizeof(*rules));
+        rules_capacity = new_capacity;
+      }
+      rule_cnt++;
+      rule = my_malloc(sizeof(*rule));
+      rules[rules_size] = rule;
+      zero_rule(rule);
+      rule->cmd.args = argsdupcnt(null_cmds, 1);
+      rule->is_inc = 1;
+      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+
+      rule->scopeidx = global_scopeidx;
+      rule->ruleid = rules_size++;
+      ins_ruleid_by_tgt(dep->depidx, rule->ruleid);
+      ins_tgt(rule, dep->depidx, (size_t)-1);
+      rule->is_phony = 0; // is_inc is enough
+      rule->is_rectgt = 0;
+    }
+  }
+#endif
 }
 
 void add_rule(struct tgt *tgts, size_t tgtsz,
@@ -3517,7 +3566,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     {
       size_t tgtidx = ABCE_CONTAINER_OF(rules[i]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
       // FIXME!!! The path to child is incorrect!
-      add_dep(&parent, 1, &sttable[tgtidx], 1, &cleanslash, 0);
+      add_dep(&parent, 1, &sttable[tgtidx], 1, &cleanslash, 0, 0);
     }
 
     free(parent);
@@ -4768,7 +4817,7 @@ int main(int argc, char **argv)
       add_dep(incyy.rules[j].targets, incyy.rules[j].targetsz,
               incyy.rules[j].deps, incyy.rules[j].depsz,
               incyy.rules[j].depsnodir,
-              0);
+              0, !!stiryy.main->cdepincludes[i].auto_phony);
       //add_dep(tgt, dep, 0);
     }
     fclose(f);

@@ -172,8 +172,8 @@ incyy.tab.h: incyy.y Makefile
 	rm .tmph.incyy.tab.c
 	mv .tmph.incyy.tab.h incyy.tab.h
 
-@cdepincludescurdir $(DEP)
-@cdepincludescurdir $(DEP_CPP)
-@cdepincludescurdir $(DEPGEN)
+@cdepincludes $(DEP)
+@cdepincludes $(DEP_CPP)
+@cdepincludes $(DEPGEN)
 
 #-include *.d

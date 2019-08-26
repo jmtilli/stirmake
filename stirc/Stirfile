@@ -13,8 +13,8 @@
 
 firstrule: ipfrag/comboperf.o @recdep ../../../../usr/include
 
-@cdepincludescurdir "depfile.dep"
-# @cdepincludescurdir "longdepfile.dep"
+@cdepincludes "depfile.dep"
+# @cdepincludes "longdepfile.dep"
 
 # This is a comment
 
@@ -103,7 +103,7 @@ $LIBS = ["$T/mod2/libmod2.a", "$T/mod1/libmod1.a", "$T/mod0/libmod0.a"]
 @patrule: $(DEP): '%.d': '%.c'
 @	$(DEPCMDS)
 
-@cdepincludescurdir $(DEP)
+@cdepincludes $(DEP)
 
 
 

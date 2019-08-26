@@ -205,7 +205,8 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token RECTGTRULE
 %token FILEINCLUDE
 %token DIRINCLUDE PROJDIRINCLUDE
-%token CDEPINCLUDESCURDIR
+%token CDEPINCLUDES
+%token CDEPINCLUDESAUTOPHONY
 %token DYNO
 %token LEXO
 %token IMMO
@@ -273,6 +274,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %type<d> maybe_rec
 %type<d> maybe_maybe_call
 %type<d> dirinclude
+%type<d> cdepincludes
 
 %type<d> scopetype
 %type<d> beginscope
@@ -568,7 +570,7 @@ custom_rule:
   free($2.str);
 }
 */
-| CDEPINCLUDESCURDIR
+| cdepincludes
 {
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
@@ -583,7 +585,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludescurdir", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz);
     if (ret)
     {
       YYABORT;
@@ -591,7 +593,7 @@ custom_rule:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_cdepinclude(stiryy, strs[i]);
+      stiryy_set_cdepinclude(stiryy, strs[i], $1);
       free(strs[i]);
     }
     free(strs);
@@ -2959,3 +2961,4 @@ deps:
 ;
 
 dirinclude: DIRINCLUDE {$$ = 1;} | PROJDIRINCLUDE {$$ = 0;} ;
+cdepincludes: CDEPINCLUDES {$$ = 0;} | CDEPINCLUDESAUTOPHONY {$$ = 1;} ;
