@@ -31,3 +31,5 @@
 - fcntl lock for output, gather child-process outputs together
 
 - instead of '%.c' use ''%'.c'
+
+- more human-readable error messages with backtraces
