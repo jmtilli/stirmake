@@ -1206,6 +1206,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         }
         result[resultsz++] = cmd;
       }
+      abce_mb_refdn(abce, &mb);
       continue;
     }
     if (!cmdsrc->items[i].merge)
