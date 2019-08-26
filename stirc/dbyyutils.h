@@ -10,14 +10,14 @@
 extern "C" {
 #endif
 
-void dbyydoparse(FILE *filein, struct dbyy *dbyy);
+int dbyydoparse(FILE *filein, struct dbyy *dbyy);
 
-void dbyydomemparse(char *filedata, size_t filesize, struct dbyy *dbyy);
+int dbyydomemparse(char *filedata, size_t filesize, struct dbyy *dbyy);
 
-void dbyynameparse(const char *fname, struct dbyy *dbyy, int require);
+int dbyynameparse(const char *fname, struct dbyy *dbyy);
 
-void dbyydirparse(
-  const char *argv0, const char *fname, struct dbyy *dbyy, int require);
+int dbyydirparse(
+  const char *argv0, const char *fname, struct dbyy *dbyy);
 
 #ifdef __cplusplus
 };

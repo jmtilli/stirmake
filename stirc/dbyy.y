@@ -28,8 +28,8 @@ void dbyyerror(/*YYLTYPE *yylloc, */yyscan_t scanner, struct dbyy *dbyy, const c
 {
         //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
         // FIXME we need better location info!
-        fprintf(stderr, "db error: %s at line %d\n", str, dbyyget_lineno(scanner));
-	my_abort();
+        //fprintf(stderr, "db error: %s at line %d\n", str, dbyyget_lineno(scanner));
+	//my_abort();
 }
 
 int dbyywrap(yyscan_t scanner)

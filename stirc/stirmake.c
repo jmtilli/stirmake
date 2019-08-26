@@ -3740,6 +3740,7 @@ void load_db(void)
   struct dbyy dbyy = {};
   size_t i;
   struct flock fl = {};
+  int ret;
   linked_list_head_init(&db.ll);
   //dbyynameparse(".stir.db", &dbyy, 0);
   dbf = fopen(".stir.db", "a+");
@@ -3763,11 +3764,16 @@ void load_db(void)
     fprintf(stderr, "stirmake: *** Can't lock DB. Other stirmake running? Exiting.\n");
     exit(1);
   }
-  dbyydoparse(dbf, &dbyy);
+  ret = dbyydoparse(dbf, &dbyy);
   if (ftruncate(dbfd, 0) != 0)
   {
     fprintf(stderr, "stirmake: *** Can't truncate DB. Exiting.\n");
     exit(1);
+  }
+  if (ret)
+  {
+    fprintf(stderr, "stirmake: *** Incompatible DB version. Truncating.\n");
+    return;
   }
   for (i = 0; i < dbyy.rulesz; i++)
   {
