@@ -51,6 +51,7 @@
 #include "dbyy.h"
 #include "dbyyutils.h"
 #include "stirtrap.h"
+#include "syncbuf.h"
 
 sig_atomic_t sigterm_atomic;
 sig_atomic_t sigint_atomic;
@@ -490,6 +491,11 @@ void *stir_do_mmap_madvise(size_t bytes)
   return ptr;
 }
 
+void stir_do_munmap(void *ptr, size_t bytes)
+{
+  munmap(ptr, stir_topages(bytes));
+}
+
 
 char *my_arena;
 char *my_arena_ptr;
@@ -904,9 +910,7 @@ struct rule {
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   size_t deps_remain_cnt;
   size_t scopeidx;
-  char *output;
-  size_t outputsz;
-  size_t outputcap;
+  struct syncbuf output;
 };
 
 char **argdup(char **cmdargs);
@@ -1894,6 +1898,7 @@ void zero_rule(struct rule *rule)
   linked_list_head_init(&rule->primarydeplist);
   linked_list_head_init(&rule->dupedeplist);
   linked_list_head_init(&rule->tgtlist);
+  syncbuf_init(&rule->output);
   rule->deps_remain_cnt = 0;
   //linked_list_head_init(&rule->depremainlist);
 }
@@ -4239,13 +4244,7 @@ void drain_pipe(struct rule *rule, int fdit)
       FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
       break;
     }
-    if (rule->outputsz + bytes_read > rule->outputcap)
-    {
-      rule->outputcap = 2*rule->outputcap + bytes_read;
-      rule->output = realloc(rule->output, rule->outputcap);
-    }
-    memcpy(&rule->output[rule->outputsz], buf, bytes_read);
-    rule->outputsz += bytes_read;
+    syncbuf_append(&rule->output, buf, bytes_read);
   }
 }
 
@@ -4377,11 +4376,7 @@ back:
             if (fd >= 0)
             {
               drain_pipe(rules[ruleid], fd);
-              write(1, rules[ruleid]->output, rules[ruleid]->outputsz); // FIXME EINTR
-              free(rules[ruleid]->output);
-              rules[ruleid]->output = NULL;
-              rules[ruleid]->outputsz = 0;
-              rules[ruleid]->outputcap = 0;
+              syncbuf_dump(&rules[ruleid]->output, 1);
               close(fd);
               FD_CLR(fd, &globfds);
             }
@@ -4431,11 +4426,7 @@ back:
         if (fd >= 0)
         {
           drain_pipe(rules[ruleid], fd);
-          write(1, rules[ruleid]->output, rules[ruleid]->outputsz); // FIXME EINTR
-          free(rules[ruleid]->output);
-          rules[ruleid]->output = NULL;
-          rules[ruleid]->outputsz = 0;
-          rules[ruleid]->outputcap = 0;
+          syncbuf_dump(&rules[ruleid]->output, 1);
           close(fd);
           FD_CLR(fd, &globfds);
         }

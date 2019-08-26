@@ -33,5 +33,3 @@
 - instead of '%.c' use ''%'.c'
 
 - more human-readable error messages with backtraces
-
-- efficient mmap'd pool of linked buffers for output sync
