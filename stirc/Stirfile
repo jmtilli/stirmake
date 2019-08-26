@@ -1,33 +1,29 @@
 @toplevel
 @strict
 
+# You can modify these during compilation
 $(CC) = "clang"
 $(CFLAGS) = ["-O3", "-Wall", "-g"]
 
+# You can modify these during development
 $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
               "stirtrap.c", "jsonyyutils.c", "syncbuf.c"]
 $(SRC_PROG) = ["stir.c", "inc.c", "stirmake.c", "jsonyytest.c"]
-
+$(SYM) = ["smka", "smkt", "smkp"]
 $(LEX_LIB) = ["stiryy.l", "incyy.l", "dbyy.l", "jsonyy.l"]
 
+# Here starts the portions you probably don't want to modify
 $(YACC_LIB) = @sufsuball($(LEX_LIB), ".l", ".y")
-
 $(SRC) = [@$(SRC_LIB), @$(SRC_PROG)]
-
 $(LEXGEN_LIB) = @sufsuball($(LEX_LIB), ".l", ".lex.c")
 $(YACCGEN_LIB) = @sufsuball($(YACC_LIB), ".y", ".tab.c")
-
 $(GEN_LIB) = [@$(LEXGEN_LIB), @$(YACCGEN_LIB)]
-
 $(OBJ_LIB) = @sufsuball($(SRC_LIB), ".c", ".o")
 $(OBJ) = @sufsuball($(SRC), ".c", ".o")
 $(OBJGEN_LIB) = @sufsuball($(GEN_LIB), ".c", ".o")
-
 $(DEP) = @sufsuball($(SRC), ".c", ".d")
 $(DEPGEN_LIB) = @sufsuball($(GEN_LIB), ".c", ".d")
-
 $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
-$(SYM) = ["smka", "smkt", "smkp"]
 
 @phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM)
 
@@ -81,5 +77,4 @@ $(SYM) = ["smka", "smkt", "smkp"]
 @patrule: $(YACCGEN_LIB): '%.tab.c' '%.tab.h': '%.y'
 @	["byacc", "-d", "-p", @sufsubone($@, ".tab.c", ""), "-b", @sufsubone($@, ".tab.c", ""), "-o", $@, $<]
 
-@cdepincludes @autophony @autotarget @ignore $(DEP)
-@cdepincludes @autophony @autotarget @ignore $(DEPGEN_LIB)
+@cdepincludes @autophony @autotarget @ignore [@$(DEP), @$(DEPGEN_LIB)]
