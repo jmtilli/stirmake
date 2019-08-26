@@ -2309,7 +2309,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
 
 size_t ruleid_by_pid_cnt;
 
-void print_cmd(const char *prefix, char **argiter_orig)
+void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
 {
   size_t argcnt = 0;
   struct iovec *iovs;
@@ -2320,23 +2320,28 @@ void print_cmd(const char *prefix, char **argiter_orig)
     argiter++;
     argcnt++;
   }
-  iovs = malloc(sizeof(*iovs)*(argcnt*2+4));
+  iovs = malloc(sizeof(*iovs)*(argcnt*2+6));
   iovs[0].iov_base = "[";
   iovs[0].iov_len = 1;
-  iovs[1].iov_base = (void*)prefix;
-  iovs[1].iov_len = strlen(prefix);
-  iovs[2].iov_base = "] ";
+  iovs[1].iov_base = (void*)tgtname;
+  iovs[1].iov_len = strlen(tgtname);
+  iovs[2].iov_base = ", ";
   iovs[2].iov_len = 2;
+  iovs[3].iov_base = (void*)prefix;
+  iovs[3].iov_len = strlen(prefix);
+  iovs[4].iov_base = "] ";
+  iovs[4].iov_len = 2;
   for (i = 0; i < argcnt; i++)
   {
-    iovs[3+2*i+0].iov_base = argiter_orig[i];
-    iovs[3+2*i+0].iov_len = strlen(argiter_orig[i]);
-    iovs[3+2*i+1].iov_base = " ";
-    iovs[3+2*i+1].iov_len = 1;
+    iovs[5+2*i+0].iov_base = argiter_orig[i];
+    iovs[5+2*i+0].iov_len = strlen(argiter_orig[i]);
+    iovs[5+2*i+1].iov_base = " ";
+    iovs[5+2*i+1].iov_len = 1;
   }
-  iovs[3+2*argcnt].iov_base = "\n";
-  iovs[3+2*argcnt].iov_len = 1;
-  writev(1, iovs, 4+2*argcnt);
+  iovs[5+2*argcnt].iov_base = "\n";
+  iovs[5+2*argcnt].iov_len = 1;
+  writev(1, iovs, 6+2*argcnt);
+  free(iovs);
 }
 
 const char *makecmds[] = {
@@ -2386,7 +2391,7 @@ void do_makecmd(const char *cmd)
   }
 }
 
-void child_execvp_wait(const char *prefix, const char *cmd, char **args)
+void child_execvp_wait(const char *tgtname, const char *prefix, const char *cmd, char **args)
 {
   pid_t pid = fork();
   if (pid < 0)
@@ -2401,7 +2406,7 @@ void child_execvp_wait(const char *prefix, const char *cmd, char **args)
     close(self_pipe_fd[1]);
 #endif
     do_makecmd(cmd);
-    print_cmd(prefix, args);
+    print_cmd(tgtname, prefix, args);
     execvp(cmd, args);
     //write(1, "Err\n", 4);
     _exit(1);
@@ -2463,6 +2468,8 @@ pid_t fork_child(int ruleid, int create_fd, int *fdout)
   size_t argcnt = 0;
   int outpipe[2] = {-1,-1};
   int outpiperd = -1, outpipewr = -1;
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
 
   args = cmd.args;
   argiter = args;
@@ -2578,13 +2585,13 @@ pid_t fork_child(int ruleid, int create_fd, int *fdout)
     update_recursive_pid(0);
     while (argcnt > 1)
     {
-      child_execvp_wait(dir, (*argiter)[0], &(*argiter)[0]);
+      child_execvp_wait(sttable[first_tgt->tgtidx], dir, (*argiter)[0], &(*argiter)[0]);
       argiter++;
       argcnt--;
     }
     update_recursive_pid(1);
     do_makecmd((*argiter)[0]);
-    print_cmd(dir, &(*argiter)[0]);
+    print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[0]);
     execvp((*argiter)[0], &(*argiter)[0]);
     //write(1, "Err\n", 4);
     _exit(1);
@@ -4148,6 +4155,36 @@ int narration = 0;
 fd_set globfds;
 int globmaxfd = -1;
 
+void drain_pipe(struct rule *rule, int fdit)
+{
+  for (;;)
+  {
+    char buf[10240];
+    ssize_t bytes_read;
+    bytes_read = read(fdit, buf, sizeof(buf));
+    if (bytes_read < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+    {
+      break;
+    }
+    if (bytes_read < 0)
+    {
+      my_abort(); // RFE EINTR?
+    }
+    if (bytes_read == 0)
+    {
+      FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
+      break;
+    }
+    if (rule->outputsz + bytes_read > rule->outputcap)
+    {
+      rule->outputcap = 2*rule->outputcap + bytes_read;
+      rule->output = realloc(rule->output, rule->outputcap);
+    }
+    memcpy(&rule->output[rule->outputsz], buf, bytes_read);
+    rule->outputsz += bytes_read;
+  }
+}
+
 void run_loop(void)
 {
   struct linked_list_node *node;
@@ -4250,33 +4287,7 @@ back:
       {
         abort();
       }
-      struct rule *rule = rules[ruleid];
-      for (;;)
-      {
-        char buf[10240];
-        ssize_t bytes_read;
-        bytes_read = read(fdit, buf, sizeof(buf));
-        if (bytes_read < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-        {
-          break;
-        }
-        if (bytes_read < 0)
-        {
-          my_abort(); // RFE EINTR?
-        }
-        if (bytes_read == 0)
-        {
-          FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
-          break;
-        }
-        if (rule->outputsz + bytes_read > rule->outputcap)
-        {
-          rule->outputcap = 2*rule->outputcap + bytes_read;
-          rule->output = realloc(rule->output, rule->outputcap);
-        }
-        memcpy(&rule->output[rule->outputsz], buf, bytes_read);
-        rule->outputsz += bytes_read;
-      }
+      drain_pipe(rules[ruleid], fdit);
     }
     if (read(self_pipe_fd[0], chbuf, 100))
     {
@@ -4299,9 +4310,9 @@ back:
               printf("31.1\n");
               my_abort();
             }
-            // FIXME do something with fd
             if (fd >= 0)
             {
+              drain_pipe(rules[ruleid], fd);
               write(1, rules[ruleid]->output, rules[ruleid]->outputsz); // FIXME EINTR
               free(rules[ruleid]->output);
               rules[ruleid]->output = NULL;
@@ -4355,6 +4366,7 @@ back:
         // FIXME do something with fd
         if (fd >= 0)
         {
+          drain_pipe(rules[ruleid], fd);
           write(1, rules[ruleid]->output, rules[ruleid]->outputsz); // FIXME EINTR
           free(rules[ruleid]->output);
           rules[ruleid]->output = NULL;
