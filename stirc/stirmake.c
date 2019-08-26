@@ -5133,5 +5133,6 @@ int main(int argc, char **argv)
   merge_db();
   free(dupargv0);
   stiryy_main_free(&main);
+  abce_free(&abce);
   return 0;
 }
