@@ -4486,7 +4486,7 @@ int main(int argc, char **argv)
       abce_inited = 1;
       abce.trap = stir_trap;
       abce.trap_baton = &main;
-      init_main_for_realpath(&main, storcwd); // FIXME leaks
+      init_main_for_realpath(&main, storcwd);
       main.abce = &abce;
       main.parsing = 1;
       main.trial = 1;
@@ -4518,6 +4518,7 @@ int main(int argc, char **argv)
         }
       }
       stiryy_free(&stiryy);
+      stiryy_main_free(&main);
       abce_free(&abce);
       abce_inited = 0;
     }
@@ -4533,6 +4534,7 @@ int main(int argc, char **argv)
   abce_inited = 1;
   abce.trap = stir_trap;
   abce.trap_baton = &main;
+  init_main_for_realpath(&main, ".");
   main.abce = &abce;
   main.parsing = 1;
   main.trial = 0;
@@ -5129,5 +5131,7 @@ int main(int argc, char **argv)
     printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
   merge_db();
+  free(dupargv0);
+  stiryy_main_free(&main);
   return 0;
 }

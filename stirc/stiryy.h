@@ -739,6 +739,7 @@ static inline void stiryy_main_free(struct stiryy_main *main)
     }
     free(main->rules[i].deps);
     free(main->rules[i].targets);
+    free(main->rules[i].prefix);
   }
   free(main->rules);
 
@@ -748,6 +749,8 @@ static inline void stiryy_main_free(struct stiryy_main *main)
     free(main->cdepincludes[i].prefix);
   }
   free(main->cdepincludes);
+  free(main->realpathname);
+  main->realpathname = NULL;
 }
 
 static inline void stiryy_free(struct stiryy *stiryy)
@@ -771,6 +774,8 @@ static inline void stiryy_free(struct stiryy *stiryy)
   free(stiryy->rules);
   free(stiryy->bytecode);
 #endif
+  free(stiryy->curprefix);
+  free(stiryy->curprojprefix);
   memset(stiryy, 0, sizeof(*stiryy));
 }
 
