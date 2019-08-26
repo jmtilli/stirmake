@@ -66,22 +66,14 @@ $(SYM) = ["smka", "smkt", "smkp"]
 @	["ar", "rvs", $@, @@suffilter($^, ".o")]
 
 # FIXME automate these somehow...
-@deponly: 'stiryy.lex.d': 'stiryy.tab.h' 'stiryy.lex.h'
-@deponly: 'stiryy.lex.o': 'stiryy.tab.h' 'stiryy.lex.h'
-@deponly: 'stiryy.tab.d': 'stiryy.tab.h' 'stiryy.lex.h'
-@deponly: 'stiryy.tab.o': 'stiryy.tab.h' 'stiryy.lex.h'
-@deponly: 'jsonyy.lex.d': 'jsonyy.tab.h' 'jsonyy.lex.h'
-@deponly: 'jsonyy.lex.o': 'jsonyy.tab.h' 'jsonyy.lex.h'
-@deponly: 'jsonyy.tab.d': 'jsonyy.tab.h' 'jsonyy.lex.h'
-@deponly: 'jsonyy.tab.o': 'jsonyy.tab.h' 'jsonyy.lex.h'
-@deponly: 'dbyy.lex.d': 'dbyy.tab.h' 'dbyy.lex.h'
-@deponly: 'dbyy.lex.o': 'dbyy.tab.h' 'dbyy.lex.h'
-@deponly: 'dbyy.tab.d': 'dbyy.tab.h' 'dbyy.lex.h'
-@deponly: 'dbyy.tab.o': 'dbyy.tab.h' 'dbyy.lex.h'
-@deponly: 'incyy.lex.d': 'incyy.tab.h' 'incyy.lex.h'
-@deponly: 'incyy.lex.o': 'incyy.tab.h' 'incyy.lex.h'
-@deponly: 'incyy.tab.d': 'incyy.tab.h' 'incyy.lex.h'
-@deponly: 'incyy.tab.o': 'incyy.tab.h' 'incyy.lex.h'
+@deponly: 'stiryy.lex.d' 'stiryy.lex.o' 'stiryy.tab.d' 'stiryy.tab.o': \
+              'stiryy.tab.h' 'stiryy.lex.h'
+@deponly: 'jsonyy.lex.d' 'jsonyy.lex.o' 'jsonyy.tab.d' 'jsonyy.tab.o': \
+              'jsonyy.tab.h' 'jsonyy.lex.h'
+@deponly: 'dbyy.lex.d' 'dbyy.lex.o' 'dbyy.tab.d' 'dbyy.tab.o': \
+              'dbyy.tab.h' 'dbyy.lex.h'
+@deponly: 'incyy.lex.d' 'incyy.lex.o' 'incyy.tab.d' 'incyy.tab.o': \
+              'incyy.tab.h' 'incyy.lex.h'
 
 # FIXME test breaking long command line to many shorter lines
 @patrule: $(LEXGEN_LIB): '%.lex.c' '%.lex.h': '%.l'
