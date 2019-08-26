@@ -137,6 +137,7 @@ struct cdepinclude {
   char *name;
   char *prefix;
   int auto_phony;
+  int auto_target;
 };
 
 struct stiryy {
@@ -243,7 +244,7 @@ static inline void stiryy_set_double(struct stiryy *stiryy, size_t i, double dbl
 
 size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
 
-static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd, int auto_phony)
+static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd, int auto_phony, int auto_target)
 {
   size_t newcapacity;
   if (stiryy->main->cdepincludesz >= stiryy->main->cdepincludecapacity)
@@ -255,6 +256,7 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
   stiryy->main->cdepincludes[stiryy->main->cdepincludesz].name = strdup(cd);
   stiryy->main->cdepincludes[stiryy->main->cdepincludesz].prefix = strdup(stiryy->curprefix);
   stiryy->main->cdepincludes[stiryy->main->cdepincludesz].auto_phony = !!auto_phony;
+  stiryy->main->cdepincludes[stiryy->main->cdepincludesz].auto_target = !!auto_target;
   stiryy->main->cdepincludesz++;
 }
 

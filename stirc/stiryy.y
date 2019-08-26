@@ -206,7 +206,8 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token FILEINCLUDE
 %token DIRINCLUDE PROJDIRINCLUDE
 %token CDEPINCLUDES
-%token CDEPINCLUDESAUTOPHONY
+%token AUTOPHONY
+%token AUTOTARGET
 %token DYNO
 %token LEXO
 %token IMMO
@@ -275,6 +276,8 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %type<d> maybe_maybe_call
 %type<d> dirinclude
 %type<d> cdepincludes
+%type<d> cdepspecifiers
+%type<d> cdepspecifier
 
 %type<d> scopetype
 %type<d> beginscope
@@ -572,6 +575,13 @@ custom_rule:
 */
 | cdepincludes
 {
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if ($1 != 3)
+    {
+      recommend(scanner, stiryy, "Recommend @autophony and @autotarget with @cdepincludes");
+    }
+  }
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
   expr NEWLINE
@@ -593,7 +603,8 @@ custom_rule:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_cdepinclude(stiryy, strs[i], $1);
+      unsigned u1 = (unsigned)$1;
+      stiryy_set_cdepinclude(stiryy, strs[i], !!(u1 & 1), !!(u1 & 2));
       free(strs[i]);
     }
     free(strs);
@@ -2961,4 +2972,23 @@ deps:
 ;
 
 dirinclude: DIRINCLUDE {$$ = 1;} | PROJDIRINCLUDE {$$ = 0;} ;
-cdepincludes: CDEPINCLUDES {$$ = 0;} | CDEPINCLUDESAUTOPHONY {$$ = 1;} ;
+
+cdepincludes:
+  CDEPINCLUDES
+  cdepspecifiers
+{
+  $$ = $2;
+}
+;
+
+cdepspecifiers:
+{
+  $$ = 0;
+}
+| cdepspecifiers cdepspecifier
+{
+  $$ = ((unsigned)$1) | ((unsigned)$2);
+}
+;
+
+cdepspecifier: AUTOPHONY {$$ = 1;} | AUTOTARGET {$$ = 2;} ;

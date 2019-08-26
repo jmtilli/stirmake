@@ -4785,7 +4785,11 @@ int main(int argc, char **argv)
 
   for (i = 0; i < stiryy.main->cdepincludesz; i++)
   {
-    struct incyy incyy = {.prefix = stiryy.main->cdepincludes[i].prefix};
+    struct incyy incyy = {
+      .prefix = stiryy.main->cdepincludes[i].prefix,
+      .auto_target = stiryy.main->cdepincludes[i].auto_target,
+      .fnamenodir = stiryy.main->cdepincludes[i].name,
+    };
     size_t j;
     size_t fnamesz =
       strlen(incyy.prefix) + strlen(stiryy.main->cdepincludes[i].name) + 2;
@@ -4810,10 +4814,23 @@ int main(int argc, char **argv)
     //for (auto it = incyy.rules; it != incyy.rules + incyy.rulesz; it++)
     for (j = 0; j < incyy.rulesz; j++)
     {
+      size_t k;
       //std::vector<std::string> tgt;
       //std::vector<std::string> dep;
       //std::copy(it->deps, it->deps+it->depsz, std::back_inserter(dep));
       //std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
+      if (debug)
+      {
+        printf("Adding dep\n");
+        for (k = 0; k < incyy.rules[j].targetsz; k++)
+        {
+          printf("  target: %s\n", incyy.rules[j].targets[k]);
+        }
+        for (k = 0; k < incyy.rules[j].depsz; k++)
+        {
+          printf("  dep: %s\n", incyy.rules[j].deps[k]);
+        }
+      }
       add_dep(incyy.rules[j].targets, incyy.rules[j].targetsz,
               incyy.rules[j].deps, incyy.rules[j].depsz,
               incyy.rules[j].depsnodir,

@@ -72,8 +72,11 @@ struct CSnippet luaSnippet = {
 @fileinclude return FILEINCLUDE;
 @dirinclude return DIRINCLUDE;
 @projdirinclude return PROJDIRINCLUDE;
+
 @cdepincludes return CDEPINCLUDES;
-@cdepincludesautophony return CDEPINCLUDESAUTOPHONY;
+@autophony return AUTOPHONY;
+@autotarget return AUTOTARGET;
+
 @function return FUNCTION;
 @endfunction return ENDFUNCTION;
 @locvar   return LOCVAR;

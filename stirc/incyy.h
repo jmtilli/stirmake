@@ -29,6 +29,8 @@ struct incyy {
   size_t rulesz;
   size_t rulecapacity;
   char *prefix;
+  int auto_target;
+  char *fnamenodir;
 };
 
 void my_abort(void);
@@ -121,6 +123,10 @@ static inline void incyy_emplace_rule(struct incyy *incyy)
   incyy->rules[incyy->rulesz].targetcapacity = 0;
   incyy->rules[incyy->rulesz].targets = NULL;
   incyy->rulesz++;
+  if (incyy->auto_target)
+  {
+    incyy_set_tgt(incyy, incyy->fnamenodir);
+  }
 }
 
 static inline void incyy_free(struct incyy *incyy)
