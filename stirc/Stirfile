@@ -15,9 +15,7 @@ $(YACC_LIB) = @sufsuball($(LEX_LIB), ".l", ".y")
 $(SRC) = [@$(SRC_LIB), @$(SRC_PROG)]
 
 $(LEXGEN_LIB) = @sufsuball($(LEX_LIB), ".l", ".lex.c")
-$(LEXHDR_LIB) = @sufsuball($(LEX_LIB), ".l", ".lex.h")
 $(YACCGEN_LIB) = @sufsuball($(YACC_LIB), ".y", ".tab.c")
-$(YACCHDR_LIB) = @sufsuball($(YACC_LIB), ".y", ".tab.h")
 
 $(GEN_LIB) = [@$(LEXGEN_LIB), @$(YACCGEN_LIB)]
 
