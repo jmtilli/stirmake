@@ -3118,6 +3118,8 @@ void reconsider(int ruleid, int ruleid_executed)
     {
       printf("rule not executing %s\n", sttable[first_tgt->tgtidx]);
     }
+    // Must do this always in case the rule is to be executed in future.
+    deps_remain_erase(r, ruleid_executed);
     return;
   }
   deps_remain_erase(r, ruleid_executed);
