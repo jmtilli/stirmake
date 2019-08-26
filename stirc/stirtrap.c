@@ -95,6 +95,7 @@ void *my_memrchr(const void *s, int c, size_t n);
 
 int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 char **deps, size_t depsz,
+                                char *prefix,
                                 int rec, int orderonly);
 
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
@@ -1176,6 +1177,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         if (add_dep_after_parsing_stage(tgts, tgtar.u.area->u.ar.size,
                                         deps, depar.u.area->u.ar.size,
+                                        prefix,
                                         recres && recres->u.d != 0,
                                         orderonlyres && orderonlyres->u.d != 0)
             != 0)

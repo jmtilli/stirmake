@@ -1350,6 +1350,7 @@ int ins_dep(struct rule *rule,
   e = my_malloc(sizeof(*e));
   e->nameidx = depidx;
   e->nameidxnodir = depidxnodir;
+#if 0
   if (strcmp(sttable[diridx], ".") == 0 || sttable[depidx][0] == '/')
   {
     e->nameidxnodir = depidx;
@@ -1371,6 +1372,7 @@ int ins_dep(struct rule *rule,
     e->nameidxnodir = stringtab_add(can);
     free(can);
   }
+#endif
   e->is_recursive = !!is_recursive;
   e->is_orderonly = !!orderonly;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
@@ -1912,14 +1914,29 @@ size_t rule_cnt;
 
 int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 char **deps, size_t depsz,
+                                char *prefix,
                                 int rec, int orderonly)
 {
   size_t i, j;
+  size_t prefixlen = strlen(prefix);
   for (i = 0; i < tgtsz; i++)
   {
-    size_t tgtidx = stringtab_add(tgts[i]);
-    int ruleid = get_ruleid_by_tgt(tgtidx);
+    size_t fulltgtsz = strlen(tgts[i]) + prefixlen + 2;
+    char *fulltgt;
+    char *can;
+    size_t tgtidx;
+    int ruleid;
     struct rule *rule;
+    fulltgt = malloc(fulltgtsz);
+    if (snprintf(fulltgt, fulltgtsz, "%s/%s", prefix, tgts[i]) >= fulltgtsz)
+    {
+      my_abort();
+    }
+    can = canon(fulltgt);
+    tgtidx = stringtab_add(can);
+    free(can);
+    free(fulltgt);
+    ruleid = get_ruleid_by_tgt(tgtidx);
     if (ruleid < 0)
     {
       fprintf(stderr, "stirmake: target %s not found while adding dep\n",
@@ -1941,8 +1958,23 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     }
     for (j = 0; j < depsz; j++)
     {
-      size_t depidx = stringtab_add(deps[j]);
+      size_t fulldepsz = strlen(deps[j]) + prefixlen + 2;
+      char *fulldep;
+      size_t depidx;
+      size_t depidxnodir;
       int otherid;
+
+      fulldep = malloc(fulldepsz);
+      if (snprintf(fulldep, fulldepsz, "%s/%s", prefix, deps[j]) >= fulldepsz)
+      {
+        my_abort();
+      };
+      can = canon(fulldep);
+      depidx = stringtab_add(can);
+      depidxnodir = stringtab_add(deps[j]);
+      free(can);
+      free(fulldep);
+
       otherid = get_ruleid_by_tgt(depidx);
       if (otherid < 0)
       {
@@ -1950,7 +1982,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                 deps[j]);
         return -ENOENT;
       }
-      ins_dep(rule, depidx, rule->diridx, (size_t)(-1), rec, orderonly, 0);
+      ins_dep(rule, depidx, rule->diridx, depidxnodir, rec, orderonly, 0);
       deps_remain_insert(rule, otherid);
       ins_ruleid_by_dep(depidx, ruleid);
     }
@@ -4499,8 +4531,8 @@ int main(int argc, char **argv)
       }
       if (main.rules[i].ispat)
       {
-        char *backpath = construct_backpath(main.rules[i].prefix);
-        size_t backpathlen = strlen(backpath);
+        char *prefix = main.rules[i].prefix;
+        size_t prefixlen = strlen(prefix);
         size_t j, k;
         if (main.rules[i].targetsz < 1)
         {
@@ -4527,19 +4559,19 @@ int main(int argc, char **argv)
           loc = strchr(tgt, '%');
           locp1 = loc+1;
           locp1sz = strlen(locp1);
-          if (memcmp(base, tgt, loc-tgt) != 0)
+          if (memcmp(basenodir, tgt, loc-tgt) != 0)
           {
-            errxit("Target %s didn't match base %s", tgt, base);
+            errxit("Target %s didn't match base %s", tgt, basenodir);
             exit(1);
           }
-          if (memcmp(base+strlen(base)-locp1sz, locp1, locp1sz) != 0)
+          if (memcmp(basenodir+strlen(basenodir)-locp1sz, locp1, locp1sz) != 0)
           {
-            errxit("Target %s didn't match base %s", tgt, base);
+            errxit("Target %s didn't match base %s", tgt, basenodir);
             exit(1);
           }
-          meatsz = strlen(base)-strlen(tgt)+1;
+          meatsz = strlen(basenodir)-strlen(tgt)+1;
           meat = malloc(meatsz+1);
-          memcpy(meat, base+(loc-tgt), meatsz);
+          memcpy(meat, basenodir+(loc-tgt), meatsz);
           meat[meatsz] = '\0';
           tgts[0].name = base;
           tgts[0].namenodir = basenodir;
@@ -4548,8 +4580,8 @@ int main(int argc, char **argv)
             char *tgt = main.rules[i].targets[k].name;
             size_t exptgtsz; // expanded target size
             char *exptgt;
-            size_t namenodirsz;
-            char *namenodir;
+            size_t namedirsz;
+            char *namedir;
             if (strcnt(tgt, '%') != 1)
             {
               errxit("Target %s must have exactly one %% sign", tgt);
@@ -4568,24 +4600,24 @@ int main(int argc, char **argv)
             {
               my_abort();
             }
-            tgts[k].name = exptgt;
-            namenodirsz = backpathlen + strlen(exptgt) + 2;
-            namenodir = malloc(namenodirsz);
-            if (snprintf(namenodir, namenodirsz, "%s/%s", backpath, exptgt)
-                >= namenodirsz)
+            namedirsz = prefixlen+strlen(exptgt)+2;
+            namedir = malloc(namedirsz);
+            if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
+                >= namedirsz)
             {
               my_abort();
             }
-            tgts[k].namenodir = canon(namenodir);
-            free(namenodir);
+            tgts[k].name = canon(namedir);
+            tgts[k].namenodir = exptgt;
+            free(namedir);
           }
           for (k = 0; k < main.rules[i].depsz; k++)
           {
             char *dep = main.rules[i].deps[k].name;
             size_t expdepsz; // expanded target size
             char *expdep;
-            size_t namenodirsz;
-            char *namenodir;
+            size_t namedirsz;
+            char *namedir;
             if (strcnt(dep, '%') > 1)
             {
               errxit("Dep %s must have exactly zero or one %% signs", dep);
@@ -4612,18 +4644,18 @@ int main(int argc, char **argv)
             {
               my_abort();
             }
-            deps[k].name = expdep;
-            namenodirsz = backpathlen + strlen(expdep) + 2;
-            namenodir = malloc(namenodirsz);
-            if (snprintf(namenodir, namenodirsz, "%s/%s", backpath, expdep)
-                >= namenodirsz)
+            namedirsz = prefixlen+strlen(expdep)+2;
+            namedir = malloc(namedirsz);
+            if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
+                >= namedirsz)
             {
               my_abort();
             }
-            deps[k].namenodir = canon(namenodir);
-            free(namenodir);
+            deps[k].name = canon(namedir);
+            deps[k].namenodir = expdep;
             deps[k].rec = main.rules[i].deps[k].rec;
             deps[k].orderonly = main.rules[i].deps[k].orderonly;
+            free(namedir);
           }
           if (   main.rules[i].iscleanhook
               || main.rules[i].isdistcleanhook
