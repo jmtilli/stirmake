@@ -827,7 +827,7 @@ struct stirdep {
 
 struct dep_remain {
   struct abce_rb_tree_node node;
-  //struct linked_list_node llnode;
+  struct linked_list_node llnode;
   int ruleid;
 };
 
@@ -907,6 +907,7 @@ struct rule {
   struct linked_list_head tgtlist;
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
+  struct linked_list_head depremainlist;
   struct linked_list_head primarydeplist;
   struct linked_list_head dupedeplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
@@ -1444,7 +1445,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   }
   struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
-  //linked_list_delete(&dep_remain->llnode);
+  linked_list_delete(&dep_remain->llnode);
   rule->deps_remain_cnt--;
   my_free(dep_remain);
 }
@@ -1471,7 +1472,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
     printf("4\n");
     my_abort();
   }
-  //linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
+  linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
   rule->deps_remain_cnt++;
 }
 
@@ -1902,7 +1903,7 @@ void zero_rule(struct rule *rule)
   linked_list_head_init(&rule->tgtlist);
   syncbuf_init(&rule->output);
   rule->deps_remain_cnt = 0;
-  //linked_list_head_init(&rule->depremainlist);
+  linked_list_head_init(&rule->depremainlist);
 }
 
 char **null_cmds[] = {NULL};
@@ -3127,6 +3128,19 @@ void reconsider(int ruleid, int ruleid_executed)
   if (r->deps_remain_cnt > 0)
   {
     toexecute = 1;
+    if (debug)
+    {
+      struct linked_list_node *node;
+      printf("deps remain: %zu\n", r->deps_remain_cnt);
+      LINKED_LIST_FOR_EACH(node, &r->depremainlist)
+      {
+        struct dep_remain *rem =
+          ABCE_CONTAINER_OF(node, struct dep_remain, llnode);
+        struct stirtgt *first_tgt =
+          ABCE_CONTAINER_OF(rules[rem->ruleid]->tgtlist.node.next, struct stirtgt, llnode);
+        printf("  dep_remain: %d / %s\n", rem->ruleid, sttable[first_tgt->tgtidx]);
+      }
+    }
   }
   if (!toexecute && !r->is_queued)
   {
