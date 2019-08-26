@@ -36,10 +36,10 @@ struct CSnippet luaSnippet = {
   .len = 0,
   .capacity = 0,
 };
-int strict = 0;
+static int strictdummy;
 %}
 
-<INITIAL,STRICT>@strict strict = 1; BEGIN(STRICT);
+<INITIAL,STRICT>@strict yyset_extra(&strictdummy, yyscanner); BEGIN(STRICT);
 <INITIAL,STRICT>@         return AT;
 <INITIAL,STRICT>@toplevel  return TOPLEVEL;
 <INITIAL,STRICT>@subfile  return SUBFILE;
@@ -267,7 +267,7 @@ int strict = 0;
 
 <INITIAL,STRICT>"%lua{"             { BEGIN(PERCENTLUA); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
 <PERCENTLUA>%\}  {
-                     BEGIN(strict ? STRICT : INITIAL);
+                     BEGIN(yyget_extra(yyscanner) ? STRICT : INITIAL);
                      yylval->s = luaSnippet.data;
                      luaSnippet.data = NULL;
                      luaSnippet.capacity = 0;
@@ -311,7 +311,7 @@ int strict = 0;
 <SHELL>\n {
   ++yylineno;
   yycolumn=1;
-  BEGIN(strict ? STRICT : INITIAL);
+  BEGIN(yyget_extra(yyscanner) ? STRICT : INITIAL);
   return NEWLINE;
 }
 <INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
