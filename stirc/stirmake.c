@@ -5134,5 +5134,7 @@ int main(int argc, char **argv)
   free(dupargv0);
   stiryy_main_free(&main);
   abce_free(&abce);
+  free(rules);
+  rules = NULL;
   return 0;
 }
