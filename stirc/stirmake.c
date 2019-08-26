@@ -2981,7 +2981,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       }
     }
   }
-  else if (!r->is_phony && !r->is_maybe)
+  else if (!r->is_phony && !r->is_maybe && !r->is_inc)
   {
     struct stat statbuf;
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
