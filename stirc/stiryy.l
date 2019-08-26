@@ -24,6 +24,7 @@
 %}
 
 %option reentrant bison-bridge
+%option stack
 %x SHELL
 %x PERCENTLUA
 %x STRICT
@@ -36,10 +37,9 @@ struct CSnippet luaSnippet = {
   .len = 0,
   .capacity = 0,
 };
-static int strictdummy;
 %}
 
-<INITIAL,STRICT>@strict yyset_extra(&strictdummy, yyscanner); BEGIN(STRICT);
+<INITIAL,STRICT>@strict BEGIN(STRICT);
 <INITIAL,STRICT>@         return AT;
 <INITIAL,STRICT>@toplevel  return TOPLEVEL;
 <INITIAL,STRICT>@subfile  return SUBFILE;
@@ -267,9 +267,9 @@ static int strictdummy;
 <INITIAL,STRICT>\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
 #[^\n]*  /* ignore */;
 
-<INITIAL,STRICT>"%lua{"             { BEGIN(PERCENTLUA); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
+<INITIAL,STRICT>"%lua{"             { yy_push_state(PERCENTLUA, yyscanner); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
 <PERCENTLUA>%\}  {
-                     BEGIN(yyget_extra(yyscanner) ? STRICT : INITIAL);
+                     yy_pop_state(yyscanner);
                      yylval->s = luaSnippet.data;
                      luaSnippet.data = NULL;
                      luaSnippet.capacity = 0;
@@ -284,7 +284,7 @@ static int strictdummy;
 <INITIAL,STRICT>\t {
   if (yycolumn == 2)
   {
-    BEGIN(SHELL);
+    yy_push_state(SHELL, yyscanner);
   }
   else
   {
@@ -313,7 +313,8 @@ static int strictdummy;
 <SHELL>\n {
   ++yylineno;
   yycolumn=1;
-  BEGIN(yyget_extra(yyscanner) ? STRICT : INITIAL);
+  (void)yy_top_state(yyscanner); // so that it's not unused
+  yy_pop_state(yyscanner);
   return NEWLINE;
 }
 <INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
