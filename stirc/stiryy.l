@@ -26,6 +26,7 @@
 %option reentrant bison-bridge
 %x SHELL
 %x PERCENTLUA
+%x STRICT
 
 %%
 
@@ -35,214 +36,220 @@ struct CSnippet luaSnippet = {
   .len = 0,
   .capacity = 0,
 };
+int strict = 0;
 %}
 
-@         return AT;
-@toplevel  return TOPLEVEL;
-@subfile  return SUBFILE;
-@print    return PRINT;
-@call    return CALL;
-@delayvar return DELAYVAR;
-@delaylistexpand return DELAYLISTEXPAND;
-@delayexpr return DELAYEXPR;
-@sufsubone return SUFSUBONE;
-@strappend return STRAPPEND;
-@sufsuball return SUFSUBALL;
-@suffilter return SUFFILTER;
-@pathsuffix return PATHSUFFIX;
-@pathsimplify return PATHSIMPLIFY;
-@pathbasename return PATHBASENAME;
-@pathdir return PATHDIR;
-@pathnotdir return PATHNOTDIR;
-@pathsuffixall return PATHSUFFIXALL;
-@pathsimplifyall return PATHSIMPLIFYALL;
-@pathbasenameall return PATHBASENAMEALL;
-@pathdirall return PATHDIRALL;
-@pathnotdirall return PATHNOTDIRALL;
-@glob return GLOB;
-@jsonin return JSONIN;
-@phonyrule return PHONYRULE;
-@mayberule return MAYBERULE;
-@rectgtrule return RECTGTRULE;
-@distrule return DISTRULE;
-@cleanhook return CLEANHOOK;
-@distcleanhook return DISTCLEANHOOK;
-@bothcleanhook return BOTHCLEANHOOK;
-@patrule return PATRULE;
-@fileinclude return FILEINCLUDE;
-@dirinclude return DIRINCLUDE;
-@projdirinclude return PROJDIRINCLUDE;
+<INITIAL,STRICT>@strict strict = 1; BEGIN(STRICT);
+<INITIAL,STRICT>@         return AT;
+<INITIAL,STRICT>@toplevel  return TOPLEVEL;
+<INITIAL,STRICT>@subfile  return SUBFILE;
+<INITIAL,STRICT>@print    return PRINT;
+<INITIAL,STRICT>@call    return CALL;
+<INITIAL,STRICT>@delayvar return DELAYVAR;
+<INITIAL,STRICT>@delaylistexpand return DELAYLISTEXPAND;
+<INITIAL,STRICT>@delayexpr return DELAYEXPR;
+<INITIAL,STRICT>@sufsubone return SUFSUBONE;
+<INITIAL,STRICT>@strappend return STRAPPEND;
+<INITIAL,STRICT>@sufsuball return SUFSUBALL;
+<INITIAL,STRICT>@suffilter return SUFFILTER;
+<INITIAL,STRICT>@pathsuffix return PATHSUFFIX;
+<INITIAL,STRICT>@pathsimplify return PATHSIMPLIFY;
+<INITIAL,STRICT>@pathbasename return PATHBASENAME;
+<INITIAL,STRICT>@pathdir return PATHDIR;
+<INITIAL,STRICT>@pathnotdir return PATHNOTDIR;
+<INITIAL,STRICT>@pathsuffixall return PATHSUFFIXALL;
+<INITIAL,STRICT>@pathsimplifyall return PATHSIMPLIFYALL;
+<INITIAL,STRICT>@pathbasenameall return PATHBASENAMEALL;
+<INITIAL,STRICT>@pathdirall return PATHDIRALL;
+<INITIAL,STRICT>@pathnotdirall return PATHNOTDIRALL;
+<INITIAL,STRICT>@glob return GLOB;
+<INITIAL,STRICT>@jsonin return JSONIN;
+<INITIAL,STRICT>@phonyrule return PHONYRULE;
+<INITIAL,STRICT>@mayberule return MAYBERULE;
+<INITIAL,STRICT>@rectgtrule return RECTGTRULE;
+<INITIAL,STRICT>@distrule return DISTRULE;
+<INITIAL,STRICT>@cleanhook return CLEANHOOK;
+<INITIAL,STRICT>@distcleanhook return DISTCLEANHOOK;
+<INITIAL,STRICT>@bothcleanhook return BOTHCLEANHOOK;
+<INITIAL,STRICT>@patrule return PATRULE;
+<INITIAL,STRICT>@fileinclude return FILEINCLUDE;
+<INITIAL,STRICT>@dirinclude return DIRINCLUDE;
+<INITIAL,STRICT>@projdirinclude return PROJDIRINCLUDE;
 
-@cdepincludes return CDEPINCLUDES;
-@autophony return AUTOPHONY;
-@autotarget return AUTOTARGET;
-@ignore return IGNORE;
+<INITIAL,STRICT>@cdepincludes return CDEPINCLUDES;
+<INITIAL,STRICT>@autophony return AUTOPHONY;
+<INITIAL,STRICT>@autotarget return AUTOTARGET;
+<INITIAL,STRICT>@ignore return IGNORE;
 
-@function return FUNCTION;
-@endfunction return ENDFUNCTION;
-@locvar   return LOCVAR;
-@recdep   return RECDEP;
-@orderonly   return ORDERONLY;
-@once return ONCE;
-@endonce return ENDONCE;
-@stdout return STDOUT;
-@stderr return STDERR;
-@error return ERROR;
-@dump return DUMP;
-@deponly return DEPONLY;
-@exit return EXIT;
-@D     return D;
-@L     return L;
-@I     return I;
-@DO     return DO;
-@LO     return LO;
-@IO     return IO;
-@DP     return DP;
-@LP     return LP;
-@IP     return IP;
-@DPO     return DPO;
-@LPO     return LPO;
-@IPO     return IPO;
-@dyn   return DYN;
-@lex   return LEX;
-@imm   return IMM;
-@dyno   return DYNO;
-@lexo   return LEXO;
-@immo   return IMMO;
-@loc   return LOC;
-@if   return IF;
-@else   return ELSE;
-@elseif   return ELSEIF;
-@endif   return ENDIF;
-@for   return FOR;
-@endfor   return ENDFOR;
-@while return WHILE;
-@endwhile return ENDWHILE;
-@break return BREAK;
-@continue return CONTINUE;
-@return  return RETURN;
-@append   return APPEND;
-@appendlist   return APPEND_LIST;
+<INITIAL,STRICT>@function return FUNCTION;
+<INITIAL,STRICT>@endfunction return ENDFUNCTION;
+<INITIAL,STRICT>@locvar   return LOCVAR;
+<INITIAL,STRICT>@recdep   return RECDEP;
+<INITIAL,STRICT>@orderonly   return ORDERONLY;
+<INITIAL,STRICT>@once return ONCE;
+<INITIAL,STRICT>@endonce return ENDONCE;
+<INITIAL,STRICT>@stdout return STDOUT;
+<INITIAL,STRICT>@stderr return STDERR;
+<INITIAL,STRICT>@error return ERROR;
+<INITIAL,STRICT>@dump return DUMP;
+<INITIAL,STRICT>@deponly return DEPONLY;
+<INITIAL,STRICT>@exit return EXIT;
+<INITIAL,STRICT>@D     return D;
+<INITIAL,STRICT>@L     return L;
+<INITIAL,STRICT>@I     return I;
+<INITIAL,STRICT>@DO     return DO;
+<INITIAL,STRICT>@LO     return LO;
+<INITIAL,STRICT>@IO     return IO;
+<INITIAL,STRICT>@DP     return DP;
+<INITIAL,STRICT>@LP     return LP;
+<INITIAL,STRICT>@IP     return IP;
+<INITIAL,STRICT>@DPO     return DPO;
+<INITIAL,STRICT>@LPO     return LPO;
+<INITIAL,STRICT>@IPO     return IPO;
+<INITIAL,STRICT>@dyn   return DYN;
+<INITIAL,STRICT>@lex   return LEX;
+<INITIAL,STRICT>@imm   return IMM;
+<INITIAL,STRICT>@dyno   return DYNO;
+<INITIAL,STRICT>@lexo   return LEXO;
+<INITIAL,STRICT>@immo   return IMMO;
+<INITIAL,STRICT>@loc   return LOC;
+<INITIAL,STRICT>@if   return IF;
+<INITIAL,STRICT>@else   return ELSE;
+<INITIAL,STRICT>@elseif   return ELSEIF;
+<INITIAL,STRICT>@endif   return ENDIF;
+<INITIAL,STRICT>@for   return FOR;
+<INITIAL,STRICT>@endfor   return ENDFOR;
+<INITIAL,STRICT>@while return WHILE;
+<INITIAL,STRICT>@endwhile return ENDWHILE;
+<INITIAL,STRICT>@break return BREAK;
+<INITIAL,STRICT>@continue return CONTINUE;
+<INITIAL,STRICT>@return  return RETURN;
+<INITIAL,STRICT>@append   return APPEND;
+<INITIAL,STRICT>@appendlist   return APPEND_LIST;
 
-@[?] return ATQM;
-@scope return SCOPE;
-@true return TRUE;
-@type return TYPE;
-@false return FALSE;
-@nil return NIL;
-@strfromchr return STR_FROMCHR;
-@strlower return STR_LOWER;
-@strupper return STR_UPPER;
-@strreverse return STR_REVERSE;
-@strcmp return STRCMP;
-@strstr return STRSTR;
-@strrep return STRREP;
-@strlistjoin return STRLISTJOIN;
-@strstrip return STRSTRIP;
-@strsub return STRSUB;
-@strgsub return STRGSUB;
-@strset return STRSET;
-@strword return STRWORD;
-@strwordcnt return STRWORDCNT;
-@strwordlist return STRWORDLIST;
-@abs return ABS;
-@acos return ACOS;
-@asin return ASIN;
-@atan return ATAN;
-@ceil return CEIL;
-@cos return COS;
-@sin return SIN;
-@tan return TAN;
-@exp return EXP;
-@log return LOG;
-@sqrt return SQRT;
-@dupnonrec return DUP_NONRECURSIVE;
-@pbnew return PB_NEW;
-@tostring return TOSTRING;
-@tonumber return TONUMBER;
-@scopeparent return SCOPE_PARENT;
-@scopenew return SCOPE_NEW;
-@getscopedyn return GETSCOPE_DYN;
-@getscopelex return GETSCOPE_LEX;
-@beginscope return BEGINSCOPE;
-@beginholeyscope return BEGINHOLEYSCOPE;
-@endscope return ENDSCOPE;
+<INITIAL,STRICT>@[?] return ATQM;
+<INITIAL,STRICT>@scope return SCOPE;
+<INITIAL,STRICT>@true return TRUE;
+<INITIAL,STRICT>@type return TYPE;
+<INITIAL,STRICT>@false return FALSE;
+<INITIAL,STRICT>@nil return NIL;
+<INITIAL,STRICT>@strfromchr return STR_FROMCHR;
+<INITIAL,STRICT>@strlower return STR_LOWER;
+<INITIAL,STRICT>@strupper return STR_UPPER;
+<INITIAL,STRICT>@strreverse return STR_REVERSE;
+<INITIAL,STRICT>@strcmp return STRCMP;
+<INITIAL,STRICT>@strstr return STRSTR;
+<INITIAL,STRICT>@strrep return STRREP;
+<INITIAL,STRICT>@strlistjoin return STRLISTJOIN;
+<INITIAL,STRICT>@strstrip return STRSTRIP;
+<INITIAL,STRICT>@strsub return STRSUB;
+<INITIAL,STRICT>@strgsub return STRGSUB;
+<INITIAL,STRICT>@strset return STRSET;
+<INITIAL,STRICT>@strword return STRWORD;
+<INITIAL,STRICT>@strwordcnt return STRWORDCNT;
+<INITIAL,STRICT>@strwordlist return STRWORDLIST;
+<INITIAL,STRICT>@abs return ABS;
+<INITIAL,STRICT>@acos return ACOS;
+<INITIAL,STRICT>@asin return ASIN;
+<INITIAL,STRICT>@atan return ATAN;
+<INITIAL,STRICT>@ceil return CEIL;
+<INITIAL,STRICT>@cos return COS;
+<INITIAL,STRICT>@sin return SIN;
+<INITIAL,STRICT>@tan return TAN;
+<INITIAL,STRICT>@exp return EXP;
+<INITIAL,STRICT>@log return LOG;
+<INITIAL,STRICT>@sqrt return SQRT;
+<INITIAL,STRICT>@dupnonrec return DUP_NONRECURSIVE;
+<INITIAL,STRICT>@pbnew return PB_NEW;
+<INITIAL,STRICT>@tostring return TOSTRING;
+<INITIAL,STRICT>@tonumber return TONUMBER;
+<INITIAL,STRICT>@scopeparent return SCOPE_PARENT;
+<INITIAL,STRICT>@scopenew return SCOPE_NEW;
+<INITIAL,STRICT>@getscopedyn return GETSCOPE_DYN;
+<INITIAL,STRICT>@getscopelex return GETSCOPE_LEX;
+<INITIAL,STRICT>@beginscope return BEGINSCOPE;
+<INITIAL,STRICT>@beginholeyscope return BEGINHOLEYSCOPE;
+<INITIAL,STRICT>@endscope return ENDSCOPE;
 
-@dirup return DIRUP;
-@dirdown return DIRDOWN;
+<INITIAL,STRICT>@dirup return DIRUP;
+<INITIAL,STRICT>@dirdown return DIRDOWN;
 
-@addrule   return ADD_RULE;
-@adddeps   return ADD_DEPS;
-@RULE_DIST   return RULE_DIST;
-@RULE_PHONY   return RULE_PHONY;
-@RULE_ORDINARY   return RULE_ORDINARY;
-:         return COLON;
-,         return COMMA;
-=         return EQUALS;
-&& return LOGICAL_AND;
-\|\| return LOGICAL_OR;
-!= return NE;
-== return EQ;
-\+=         return PLUSEQUALS;
-\?=         return QMEQUALS;
-\<\< return SHL;
-\>\> return SHR;
-\<        return LT;
-\>        return GT;
-[(]       return OPEN_PAREN;
-[)]       return CLOSE_PAREN;
-[[]       return OPEN_BRACKET;
-[]]       return CLOSE_BRACKET;
-[{]       return OPEN_BRACE;
-[}]       return CLOSE_BRACE;
-\/ return DIV;
-\* return MUL;
-\+ return ADD;
-- return SUB;
-& return BITWISE_AND;
-\| return BITWISE_OR;
-~ return BITWISE_NOT;
-\^ return BITWISE_XOR;
-! return LOGICAL_NOT;
-% return MOD;
-\>= return GE;
-\<= return LE;
-\<\> return MAYBE_CALL;
+<INITIAL,STRICT>@addrule   return ADD_RULE;
+<INITIAL,STRICT>@adddeps   return ADD_DEPS;
+<INITIAL,STRICT>@RULE_DIST   return RULE_DIST;
+<INITIAL,STRICT>@RULE_PHONY   return RULE_PHONY;
+<INITIAL,STRICT>@RULE_ORDINARY   return RULE_ORDINARY;
+<INITIAL,STRICT>:         return COLON;
+<INITIAL,STRICT>,         return COMMA;
+<INITIAL,STRICT>=         return EQUALS;
+<INITIAL,STRICT>&& return LOGICAL_AND;
+<INITIAL,STRICT>\|\| return LOGICAL_OR;
+<INITIAL,STRICT>!= return NE;
+<INITIAL,STRICT>== return EQ;
+<INITIAL,STRICT>\+=         return PLUSEQUALS;
+<INITIAL,STRICT>\?=         return QMEQUALS;
+<INITIAL,STRICT>\<\< return SHL;
+<INITIAL,STRICT>\>\> return SHR;
+<INITIAL,STRICT>\<        return LT;
+<INITIAL,STRICT>\>        return GT;
+<INITIAL,STRICT>[(]       return OPEN_PAREN;
+<INITIAL,STRICT>[)]       return CLOSE_PAREN;
+<INITIAL,STRICT>[[]       return OPEN_BRACKET;
+<INITIAL,STRICT>[]]       return CLOSE_BRACKET;
+<INITIAL,STRICT>[{]       return OPEN_BRACE;
+<INITIAL,STRICT>[}]       return CLOSE_BRACE;
+<INITIAL,STRICT>\/ return DIV;
+<INITIAL,STRICT>\* return MUL;
+<INITIAL,STRICT>\+ return ADD;
+<INITIAL,STRICT>- return SUB;
+<INITIAL,STRICT>& return BITWISE_AND;
+<INITIAL,STRICT>\| return BITWISE_OR;
+<INITIAL,STRICT>~ return BITWISE_NOT;
+<INITIAL,STRICT>\^ return BITWISE_XOR;
+<INITIAL,STRICT>! return LOGICAL_NOT;
+<INITIAL,STRICT>% return MOD;
+<INITIAL,STRICT>\>= return GE;
+<INITIAL,STRICT>\<= return LE;
+<INITIAL,STRICT>\<\> return MAYBE_CALL;
 
-@\t return ATTAB;
-@@\t return ATATTAB;
+<INITIAL,STRICT>@\t return ATTAB;
+<INITIAL,STRICT>@@\t return ATATTAB;
 
 
-[$]^ {
+<INITIAL,STRICT>[$]^ {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-[$]< {
+<INITIAL,STRICT>[$][+] {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-[$]@ {
+<INITIAL,STRICT>[$]< {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-[$][*] {
+<INITIAL,STRICT>[$]@ {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-[$][A-Za-z0-9_.]+ {
+<INITIAL,STRICT>[$][*] {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-[$][(][A-Za-z0-9_.]+[)] {
+<INITIAL,STRICT>[$][A-Za-z0-9_.]+ {
+  yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
+<INITIAL,STRICT>[$][(][A-Za-z0-9_.]+[)] {
   yylval->s = strdup(yytext+2);
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
-[-+]?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)? {
+<INITIAL,STRICT>[-+]?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)? {
   yylval->d = atof(yytext);
   return NUMBER;
 }
-[A-Za-z0-9_.]([A-Za-z0-9_./]*[A-Za-z0-9_.])? {
+<INITIAL>[A-Za-z0-9_.]([A-Za-z0-9_./]*[A-Za-z0-9_.])? {
   /*
    * Note this is slightly imperfect. 6/2 which ought to be an
    * expression evaluating to 3 is handled instead as a free-form
@@ -254,13 +261,13 @@ struct CSnippet luaSnippet = {
   return FREEFORM_TOKEN;
 }
 
-\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
-\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
+<INITIAL,STRICT>\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
+<INITIAL,STRICT>\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
 #[^\n]*  /* ignore */;
 
-"%lua{"             { BEGIN(PERCENTLUA); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
+<INITIAL,STRICT>"%lua{"             { BEGIN(PERCENTLUA); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
 <PERCENTLUA>%\}  {
-                     BEGIN(INITIAL);
+                     BEGIN(strict ? STRICT : INITIAL);
                      yylval->s = luaSnippet.data;
                      luaSnippet.data = NULL;
                      luaSnippet.capacity = 0;
@@ -270,9 +277,9 @@ struct CSnippet luaSnippet = {
 <PERCENTLUA>.             { csadd(&luaSnippet, yytext[0]); }
 <PERCENTLUA>"\n"          { csadd(&luaSnippet, yytext[0]); ++yylineno; yycolumn=1; }
 
-\n                                { ++yylineno; yycolumn=1; return NEWLINE; }
-\\\n                              { ++yylineno; yycolumn=1; }
-\t {
+<INITIAL,STRICT>\n                                { ++yylineno; yycolumn=1; return NEWLINE; }
+<INITIAL,STRICT>\\\n                              { ++yylineno; yycolumn=1; }
+<INITIAL,STRICT>\t {
   if (yycolumn == 2)
   {
     BEGIN(SHELL);
@@ -304,11 +311,11 @@ struct CSnippet luaSnippet = {
 <SHELL>\n {
   ++yylineno;
   yycolumn=1;
-  BEGIN(INITIAL);
+  BEGIN(strict ? STRICT : INITIAL);
   return NEWLINE;
 }
-[ \t]                            /* ignore whitespaces */;
-.            return ERROR_TOK;
+<INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
+<INITIAL,STRICT>.            return ERROR_TOK;
 
 
 %%
