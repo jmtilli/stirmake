@@ -2637,7 +2637,7 @@ pattargets:
   {
     if (!stiryy->main->freeform_token_seen)
     {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
     stiryy_set_pattgt(amyplanyy, $1);
@@ -2673,7 +2673,7 @@ pattargets:
   {
     if (!stiryy->main->freeform_token_seen)
     {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
     stiryy_set_pattgt(amyplanyy, $2);
@@ -2752,7 +2752,7 @@ targets:
   {
     if (!stiryy->main->freeform_token_seen)
     {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
     //printf("target1 %s\n", $1);
@@ -2811,7 +2811,7 @@ targets:
   {
     if (!stiryy->main->freeform_token_seen)
     {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
     //printf("target %s\n", $2);
@@ -2877,7 +2877,7 @@ patdeps:
   {
     if (!stiryy->main->freeform_token_seen)
     {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
     //printf("dep %s rec? %d\n", $3, (int)$2);
@@ -2919,7 +2919,7 @@ deps:
   {
     if (!stiryy->main->freeform_token_seen)
     {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens");
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
     //printf("dep %s rec? %d\n", $3, (int)$2);
