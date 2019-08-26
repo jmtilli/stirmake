@@ -2719,7 +2719,7 @@ tgtdepref:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, idx);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
-    $$ = ABCE_OPCODE_SCOPEVAR;
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_SCOPEVAR);
   }
   free($1);
 }
