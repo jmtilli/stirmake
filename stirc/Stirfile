@@ -63,15 +63,16 @@ $(SYM) = ["smka", "smkt", "smkp"]
 @	["unlink", $@]
 @	["ar", "rvs", $@, @@suffilter($^, ".o")]
 
-# FIXME automate these somehow...
-@deponly: 'stiryy.lex.d' 'stiryy.lex.o' 'stiryy.tab.d' 'stiryy.tab.o': \
-              'stiryy.tab.h' 'stiryy.lex.h'
-@deponly: 'jsonyy.lex.d' 'jsonyy.lex.o' 'jsonyy.tab.d' 'jsonyy.tab.o': \
-              'jsonyy.tab.h' 'jsonyy.lex.h'
-@deponly: 'dbyy.lex.d' 'dbyy.lex.o' 'dbyy.tab.d' 'dbyy.tab.o': \
-              'dbyy.tab.h' 'dbyy.lex.h'
-@deponly: 'incyy.lex.d' 'incyy.lex.o' 'incyy.tab.d' 'incyy.tab.o': \
-              'incyy.tab.h' 'incyy.lex.h'
+@function $ADD_LEXX_YACC_DEPS($lex)
+  @locvar $b = @sufsuball($lex, ".l", "")
+  @locvar $i = 0
+  @for($i = 0, $i < $b[], $i = $i+1)
+    @adddeps([@strappend($b[$i], ".lex.d"), @strappend($b[$i], ".lex.o"), \
+              @strappend($b[$i], ".tab.d"), @strappend($b[$i], ".tab.o")], \
+             [@strappend($b[$i], ".lex.h"), @strappend($b[$i], ".tab.h")], {})
+  @endfor
+@endfunction
+@call $ADD_LEXX_YACC_DEPS($(LEX_LIB))
 
 # FIXME test breaking long command line to many shorter lines
 @patrule: $(LEXGEN_LIB): '%.lex.c' '%.lex.h': '%.l'
