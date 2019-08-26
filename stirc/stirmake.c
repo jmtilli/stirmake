@@ -3541,19 +3541,43 @@ void *my_memrchr(const void *s, int c, size_t n)
   return NULL;
 }
 
-char *process_mflags(void)
+void process_mflags(char **fds, char **outputsync)
 {
   char *iter = getenv("MAKEFLAGS");
+  if (fds)
+  {
+    *fds = NULL;
+  }
+  if (outputsync)
+  {
+    *outputsync = NULL;
+  }
   while (iter && *iter == ' ')
   {
     iter++;
   }
-  while (iter && *iter == '-')
+  // RFE is this 100% accurate?
+  while (iter && *iter != '\0')
   {
+    if (strncmp(iter, "-O", strlen("-O")) == 0)
+    {
+      iter += strlen("-O");
+      while (iter && *iter == ' ')
+      {
+        iter++;
+      }
+      if (outputsync)
+      {
+        *outputsync = iter;
+      }
+    }
     if (strncmp(iter, "--jobserver-fds=", strlen("--jobserver-fds=")) == 0)
     {
       iter += strlen("--jobserver-fds=");
-      return iter;
+      if (fds)
+      {
+        *fds = iter;
+      }
     }
     iter = strchr(iter, ' ');
     while (iter && *iter == ' ')
@@ -3561,7 +3585,6 @@ char *process_mflags(void)
       iter++;
     }
   }
-  return NULL;
 }
 
 char *calc_forward_path(char *storcwd, size_t upcnt)
@@ -3599,13 +3622,13 @@ char *calc_forward_path(char *storcwd, size_t upcnt)
 
 int process_jobserver(int fds[2])
 {
-  char *mflags;
-  mflags = process_mflags();
-  if (mflags == NULL)
+  char *fdstr;
+  process_mflags(&fdstr, NULL);
+  if (fdstr == NULL)
   {
     return -ENOENT;
   }
-  if (sscanf(mflags, "%d,%d", &fds[0], &fds[1]) != 2)
+  if (sscanf(fdstr, "%d,%d", &fds[0], &fds[1]) != 2)
   {
     fprintf(stderr, "stirmake: Jobserver unavailable\n");
     return -EINVAL;
@@ -4546,6 +4569,7 @@ int main(int argc, char **argv)
   char *fwd_path = ".";
   int ruleid_first = 0;
   int ruleid_first_set = 0;
+  char *outsyncmflag = NULL;
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -4633,6 +4657,33 @@ int main(int argc, char **argv)
   else if (strcmp(basenm, "smkp") == 0)
   {
     set_mode(MODE_PROJECT, 1, argv[0]);
+  }
+
+  process_mflags(NULL, &outsyncmflag);
+  if (outsyncmflag)
+  {
+    if (outsyncmflag[0] == 'n')
+    {
+      out_sync = OUT_SYNC_NONE;
+    }
+    else if (outsyncmflag[0] == 'l')
+    {
+      fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
+      out_sync = OUT_SYNC_TARGET;
+    }
+    else if (outsyncmflag[0] == 't')
+    {
+      out_sync = OUT_SYNC_TARGET;
+    }
+    else if (outsyncmflag[0] == 'r')
+    {
+      out_sync = OUT_SYNC_RECURSE;
+    }
+    else
+    {
+      fprintf(stderr, "stirmake: invalid output sync mode in MAKEFLAGS, disabling sync\n");
+      out_sync = OUT_SYNC_NONE;
+    }
   }
 
   debug = 0;
