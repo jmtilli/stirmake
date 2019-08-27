@@ -2318,7 +2318,7 @@ stirrule:
     if (stiryy_check_rule(stiryy) != 0)
     {
       char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule or @mayberule",
                stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
       recommend(scanner, stiryy, buf);
     }
@@ -2373,13 +2373,6 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_maybe(stiryy);
-    if (stiryy_check_rule(stiryy) != 0)
-    {
-      char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
-               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
-      recommend(scanner, stiryy, buf);
-    }
   }
 }
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
@@ -2390,7 +2383,7 @@ stirrule:
     if (stiryy_check_rule(stiryy) != 0)
     {
       char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule",
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule or @mayberule",
                stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
       recommend(scanner, stiryy, buf);
     }
