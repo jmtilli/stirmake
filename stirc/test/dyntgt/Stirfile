@@ -19,7 +19,8 @@
             "shells": [{"isfun": @true, "embed": @true, \
                         "fun": @L$FN2, "arg": "e"}]})
   @addrule({"tgts": [{"name": "f"}], "attrs": {"phony": @true}, \
-            "shells": [{"embed": @true, "cmds": [["echo", "f"]]}]})
+            "shells": [{"embed": @true, "cmds": [["echo", "f"]]}], \
+            "deps": [{"name": "ok"}]})
 @endfunction
 
 @call $MYADDRULE()
@@ -27,3 +28,6 @@
 @phonyrule: a: b
 
 @phonyrule: b:
+
+@phonyrule: ok:
+	echo ok
