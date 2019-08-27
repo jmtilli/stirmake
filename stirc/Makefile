@@ -42,8 +42,13 @@ all: jsonyytest stir inc abce stirmake smka smkt smkp
 
 .PHONY: abce
 
+ifeq ($(WITH_LUA),yes)
+abce:
+	cd abce && $(MAKE) WITH_LUA=yes
+else
 abce:
 	cd abce && $(MAKE)
+endif
 
 wc:
 	wc -l $(LEX) $(YACC) $(SRC) $(filter-out %.lex.h %.tab.h,$(wildcard *.h))
@@ -52,10 +57,17 @@ wc:
 #LUALIB:=/usr/lib/x86_64-linux-gnu/liblua5.3.a
 LUAINC:=/usr/include/luajit-2.1
 LUALIB:=/usr/lib/x86_64-linux-gnu/libluajit-5.1.a
+WITH_LUA:=no
 
 #CC=gcc
 CC=clang
-CFLAGS=-O3 -Wall -g -I$(LUAINC)
+CFLAGS=-O3 -Wall -g
+
+ifeq ($(WITH_LUA),yes)
+  CFLAGS += -I$(LUAINC) -DWITH_LUA
+else
+  LUALIB :=
+endif
 
 smka:
 	rm -f smka
@@ -68,13 +80,13 @@ smkp:
 	ln -s stirmake smkp
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 stir: stir.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 jsonyytest: jsonyytest.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 inc: inc.o libstirmake.a Makefile $(LUALIB)
 	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
