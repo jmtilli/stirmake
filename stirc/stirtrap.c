@@ -689,7 +689,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
   free(prefix_ugh);
   free(yytgts);
   free(yydeps);
-  free(yyshells);
+  //free(yyshells); // Can't free this now
   abce_mb_refdn(abce, &tree);
   abce_pop(abce);
   return 0;
