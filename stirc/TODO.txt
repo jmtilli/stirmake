@@ -5,8 +5,8 @@
 
 - LuaJIT
 
-- Adding rules from Amyplan
-  - Implement @addrule so that it supports fn and ctx
+- Test adding rules from Amyplan
+  - Test @addrule using fn and ctx
 
 - Replace main algorithm? May not work with dynamically added targets.
   - we could continue using it if only deps are dynamically added

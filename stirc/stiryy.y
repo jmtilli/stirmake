@@ -332,6 +332,13 @@ custom_stmt:
     amyplanyy_add_byte(amyplanyy, STIR_OPCODE_DEP_ADD);
   }
 }
+| ADD_RULE OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, STIR_OPCODE_RULE_ADD);
+  }
+}
 ;
 
 custom_expr0:

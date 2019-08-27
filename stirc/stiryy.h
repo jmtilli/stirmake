@@ -65,9 +65,14 @@ static inline void csaddstr(struct CSnippet *cs, char *str)
 struct cmdsrcitem {
   unsigned merge:1;
   unsigned iscode:1;
+  unsigned isfun:1;
   size_t sz; // for args
   size_t capacity; // for args
   union {
+    struct {
+      size_t funidx;
+      size_t argidx;
+    } funarg;
     size_t locidx;
     char **args; // NULL-terminated list
     char ***cmds; // NULL-terminated list of NULL-terminated lists

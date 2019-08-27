@@ -16,6 +16,7 @@
 #include <libgen.h>
 #include <poll.h>
 #include <time.h>
+#include "stircommon.h"
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
@@ -941,7 +942,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   result = malloc(resultcap * sizeof(*result));
   for (i = 0; i < cmdsrc->itemsz; i++)
   {
-    if (cmdsrc->items[i].iscode)
+    if (cmdsrc->items[i].iscode || cmdsrc->items[i].isfun)
     {
       unsigned char tmpbuf[64] = {};
       size_t tmpsiz = 0;
@@ -1136,10 +1137,29 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         first = 0;
       }
 
-      abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-      abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
-                          cmdsrc->items[i].u.locidx);
-      abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+      if (cmdsrc->items[i].iscode)
+      {
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+        abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+                            cmdsrc->items[i].u.locidx);
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+      }
+      else if (cmdsrc->items[i].isfun)
+      {
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+        abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+                            cmdsrc->items[i].u.funarg.funidx);
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_FUNIFY);
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+        abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+                            cmdsrc->items[i].u.funarg.argidx);
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf),
+                         ABCE_OPCODE_PUSH_FROM_CACHE);
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+        abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), 1); // arg cnt
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL);
+        abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
+      }
       if (abce->sp != 0)
       {
         abort();
@@ -2146,6 +2166,10 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     errxit("Phony rules must not have multiple targets");
     exit(1);
+  }
+  if (debug)
+  {
+    printf("Rule %s (%s): add_rule\n", tgts[0].name, tgts[0].namenodir);
   }
   if (rules_size >= rules_capacity)
   {

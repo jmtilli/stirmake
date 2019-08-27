@@ -1,0 +1,14 @@
+@toplevel
+
+@phonyrule: all: a c
+
+@function $MYADDRULE()
+  @addrule({"tgts": [{"name": "c"}], "attrs": {"phony": @true}, \
+            "shells": [{"cmd": ["echo", "c"]}]})
+@endfunction
+
+@call $MYADDRULE()
+
+@phonyrule: a: b
+
+@phonyrule: b:

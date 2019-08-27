@@ -11,8 +11,7 @@
 #include "canon.h"
 #include "stiryy.h"
 #include "jsonyyutils.h"
-
-void *my_memrchr(const void *s, int c, size_t n);
+#include "stircommon.h"
 
 #define VERIFYMB(idx, type) \
   if(1) { \
@@ -229,6 +228,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
   for (i = 0; i < depsz; i++)
   {
     struct abce_mb *mb = &depres->u.area->u.ar.mbs[i];
+    struct abce_mb *attr1;
     if (mb->typ != ABCE_T_T)
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
@@ -248,6 +248,26 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
       abce->err.mb.typ = ABCE_T_N; // FIXME
       abce_mb_refdn(abce, &tree);
       return -EINVAL;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[rec]) == 0)
+    {
+      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce_mb_refdn(abce, &tree);
+        return -EINVAL;
+      }
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[orderonly]) == 0)
+    {
+      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce_mb_refdn(abce, &tree);
+        return -EINVAL;
+      }
     }
   }
 
@@ -278,8 +298,8 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
       abce_mb_refdn(abce, &tree);
       return -EINVAL;
     }
-    int embed = 0;
-    int isfun = 0;
+    int boolembed = 0;
+    int boolisfun = 0;
 
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[embed]) == 0)
     {
@@ -290,7 +310,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         abce_mb_refdn(abce, &tree);
         return -EINVAL;
       }
-      embed = !!attr1->u.d;
+      boolembed = !!attr1->u.d;
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[isfun]) == 0)
     {
@@ -301,9 +321,9 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         abce_mb_refdn(abce, &tree);
         return -EINVAL;
       }
-      isfun = !!attr1->u.d;
+      boolisfun = !!attr1->u.d;
     }
-    if (isfun)
+    if (boolisfun)
     {
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[fun]) != 0)
       {
@@ -327,7 +347,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         return -EINVAL;
       }
     }
-    else if (embed)
+    else if (boolembed)
     {
       size_t j;
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmds]) != 0)
@@ -515,17 +535,165 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
   yydeps = malloc(sizeof(*yydeps)*depsz);
   yyshells = malloc(sizeof(*yyshells)*shellsz);
 
+  for (i = 0; i < tgtsz; i++)
+  {
+    struct abce_mb *mb = &tgtres->u.area->u.ar.mbs[i];
+    size_t namsz;
+    char *nam;
+    if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
+    {
+      my_abort();
+    }
+    namsz = strlen(mbstr->u.area->u.str.buf) + strlen(prefix) + 2;
+    nam = malloc(namsz); // FIXME leaks
+    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= namsz)
+    {
+      my_abort();
+    }
+    yytgts[i].name = canon(nam);
+    free(nam);
+    yytgts[i].namenodir = mbstr->u.area->u.str.buf;
+  }
+  for (i = 0; i < depsz; i++)
+  {
+    struct abce_mb *mb = &depres->u.area->u.ar.mbs[i];
+    struct abce_mb *attr1;
+    size_t namsz;
+    char *nam;
+    if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
+    {
+      my_abort();
+    }
+    namsz = strlen(mbstr->u.area->u.str.buf) + strlen(prefix) + 2;
+    nam = malloc(namsz); // FIXME leaks
+    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= namsz)
+    {
+      my_abort();
+    }
+    yydeps[i].name = canon(nam);
+    free(nam);
+    yydeps[i].namenodir = mbstr->u.area->u.str.buf;
+    yydeps[i].rec = 0;
+    yydeps[i].orderonly = 0;
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[rec]) == 0)
+    {
+      yydeps[i].rec = !!attr1->u.d;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[orderonly]) == 0)
+    {
+      yydeps[i].orderonly = !!attr1->u.d;
+    }
+  }
+  for (i = 0; i < shellsz; i++)
+  {
+    struct abce_mb *mb = &shellsres->u.area->u.ar.mbs[i];
+    struct abce_mb *attr1;
+    int boolembed = 0;
+    int boolisfun = 0;
+
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[embed]) == 0)
+    {
+      boolembed = !!attr1->u.d;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[isfun]) == 0)
+    {
+      boolisfun = !!attr1->u.d;
+    }
+    if (boolisfun)
+    {
+      if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[fun]) != 0)
+      {
+        my_abort();
+      }
+      yyshells[i].merge = !!boolembed;
+      yyshells[i].isfun = 1;
+      yyshells[i].iscode = 0;
+      yyshells[i].sz = 0;
+      yyshells[i].capacity = 0;
+      yyshells[i].u.funarg.funidx = attr1->u.d;
+      if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[arg]) != 0)
+      {
+        my_abort();
+      }
+      int64_t argidx = abce_cache_add(abce, attr1);
+      yyshells[i].u.funarg.argidx = argidx;
+      if (argidx < 0)
+      {
+        // OK, we could handle this error better, FIXME do it!
+        my_abort();
+      }
+    }
+    else if (boolembed)
+    {
+      size_t j;
+      if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmds]) != 0)
+      {
+        my_abort();
+      }
+      yyshells[i].merge = 1;
+      yyshells[i].iscode = 0;
+      yyshells[i].isfun = 0;
+      yyshells[i].sz = attr1->u.area->u.ar.size;
+      yyshells[i].capacity = attr1->u.area->u.ar.size+1;
+      yyshells[i].u.cmds = // FIXME leaks
+        malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.cmds));
+      for (j = 0; j < attr1->u.area->u.ar.size; j++)
+      {
+        size_t k;
+        yyshells[i].u.cmds[j] = // FIXME leaks
+          malloc(  (attr1->u.area->u.ar.mbs[j].u.area->u.ar.size+1)
+                 * sizeof(*yyshells[i].u.cmds[j]));
+        for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
+        {
+          yyshells[i].u.cmds[j][k] =
+            attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.ar.mbs[k].u.area->u.str.buf;
+        }
+        yyshells[i].u.cmds[j][attr1->u.area->u.ar.mbs[j].u.area->u.ar.size] =
+          NULL;
+      }
+      yyshells[i].u.cmds[attr1->u.area->u.ar.size] = NULL;
+    }
+    else
+    {
+      size_t j;
+      if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmd]) != 0)
+      {
+        my_abort();
+      }
+      yyshells[i].merge = 0;
+      yyshells[i].iscode = 0;
+      yyshells[i].isfun = 0;
+      yyshells[i].sz = attr1->u.area->u.ar.size;
+      yyshells[i].capacity = attr1->u.area->u.ar.size+1;
+      yyshells[i].u.args =
+        malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
+      for (j = 0; j < attr1->u.area->u.ar.size; j++)
+      {
+        yyshells[i].u.args[j] = attr1->u.area->u.ar.mbs[j].u.area->u.str.buf;
+      }
+      yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
+    }
+  }
+
+  struct cmdsrc shellsrc = {
+    .itemsz = shellsz, .itemcapacity = shellsz, .items = yyshells
+  };
+
+  char *prefix_ugh = strdup(prefix); // RFE make add_rule take const char*
+  add_rule(yytgts, tgtsz, yydeps, depsz, &shellsrc,
+           attrstruct.phony, attrstruct.rectgt, attrstruct.detouch,
+           attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
+           attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
+           prefix_ugh, abce->dynscope.u.area->u.sc.locidx);
+
+  free(prefix_ugh);
   free(yytgts);
   free(yydeps);
   free(yyshells);
   abce_mb_refdn(abce, &tree);
+  abce_pop(abce);
   return 0;
 }
-
-int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
-                                char **deps, size_t depsz,
-                                char *prefix,
-                                int rec, int orderonly);
 
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 {
