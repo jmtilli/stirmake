@@ -525,13 +525,13 @@ void *my_malloc(size_t sz)
       exit(1);
     }
     my_arena_ptr = my_arena;
-  }
-  result = my_arena_ptr;
-  my_arena_ptr += (sz+7)/8*8;
-  if (my_arena_ptr >= my_arena + sizeof_my_arena)
-  {
-    fprintf(stderr, "out of memory\n");
-    my_abort();
+    result = my_arena_ptr;
+    my_arena_ptr += (sz+7)/8*8;
+    if (my_arena_ptr >= my_arena + sizeof_my_arena)
+    {
+      fprintf(stderr, "out of memory\n");
+      my_abort();
+    }
   }
   return result;
 }
