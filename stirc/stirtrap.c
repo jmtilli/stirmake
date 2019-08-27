@@ -329,6 +329,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
     }
     else if (embed)
     {
+      size_t j;
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmds]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
@@ -343,10 +344,31 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         abce_mb_refdn(abce, &tree);
         return -EINVAL;
       }
-      // FIXME check every cmdlist
+      for (j = 0; j < attr1->u.area->u.ar.size; j++)
+      {
+        size_t k;
+        if (attr1->u.area->u.ar.mbs[j].typ != ABCE_T_A)
+        {
+          abce->err.code = ABCE_E_EXPECT_ARRAY;
+          abce->err.mb.typ = ABCE_T_N; // FIXME
+          abce_mb_refdn(abce, &tree);
+          return -EINVAL;
+        }
+        for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
+        {
+          if (attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
+          {
+            abce->err.code = ABCE_E_EXPECT_STR;
+            abce->err.mb.typ = ABCE_T_N; // FIXME
+            abce_mb_refdn(abce, &tree);
+            return -EINVAL;
+          }
+        }
+      }
     }
     else
     {
+      size_t j;
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmd]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
@@ -361,7 +383,16 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         abce_mb_refdn(abce, &tree);
         return -EINVAL;
       }
-      // FIXME check every cmd
+      for (j = 0; j < attr1->u.area->u.ar.size; j++)
+      {
+        if (attr1->u.area->u.ar.mbs[j].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce->err.mb.typ = ABCE_T_N; // FIXME
+          abce_mb_refdn(abce, &tree);
+          return -EINVAL;
+        }
+      }
     }
   }
 
