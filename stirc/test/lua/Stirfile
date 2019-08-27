@@ -1,0 +1,15 @@
+@toplevel
+@strict
+
+@function $FOO($x)
+  @stdout("foo\n")
+  @dump($x)
+  @return 3
+@endfunction
+
+%lua{
+  print(Stir.makelexcall("FOO", {}))
+%}
+%lua{
+  print(2)
+%}

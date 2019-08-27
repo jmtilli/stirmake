@@ -461,6 +461,15 @@ custom_callable:
 
 custom_rule:
   stirrule
+| PERCENTLUA_LITERAL
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+#ifdef WITH_LUA
+    luaL_dostring(get_abce(amyplanyy)->dynscope.u.area->u.sc.lua, $1);
+#endif
+  }
+}
 | PRINT NUMBER NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
