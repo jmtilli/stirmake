@@ -37,3 +37,5 @@
 - automated torture test bench
 
 - @listdict(["a","b"],"n",{"rec":1}) == [{"n":"a","rec":1},{"n":"b","rec":1}]
+
+- @detouchrule to README.md
