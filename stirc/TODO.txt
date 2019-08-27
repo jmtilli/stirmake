@@ -33,3 +33,7 @@
 - instead of '%.c' use ''%'.c'
 
 - more human-readable error messages with backtraces
+
+- automated torture test bench
+
+- @listdict(["a","b"],"n",{"rec":1}) == [{"n":"a","rec":1},{"n":"b","rec":1}]
