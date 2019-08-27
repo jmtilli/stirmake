@@ -207,7 +207,7 @@ stiryy.tab.c stiryy.tab.h: stiryy.y
 Sub-makes can be invoked in the following manner:
 
 .EX
-@rectgtrule: subproj/bin/cmd subproj/lib/libsp.a: @recdep subproj
+@detouchrule: subproj/bin/cmd subproj/lib/libsp.a: @recdep subproj
 	make -C subproj
 
 @cleanhook:
@@ -223,8 +223,17 @@ Sub-makes can be invoked in the following manner:
 Here
 .I @recdep
 means depend on the latest mtime within the directory hierarchy and
-.I @rectgtrule
+.I @detouchrule
 is required for the rule if some of the targets are inside the same hierarchy.
+An alternative for
+.I @detouchrule
+is
+.I @rectgtrule
+or
+.I @mayberule
+but it is the author's opinion that
+.I @detouchrule
+works the best.
 
 If you invoke sub-make within the same directory, the targets need to be
 .I @maybe
