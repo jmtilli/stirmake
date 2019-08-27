@@ -18,12 +18,13 @@
   @addrule({"tgts": [{"name": "e"}], "attrs": {"phony": @true}, \
             "shells": [{"isfun": @true, "embed": @true, \
                         "fun": @L$FN2, "arg": "e"}]})
-  @addrule({"tgts": [{"name": "f"}], "attrs": {"phony": @true}, \
-            "shells": [{"embed": @true, "cmds": [["echo", "f"]]}], \
-            "deps": [{"name": "ok"}]})
 @endfunction
 
 @call $MYADDRULE()
+
+@call @addrule({"tgts": [{"name": "f"}], "attrs": {"phony": @true}, \
+                "shells": [{"embed": @true, "cmds": [["echo", "f"]]}], \
+                "deps": [{"name": "ok"}]})
 
 @phonyrule: a: b
 

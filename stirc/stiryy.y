@@ -449,6 +449,7 @@ custom_callable:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DUMP);
   }
 }
+| custom_stmt
 | expr
 {
   if (amyplanyy_do_emit(amyplanyy))
