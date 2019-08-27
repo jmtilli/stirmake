@@ -1,10 +1,25 @@
 @toplevel
 
-@phonyrule: all: a c
+@phonyrule: all: a c d e f
+
+@function $FN($arg)
+  @return ["echo", "d"]
+@endfunction
+
+@function $FN2($arg)
+  @return [["echo", $arg]]
+@endfunction
 
 @function $MYADDRULE()
   @addrule({"tgts": [{"name": "c"}], "attrs": {"phony": @true}, \
             "shells": [{"cmd": ["echo", "c"]}]})
+  @addrule({"tgts": [{"name": "d"}], "attrs": {"phony": @true}, \
+            "shells": [{"isfun": @true, "fun": @L$FN, "arg": @nil}]})
+  @addrule({"tgts": [{"name": "e"}], "attrs": {"phony": @true}, \
+            "shells": [{"isfun": @true, "embed": @true, \
+                        "fun": @L$FN2, "arg": "e"}]})
+  @addrule({"tgts": [{"name": "f"}], "attrs": {"phony": @true}, \
+            "shells": [{"embed": @true, "cmds": [["echo", "f"]]}]})
 @endfunction
 
 @call $MYADDRULE()

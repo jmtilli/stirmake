@@ -646,7 +646,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
         {
           yyshells[i].u.cmds[j][k] =
-            attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.ar.mbs[k].u.area->u.str.buf;
+            attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf;
         }
         yyshells[i].u.cmds[j][attr1->u.area->u.ar.mbs[j].u.area->u.ar.size] =
           NULL;
