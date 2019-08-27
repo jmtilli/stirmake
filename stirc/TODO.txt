@@ -37,3 +37,6 @@
 - automated torture test bench
 
 - @listdict(["a","b"],"n",{"rec":1}) == [{"n":"a","rec":1},{"n":"b","rec":1}]
+
+- @detouchrule to move move clock backwards on @recdep sources that are newer
+  than their targets
