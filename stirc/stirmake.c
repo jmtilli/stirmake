@@ -885,6 +885,7 @@ struct rule {
   unsigned is_phony:1;
   unsigned is_maybe:1;
   unsigned is_rectgt:1;
+  unsigned is_detouch:1;
   unsigned is_executed:1;
   unsigned is_actually_executed:1; // command actually invoked
   unsigned is_executing:1;
@@ -2056,6 +2057,7 @@ void process_additional_deps(size_t global_scopeidx)
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
+      rule->is_detouch = 0;
       LINKED_LIST_FOR_EACH(node2, &rule->deplist)
       {
         struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
@@ -2119,6 +2121,7 @@ void process_additional_deps(size_t global_scopeidx)
       ins_tgt(rule, dep->depidx, (size_t)-1);
       rule->is_phony = 0; // is_inc is enough
       rule->is_rectgt = 0;
+      rule->is_detouch = 0;
     }
   }
 #endif
@@ -2127,7 +2130,7 @@ void process_additional_deps(size_t global_scopeidx)
 void add_rule(struct tgt *tgts, size_t tgtsz,
               struct dep *deps, size_t depsz,
               struct cmdsrc *shells,
-              int phony, int rectgt, int maybe, int dist,
+              int phony, int rectgt, int detouch, int maybe, int dist,
               int cleanhook, int distcleanhook, int bothcleanhook,
               char *prefix, size_t scopeidx)
 {
@@ -2161,6 +2164,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->is_phony = !!phony;
   rule->is_maybe = !!maybe;
   rule->is_rectgt = !!rectgt;
+  rule->is_detouch = !!detouch;
   rule->is_dist = !!dist;
   rule->is_cleanhook = !!cleanhook;
   rule->is_distcleanhook = !!distcleanhook;
@@ -2792,6 +2796,144 @@ struct timespec rec_mtim(struct rule *r, const char *name)
   return max;
 }
 
+int utimensat_both_emul(const char *pathname, struct timespec time, int l,
+                        int forwards)
+{
+  struct timespec timespecs[2];
+  struct timeval times[2];
+  timespecs[0] = time;
+  timespecs[1] = time;
+  times[0].tv_sec = time.tv_sec;
+  times[0].tv_usec = (time.tv_nsec+999*(!!forwards))/1000;
+  times[1].tv_sec = time.tv_sec;
+  times[1].tv_usec = (time.tv_nsec+999*(!!forwards))/1000;
+#ifdef HAS_UTIMENSAT
+  return utimensat(AT_FDCWD, pathname, timespecs, l ? AT_SYMLINK_NOFOLLOW : 0);
+#else
+  {
+    struct timespec req;
+    struct timespec rem;
+    utimeret = utimes(pathname, times); // Ugh. Can't change symlink time!
+    if (forwards)
+    {
+      req.tv_sec = 0;
+      req.tv_nsec = 2000; // let's sleep for 2 us to be rather safe than sorry
+      for (;;)
+      {
+        int ret = nanosleep(&req, &rem);
+        if (ret == 0 || (ret != 0 && errno != EINTR))
+        {
+          break;
+        }
+        req = rem;
+      }
+    }
+  }
+#endif
+}
+
+void reccap_mtim(const char *name, struct timespec cap)
+{
+  struct stat statbuf;
+  DIR *dir = opendir(name);
+  //printf("Statting %s\n", name);
+  if (dir == NULL)
+  {
+    errxit("can't open dir %s", name);
+    exit(1);
+  }
+  for (;;)
+  {
+    struct dirent *de = readdir(dir);
+    char nam2[PATH_MAX + 1] = {0}; // RFE avoid large static recursive allocs?
+    //std::string nam2(name);
+    if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
+    {
+      errxit("Pathname too long");
+      my_abort();
+    }
+    if (de == NULL)
+    {
+      break;
+    }
+    if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+    {
+      continue;
+    }
+    size_t oldlen = strlen(nam2);
+    if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
+                 "/%s", de->d_name) >= sizeof(nam2)-oldlen)
+    {
+      errxit("Pathname too long");
+      my_abort();
+    }
+    //if (de->d_type == DT_DIR)
+    if (0)
+    {
+      reccap_mtim(nam2, cap);
+    }
+    else
+    {
+      if (stat(nam2, &statbuf) != 0)
+      {
+        errxit("can't open file %s", nam2);
+        exit(1);
+      }
+      if (ts_cmp(statbuf.st_mtim, cap) > 0)
+      {
+        utimensat_both_emul(nam2, cap, 0, 0);
+      }
+      if (lstat(nam2, &statbuf) != 0)
+      {
+        errxit("can't open file %s", nam2);
+        exit(1);
+      }
+      if (ts_cmp(statbuf.st_mtim, cap) > 0)
+      {
+        utimensat_both_emul(nam2, cap, 1, 0);
+      }
+    }
+#if 0
+    int found_rectgt = 0;
+    if (r->is_rectgt)
+    {
+      size_t stidx = stringtab_get(nam2);
+      if (stidx != (size_t)-1)
+      {
+        if (rule_get_tgt(r, stidx) != NULL)
+        {
+          found_rectgt = 1;
+        }
+      }
+    }
+#endif
+    if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
+    {
+      reccap_mtim(nam2, cap);
+    }
+  }
+  closedir(dir);
+
+  if (stat(name, &statbuf) != 0)
+  {
+    errxit("can't open file %s", name);
+    exit(1);
+  }
+  if (ts_cmp(statbuf.st_mtim, cap) > 0)
+  {
+    utimensat_both_emul(name, cap, 0, 0);
+  }
+  if (lstat(name, &statbuf) != 0)
+  {
+    errxit("can't open file %s", name);
+    exit(1);
+  }
+  if (ts_cmp(statbuf.st_mtim, cap) > 0)
+  {
+    utimensat_both_emul(name, cap, 1, 0);
+  }
+}
+
 void calc_cmd(int ruleid)
 {
   struct rule *r = rules[ruleid];
@@ -3173,7 +3315,47 @@ void mark_executed(int ruleid, int was_actually_executed)
     return;
   }
 #endif
-  if (r->is_rectgt && r->st_mtim_valid)
+  if (r->is_detouch)
+  {
+    struct timespec cap;
+    int cap_valid = 0;
+    LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+    {
+      struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      struct stat statbuf;
+      if (stat(sttable[e->tgtidx], &statbuf) != 0)
+      {
+        errxit("Can't stat %s", sttable[e->tgtidx]);
+      }
+      if (!cap_valid || ts_cmp(statbuf.st_mtim, cap) < 0)
+      {
+        cap = statbuf.st_mtim;
+        cap_valid = 1;
+      }
+      if (lstat(sttable[e->tgtidx], &statbuf) != 0)
+      {
+        errxit("Can't lstat %s", sttable[e->tgtidx]);
+      }
+      if (!cap_valid || ts_cmp(statbuf.st_mtim, cap) < 0)
+      {
+        cap = statbuf.st_mtim;
+        cap_valid = 1;
+      }
+    }
+    if (!cap_valid)
+    {
+      my_abort();
+    }
+    LINKED_LIST_FOR_EACH(node, &r->deplist)
+    {
+      struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+      if (e->is_recursive)
+      {
+        reccap_mtim(sttable[e->nameidx], cap);
+      }
+    }
+  }
+  else if (r->is_rectgt && r->st_mtim_valid)
   {
     LINKED_LIST_FOR_EACH(node, &r->deplist)
     {
@@ -5086,7 +5268,8 @@ int main(int argc, char **argv)
           add_rule(tgts, main.rules[i].targetsz,
                    deps, main.rules[i].depsz,
                    &main.rules[i].shells, //main.rules[i].shellsz,
-                   main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
+                   main.rules[i].phony, main.rules[i].rectgt,
+                   main.rules[i].detouch, main.rules[i].maybe,
                    main.rules[i].dist,
                    main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
                    main.rules[i].isbothcleanhook,
@@ -5097,7 +5280,8 @@ int main(int argc, char **argv)
       add_rule(main.rules[i].targets, main.rules[i].targetsz,
                main.rules[i].deps, main.rules[i].depsz,
                &main.rules[i].shells, //main.rules[i].shellsz,
-               main.rules[i].phony, main.rules[i].rectgt, main.rules[i].maybe,
+               main.rules[i].phony, main.rules[i].rectgt,
+               main.rules[i].detouch, main.rules[i].maybe,
                main.rules[i].dist,
                main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
                main.rules[i].isbothcleanhook,

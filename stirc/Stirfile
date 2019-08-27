@@ -27,10 +27,7 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 
 @phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM)
 
-# FIXME it may not be good to touch the targets here!!!
-# It causes rebuild of the programs in abce...
-# We can avoid that by building specifically only libabce.a
-@rectgtrule: 'abce/libabce.a': @recdep 'abce'
+@detouchrule: 'abce/libabce.a': @recdep 'abce'
 	make -C abce libabce.a
 
 # FIXME filter-out needed here!!!!!

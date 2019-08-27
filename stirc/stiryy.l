@@ -67,6 +67,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@phonyrule return PHONYRULE;
 <INITIAL,STRICT>@mayberule return MAYBERULE;
 <INITIAL,STRICT>@rectgtrule return RECTGTRULE;
+<INITIAL,STRICT>@detouchrule return DETOUCHRULE;
 <INITIAL,STRICT>@distrule return DISTRULE;
 <INITIAL,STRICT>@cleanhook return CLEANHOOK;
 <INITIAL,STRICT>@distcleanhook return DISTCLEANHOOK;

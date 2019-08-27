@@ -106,6 +106,7 @@ struct stiryyrule {
   char *prefix;
   unsigned phony:1;
   unsigned rectgt:1;
+  unsigned detouch:1;
   unsigned maybe:1;
   unsigned dist:1;
   unsigned deponly:1;
@@ -631,6 +632,7 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
   main->rules[main->rulesz].prefix = strdup(curprefix);
   main->rules[main->rulesz].phony = 0;
   main->rules[main->rulesz].rectgt = 0;
+  main->rules[main->rulesz].detouch = 0;
   main->rules[main->rulesz].maybe = 0;
   main->rules[main->rulesz].dist = 0;
   main->rules[main->rulesz].deponly = 0;
@@ -685,11 +687,15 @@ static inline void stiryy_mark_rectgt(struct stiryy *stiryy)
 {
   stiryy->main->rules[stiryy->main->rulesz-1].rectgt = 1;
 }
+static inline void stiryy_mark_detouch(struct stiryy *stiryy)
+{
+  stiryy->main->rules[stiryy->main->rulesz-1].detouch = 1;
+}
 static inline int stiryy_check_rule(struct stiryy *stiryy)
 {
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t j ;
-  if (rule->rectgt)
+  if (rule->rectgt || rule->detouch)
   {
     return 0;
   }

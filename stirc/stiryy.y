@@ -203,6 +203,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token DISTRULE
 %token PATRULE
 %token RECTGTRULE
+%token DETOUCHRULE
 %token FILEINCLUDE
 %token DIRINCLUDE PROJDIRINCLUDE
 %token CDEPINCLUDES
@@ -2318,7 +2319,7 @@ stirrule:
     if (stiryy_check_rule(stiryy) != 0)
     {
       char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule or @mayberule",
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule, @detouchrule or @mayberule",
                stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
       recommend(scanner, stiryy, buf);
     }
@@ -2361,6 +2362,13 @@ stirrule:
     stiryy_mark_rectgt(stiryy);
   }
 }
+| DETOUCHRULE COLON targetspec COLON depspec NEWLINE shell_commands
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_mark_detouch(stiryy);
+  }
+}
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2383,7 +2391,7 @@ stirrule:
     if (stiryy_check_rule(stiryy) != 0)
     {
       char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule or @mayberule",
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule, @detouchrule or @mayberule",
                stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
       recommend(scanner, stiryy, buf);
     }
