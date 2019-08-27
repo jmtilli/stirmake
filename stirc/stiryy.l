@@ -52,6 +52,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@strappend return STRAPPEND;
 <INITIAL,STRICT>@sufsuball return SUFSUBALL;
 <INITIAL,STRICT>@suffilter return SUFFILTER;
+<INITIAL,STRICT>@suffilterout return SUFFILTEROUT;
 <INITIAL,STRICT>@pathsuffix return PATHSUFFIX;
 <INITIAL,STRICT>@pathsimplify return PATHSIMPLIFY;
 <INITIAL,STRICT>@pathbasename return PATHBASENAME;

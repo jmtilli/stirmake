@@ -30,9 +30,8 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @detouchrule: 'abce/libabce.a': @recdep 'abce'
 	make -C abce libabce.a
 
-# FIXME filter-out needed here!!!!!
 @phonyrule: 'wc':
-@	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@glob("*.h")]
+@	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@suffilterout(@suffilterout(@glob("*.h"),".lex.h"),".tab.h")]
 
 @patrule: $(SYM): '%':
 	ln -s stirmake $@
