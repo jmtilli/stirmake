@@ -4,12 +4,19 @@
 @function $FOO($x)
   @stdout("foo\n")
   @dump($x)
-  @return 3
+  @return $x
 @endfunction
 
 %lua{
-  print(Stir.makelexcall("FOO", {}))
-%}
-%lua{
   print(2)
+  tbl=Stir.makelexcall("FOO", {"a", "b", 3, 4, 5, {6, {a=1, b=2, c=3}}})
+  print(tbl[1])
+  print(tbl[2])
+  print(tbl[3])
+  print(tbl[4])
+  print(tbl[5])
+  print(tbl[6][1])
+  print(tbl[6][2]["a"])
+  print(tbl[6][2]["b"])
+  print(tbl[6][2]["c"])
 %}
