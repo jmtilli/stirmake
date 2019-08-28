@@ -38,10 +38,21 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
   $(WITH_LUAMAKE) = ["WITH_LUA=yes"]
 @endif
 
-@phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM)
+@phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM) 'abce/all'
 
-@detouchrule: 'abce/libabce.a': @recdep 'abce'
-@	["make", "-C", "abce", @$(WITH_LUAMAKE), "libabce.a"]
+# If you really want to use sub-make, use this:
+#@detouchrule: 'abce/libabce.a': @recdep 'abce'
+#@	["make", "-C", "abce", @$(WITH_LUAMAKE), "libabce.a"]
+
+# But you don't want to use sub-make, so use this:
+@beginholeyscope
+  $(CC) = @LP$(CC)
+  $(CFLAGS) = @LP$(CFLAGS)
+  $(WITH_LUA) = @LP$(WITH_LUA)
+  $(LUAINCS) = @LP$(LUAINCS)
+  $(LUALIBS) = @LP$(LUALIBS)
+  @projdirinclude "abce"
+@endscope
 
 @phonyrule: 'wc':
 @	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@suffilterout(@suffilterout(@glob("*.h"),".lex.h"),".tab.h")]
