@@ -913,6 +913,19 @@ struct rule {
 
 char **argdup(char **cmdargs);
 
+static size_t
+cmdsrc_cache_add_str_nul(struct abce *abce, const char *str, int *err)
+{
+  size_t ret;
+  ret = abce_cache_add_str_nul(abce, str);
+  if (ret == (size_t)-1)
+  {
+    *err = 1;
+  }
+  return ret;
+}
+
+
 char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
 {
   size_t i, j, k;
@@ -926,6 +939,19 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   struct linked_list_node *node;
   struct abce_mb scope = abce->cachebase[rule->scopeidx]; // no refup!
   struct abce_mb oldscope = abce->dynscope; // no refup, it's in cache anyway
+  size_t atidx, plusidx, baridx, hatidx, ltidx;
+  int err = 0;
+
+  atidx = cmdsrc_cache_add_str_nul(abce, "@", &err);
+  plusidx = cmdsrc_cache_add_str_nul(abce, "+", &err);
+  baridx = cmdsrc_cache_add_str_nul(abce, "|", &err);
+  hatidx = cmdsrc_cache_add_str_nul(abce, "^", &err);
+  ltidx = cmdsrc_cache_add_str_nul(abce, "<", &err);
+
+  if (err)
+  {
+    my_abort();
+  }
 
   if (first_tgt->tgtidxnodir == (size_t)-1)
   {
@@ -940,48 +966,52 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       unsigned char tmpbuf[64] = {};
       size_t tmpsiz = 0;
       struct abce_mb mb = {};
-      struct abce_mb mbkey = {};
+      //struct abce_mb mbkey = {};
       struct abce_mb mbval = {};
       int first = 1;
 
+#if 0
       mbkey = abce_mb_create_string(abce, "@", 1);
       if (mbkey.typ == ABCE_T_N)
       {
         return NULL;
       }
+#endif
       mbval = abce_mb_create_string(abce, tgt, strlen(tgt));
       if (mbval.typ == ABCE_T_N)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[atidx], &mbval) != 0)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         abce_mb_refdn(abce, &mbval);
         return NULL;
       }
-      abce_mb_refdn(abce, &mbkey);
+      //abce_mb_refdn(abce, &mbkey);
       abce_mb_refdn(abce, &mbval);
 
+#if 0
       mbkey = abce_mb_create_string(abce, "+", 1);
       if (mbkey.typ == ABCE_T_N)
       {
         return NULL;
       }
+#endif
       mbval = abce_mb_create_array(abce);
       if (mbval.typ == ABCE_T_N)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[plusidx], &mbval) != 0)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         abce_mb_refdn(abce, &mbval);
         return NULL;
       }
-      abce_mb_refdn(abce, &mbkey);
+      //abce_mb_refdn(abce, &mbkey);
       LINKED_LIST_FOR_EACH(node, &rule->dupedeplist)
       {
         struct stirdep *dep =
@@ -1007,24 +1037,26 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       }
       abce_mb_refdn(abce, &mbval);
 
+#if 0
       mbkey = abce_mb_create_string(abce, "|", 1);
       if (mbkey.typ == ABCE_T_N)
       {
         return NULL;
       }
+#endif
       mbval = abce_mb_create_array(abce);
       if (mbval.typ == ABCE_T_N)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[baridx], &mbval) != 0)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         abce_mb_refdn(abce, &mbval);
         return NULL;
       }
-      abce_mb_refdn(abce, &mbkey);
+      //abce_mb_refdn(abce, &mbkey);
       LINKED_LIST_FOR_EACH(node, &rule->deplist)
       {
         struct stirdep *dep =
@@ -1050,24 +1082,26 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       }
       abce_mb_refdn(abce, &mbval);
 
+#if 0
       mbkey = abce_mb_create_string(abce, "^", 1);
       if (mbkey.typ == ABCE_T_N)
       {
         return NULL;
       }
+#endif
       mbval = abce_mb_create_array(abce);
       if (mbval.typ == ABCE_T_N)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[hatidx], &mbval) != 0)
       {
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         abce_mb_refdn(abce, &mbval);
         return NULL;
       }
-      abce_mb_refdn(abce, &mbkey);
+      //abce_mb_refdn(abce, &mbkey);
       LINKED_LIST_FOR_EACH(node, &rule->deplist)
       {
         struct stirdep *dep =
@@ -1091,20 +1125,22 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         }
         if (first)
         {
+#if 0
           mbkey = abce_mb_create_string(abce, "<", 1);
           if (mbkey.typ == ABCE_T_N)
           {
             abce_mb_refdn(abce, &mbval);
             return NULL;
           }
-          if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mb) != 0)
+#endif
+          if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], &mb) != 0)
           {
             abce_mb_refdn(abce, &mbval);
-            abce_mb_refdn(abce, &mbkey);
+            //abce_mb_refdn(abce, &mbkey);
             abce_mb_refdn(abce, &mb);
             return NULL;
           }
-          abce_mb_refdn(abce, &mbkey);
+          //abce_mb_refdn(abce, &mbkey);
           first = 0;
         }
         abce_mb_refdn(abce, &mb);
@@ -1114,19 +1150,21 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       {
         mb.typ = ABCE_T_N;
         mb.u.d = 0;
+#if 0
         mbkey = abce_mb_create_string(abce, "<", 1);
         if (mbkey.typ == ABCE_T_N)
         {
           abce_mb_refdn(abce, &mbval);
           return NULL;
         }
-        if (abce_sc_replace_val_mb(abce, &scope, &mbkey, &mb) != 0)
+#endif
+        if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], &mb) != 0)
         {
           abce_mb_refdn(abce, &mbval);
-          abce_mb_refdn(abce, &mbkey);
+          //abce_mb_refdn(abce, &mbkey);
           return NULL;
         }
-        abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbkey);
         first = 0;
       }
 
