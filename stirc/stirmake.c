@@ -366,42 +366,35 @@ void escape_string(FILE *f, const char *str)
   for (ptr = str; *ptr; ptr++)
   {
     unsigned char uch = *ptr;
-    if (uch < 0x20 || uch >= 0x7F)
+    switch (uch)
     {
-      fprintf(f, "\\x%.2X", uch);
-      continue;
+      case '\\':
+        fprintf(f, "\\\\");
+        break;
+      case '\'':
+        fprintf(f, "\\'");
+        break;
+      case '"':
+        fprintf(f, "\\\"");
+        break;
+      case '\t':
+        fprintf(f, "\\t");
+        break;
+      case '\r':
+        fprintf(f, "\\r");
+        break;
+      case '\n':
+        fprintf(f, "\\n");
+        break;
+      default:
+        if (uch < 0x20 || uch >= 0x7F)
+        {
+          fprintf(f, "\\x%.2X", uch);
+          break;
+        }
+        putc((char)uch, f);
+        break;
     }
-    if (uch == '\\')
-    {
-      fprintf(f, "\\\\");
-      continue;
-    }
-    if (uch == '\'')
-    {
-      fprintf(f, "\\'");
-      continue;
-    }
-    if (uch == '"')
-    {
-      fprintf(f, "\\\"");
-      continue;
-    }
-    if (uch == '\t')
-    {
-      fprintf(f, "\\t");
-      continue;
-    }
-    if (uch == '\r')
-    {
-      fprintf(f, "\\r");
-      continue;
-    }
-    if (uch == '\n')
-    {
-      fprintf(f, "\\n");
-      continue;
-    }
-    putc((char)uch, f);
   }
 }
 
