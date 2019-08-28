@@ -1,12 +1,14 @@
 @toplevel
 @strict
 
+@fileinclude @ignore "opts.smk"
+
 # You can modify these during compilation
-$(CC) = "clang"
-$(CFLAGS) = ["-O3", "-Wall", "-g"]
-$(WITH_LUA) = @false
-$(LUAINCS) = ["-I/usr/include/luajit-2.1"]
-$(LUALIBS) = ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a"]
+$(CC) ?= "clang"
+$(CFLAGS) ?= ["-O3", "-Wall", "-g"]
+$(WITH_LUA) ?= @false
+$(LUAINCS) ?= ["-I/usr/include/luajit-2.1"]
+$(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a"]
 
 # You can modify these during development
 $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \

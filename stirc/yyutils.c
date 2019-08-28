@@ -349,7 +349,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   return 0;
 }
 
-int do_fileinclude(struct stiryy *stiryy, const char *fname)
+int do_fileinclude(struct stiryy *stiryy, const char *fname, int ignore)
 {
   struct stiryy stiryy2 = {};
   int ret;
@@ -361,6 +361,10 @@ int do_fileinclude(struct stiryy *stiryy, const char *fname)
   f = fopen(fname, "r");
   if (!f)
   {
+    if (ignore)
+    {
+      return 0;
+    }
     fprintf(stderr, "stirmake: Can't open substirfile %s.\n", fname);
     return -ENOENT;
   }

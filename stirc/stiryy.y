@@ -281,6 +281,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %type<d> cdepincludes
 %type<d> cdepspecifiers
 %type<d> cdepspecifier
+%type<d> maybeignore
 
 %type<d> scopetype
 %type<d> beginscope
@@ -512,7 +513,7 @@ custom_rule:
   free($2.str);
 }
 */
-| FILEINCLUDE
+| FILEINCLUDE maybeignore
 {
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
@@ -526,7 +527,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "fileinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz);
     if (ret)
     {
       YYABORT;
@@ -534,7 +535,7 @@ custom_rule:
 
     for (i = 0; i < strsz; i++)
     {
-      if (do_fileinclude(stiryy, strs[i]) != 0)
+      if (do_fileinclude(stiryy, strs[i], $2) != 0)
       {
         YYABORT;
       }
@@ -689,6 +690,10 @@ custom_rule:
 }
 ;
 
+maybeignore:
+  { $$ = 0; }
+| IGNORE { $$ = 1; }
+;
 
 /* Start of copypaste */
 
