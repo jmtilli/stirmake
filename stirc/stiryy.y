@@ -815,8 +815,8 @@ expr NEWLINE
     {
       amyplanyy_add_fun_sym(amyplanyy, $1, $3, $<d>4);
     }
-    else
-    { // FIXME what if $3 is question-mark-equals here?
+    else if (!$3 || abce_sc_get_rec_str_area(get_abce(amyplanyy)->dynscope.u.area, $1, 1) == NULL)
+    {
       if (get_abce(amyplanyy)->sp != 0)
       {
         abort();
