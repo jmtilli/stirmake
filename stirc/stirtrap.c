@@ -883,15 +883,18 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &bases);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
+        abce_mb_refdn(abce, &abce->oneblock);
         abce_mb_refdn(abce, &newstr);
       }
       abce_pop(abce);
@@ -946,16 +949,19 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
             abce_mb_refdn(abce, &mods);
             return -ENOMEM;
           }
+          abce->oneblock = abce_mb_refup(abce, &newstr);
           if (abce_mb_array_append(abce, &mods, &newstr) != 0)
           {
             abce_mb_refdn(abce, &bases);
             abce_mb_refdn(abce, &mods);
             abce_mb_refdn(abce, &newstr);
+            abce_mb_refdn(abce, &abce->oneblock);
             abce_pop(abce);
             abce_pop(abce);
             return -ENOMEM;
           }
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           continue;
         }
         newstr = abce_mb_create_string(abce, cutpoint, bsz-(cutpoint-buf));
@@ -965,15 +971,18 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &bases);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
+        abce_mb_refdn(abce, &abce->oneblock);
         abce_mb_refdn(abce, &newstr);
       }
       abce_pop(abce);
@@ -1038,16 +1047,19 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &bases);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
         abce_mb_refdn(abce, &newstr);
+        abce_mb_refdn(abce, &abce->oneblock);
       }
       abce_pop(abce);
       abce_pop(abce);
@@ -1100,16 +1112,19 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
             abce_mb_refdn(abce, &mods);
             return -ENOMEM;
           }
+          abce->oneblock = abce_mb_refup(abce, &newstr);
           if (abce_mb_array_append(abce, &mods, &newstr) != 0)
           {
             abce_mb_refdn(abce, &bases);
             abce_mb_refdn(abce, &mods);
             abce_mb_refdn(abce, &newstr);
+            abce_mb_refdn(abce, &abce->oneblock);
             abce_pop(abce);
             abce_pop(abce);
             return -ENOMEM;
           }
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           continue;
         }
         newstr = abce_mb_create_string(abce, buf, cutpoint + 1 - buf);
@@ -1119,16 +1134,19 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &bases);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
         abce_mb_refdn(abce, &newstr);
+        abce_mb_refdn(abce, &abce->oneblock);
       }
       abce_pop(abce);
       abce_pop(abce);
@@ -1268,16 +1286,19 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &base);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
         abce_mb_refdn(abce, &newstr);
+        abce_mb_refdn(abce, &abce->oneblock);
       }
       globfree(&globbuf);
       abce_pop(abce);
@@ -1329,16 +1350,19 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &bases);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
         abce_mb_refdn(abce, &newstr);
+        abce_mb_refdn(abce, &abce->oneblock);
       }
       abce_pop(abce);
       abce_pop(abce);
@@ -1426,6 +1450,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         memcpy(newstr.u.area->u.str.buf + (bsz - osz),
                newsuf.u.area->u.str.buf, nsz);
         newstr.u.area->u.str.buf[bsz-osz+nsz] = '\0';
+        abce->oneblock = abce_mb_refup(abce, &newstr);
         if (abce_mb_array_append(abce, &mods, &newstr) != 0)
         {
           abce_mb_refdn(abce, &oldsuf);
@@ -1433,12 +1458,14 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_mb_refdn(abce, &bases);
           abce_mb_refdn(abce, &mods);
           abce_mb_refdn(abce, &newstr);
+          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
+        abce_mb_refdn(abce, &abce->oneblock);
         abce_mb_refdn(abce, &newstr);
       }
       abce_pop(abce);
