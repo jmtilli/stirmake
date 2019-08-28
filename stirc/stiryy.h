@@ -568,6 +568,7 @@ static inline void stiryy_add_shell_attab(struct stiryy *stiryy, size_t locidx)
   //printf("section\n");
   cmdsrc->items[cmdsrc->itemsz].merge = 0;
   cmdsrc->items[cmdsrc->itemsz].iscode = 1;
+  cmdsrc->items[cmdsrc->itemsz].isfun = 0;
   cmdsrc->items[cmdsrc->itemsz].sz = 0;
   cmdsrc->items[cmdsrc->itemsz].capacity = 0;
   cmdsrc->items[cmdsrc->itemsz].u.locidx = locidx;
@@ -587,6 +588,7 @@ static inline void stiryy_add_shell_atattab(struct stiryy *stiryy, size_t locidx
   //printf("section\n");
   cmdsrc->items[cmdsrc->itemsz].merge = 1;
   cmdsrc->items[cmdsrc->itemsz].iscode = 1;
+  cmdsrc->items[cmdsrc->itemsz].isfun = 0;
   cmdsrc->items[cmdsrc->itemsz].sz = 0;
   cmdsrc->items[cmdsrc->itemsz].capacity = 0;
   cmdsrc->items[cmdsrc->itemsz].u.locidx = locidx;
@@ -607,6 +609,7 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
   //printf("section\n");
   cmdsrc->items[cmdsrc->itemsz].merge = 0;
   cmdsrc->items[cmdsrc->itemsz].iscode = 0;
+  cmdsrc->items[cmdsrc->itemsz].isfun = 0;
   cmdsrc->items[cmdsrc->itemsz].sz = 0;
   cmdsrc->items[cmdsrc->itemsz].capacity = 0;
   cmdsrc->items[cmdsrc->itemsz].u.args = NULL;
