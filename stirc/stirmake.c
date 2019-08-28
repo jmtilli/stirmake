@@ -559,6 +559,10 @@ int read_jobserver(void)
   }
   if (!(pfd.revents & POLLIN))
   {
+    if (errno == EINTR)
+    {
+      return 0;
+    }
     my_abort();
   }
 
