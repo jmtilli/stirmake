@@ -967,6 +967,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       size_t tmpsiz = 0;
       struct abce_mb mb = {};
       //struct abce_mb mbkey = {};
+      struct abce_mb mbnil = {.typ = ABCE_T_N};
       struct abce_mb mbval = {};
       int first = 1;
 
@@ -1276,6 +1277,26 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
           result = realloc(result, resultcap * sizeof(*result));
         }
         result[resultsz++] = cmd;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[atidx], &mbnil) != 0)
+      {
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[plusidx], &mbnil) != 0)
+      {
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], &mbnil) != 0)
+      {
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[baridx], &mbnil) != 0)
+      {
+        return NULL;
+      }
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[hatidx], &mbnil) != 0)
+      {
+        return NULL;
       }
       abce_mb_refdn(abce, &mb);
       continue;
