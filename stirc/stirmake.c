@@ -3782,6 +3782,7 @@ void do_narration(void)
     oumlaut[ret] = '\0';
   }
   printf("Hellurei, hellurei, k%s%snt%s on hurjaa!\n", aumlaut, aumlaut, oumlaut);
+  fflush(stdout);
   free(aumlaut);
   free(oumlaut);
 }
@@ -4456,6 +4457,7 @@ void create_pipe(int jobcnt)
     return;
   }
   printf("stirmake: Socket pair didn't work, using pipe instead\n");
+  fflush(stdout);
   close(jobserver_fd[0]);
   close(jobserver_fd[1]);
   if (pipe(jobserver_fd) != 0)
@@ -4479,6 +4481,7 @@ void create_pipe(int jobcnt)
     return;
   }
   printf("stirmake: Could not write all tokens to jobserver (only %d)\n", i);
+  fflush(stdout);
 }
 
 void do_setrlimit(void)
@@ -5150,6 +5153,7 @@ int main(int argc, char **argv)
       abce_inited = 0;
     }
     printf("stirmake: Using directory %s\n", cwd);
+    fflush(stdout);
     if (chdir(cwd) != 0)
     {
       my_abort();
@@ -5191,11 +5195,13 @@ int main(int argc, char **argv)
   {
     fwd_path = calc_forward_path(storcwd, upcnt);
     printf("stirmake: Forward path: %s\n", fwd_path);
+    fflush(stdout);
   }
   else if (mode == MODE_PROJECT)
   {
     fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
     printf("stirmake: Forward path: %s\n", fwd_path);
+    fflush(stdout);
   }
   else
   {
