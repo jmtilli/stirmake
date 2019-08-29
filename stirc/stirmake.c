@@ -451,13 +451,13 @@ void *stir_do_mmap_madvise(size_t bytes)
   bytes = stir_topages(bytes);
   // Ugh. I wish all systems had simple and compatible interface.
 #ifdef MAP_ANON
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANON, -1, 0);
 #else
   #ifdef MAP_ANONYMOUS
     #ifdef MAP_NORESERVE
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
     #else
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     #endif
   #else
   {
@@ -467,7 +467,7 @@ void *stir_do_mmap_madvise(size_t bytes)
     {
       abort();
     }
-    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, fd, 0);
+    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, fd, 0);
     close(fd);
   }
   #endif
@@ -5109,7 +5109,7 @@ int main(int argc, char **argv)
         my_abort();
       }
       curupcnt++;
-      abce_init(&abce);
+      abce_init_opts(&abce, 1);
       abce_inited = 1;
       abce.trap = stir_trap;
       abce.trap_baton = &main;
@@ -5157,7 +5157,7 @@ int main(int argc, char **argv)
   }
 
   load_db();
-  abce_init(&abce);
+  abce_init_opts(&abce, 1);
   abce_inited = 1;
   abce.trap = stir_trap;
   abce.trap_baton = &main;
