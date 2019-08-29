@@ -552,7 +552,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
     }
     yytgts[i].name = canon(nam);
     free(nam);
-    yytgts[i].namenodir = mbstr->u.area->u.str.buf;
+    yytgts[i].namenodir = strdup(mbstr->u.area->u.str.buf);
   }
   for (i = 0; i < depsz; i++)
   {
@@ -572,7 +572,7 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
     }
     yydeps[i].name = canon(nam);
     free(nam);
-    yydeps[i].namenodir = mbstr->u.area->u.str.buf;
+    yydeps[i].namenodir = strdup(mbstr->u.area->u.str.buf);
     yydeps[i].rec = 0;
     yydeps[i].orderonly = 0;
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[rec]) == 0)
@@ -645,8 +645,8 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
                  * sizeof(*yyshells[i].u.cmds[j]));
         for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
         {
-          yyshells[i].u.cmds[j][k] =
-            attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf;
+          yyshells[i].u.cmds[j][k] = strdup(
+            attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
         }
         yyshells[i].u.cmds[j][attr1->u.area->u.ar.mbs[j].u.area->u.ar.size] =
           NULL;
@@ -669,7 +669,8 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
         malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
-        yyshells[i].u.args[j] = attr1->u.area->u.ar.mbs[j].u.area->u.str.buf;
+        yyshells[i].u.args[j] = strdup(
+          attr1->u.area->u.ar.mbs[j].u.area->u.str.buf);
       }
       yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
     }
