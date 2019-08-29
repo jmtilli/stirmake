@@ -557,9 +557,9 @@ int read_jobserver(void)
   {
     if (errno == EINTR)
     {
-      printf("111 ret %d, errno %d\n", ret, errno);
       return 0;
     }
+    printf("111 ret %d, errno %d\n", ret, errno);
     my_abort();
   }
   if (!(pfd.revents & POLLIN))
