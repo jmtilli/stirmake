@@ -43,3 +43,5 @@
 - @elseif and @else to top-level directive syntax
 
 - shortcutting
+
+- add to Amyplan: . string concatenation operator
