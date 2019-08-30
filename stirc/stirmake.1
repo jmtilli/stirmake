@@ -359,9 +359,11 @@ as the command-line argument. When
 .Nm LuaJIT
 support is available,
 it is possible to add Lua snippets like this that can contain
-.Fn Abce.getlexval
-and
+.Fn Abce.getlexval ,
+.Fn Abce.getdynval ,
 .Fn Abce.makelexcall
+and
+.Fn Abce.makedyncall
 calls:
 .Pp
 .Bd -literal
@@ -387,6 +389,16 @@ $VALUE = 2
   print(tbl[6][2]["c"])
 %}
 .Ed
+.Pp
+The difference between the
+.Sq lex
+and
+.Sq dyn
+variants is that
+.Sq lex
+refers to lexical scoping and
+.Sq dyn
+refers to dynamic scoping.
 .Pp
 Rules/dependencies cannot be directly added from Lua, but indirectly
 via
