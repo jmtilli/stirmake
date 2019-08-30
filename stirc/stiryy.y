@@ -94,6 +94,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 #define amyplanyy_set_double stiryy_set_double
 #define amyplanyy_add_fun_sym stiryy_add_fun_sym
 #define amyplan_symbol_add stiryy_symbol_add
+#define amyplanyyerror stiryyerror
 
 #define get_abce(stiryy) ((stiryy)->main->abce)
 
@@ -514,6 +515,7 @@ custom_rule:
           printf("(-)\n");
         }
       }
+      stiryyerror(scanner, stiryy, "error in @call");
       YYABORT;
     }
     if (get_abce(amyplanyy)->sp != 0)
@@ -691,6 +693,7 @@ custom_rule:
           printf("(-)\n");
         }
       }
+      stiryyerror(scanner, stiryy, "error in @if");
       YYABORT;
     }
     if (get_abce(amyplanyy)->sp != 1)
@@ -882,6 +885,7 @@ expr NEWLINE
             printf("(-)\n");
           }
         }
+        amyplanyyerror(scanner, amyplanyy, "error in assignment");
         YYABORT;
       }
       if (get_abce(amyplanyy)->sp != 1)
@@ -963,6 +967,7 @@ expr NEWLINE
             printf("(-)\n");
           }
         }
+        amyplanyyerror(scanner, amyplanyy, "error in += assignment");
         YYABORT;
       }
       if (get_abce(amyplanyy)->sp != 1)
