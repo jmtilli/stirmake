@@ -547,6 +547,7 @@ custom_rule:
     ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in @fileinclude");
       YYABORT;
     }
 
@@ -591,6 +592,7 @@ custom_rule:
     ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in @dirinclude");
       YYABORT;
     }
 
@@ -640,6 +642,7 @@ custom_rule:
     ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in @cdepincludes");
       YYABORT;
     }
 
@@ -704,6 +707,7 @@ custom_rule:
     if (abce_getboolean(&b, get_abce(amyplanyy), 0) != 0)
     {
       printf("expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      stiryyerror(scanner, stiryy, "error in @if");
       YYABORT;
     }
     if (!b)
@@ -2764,6 +2768,7 @@ pattargets:
 
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in targets");
       YYABORT;
     }
 
@@ -2800,6 +2805,7 @@ pattargets:
 
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in targets");
       YYABORT;
     }
 
@@ -2891,6 +2897,7 @@ targets:
     ret = engine_stringlist(get_abce(amyplanyy), $1, "target", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in targets");
       YYABORT;
     }
 
@@ -2941,6 +2948,7 @@ targets:
     ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in targets");
       YYABORT;
     }
 
@@ -3007,6 +3015,7 @@ patdeps:
     ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in dependencies");
       YYABORT;
     }
 
@@ -3068,6 +3077,7 @@ deps:
     ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
     if (ret)
     {
+      stiryyerror(scanner, stiryy, "error in dependencies");
       YYABORT;
     }
 
