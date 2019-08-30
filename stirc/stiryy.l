@@ -128,6 +128,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@return  return RETURN;
 <INITIAL,STRICT>@append   return APPEND;
 <INITIAL,STRICT>@appendlist   return APPEND_LIST;
+<INITIAL,STRICT>@luacall  return LUACALL;
 
 <INITIAL,STRICT>@[?] return ATQM;
 <INITIAL,STRICT>@scope return SCOPE;
