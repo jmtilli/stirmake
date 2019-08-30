@@ -473,6 +473,9 @@ custom_rule:
     if (luaL_dostring(get_abce(amyplanyy)->dynscope.u.area->u.sc.lua, $1) != 0)
     {
       stiryyerror(scanner, stiryy, "Lua error");
+      stiryyerror(scanner, stiryy,
+                  lua_tostring(get_abce(amyplanyy)->dynscope.u.area->u.sc.lua,
+                               -1));
       YYABORT;
     }
 #endif
@@ -519,6 +522,8 @@ custom_rule:
           printf("(-)\n");
         }
       }
+      printf("Additional information:\n");
+      abce_mb_dump(&get_abce(amyplanyy)->err.mb);
       stiryyerror(scanner, stiryy, "error in @call");
       YYABORT;
     }
@@ -700,6 +705,8 @@ custom_rule:
           printf("(-)\n");
         }
       }
+      printf("Additional information:\n");
+      abce_mb_dump(&get_abce(amyplanyy)->err.mb);
       stiryyerror(scanner, stiryy, "error in @if");
       YYABORT;
     }
@@ -893,6 +900,8 @@ expr NEWLINE
             printf("(-)\n");
           }
         }
+        printf("Additional information:\n");
+        abce_mb_dump(&get_abce(amyplanyy)->err.mb);
         amyplanyyerror(scanner, amyplanyy, "error in assignment");
         YYABORT;
       }
@@ -975,6 +984,8 @@ expr NEWLINE
             printf("(-)\n");
           }
         }
+        printf("Additional information:\n");
+        abce_mb_dump(&get_abce(amyplanyy)->err.mb);
         amyplanyyerror(scanner, amyplanyy, "error in += assignment");
         YYABORT;
       }

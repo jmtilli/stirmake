@@ -419,6 +419,8 @@ engine_stringlist(struct abce *abce,
         printf("(-)\n");
       }
     }
+    printf("Additional information:\n");
+    abce_mb_dump(&abce->err.mb);
     return -EINVAL;
   }
   if (abce_getmb(&mb, abce, 0) != 0)

@@ -1219,6 +1219,8 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
             printf("(-)\n");
           }
         }
+        printf("Additional information:\n");
+        abce_mb_dump(&abce->err.mb);
         return NULL;
       }
       abce->dynscope = oldscope;
