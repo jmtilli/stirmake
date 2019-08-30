@@ -1206,7 +1206,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       if (abce_engine(abce, tmpbuf, tmpsiz) != 0)
       {
         abce->dynscope = oldscope;
-        printf("error %d\n", abce->err.code);
+        printf("error %s\n", abce_err_to_str(abce->err.code));
         printf("Backtrace:\n");
         for (i = 0; i < abce->btsz; i++)
         {
