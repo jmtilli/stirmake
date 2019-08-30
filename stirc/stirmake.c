@@ -1206,6 +1206,19 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       if (abce_engine(abce, tmpbuf, tmpsiz) != 0)
       {
         abce->dynscope = oldscope;
+        printf("error %d\n", abce->err.code);
+        printf("Backtrace:\n");
+        for (i = 0; i < abce->btsz; i++)
+        {
+          if (abce->btbase[i].typ == ABCE_T_S)
+          {
+            printf("%s\n", abce->btbase[i].u.area->u.str.buf);
+          }
+          else
+          {
+            printf("(-)\n");
+          }
+        }
         return NULL;
       }
       abce->dynscope = oldscope;

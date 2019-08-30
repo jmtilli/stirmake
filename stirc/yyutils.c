@@ -407,6 +407,18 @@ engine_stringlist(struct abce *abce,
   {
     printf("Error executing bytecode for %s directive\n", directive);
     printf("error %d\n", abce->err.code);
+    printf("Backtrace:\n");
+    for (i = 0; i < abce->btsz; i++)
+    {
+      if (abce->btbase[i].typ == ABCE_T_S)
+      {
+        printf("%s\n", abce->btbase[i].u.area->u.str.buf);
+      }
+      else
+      {
+        printf("(-)\n");
+      }
+    }
     return -EINVAL;
   }
   if (abce_getmb(&mb, abce, 0) != 0)

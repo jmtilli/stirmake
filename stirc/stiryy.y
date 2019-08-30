@@ -499,8 +499,21 @@ custom_rule:
 
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
+      size_t i;
       printf("Error executing bytecode for call directive\n");
       printf("error %d\n", get_abce(amyplanyy)->err.code);
+      printf("Backtrace:\n");
+      for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
+      {
+        if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
+        {
+          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+        }
+        else
+        {
+          printf("(-)\n");
+        }
+      }
       YYABORT;
     }
     if (get_abce(amyplanyy)->sp != 0)
@@ -663,8 +676,21 @@ custom_rule:
     }
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
+      size_t i;
       printf("Error executing bytecode for @if directive\n");
       printf("error %d\n", get_abce(amyplanyy)->err.code);
+      printf("Backtrace:\n");
+      for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
+      {
+        if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
+        {
+          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+        }
+        else
+        {
+          printf("(-)\n");
+        }
+      }
       YYABORT;
     }
     if (get_abce(amyplanyy)->sp != 1)
@@ -841,8 +867,21 @@ expr NEWLINE
       get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
       {
+        size_t i;
         printf("Error executing bytecode for var %s\n", $1);
         printf("error %d\n", get_abce(amyplanyy)->err.code);
+        printf("Backtrace:\n");
+        for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
+        {
+          if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
+          {
+            printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+          }
+          else
+          {
+            printf("(-)\n");
+          }
+        }
         YYABORT;
       }
       if (get_abce(amyplanyy)->sp != 1)
@@ -909,8 +948,21 @@ expr NEWLINE
       get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
       {
+        size_t i;
         printf("Error executing bytecode for var %s\n", $1);
         printf("error %d\n", get_abce(amyplanyy)->err.code);
+        printf("Backtrace:\n");
+        for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
+        {
+          if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
+          {
+            printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+          }
+          else
+          {
+            printf("(-)\n");
+          }
+        }
         YYABORT;
       }
       if (get_abce(amyplanyy)->sp != 1)
