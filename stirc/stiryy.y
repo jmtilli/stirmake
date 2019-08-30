@@ -478,6 +478,9 @@ custom_rule:
                                -1));
       YYABORT;
     }
+#else
+    stiryyerror(scanner, stiryy, "Lua not compiled in");
+    YYABORT;
 #endif
   }
 }
