@@ -28,7 +28,9 @@
 .Nm stirmake
 is a replacement for make that aims for precise builds and ease
 of build system maintenance. It supports recursive scoping and is programmable
-in a custom strongly typed language Amyplan created for 
+in a custom strongly typed language
+.Nm Amyplan
+created for 
 .Nm stirmake .
 .Pp
 .Nm stirmake
@@ -387,7 +389,9 @@ $VALUE = 2
 .Ed
 .Pp
 Rules/dependencies cannot be directly added from Lua, but indirectly
-via Amyplan functions they can be added. Example of adding rules from Lua:
+via
+.Nm Amyplan
+functions they can be added. Example of adding rules from Lua:
 .Pp
 .Bd -literal
 @phonyrule: 'all': 'dummy'
@@ -413,7 +417,9 @@ way of calling Lua.
 .Pp
 Similarly,
 .Fn @adddeps
-can be invoked via an Amyplan function.
+can be invoked via an
+.Nm Amyplan
+function.
 .Sh "DYNAMICALLY ADDING RULES AND DEPS"
 The sole argument of 
 .Fn @addrule
