@@ -77,6 +77,21 @@ sudo ln -s stirmake.1 /usr/local/share/man/man1/smkt.1
 sudo mandb
 ```
 
+It's also possible to install without root permissions locally:
+
+```
+cd stirc
+cp stirmake ~/.local/bin
+ln -s stirmake ~/.local/bin/smka
+ln -s stirmake ~/.local/bin/smkp
+ln -s stirmake ~/.local/bin/smkt
+mkdir -p ~/.local/share/man/man1/
+cp stirmake.1 ~/.local/share/man/man1/
+ln -s stirmake.1 ~/.local/share/man/man1/smka.1
+ln -s stirmake.1 ~/.local/share/man/man1/smkp.1
+ln -s stirmake.1 ~/.local/share/man/man1/smkt.1
+```
+
 ## Data model
 
 Bad programmers start from algorithms. Good programmers start from data
