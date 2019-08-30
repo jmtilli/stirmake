@@ -530,6 +530,20 @@ Boolean expressions are not shortcutting currently.
 The man page should contain plenty of examples, but it does not.
 .IP "\(bu" 3
 The \fI+=\fR top-level array plus-assignment operator is buggy.
+.IP "\(bu" 3
+The shell is not actually ever invoked unless specifically requested by \fIsh
+-c\fR.
+.IP "\(bu" 3
+The command-line syntax does not support quoted strings, breaking command-line
+to arguments by spaces even if the space is inside a quoted string. To avoid
+this, use the \fI@-<TAB>\fR expression based syntax that allows you to specify
+every command-line argument as a strongly typed string.
+.IP "\(bu" 3
+.I stirmake
+can be slightly slower for null builds than GNU make if the GNU make system is
+extremely well designed. However, who has seen an extremely well designed GNU
+make based build system? The author of stirmake certainly hasn't seen such
+systems except those done by the author himself.
 .IP "" 0
 
 .SH AUTHOR
