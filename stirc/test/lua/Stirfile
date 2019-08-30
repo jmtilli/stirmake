@@ -20,3 +20,15 @@
   print(tbl[6][2]["b"])
   print(tbl[6][2]["c"])
 %}
+
+%lua{
+
+  function sub(a,b)
+    return a-b
+  end
+
+%}
+
+@call @dump(@luacall("sub", 5, 7, 8))
+
+@phonyrule: 'all':
