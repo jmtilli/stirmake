@@ -35,3 +35,4 @@
 .stir.db
 .*.sw?
 /jsonyytest
+/opts.smk
