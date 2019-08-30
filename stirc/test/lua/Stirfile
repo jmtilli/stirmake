@@ -1,6 +1,9 @@
 @toplevel
 @strict
 
+$VALUE = 2
+$MORE = [3, 4, 5, {"a": 6}]
+
 @function $FOO($x)
   @stdout("foo\n")
   @dump($x)
@@ -8,7 +11,11 @@
 @endfunction
 
 %lua{
-  print(2)
+  print(Stir.getlexval("VALUE"))
+  print(Stir.getlexval("MORE")[1])
+  print(Stir.getlexval("MORE")[2])
+  print(Stir.getlexval("MORE")[3])
+  print(Stir.getlexval("MORE")[4]["a"])
   tbl=Stir.makelexcall("FOO", {"a", "b", 3, 4, 5, {6, {a=1, b=2, c=3}}})
   print(tbl[1])
   print(tbl[2])
