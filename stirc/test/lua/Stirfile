@@ -11,12 +11,12 @@ $MORE = [3, 4, 5, {"a": 6}]
 @endfunction
 
 %lua{
-  print(Stir.getlexval("VALUE"))
-  print(Stir.getlexval("MORE")[1])
-  print(Stir.getlexval("MORE")[2])
-  print(Stir.getlexval("MORE")[3])
-  print(Stir.getlexval("MORE")[4]["a"])
-  tbl=Stir.makelexcall("FOO", {"a", "b", 3, 4, 5, {6, {a=1, b=2, c=3}}})
+  print(Abce.getlexval("VALUE"))
+  print(Abce.getlexval("MORE")[1])
+  print(Abce.getlexval("MORE")[2])
+  print(Abce.getlexval("MORE")[3])
+  print(Abce.getlexval("MORE")[4]["a"])
+  tbl=Abce.makelexcall("FOO", {"a", "b", 3, 4, 5, {6, {a=1, b=2, c=3}}})
   print(tbl[1])
   print(tbl[2])
   print(tbl[3])
