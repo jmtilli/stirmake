@@ -234,6 +234,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token RULE_PHONY
 %token RULE_ORDINARY
 %token PRINT
+%token PERIOD
 
 %token ATQM SCOPE TRUE TYPE FALSE NIL STR_FROMCHR STR_LOWER STR_UPPER
 %token STR_REVERSE STRCMP STRSTR STRREP STRLISTJOIN STRSTRIP STRSUB
@@ -1846,6 +1847,13 @@ expr3:
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_SUB);
+  }
+}
+| expr3 PERIOD expr2
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRAPPEND);
   }
 }
 ;

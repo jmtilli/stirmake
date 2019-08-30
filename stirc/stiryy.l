@@ -213,6 +213,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>\>= return GE;
 <INITIAL,STRICT>\<= return LE;
 <INITIAL,STRICT>\<\> return MAYBE_CALL;
+<INITIAL,STRICT>[.] return PERIOD;
 
 <INITIAL,STRICT>@\t return ATTAB;
 <INITIAL,STRICT>@@\t return ATATTAB;
@@ -238,11 +239,11 @@ struct CSnippet luaSnippet = {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-<INITIAL,STRICT>[$][A-Za-z0-9_.]+ {
+<INITIAL,STRICT>[$][A-Za-z0-9_]+ {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
-<INITIAL,STRICT>[$][(][A-Za-z0-9_.]+[)] {
+<INITIAL,STRICT>[$][(][A-Za-z0-9_]+[)] {
   yylval->s = strdup(yytext+2);
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
