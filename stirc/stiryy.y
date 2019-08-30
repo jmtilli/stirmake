@@ -470,7 +470,11 @@ custom_rule:
   if (amyplanyy_do_emit(amyplanyy))
   {
 #ifdef WITH_LUA
-    luaL_dostring(get_abce(amyplanyy)->dynscope.u.area->u.sc.lua, $1);
+    if (luaL_dostring(get_abce(amyplanyy)->dynscope.u.area->u.sc.lua, $1) != 0)
+    {
+      stiryyerror(scanner, stiryy, "Lua error");
+      YYABORT;
+    }
 #endif
   }
 }
