@@ -4,6 +4,10 @@
 $VALUE = 2
 $MORE = [3, 4, 5, {"a": 6}]
 
+@function $LUARULE($x)
+  @addrule($x)
+@endfunction
+
 @function $FOO($x)
   @stdout("foo\n")
   @dump($x)
@@ -38,4 +42,22 @@ $MORE = [3, 4, 5, {"a": 6}]
 
 @call @dump(@luacall("sub", 5, 7, 8))
 
-@phonyrule: 'all':
+@call @dump(665)
+
+@phonyrule: 'reallyall': 'all'
+
+%lua{
+  print(666)
+  -- test=Abce.makelexcall("LUARULE", {tgts={{name="all"}}, attrs={phony=true}})
+  print(667)
+
+  function recursive(x)
+    print(669)
+    Abce.makelexcall("LUARULE", {tgts={{name="all"}}, attrs={phony=true}})
+    return 0
+  end
+%}
+
+@call @luacall("recursive", 5)
+
+@call @dump(668)
