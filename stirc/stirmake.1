@@ -144,7 +144,10 @@ Then you specify shell commands for targets:
 	cc -o $@ $^
 .Ed
 .Pp
-Note that $^ only lists the dependencies on the rule specification, not
+.\" FIXME is it changed now? I mean, the $^ listing only rule spec deps.
+Note that
+.Va $^
+only lists the dependencies on the rule specification, not
 any dependencies that might be defined later. So, for example, this:
 .Pp
 .Bd -literal
@@ -166,8 +169,14 @@ It's also possible to use an expression-based syntax:
 .Pp
 where parentheses are required around expressions for targets and
 dependencies, and the expression support for commands works by having @ before
-the tabulator. The special variable $^ is prefixed by @ to indicate one wants
-to join the full contents of the list $^ into the resulting list and not just
+the tabulator. The special variable
+.Va $^
+is prefixed by
+.Va @
+to indicate one wants
+to join the full contents of the list
+.Va $^
+into the resulting list and not just
 include the list as one list element.
 .Pp
 The expression based syntax allows one to define arrays and functions:
@@ -181,7 +190,10 @@ $DEPS = ["proga.o", "libd.a"]
 @	$CCCMD<>
 .Ed
 .Pp
-Here <> in definition mean "define it as one-liner expression function", and <>
+Here
+.Va <>
+in definition mean "define it as one-liner expression function", and
+.Va <>
 in variable reference means "call it with no arguments if it's a function".
 .Pp
 Of course, functions can be defined in a full programming language:
