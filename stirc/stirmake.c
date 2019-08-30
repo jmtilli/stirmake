@@ -4578,6 +4578,12 @@ back:
     }
   }
 
+  if (ruleids_to_run_size == 0)
+  {
+    fprintf(stderr, "stirmake: Nothing to be done.\n");
+    goto out;
+  }
+
   while (ruleids_to_run_size > 0)
   {
     if (children)
