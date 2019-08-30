@@ -291,6 +291,112 @@ $BUILD_BAZ = @false
 .EE
 
 
+.SH "LUAJIT INTEGRATION"
+
+.I stirmake
+can be integrated with \fILuaJIT\fR by compiling it, either with
+.I stirmake
+having
+
+.EX
+$(WITH_LUA) = @true
+.EE
+
+in \fIopts.smk\fR or with GNU make having
+
+.EX
+WITH_LUA=yes
+.EE
+
+as the command-line argument. When \fILuaJIT\fR support is available,
+it is possible to add Lua snippets like this that can contain
+\fIAbce.getlexval\fR and \fIAbce.makelexcall\fR calls:
+
+.EX
+@function $FOO($x)
+  @stdout("foo\n")
+  @dump($x)
+  @return $x
+@endfunction
+
+$VALUE = 2
+
+%lua{
+  print(Abce.getlexval("VALUE"))
+  tbl=Abce.makelexcall("FOO", {"a", "b", 3, 4, 5, {6, {a=1, b=2, c=3}}})
+  print(tbl[1])
+  print(tbl[2])
+  print(tbl[3])
+  print(tbl[4])
+  print(tbl[5])
+  print(tbl[6][1])
+  print(tbl[6][2]["a"])
+  print(tbl[6][2]["b"])
+  print(tbl[6][2]["c"])
+%}
+.EE
+
+Rules/dependencies cannot be directly added from Lua, but indirectly
+via Amyplan functions they can be added. Example of adding rules from Lua:
+
+.EX
+@phonyrule: 'all': 'dummy'
+
+@function $LUARULE($x)
+  @addrule($x)
+@endfunction
+
+%lua{
+  function rulefromlua(x)
+    local y = {tgts={{name="dummy"}}, attrs={phony=true}}
+    Abce.makelexcall("LUARULE", y)
+    return 0
+  end
+%}
+
+@call @luacall("rulefromlua", 5)
+.EE
+
+Note here the alternative \fI@luacall\fR way of calling Lua.
+
+Similarly,
+.I @adddeps
+can be invoked via an Amyplan function.
+
+.SH "DYNAMICALLY ADDING RULES AND DEPS"
+
+The sole argument of 
+.I @addrule
+is such that the tree can contain \fItgts\fR, \fIdeps\fR, \fIattrs\fR and
+\fIshells\fR entries. The \fItgts\fR entry is an array of trees where every
+tree contains the \fIname\fR attribute. The \fIdeps\fR entry is an array of
+trees where every tree contains at least the \fIname\fR attribute, and possibly
+\fIrec\fR and \fIorderonly\fR boolean attributes. The \fIattrs\fR can contain
+the following attributes that are all boolean: \fIphony\fR, \fIrectgt\fR,
+\fIdetouch\fR, \fImaybe\fR, \fIdist\fR, \fIdeponly\fR, \fIiscleanhook\fR,
+\fIisdistcleanhook\fR, \fIisbothcleanhook\fR.
+
+The \fIshells\fR is an array of shell invocations, where shell invocation can
+have \fIembed\fR and \fIisfun\fR boolean attributes. Here \fIembed\fR means
+it's an array of arrays of command-line arguments that should be embedded, and
+not an array of command-line arguments that should be appended. If \fIisfun\fR
+is \fI@true\fR, there are attributes \fIfun\fR for function and \fIarg\fR for
+its sole argument. Otherwise, if \fIembed\fR is \fI@true\fR, you need to
+specify the \fIcmds\fR argument, and if \fIembed\fR is \fI@false\fR, you need
+to specify the \fIcmd\fR argument.
+
+Rules can be added only in the parsing stage, not in the execution stage
+(execution stage means from shell command hooks that are evaluated after
+parsing). However, dependencies can be added in any stage, but only for
+rules that have not been executed fully yet.
+
+The three arguments of
+.I @adddeps
+are such that the first argument is an array of strings (target names),
+the second argument is an array of strings (dependency names), and the third
+argument is a tree that can contain \fIorderonly\fR and \fIrec\fR attributes
+that are boolean.
+
 .SH "INVOKING STIRMAKE"
 
 Suppose you have the project hierarchy:
@@ -381,7 +487,51 @@ was created in 2019.
 .SH "DISTRIBUTION"
 stirmake is available at https://github.com/Aalto5G/stirmake
 .SH BUGS
-The software is in beta, so bugs are plentiful.
+The software is in beta, so bugs are plentiful. Here is a list of some:
+
+.IP "\(bu" 3
+Sometimes when including subdirectories / subfiles, the first rule is taken
+from an included file. To avoid this, define the first rule before including
+any rules.
+.IP "\(bu" 3
+If the first rule is dynamically added, it is ignored. If there are nothing
+but dynamically added rules, it is incorrectly claimed the rule list is empty.
+To avoid this, define the first rule manually with a dependency to a second
+rule that is created dynamically.
+.IP "\(bu" 3
+Some error codes are translated to \fIUnknown error\fR instead of a descriptive
+error message.
+.IP "\(bu" 3
+Targets may be deleted even if the list of commands to create such a target is
+empty, when running clean.
+.IP "\(bu" 3
+There is no way to define multiple rule types, e.g. \fI@distrule\fR and
+\fI@patrule\fR in the same rule.
+.IP "\(bu" 3
+There are plenty of memory leaks.
+.IP "\(bu" 3
+The output sync feature is a quick undocumented hack and not complete yet.
+.IP "\(bu" 3
+There is no support for \fI@elseif\fR and \fI@else\fR in top-level syntax,
+although you can have these within functions.
+.IP "\(bu" 3
+Boolean expressions are not shortcutting currently.
+.IP "\(bu" 3
+\fI@cdepincludes\fR is undocumented in this man page.
+.IP "\(bu" 3
+\fI@patrule\fR is undocumented in this man page.
+.IP "\(bu" 3
+\fI@fileinclude\fR is undocumented in this man page.
+.IP "\(bu" 3
+\fI@strict\fR is undocumented in this man page.
+.IP "\(bu" 3
+\fI@-@-<TAB>\fR is undocumented in this man page.
+.IP "\(bu" 3
+The man page should contain plenty of examples, but it does not.
+.IP "\(bu" 3
+The \fI+=\fR top-level array plus-assignment operator is buggy.
+.IP "" 0
+
 .SH AUTHOR
 Juha-Matti Tilli (juha-matti.tilli@iki.fi)
 .SH "COPYRIGHT"
