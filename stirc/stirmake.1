@@ -121,7 +121,16 @@ on
 the first non-empty line, with the marker saying whether the file is to be
 processed on its own or included as part of some other
 .Nm stirmake
-instance.
+instance. You may want to specify in the start after the first line marker (on
+the second line) an option
+.Va @strict ,
+which means that free-form tokens are not supported at all. They have somewhat
+bad properties and mean that e.g.
+.Va 4/2
+is not calculated as
+.Va 2
+but is rather a free-form token referring to a file named
+.Pa 4/2 .
 .Pp
 First of all, you want to create the target
 .Va all
@@ -742,9 +751,6 @@ Boolean expressions are not shortcutting currently.
 is undocumented in this man page.
 .It
 .Va @patrule
-is undocumented in this man page.
-.It
-.Va @strict
 is undocumented in this man page.
 .It
 The man page should contain plenty of examples, but it does not.
