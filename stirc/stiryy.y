@@ -149,7 +149,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token ATTAB ATATTAB
 
 %token NEWLINE
-%token LUACALL
+%token DYNLUACALL LEXLUACALL
 
 %token CLEANHOOK DISTCLEANHOOK BOTHCLEANHOOK
 
@@ -2215,12 +2215,37 @@ expr0_without_string:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_CALL);
   }
 }
-| LUACALL OPEN_PAREN expr COMMA maybe_arglist CLOSE_PAREN
+| DYNLUACALL
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETSCOPE_DYN);
+  }
+}
+  OPEN_PAREN expr COMMA maybe_arglist CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
-    amyplanyy_add_double(amyplanyy, $5);
+    amyplanyy_add_double(amyplanyy, $6);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LUACALL);
+  }
+}
+| LEXLUACALL
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, get_abce(amyplanyy)->dynscope.u.area->u.sc.locidx);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
+  }
+}
+  OPEN_PAREN expr COMMA maybe_arglist CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, $6);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LUACALL);
   }
 }

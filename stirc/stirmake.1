@@ -420,12 +420,13 @@ functions they can be added. Example of adding rules from Lua:
   end
 %}
 
-@call @luacall("rulefromlua", 5)
+@call @lexluacall("rulefromlua", 5)
 .Ed
 .Pp
 Note here the alternative 
-.Fn @luacall
-way of calling Lua.
+.Fn @lexluacall
+way of calling Lua. This is a lexical call. Dynamic calls are supported too via
+.Fn @dynluacall .
 .Pp
 Similarly,
 .Fn @adddeps
