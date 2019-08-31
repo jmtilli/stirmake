@@ -291,6 +291,27 @@ $ADDMODS = ["module4, "module5"]
 @dirinclude $ADDMODS
 .Ed
 .Pp
+Files can be included into the same scope with
+.Va @fileinclude .
+It is most commonly used with
+.Va @ignore
+to include configuration files that can be missing. As the file is included
+into the same scope, the variables defined in it can be accessed easily.
+Example:
+.Pp
+.Bd -literal
+@fileinclude @ignore "opts.smk"
+$CC ?= "clang"
+$CFLAGS ?= ["-O3", "-Wall"]
+.Ed
+.Pp
+This example sets the
+.Va $CC
+and
+.Va $CFLAGS
+variables only if they haven't been already defined in
+.Pa opts.smk .
+.Pp
 Sub-projects can be included, too, but it's recommended to control which
 variables are visible so that you won't pollute the variable namespace of the
 sub-project.
@@ -721,9 +742,6 @@ Boolean expressions are not shortcutting currently.
 is undocumented in this man page.
 .It
 .Va @patrule
-is undocumented in this man page.
-.It
-.Va @fileinclude
 is undocumented in this man page.
 .It
 .Va @strict
