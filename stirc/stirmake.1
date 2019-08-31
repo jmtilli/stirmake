@@ -851,6 +851,18 @@ make based build system? The author of
 .Nm stirmake
 certainly hasn't seen
 such systems except those done by the author himself.
+.It
+.Nm stirmake
+does not have as advanced recursion control as BSD make. For example,
+the .ORDER directive and the .WAIT dependency list attribute are missing.
+.It
+.Va @patrule
+rules cannot use the special
+.Sq %
+character for anything else than wildcard. The wildcard itself can however
+refer to strings containing the special
+.Sq %
+character.
 .El
 .Sh AUTHOR
 Juha-Matti Tilli (juha-matti.tilli@iki.fi)
