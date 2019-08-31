@@ -52,6 +52,15 @@ instman()
   mv "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" "$P/man/man$2/$1.$2" || exit 1
 }
 
+instmansym()
+{
+  mkdir -p "$P/man/man$2" || exit 1
+  if [ "`readlink "$P/man/man$2/$1.$2"`" != "stirmake.1" ]; then
+    ln -s "stirmake.1" "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" || exit 1
+    mv "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" "$P/man/man$2/$1.$2" || exit 1
+  fi
+}
+
 # Ensure bin directory is there
 mkdir -p "$P/bin" || exit 1
 
@@ -65,5 +74,10 @@ instsym smkt
 
 # Install man page
 instman stirmake 1
+
+# Install man page symlinks
+instmansym smka 1
+instmansym smkp 1
+instmansym smkt 1
 
 echo "All done, stirmake has been installed to $P"
