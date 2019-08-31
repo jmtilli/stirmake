@@ -3,17 +3,6 @@
 - Extra opcodes:
   - path_absolutify
 
-- LuaJIT
-
-- Test adding rules from Amyplan
-  - Test @addrule using fn and ctx
-
-- Replace main algorithm? May not work with dynamically added targets.
-  - we could continue using it if only deps are dynamically added
-
-- cannot clean anomaly for self-modifying build systems
-  - not an issue if only deps are dynamically added
-
 - don't delete targets if the list of cmds is empty? There's no way the target
   is created given an empty list of cmds.
 
@@ -31,8 +20,6 @@
 - fcntl lock for output, gather child-process outputs together
 
 - instead of '%.c' use ''%'.c'
-
-- more human-readable error messages with backtraces
 
 - automated torture test bench
 
