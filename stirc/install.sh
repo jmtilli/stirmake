@@ -8,7 +8,7 @@ fi
 PREFIX="$1"
 
 if [ "a$PREFIX" = "a" ]; then
-  PREFIX="~/.local"
+  PREFIX=~/.local
 fi
 
 P="$PREFIX"
