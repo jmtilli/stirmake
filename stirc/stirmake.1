@@ -198,6 +198,31 @@ Here
 in definition mean "define it as one-liner expression function", and
 .Va <>
 in variable reference means "call it with no arguments if it's a function".
+Also,
+.Va @
+before the tabulator means the command is in the form of array of strings. If
+you have multiple commands in the form of array of arrays of strings, you can
+have two
+.Va @@
+symbols before the tabulator:
+.Pp
+.Bd -literal
+$ARCMDS<> = [["rm", "-f", $@], \\
+             ["ar", "rvs", $@, @@suffilter($^, ".o")]]
+
+$OBJS = ["liba.o", "libb.o"]
+
+"libfoo.a": $OBJS
+@@	$ARCMDS<>
+.Ed
+.Pp
+where the
+.Va @
+before the
+.Fn @suffilter
+is required to embed the list containing many entries into the parent list.
+Note also the syntax to break the line into two, which requires the \\ sign
+to be just before the line feed.
 .Pp
 Of course, functions can be defined in a full programming language:
 .Pp
@@ -702,9 +727,6 @@ is undocumented in this man page.
 is undocumented in this man page.
 .It
 .Va @strict
-is undocumented in this man page.
-.It
-.Va @-@-<TAB>
 is undocumented in this man page.
 .It
 The man page should contain plenty of examples, but it does not.
