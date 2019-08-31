@@ -16,12 +16,12 @@ H="`hostname`"
 
 instbin()
 {
-  if [ -e `readlink "$P/bin/$1"` ]; then
+  if [ -e "$P/bin/$1" ]; then
     echo -- ln "$P/bin/$1" "$P/bin/.$1.smkinstold.$$.$H"
   fi
   echo -- cp $1 "$P/bin/.$1.smkinstnew.$$.$H"
   echo -- mv "$P/bin/.$1.smkinstnew.$$.$H" "$P/bin/$1"
-  if [ -e `readlink "$P/bin/.$1.smkinstold.$$.$H"` ]; then
+  if [ -e "$P/bin/.$1.smkinstold.$$.$H" ]; then
     echo -- rm "$P/bin/.$1.smkinstold.$$.$H"
   fi
 }
