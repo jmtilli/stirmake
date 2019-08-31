@@ -14,6 +14,15 @@ fi
 P="$PREFIX"
 H="`hostname`"
 
+if [ '!' -w "$P" ]; then
+  echo "No write permissions to $P"
+  exit 1
+fi
+if [ '!' -d "$P" ]; then
+  echo "Not a valid directory: $P"
+  exit 1
+fi
+
 instbin()
 {
   if [ -e "$P/bin/$1" ]; then
