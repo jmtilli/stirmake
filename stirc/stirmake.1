@@ -460,6 +460,44 @@ $BUILD_BAZ = @false
   @deponly: all: baz
 @endif
 .Ed
+.Pp
+Pattern rules can be specified:
+.Pp
+.Bd -literal
+$(SRC) = ["foo.c", "bar.c", "baz.c"]
+$(OBJ) = @sufsuball($(SRC), ".c", ".o")
+$(DEP) = @sufsuball($(SRC), ".c", ".d")
+
+@patrule: $(OBJ): '%.o': '%.c' '%.d'
+@	[$(CC), @$(CFLAGS), "-c", "-o", $@, $<]
+@patrule: $(DEP): '%.d': '%.c'
+@	[$(CC), @$(CFLAGS), "-MM", "-o", $@, $<]
+.Ed
+.Pp
+and the C dependencies produced by the prior example can be included:
+.Pp
+.Bd -literal
+@cdepincludes @autophony @autotarget @ignore $(DEP)
+.Ed
+.Pp
+where
+.Va @autophony
+means the
+.Fl MP
+argument is not required, because
+.Nm stirmake
+generates internally the phony targets automatically. Similarly,
+.Va @autotarget
+means the
+.Fl MT
+option is not required twice to specify that the dependency files too
+must depend on header files (with
+.Va @autotarget ,
+.Nm stirmake
+does the additional targets automatically). Also, in a clean build, the files
+are missing, so
+.Va @ignore
+means don't worry about missing files.
 .Sh "LUAJIT INTEGRATION"
 .Pp
 .Nm stirmake
@@ -701,7 +739,9 @@ for data typing, support for full programmability and slightly different
 syntax. However,
 .Nm stirmake
 can read make dependency files in the format make expects them, created by
-e.g. the gcc -M argument. Also,
+e.g. the gcc
+.Fl M
+argument. Also,
 .Nm stirmake
 speaks the GNU make jobserver protocol, being able to operate as a jobserver
 host and guest.
@@ -778,12 +818,6 @@ in top-level syntax,
 although you can have these within functions.
 .It
 Boolean expressions are not shortcutting currently.
-.It
-.Va @cdepincludes
-is undocumented in this man page.
-.It
-.Va @patrule
-is undocumented in this man page.
 .It
 The man page should contain plenty of examples, but it does not.
 .It
