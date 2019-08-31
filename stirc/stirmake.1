@@ -157,22 +157,6 @@ Then you specify shell commands for targets:
 	cc -o $@ $^
 .Ed
 .Pp
-.\" FIXME is it changed now? I mean, the $^ listing only rule spec deps.
-Note that
-.Va $^
-only lists the dependencies on the rule specification, not
-any dependencies that might be defined later. So, for example, this:
-.Pp
-.Bd -literal
-"proga": "proga.o"
-	cc -o $@ $^
-
-@deponly: "proga": "libd.a"
-.Ed
-.Pp
-doesn't link to the library 
-.Nm libd.a .
-.Pp
 It's also possible to use an expression-based syntax:
 .Pp
 .Bd -literal
