@@ -59,21 +59,7 @@ to some directory and create the symlinks:
 
 ```
 cd stirc
-sudo cp stirmake /usr/local/bin
-sudo ln -s stirmake /usr/local/bin/smka
-sudo ln -s stirmake /usr/local/bin/smkp
-sudo ln -s stirmake /usr/local/bin/smkt
-```
-
-You probably also want to copy `stirmake.1` to somewhere so that `man stirmake`
-works:
-
-```
-sudo mkdir -p /usr/local/share/man/man1/
-sudo cp stirmake.1 /usr/local/share/man/man1/
-sudo ln -s stirmake.1 /usr/local/share/man/man1/smka.1
-sudo ln -s stirmake.1 /usr/local/share/man/man1/smkp.1
-sudo ln -s stirmake.1 /usr/local/share/man/man1/smkt.1
+sudo ./install.sh /usr/local
 sudo mandb
 ```
 
@@ -81,16 +67,10 @@ It's also possible to install without root permissions locally:
 
 ```
 cd stirc
-cp stirmake ~/.local/bin
-ln -s stirmake ~/.local/bin/smka
-ln -s stirmake ~/.local/bin/smkp
-ln -s stirmake ~/.local/bin/smkt
-mkdir -p ~/.local/share/man/man1/
-cp stirmake.1 ~/.local/share/man/man1/
-ln -s stirmake.1 ~/.local/share/man/man1/smka.1
-ln -s stirmake.1 ~/.local/share/man/man1/smkp.1
-ln -s stirmake.1 ~/.local/share/man/man1/smkt.1
+./install.sh
 ```
+
+...which installs it to `~/.local`.
 
 ## Data model
 
