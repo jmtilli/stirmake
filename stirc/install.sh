@@ -28,12 +28,12 @@ instbin()
   if [ -e "$P/bin/$1" ]; then
     ln "$P/bin/$1" "$P/bin/.$1.smkinstold.$$.$H" || exit 1
   fi
-  cp "$1" "$P/bin/.$1.smkinstnew.$$.$H" || exit 1
-  mv "$P/bin/.$1.smkinstnew.$$.$H" "$P/bin/$1" || exit 1
+  cp "$1" "$P/bin/.$1.smkinstnew.$$.$H" || exit 1
+  mv "$P/bin/.$1.smkinstnew.$$.$H" "$P/bin/$1" || exit 1
   if [ -e "$P/bin/.$1.smkinstold.$$.$H" ]; then
     # If you mount binaries across NFS, and run this command on the NFS server,
     # you might want to comment out this rm command.
-    rm "$P/bin/.$1.smkinstold.$$.$H" || exit 1
+    rm "$P/bin/.$1.smkinstold.$$.$H" || exit 1
   fi
 }
 
@@ -41,18 +41,19 @@ instsym()
 {
   if [ "`readlink "$P/bin/$1"`" != "stirmake" ]; then
     ln -s stirmake "$P/bin/.$1.smkinstnew.$$.$H" || exit 1
-    mv "$P/bin/.$1.smkinstnew.$$.$H" "$P/bin/$1" || exit 1
+    mv "$P/bin/.$1.smkinstnew.$$.$H" "$P/bin/$1" || exit 1
   fi
 }
 
 instman()
 {
-  mkdir -p "$P/man/man$2" || exit 1
-  cp "$1.$2" "$P/man/man$2/$1.$2" || exit 1
+  mkdir -p "$P/man/man$2" || exit 1
+  cp "$1.$2" "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" || exit 1
+  mv "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" "$P/man/man$2/$1.$2" || exit 1
 }
 
 # Ensure bin directory is there
-mkdir -p "$P/bin" || exit 1
+mkdir -p "$P/bin" || exit 1
 
 # Install binary
 instbin stirmake
