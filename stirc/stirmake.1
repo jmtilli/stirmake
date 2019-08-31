@@ -218,6 +218,45 @@ $DEPS = ["proga.o", "libd.a"]
 @	$CCCMD("gcc")
 .Ed
 .Pp
+You have already seen many data types (arrays, integers, strings). These are
+not the only data types. You can have booleans (
+.Va @true ,
+.Va @false )
+and the special null type
+.Va @nil ,
+and trees that are constructed and accessed like this:
+.Pp
+.Bd -literal
+$TREE = {"ab": 1, "cd": @false, "ef": @nil}
+$THISISFALSE = $TREE{"c"."d"}
+$THISISTRUE = $TREE{@? "c"."d"}
+.Ed
+.Pp
+Tree keys must always be strings. Note the previous example included an
+example of string concatenation syntax too with the
+.Ev .
+operator, and the
+.Va @?
+syntax that queries whether the tree has a certain key.
+.Pp
+For strings, the operations in addition to concatenation include
+.Fn @sufsubone ,
+.Fn @sufsuball ,
+.Fn @suffilter
+and
+.Fn @suffilterout .
+Example of using them:
+.Pp
+.Bd -literal
+$MODS = ["moda", "modb"]
+$ALLTGTA = @sufsubone($MODS[0], "", "/all")
+$ALLTGTS = @sufsuball($MODS, "", "/all")
+$LINKEDS = ["foo.o", "libbar.a"]
+$FOOSRC = @sufsubone($LINKEDS[0], ".o", ".c")
+$OBJECTS = @suffilter($LINKEDS, ".o")
+$ALLELSE = @suffilterout($LINKEDS, ".o")
+.Ed
+.Pp
 Sub-directories can be included in the following manner
 .Pp
 .Bd -literal
