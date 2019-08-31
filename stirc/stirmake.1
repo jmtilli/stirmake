@@ -254,6 +254,25 @@ $DEPS = ["proga.o", "libd.a"]
 @	$CCCMD("gcc")
 .Ed
 .Pp
+Here in this
+.Fn $CCCMD
+function note that the function has a local scope for local variables, so
+all global variables must be prefixed by
+.Va @D
+for dynamic scoping. You can also scope lexically by
+.Va @L .
+However, in this example, arguably
+.Va @D
+is better than
+.Va @L
+because then subfiles can call the
+.Fn $CCCMD
+function and the variables
+.Va $@
+and
+.Va $^
+then refer to the targets and dependencies in the subfile.
+.Pp
 You have already seen many data types (arrays, integers, strings). These are
 not the only data types. You can have booleans (
 .Va @true ,
@@ -335,6 +354,17 @@ $NOTVISIBLE = "bar"
   @projdirinclude "subproject"
 @endscope
 .Ed
+.Pp
+Here the specified
+.Va @LP
+means access lexical parent scope. In this very example, it would be exactly
+the same as
+.Va @DP ,
+but in general, in some situations
+.Va @LP
+and
+.Va @DP
+can be different.
 .Pp
 Rules can have many targets:
 .Pp
