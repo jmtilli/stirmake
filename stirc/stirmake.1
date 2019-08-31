@@ -26,7 +26,9 @@
 .Op Ar target ...
 .Sh DESCRIPTION
 .Nm stirmake
-is a replacement for make that aims for precise builds and ease
+is a replacement for
+.Xr make 1
+that aims for precise builds and ease
 of build system maintenance. It supports recursive scoping and is programmable
 in a custom strongly typed language
 .Nm Amyplan
@@ -47,7 +49,7 @@ Haskell.
 .Nm stirmake
 aims to be compatible with existing solutions (make) when compatibility is
 critical (jobserver, 
-.Nm gcc 
+.Xr gcc 1
 .Fl M
 format include files, parallelism with
 .Fl j
@@ -60,12 +62,15 @@ typing, recursive nested scoping supported).
 .Pp
 It has been a design goal that
 .Nm stirmake
-can be deployed one project at a time. Projects using make can include
-submodules using
+can be deployed one project at a time. Projects using
+.Xr make 1
+can include submodules using
 .Nm stirmake
 and projects using
 .Nm stirmake
-can include submodules using GNU make with no difficulty at all.
+can include submodules using
+.Xr make 1
+with no difficulty at all.
 .Pp
 Similarly to the version control system git, you can invoke
 .Nm stirmake
@@ -498,7 +503,9 @@ $(WITH_LUA) = @true
 .Pp
 in
 .Nm opts.smk
-or with GNU make having
+or with GNU
+.Xr make 1
+having
 .Pp
 .Bd -literal
 WITH_LUA=yes
@@ -714,39 +721,50 @@ of one is used for error cases.
 gets and sets the following environment variables:
 .Pp
 .Bl -column STIRMAKEPID -compact
-.It Ev MAKEFLAGS Ta for GNU make compatibility
+.It Ev MAKEFLAGS Ta for GNU Xr make 1 compatibility
 .It Ev STIRMAKEPID Ta for communicating parent process identifier to sub-processes
 .El
 .Sh "COMPATIBILITY"
 .Nm stirmake
-is mostly incompatible with most make implementations because of the support
+is mostly incompatible with most
+.Xr make 1
+implementations because of the support
 for data typing, support for full programmability and slightly different
 syntax. However,
 .Nm stirmake
-can read make dependency files in the format make expects them, created by
-e.g. the gcc
+can read
+.Xr make 1
+dependency files in the format
+.Xr make 1
+expects them, created by e.g. the
+.Xr gcc 1
 .Fl M
 argument. Also,
 .Nm stirmake
-speaks the GNU make jobserver protocol, being able to operate as a jobserver
+speaks the GNU
+.Xr make 1
+jobserver protocol, being able to operate as a jobserver
 host and guest.
 .Pp
 It is expected that most conversions to
 .Nm stirmake
 involve a complete rewrite of the entire build system of the project.
 .Sh "SEE ALSO"
-make(1)
+.Xr make 1
 .Sh HISTORY
 No history section of
 .Nm stirmake
 would be complete without mentioning the venerable make[1], created by Stuart
-Feldman of AT&T Bell Laboratories. However, most users of make have found it
-is a rather limited tool.
+Feldman of AT&T Bell Laboratories. However, most users of
+.Xr make 1
+have found it is a rather limited tool.
 .Pp
 .Nm stirmake
 was created inspired by the influential "Recursive Make Considered
 Harmful" paper[2] and the author's unsuccessful attempts at creating a perfect
-build system using GNU make. It seems the author is not the only one with
+build system using GNU
+.Xr make 1 .
+It seems the author is not the only one with
 difficulty of creating good build systems[3]. Some of the data structures of
 .Nm stirmake
 are taken from a packet processing toolkit (PPTK) that has its origins in
@@ -845,7 +863,11 @@ expression based syntax that allows you to specify
 every command-line argument as a strongly typed string.
 .It
 .Nm stirmake
-can be slightly slower for null builds than GNU make if the GNU make system is
+can be slightly slower for null builds than GNU
+.Xr make 1
+if the GNU
+.Xr make 1
+system is
 extremely well designed. However, who has seen an extremely well designed GNU
 make based build system? The author of
 .Nm stirmake
@@ -853,7 +875,9 @@ certainly hasn't seen
 such systems except those done by the author himself.
 .It
 .Nm stirmake
-does not have as advanced recursion control as BSD make. For example,
+does not have as advanced recursion control as BSD
+.Xr make 1 .
+For example,
 the .ORDER directive and the .WAIT dependency list attribute are missing.
 .It
 .Va @patrule
