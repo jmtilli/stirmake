@@ -673,13 +673,13 @@ Suppose you have the project hierarchy:
 .Pp
 .Bl -bullet -compact
 .It
-project/Stirfile
+.Pa project/Stirfile
 .It
-project/dir/Stirfile
+.Pa project/dir/Stirfile
 .It
-project/dir/subproj/Stirfile
+.Pa project/dir/subproj/Stirfile
 .It
-project/dir/subproj/subdir/Stirfile
+.Pa project/dir/subproj/subdir/Stirfile
 .El
 .Pp
 Then the following commands are equal:
@@ -705,18 +705,18 @@ exits with zero exit status for success, if all Stirfiles could be read, parsed
 and all targets / clean operations were successfully performed. An exit status
 of one is used for error cases.
 .Sh "FILES"
-.Pa Stirfile
-instructions to build a module
-.Pp
-.Pa .stir.db
-build command database (automatically maintained)
+.Bl -column Stirfile -compact
+.It Pa Stirfile Ta instructions to build a module
+.It Pa .stir.db Ta build command database (automatically maintained)
+.El
 .Sh "ENVIRONMENT"
 .Nm stirmake
 gets and sets the following environment variables:
-.Ev MAKEFLAGS
-(for GNU make compatibility),
-.Ev STIRMAKEPID
-(for communicating parent process identifier to sub-processes).
+.Pp
+.Bl -column STIRMAKEPID -compact
+.It Ev MAKEFLAGS Ta for GNU make compatibility
+.It Ev STIRMAKEPID Ta for communicating parent process identifier to sub-processes
+.El
 .Sh "COMPATIBILITY"
 .Nm stirmake
 is mostly incompatible with most make implementations because of the support
