@@ -768,6 +768,30 @@ stirmake is available at https://github.com/Aalto5G/stirmake
 The software is in beta, so bugs are plentiful. Here is a list of some:
 .Bl -bullet
 .It
+.Va 4/2
+is not calculated as
+.Va 2 ,
+but rather refers to a file named
+.Pa 4/2 .
+To fix this, use the
+.Va @strict
+mode. However, then free-form token support is entirely disabled.
+.It
+If doing
+.Pp
+.Bd -literal
+cp file.c file.c.bak
+$EDITOR file.c
+smka
+mv file.c.bak file.c
+smka
+.Ed
+.Pp
+there will not be a rebuild of files depending on
+.Pa file.c ,
+because its timestamp is older than that of
+.Pa file.o .
+.It
 Sometimes when including subdirectories / subfiles, the first rule is taken
 from an included file. To avoid this, define the first rule before including
 any rules.
