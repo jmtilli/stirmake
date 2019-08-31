@@ -146,7 +146,9 @@ first so that it's the default target.
 .Ed
 .Pp
 Note how all strings are quoted. In targets and dependencies, unquoted strings
-are supported but it will emit a warning.
+are supported but it will emit a warning (but if you have
+.Va @strict ,
+unquoted strings are not supported).
 .Pp
 Then you specify shell commands for targets:
 .Pp
