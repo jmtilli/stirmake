@@ -867,11 +867,10 @@ error message.
 Targets may be deleted even if the list of commands to create such a target is
 empty, when running clean.
 .It
-There is no way to define multiple rule types, e.g. 
+The rule type
 .Va @distrule
-and
-.Va @patrule
-in the same rule.
+shouldn't really be a rule type but rather a target type, so the same rule
+can have targets that are @dist and targets that are not @dist.
 .It
 There are plenty of memory leaks.
 .It

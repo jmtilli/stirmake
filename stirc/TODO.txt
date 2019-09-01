@@ -8,8 +8,6 @@
 
 - don't delete rectgtrule targets? or at least those that are within recdep.
 
-- multiple rule types in one, check for saneness
-
 - memory leaks
 
 - ".ORDER: a b" statement to specify that if both a and b are built, a

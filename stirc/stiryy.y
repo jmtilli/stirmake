@@ -271,6 +271,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %type<d> valuelistentry
 %type<d> maybe_arglist
 %type<d> maybe_atqm
+%type<d> maybe_dist
 %type<d> dynstart
 %type<d> scopstart
 %type<d> lexstart
@@ -2528,19 +2529,27 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| RECTGTRULE COLON targetspec COLON depspec NEWLINE shell_commands
+| RECTGTRULE maybe_dist COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_rectgt(stiryy);
+    if ($2)
+    {
+      stiryy_mark_dist(stiryy);
+    }
     stiryy->main->rule_in_progress = 0;
   }
 }
-| DETOUCHRULE COLON targetspec COLON depspec NEWLINE shell_commands
+| DETOUCHRULE maybe_dist COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_detouch(stiryy);
+    if ($2)
+    {
+      stiryy_mark_dist(stiryy);
+    }
     stiryy->main->rule_in_progress = 0;
   }
 }
@@ -2583,7 +2592,7 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| PATRULE COLON
+| PATRULE maybe_dist COLON
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -2601,6 +2610,10 @@ stirrule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
+    if ($2)
+    {
+      stiryy_mark_dist(stiryy);
+    }
     stiryy->main->rule_in_progress = 0;
   }
 }
@@ -3044,6 +3057,16 @@ targets:
   free($2);
 }
 */
+;
+
+maybe_dist:
+{
+  $$ = 0;
+}
+| DISTRULE
+{
+  $$ = 1;
+}
 ;
 
 maybe_rec:
