@@ -2618,6 +2618,8 @@ void child_execvp_wait(const char *tgtname, const char *prefix, const char *cmd,
 
 void set_nonblock(int fd);
 
+extern FILE *dbf;
+
 pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
   char ***args;
@@ -2726,6 +2728,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
       write(1, "CHDIRERR\n", 9);
       _exit(1);
     }
+    close(fileno(dbf));
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
     if (create_fd)
