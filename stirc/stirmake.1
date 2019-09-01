@@ -231,7 +231,7 @@ Of course, functions can be defined in a full programming language:
 .Bd -literal
 @function $CCCMD($compiler)
   @locvar $appendlist = ["-o", @D $@, @ @D $^]
-  @locvar $resultlist = []
+  @locvar $resultlist = [$compiler]
   @locvar $i = 0
   @for($i = 0, $i < $appendlist[], $i = $i + 1)
     @append($resultlist, $appendlist[$i])
