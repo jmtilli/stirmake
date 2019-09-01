@@ -1993,7 +1993,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       for (i = 0; i < tgtar.u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &tgtar.u.area->u.ar.mbs[i];
-        stiryy_main_set_tgt(main, prefix, mb->u.area->u.str.buf);
+        // FIXME add support for per-target dist specifiers
+        stiryy_main_set_tgt(main, prefix, mb->u.area->u.str.buf, 0);
       }
       for (i = 0; i < depar.u.area->u.ar.size; i++)
       {

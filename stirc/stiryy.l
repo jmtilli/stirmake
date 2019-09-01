@@ -70,6 +70,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@rectgtrule return RECTGTRULE;
 <INITIAL,STRICT>@detouchrule return DETOUCHRULE;
 <INITIAL,STRICT>@distrule return DISTRULE;
+<INITIAL,STRICT>@disttgt return DISTTGT;
 <INITIAL,STRICT>@cleanhook return CLEANHOOK;
 <INITIAL,STRICT>@distcleanhook return DISTCLEANHOOK;
 <INITIAL,STRICT>@bothcleanhook return BOTHCLEANHOOK;

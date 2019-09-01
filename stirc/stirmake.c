@@ -1417,7 +1417,7 @@ static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
 size_t tgt_cnt;
 
 
-void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir)
+void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir, int is_dist)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct stirtgt *e;
@@ -1425,9 +1425,9 @@ void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir)
   int ret;
   tgt_cnt++;
   e = my_malloc(sizeof(*e));
+  e->is_dist = !!is_dist;
   e->tgtidx = tgtidx;
   e->tgtidxnodir = tgtidxnodir;
-  e->is_dist = 0;
   head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, tgt_cmp_sym, NULL, &e->node);
   if (ret != 0)
@@ -2144,7 +2144,7 @@ void process_additional_deps(size_t global_scopeidx)
       rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgtidx, rule->ruleid);
-      ins_tgt(rule, entry->tgtidx, (size_t)-1);
+      ins_tgt(rule, entry->tgtidx, (size_t)-1, 0);
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
@@ -2213,7 +2213,7 @@ void process_additional_deps(size_t global_scopeidx)
       rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(dep->depidx, rule->ruleid);
-      ins_tgt(rule, dep->depidx, (size_t)-1);
+      ins_tgt(rule, dep->depidx, (size_t)-1, 0);
       rule->is_phony = 0; // is_inc is enough
       rule->is_rectgt = 0;
       rule->is_detouch = 0;
@@ -2274,7 +2274,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     size_t tgtidx = stringtab_add(tgts[i].name);
     size_t tgtidxnodir = stringtab_add(tgts[i].namenodir);
-    ins_tgt(rule, tgtidx, tgtidxnodir);
+    ins_tgt(rule, tgtidx, tgtidxnodir, !!tgts[i].is_dist);
     ins_ruleid_by_tgt(tgtidx, rule->ruleid);
   }
   for (i = 0; i < depsz; i++)

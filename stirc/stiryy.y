@@ -204,6 +204,7 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %token PHONYRULE
 %token MAYBERULE
 %token DISTRULE
+%token DISTTGT
 %token PATRULE
 %token RECTGTRULE
 %token DETOUCHRULE
@@ -271,7 +272,8 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 %type<d> valuelistentry
 %type<d> maybe_arglist
 %type<d> maybe_atqm
-%type<d> maybe_dist
+%type<d> maybe_distrule
+%type<d> maybe_disttgt
 %type<d> dynstart
 %type<d> scopstart
 %type<d> lexstart
@@ -2529,7 +2531,7 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| RECTGTRULE maybe_dist COLON targetspec COLON depspec NEWLINE shell_commands
+| RECTGTRULE maybe_distrule COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -2541,7 +2543,7 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| DETOUCHRULE maybe_dist COLON targetspec COLON depspec NEWLINE shell_commands
+| DETOUCHRULE maybe_distrule COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -2592,7 +2594,7 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| PATRULE maybe_dist COLON
+| PATRULE maybe_distrule COLON
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -2830,62 +2832,37 @@ depspec:
 ;
 
 pattargets:
-  FREEFORM_TOKEN
+  maybe_disttgt FREEFORM_TOKEN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
+    if ($1 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
+    {
+      stiryyerror(scanner, stiryy, "pattern rules can't contain @disttgt in bases");
+      YYABORT;
+    }
     if (!stiryy->main->freeform_token_seen)
     {
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
-    stiryy_set_pattgt(amyplanyy, $1);
+    stiryy_set_pattgt(amyplanyy, $2, $1);
   }
 }
-| tgtdepref
+| maybe_disttgt tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     int ret;
     char **strs;
     size_t i, strsz;
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $1, "target", &strs, &strsz);
-
-    if (ret)
+    if ($1 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
     {
-      stiryyerror(scanner, stiryy, "error in targets");
+      stiryyerror(scanner, stiryy, "pattern rules can't contain @disttgt in bases");
       YYABORT;
     }
 
-    for (i = 0; i < strsz; i++)
-    {
-      stiryy_set_pattgt(stiryy, strs[i]);
-      free(strs[i]);
-    }
-    free(strs);
-  }
-}
-| pattargets FREEFORM_TOKEN
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    if (!stiryy->main->freeform_token_seen)
-    {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
-      stiryy->main->freeform_token_seen=1;
-    }
-    stiryy_set_pattgt(amyplanyy, $2);
-  }
-}
-| pattargets tgtdepref
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    int ret;
-    char **strs;
-    size_t i, strsz;
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
     ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
@@ -2898,7 +2875,56 @@ pattargets:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_pattgt(stiryy, strs[i]);
+      stiryy_set_pattgt(stiryy, strs[i], $1);
+      free(strs[i]);
+    }
+    free(strs);
+  }
+}
+| pattargets maybe_disttgt FREEFORM_TOKEN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if ($2 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
+    {
+      stiryyerror(scanner, stiryy, "pattern rules can't contain @disttgt in bases");
+      YYABORT;
+    }
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
+      stiryy->main->freeform_token_seen=1;
+    }
+    stiryy_set_pattgt(amyplanyy, $3, $2);
+  }
+}
+| pattargets maybe_disttgt tgtdepref
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    int ret;
+    char **strs;
+    size_t i, strsz;
+
+    if ($2 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
+    {
+      stiryyerror(scanner, stiryy, "pattern rules can't contain @disttgt in bases");
+      YYABORT;
+    }
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz);
+
+    if (ret)
+    {
+      stiryyerror(scanner, stiryy, "error in targets");
+      YYABORT;
+    }
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_pattgt(stiryy, strs[i], $2);
       free(strs[i]);
     }
     free(strs);
@@ -2947,7 +2973,7 @@ tgtdepref:
 ;
 
 targets:
-  FREEFORM_TOKEN
+  maybe_disttgt FREEFORM_TOKEN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -2958,9 +2984,9 @@ targets:
     }
     //printf("target1 %s\n", $1);
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-    stiryy_set_tgt(stiryy, $1);
+    stiryy_set_tgt(stiryy, $2, $1);
   }
-  free($1);
+  free($2);
 }
 |
 /* // FIXME !
@@ -2968,7 +2994,7 @@ targets:
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
 */
-  tgtdepref
+  maybe_disttgt tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -2981,7 +3007,7 @@ targets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $1, "target", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in targets");
@@ -2990,7 +3016,7 @@ targets:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_tgt(stiryy, strs[i]);
+      stiryy_set_tgt(stiryy, strs[i], $1);
       free(strs[i]);
     }
     free(strs);
@@ -3007,7 +3033,7 @@ targets:
   free($1);
 }
 */
-| targets FREEFORM_TOKEN
+| targets maybe_disttgt FREEFORM_TOKEN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -3016,12 +3042,12 @@ targets:
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
-    //printf("target %s\n", $2);
-    stiryy_set_tgt(stiryy, $2);
+    //printf("target %s\n", $3);
+    stiryy_set_tgt(stiryy, $3, $2);
   }
-  free($2);
+  free($3);
 }
-| targets tgtdepref
+| targets maybe_disttgt tgtdepref
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
@@ -3032,7 +3058,7 @@ targets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in targets");
@@ -3041,7 +3067,7 @@ targets:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_tgt(stiryy, strs[i]);
+      stiryy_set_tgt(stiryy, strs[i], $2);
       free(strs[i]);
     }
     free(strs);
@@ -3059,11 +3085,21 @@ targets:
 */
 ;
 
-maybe_dist:
+maybe_distrule:
 {
   $$ = 0;
 }
 | DISTRULE
+{
+  $$ = 1;
+}
+;
+
+maybe_disttgt:
+{
+  $$ = 0;
+}
+| DISTTGT
 {
   $$ = 1;
 }

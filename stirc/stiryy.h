@@ -94,6 +94,7 @@ struct dep {
 struct tgt {
   char *name;
   char *namenodir;
+  int is_dist;
 };
 
 struct stiryyrule {
@@ -417,7 +418,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   }
 }
 
-static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
+static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
@@ -454,11 +455,17 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
     }
     rule->targets[rule->targetsz].name = strdup(can);
     rule->targets[rule->targetsz].namenodir = strdup(tgt);
+    rule->targets[rule->targetsz].is_dist = !!is_dist;
     rule->targetsz++;
     free(can);
   }
   else
   {
+    if (is_dist)
+    {
+      printf("pattern rule bases cannot contain @disttgt\n");
+      my_abort();
+    }
     if (tgt[0] == '/')
     {
       if (snprintf(tmp, sz, "%s", tgt) >= sz)
@@ -488,7 +495,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
   }
 }
 
-static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
+static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
@@ -518,18 +525,19 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *cur
   }
   rule->targets[rule->targetsz].name = strdup(can);
   rule->targets[rule->targetsz].namenodir = strdup(tgt);
+  rule->targets[rule->targetsz].is_dist = !!is_dist;
   rule->targetsz++;
   free(can);
 }
 
-static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt)
+static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt, int is_dist)
 {
-  stiryy_main_set_pattgt(stiryy->main, stiryy->curprefix, tgt);
+  stiryy_main_set_pattgt(stiryy->main, stiryy->curprefix, tgt, is_dist);
 }
 
-static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt)
+static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt, int is_dist)
 {
-  stiryy_main_set_tgt(stiryy->main, stiryy->curprefix, tgt);
+  stiryy_main_set_tgt(stiryy->main, stiryy->curprefix, tgt, is_dist);
 }
 
 static inline void stiryy_set_cleanhooktgt(struct stiryy *stiryy, const char *tgt)
