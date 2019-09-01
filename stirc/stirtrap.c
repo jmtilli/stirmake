@@ -105,6 +105,73 @@ size_t cache_add_str_nul(struct abce *abce, const char *str, int *err)
   return ret;
 }
 
+struct attrstruct {
+  unsigned phony:1;
+  unsigned rectgt:1;
+  unsigned detouch:1;
+  unsigned maybe:1;
+  unsigned dist:1;
+  unsigned deponly:1;
+  unsigned iscleanhook:1;
+  unsigned isdistcleanhook:1;
+  unsigned isbothcleanhook:1;
+};
+
+int attr_sanity(const struct attrstruct *as)
+{
+  int clean = 0;
+  clean = as->iscleanhook + as->isdistcleanhook + as->isbothcleanhook;
+  if (clean > 1)
+  {
+    return -EINVAL;
+  }
+  if (clean)
+  {
+    if (as->dist || as->rectgt || as->detouch || as->maybe)
+    {
+      return -EINVAL;
+    }
+    if (as->phony + as->deponly != 1)
+    {
+      return -EINVAL;
+    }
+    return 0;
+  }
+  if (as->deponly)
+  {
+    if (as->dist || as->maybe || as->detouch || as->rectgt || as->phony)
+    {
+      return -EINVAL;
+    }
+    return 0;
+  }
+  if (as->phony)
+  {
+    if (as->dist || as->maybe || as->detouch || as->rectgt)
+    {
+      return -EINVAL;
+    }
+    return 0;
+  }
+  if (as->rectgt)
+  {
+    if (as->maybe || as->detouch)
+    {
+      return -EINVAL;
+    }
+    return 0;
+  }
+  if (as->detouch)
+  {
+    if (as->maybe || as->rectgt)
+    {
+      return -EINVAL;
+    }
+    return 0;
+  }
+  return 0;
+}
+
 int stir_trap_ruleadd(struct stiryy_main *main,
                       struct abce *abce, const char *prefix)
 {
@@ -124,17 +191,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   struct cmdsrcitem *yyshells;
   size_t shellsz;
   size_t i;
-  struct {
-    unsigned phony:1;
-    unsigned rectgt:1;
-    unsigned detouch:1;
-    unsigned maybe:1;
-    unsigned dist:1;
-    unsigned deponly:1;
-    unsigned iscleanhook:1;
-    unsigned isdistcleanhook:1;
-    unsigned isbothcleanhook:1;
-  } attrstruct = {};
+  struct attrstruct attrstruct = {};
 
   if (ret != 0)
   {
@@ -685,7 +742,29 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   char *prefix_ugh = strdup(prefix); // RFE make add_rule_yy take const char*
   errcod = 0;
   abce->err.code = ABCE_E_NONE;
-  if (add_rule_yy(main, yytgts, tgtsz, yydeps, depsz, &shellsrc,
+  if (attr_sanity(&attrstruct) != 0)
+  {
+    errcod = -EINVAL;
+    abce->err.code = STIR_E_INSANE_RULE;
+    abce->err.mb.typ = ABCE_T_N;
+  }
+  if (   attrstruct.iscleanhook
+      || attrstruct.isdistcleanhook
+      || attrstruct.isbothcleanhook)
+  {
+    if (tgtsz > 0)
+    {
+      errcod = -EINVAL;
+      abce->err.code = STIR_E_INSANE_RULE;
+      abce->err.mb.typ = ABCE_T_N;
+    }
+    else
+    {
+      yytgts = NULL;
+    }
+  }
+  if (errcod == 0 &&
+      add_rule_yy(main, yytgts, tgtsz, yydeps, depsz, &shellsrc,
                   attrstruct.phony, attrstruct.rectgt, attrstruct.detouch,
                   attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
                   attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
@@ -693,6 +772,18 @@ int stir_trap_ruleadd(struct stiryy_main *main,
                   prefix_ugh, abce->dynscope.u.area->u.sc.locidx) != 0)
   {
     errcod = -EINVAL;
+  }
+  if (errcod == 0 && attrstruct.iscleanhook)
+  {
+    stiryy_main_set_cleanhooktgt(main, prefix_ugh, "CLEAN");
+  }
+  if (errcod == 0 && attrstruct.isdistcleanhook)
+  {
+    stiryy_main_set_cleanhooktgt(main, prefix_ugh, "DISTCLEAN");
+  }
+  if (errcod == 0 && attrstruct.isbothcleanhook)
+  {
+    stiryy_main_set_cleanhooktgt(main, prefix_ugh, "BOTHCLEAN");
   }
 
   free(prefix_ugh);
