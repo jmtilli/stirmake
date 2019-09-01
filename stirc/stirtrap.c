@@ -689,6 +689,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
                   attrstruct.phony, attrstruct.rectgt, attrstruct.detouch,
                   attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
                   attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
+                  attrstruct.deponly,
                   prefix_ugh, abce->dynscope.u.area->u.sc.locidx) != 0)
   {
     errcod = -EINVAL;
