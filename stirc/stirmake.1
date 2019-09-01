@@ -816,11 +816,6 @@ Sometimes when including subdirectories / subfiles, the first rule is taken
 from an included file. To avoid this, define the first rule before including
 any rules.
 .It
-If the first rule is dynamically added, it is ignored. If there are nothing
-but dynamically added rules, it is incorrectly claimed the rule list is empty.
-To avoid this, define the first rule manually with a dependency to a second
-rule that is created dynamically.
-.It
 Some error codes are translated to
 .Dq "Unknown error"
 instead of a descriptive

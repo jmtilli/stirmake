@@ -34,6 +34,4 @@
 
 - shortcutting
 
-- bug: first rule can't be dynamically added, it won't be executed then
-
 - Custom errors to strings
