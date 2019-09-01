@@ -246,6 +246,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   for (i = 0; i < tgtsz; i++)
   {
     struct abce_mb *mb = &tgtres->u.area->u.ar.mbs[i];
+    struct abce_mb *attr1;
     if (mb->typ != ABCE_T_T)
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
@@ -265,6 +266,16 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       abce->err.mb.typ = ABCE_T_N; // FIXME
       abce_mb_refdn(abce, &tree);
       return -EINVAL;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
+    {
+      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce_mb_refdn(abce, &tree);
+        return -EINVAL;
+      }
     }
   }
 
@@ -598,6 +609,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   {
     struct abce_mb *mb = &tgtres->u.area->u.ar.mbs[i];
     size_t namsz;
+    struct abce_mb *attr1;
     char *nam;
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
@@ -612,6 +624,11 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     yytgts[i].name = canon(nam);
     free(nam);
     yytgts[i].namenodir = strdup(mbstr->u.area->u.str.buf);
+    yytgts[i].is_dist = 0;
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
+    {
+      yytgts[i].is_dist = !!attr1->u.d;
+    }
   }
   for (i = 0; i < depsz; i++)
   {
@@ -1993,7 +2010,6 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       for (i = 0; i < tgtar.u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &tgtar.u.area->u.ar.mbs[i];
-        // FIXME add support for per-target dist specifiers
         stiryy_main_set_tgt(main, prefix, mb->u.area->u.str.buf, 0);
       }
       for (i = 0; i < depar.u.area->u.ar.size; i++)
