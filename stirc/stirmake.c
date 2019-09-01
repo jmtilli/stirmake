@@ -865,6 +865,7 @@ struct stirtgt {
   struct linked_list_node llnode;
   size_t tgtidx;
   size_t tgtidxnodir;
+  unsigned is_dist:1;
 };
 
 /*
@@ -1426,6 +1427,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir)
   e = my_malloc(sizeof(*e));
   e->tgtidx = tgtidx;
   e->tgtidxnodir = tgtidxnodir;
+  e->is_dist = 0;
   head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, tgt_cmp_sym, NULL, &e->node);
   if (ret != 0)
@@ -4217,10 +4219,11 @@ void do_clean(char *fwd_path, int objs, int bins)
   LINKED_LIST_FOR_EACH(node, &cleanlist)
   {
     struct rule *rule = ABCE_CONTAINER_OF(node, struct rule, cleanllnode);
-    int dist = rule->is_dist;
+    int alldist = rule->is_dist;
     LINKED_LIST_FOR_EACH(node2, &rule->tgtlist)
     {
       struct stirtgt *tgt = ABCE_CONTAINER_OF(node2, struct stirtgt, llnode);
+      int dist = tgt->is_dist || alldist;
       if ((objs && !dist) || (bins && dist))
       {
         char *name = sttable[tgt->tgtidx];
