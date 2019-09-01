@@ -415,7 +415,24 @@ like this:
 .Pp
 .Nm stirmake
 generates cleaning rules automatically for its own targets, but
-cleaning hooks are required for sub-makes. However, 
+cleaning hooks are required for sub-makes. Note how sub-makes may not support
+all clean types, so in the example
+.Va @distcleanhook
+which cleans only binaries and is invoked by
+.Nm stirmake
+.Fl b
+is not supported, whereas
+.Va @cleanhook
+invoked by
+.Nm stirmake
+.Fl c
+and
+.Va @bothcleanhook
+invoked by
+.Nm stirmake
+.Fl bc
+are supported.
+.Pp
 .Nm stirmake
 needs to
 know what files are binaries and what are object files, so the rules for
@@ -849,12 +866,6 @@ error message.
 .It
 Targets may be deleted even if the list of commands to create such a target is
 empty, when running clean.
-.It
-.Va @cleanhook ,
-.Va @distcleanhook
-and
-.Va @bothcleanhook
-hooks are not documented in this man page.
 .It
 There is no way to define multiple rule types, e.g. 
 .Va @distrule
