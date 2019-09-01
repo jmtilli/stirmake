@@ -229,6 +229,10 @@ struct CSnippet luaSnippet = {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
 }
+<INITIAL,STRICT>[$][|] {
+  yylval->s = strdup(yytext+1);
+  return VARREF_LITERAL;
+}
 <INITIAL,STRICT>[$]< {
   yylval->s = strdup(yytext+1);
   return VARREF_LITERAL;
