@@ -490,6 +490,36 @@ does the additional targets automatically). Also, in a clean build, the files
 are missing, so
 .Va @ignore
 means don't worry about missing files.
+.Pp
+Order-only dependencies, i.e. dependencies that are satisfied always when
+the file/directory exists without depending on the timestamp, are supported.
+Example:
+.Pp
+.Bd -literal
+obj/bar.o: bar.c @orderonly obj
+@	["cc", "-c", "-o", $@, $<]
+
+obj:
+@	["mkdir", "obj"]
+.Ed
+.Pp
+This example does not trigger rebuild of
+.Pa obj/bar.o
+if the timestamp of the directory changed, which it often does.
+.Pp
+The special variable
+.Va $^
+does not contain the order-only dependencies and the same is true for the
+special variable
+.Va $+
+too. (The difference between
+.Va $^
+and
+.Va $+
+is that the latter contains duplicate dependencies, if some dependencies are
+duplicated.) If you want a list of order-only dependencies, use the special
+variable
+.Va $| .
 .Sh "LUAJIT INTEGRATION"
 .Pp
 .Nm stirmake
@@ -819,9 +849,6 @@ error message.
 .It
 Targets may be deleted even if the list of commands to create such a target is
 empty, when running clean.
-.It
-.Va @orderonly
-dependencies are not documented in this man page.
 .It
 .Va @cleanhook ,
 .Va @distcleanhook
