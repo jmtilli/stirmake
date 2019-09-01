@@ -445,6 +445,18 @@ like this:
 	cc -o binfoo binfoo.c
 .Ed
 .Pp
+This
+.Va @distrule
+marks entire target set of the rule as binaries. To specify individual
+targets as binaries in rules that may have multiple targets, use
+.Va @disttgt
+like this:
+.Pp
+.Bd -literal
+@disttgt binfoo: binfoo.c
+	cc -o binfoo binfoo.c
+.Ed
+.Pp
 Each target can be listed only once, but additional dependencies can be
 specified with
 .Va @deponly
@@ -650,8 +662,10 @@ and
 entries. The
 .Va tgts
 entry is an array of trees where every
-tree contains the 
+tree contains at least the
 .Va name
+attribute, and possibly the
+.Va dist
 attribute. The
 .Va deps
 entry is an array of
@@ -866,11 +880,6 @@ error message.
 .It
 Targets may be deleted even if the list of commands to create such a target is
 empty, when running clean.
-.It
-The rule type
-.Va @distrule
-shouldn't really be a rule type but rather a target type, so the same rule
-can have targets that are @dist and targets that are not @dist.
 .It
 There are plenty of memory leaks.
 .It

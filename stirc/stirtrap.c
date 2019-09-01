@@ -40,8 +40,8 @@
   Planned argument for STIR_OPCODE_RULE_ADD:
 {
   "tgts": [ // "name" has no default
-    {"name": "a"},
-    {"name": "b"}
+    {"name": "a", "dist": false},
+    {"name": "b", "dist": false}
   ],
   "deps": [ // default: []
     // default for all: false except "name" has no default
