@@ -751,7 +751,14 @@ maybeignore:
 
 amyplanrules:
 | amyplanrules NEWLINE
-| amyplanrules assignrule
+| amyplanrules maybe_disttgt assignrule
+{
+  if ($2) /* remember to retain this hack to eliminate shift-reduce conflict */
+  {
+    stiryyerror(scanner, stiryy, "disttgt can't appear here");
+    YYABORT;
+  }
+}
 | amyplanrules FUNCTION VARREF_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))
