@@ -53,6 +53,7 @@ int dbyywrap(yyscan_t scanner)
 
 %token COLON
 %token TAB
+%token V1
 %token <str> STRING_LITERAL
 
 %token ERROR_TOK
@@ -61,14 +62,32 @@ int dbyywrap(yyscan_t scanner)
 
 %%
 
-st: dbrules ;
+st: st2;
 
-dbrules:
-| dbrules dbrule
-| dbrules NEWLINE
+st2: newlines stcont;
+
+stcont:
+  V1 NEWLINE newlines maybe_dbrulesv1
+| maybe_dbrulesv1;
+
+newlines:
+| newlines NEWLINE
 ;
 
-dbrule: STRING_LITERAL STRING_LITERAL COLON
+maybe_dbrulesv1:
+| dbrulesv1
+;
+
+dbrulesv1:
+  dbrulev1 dbrulescontv1
+;
+
+dbrulescontv1:
+| dbrulescontv1 dbrulev1
+| dbrulescontv1 NEWLINE
+;
+
+dbrulev1: STRING_LITERAL STRING_LITERAL COLON
 {
   if (strlen($1.str) != $1.sz)
   {
