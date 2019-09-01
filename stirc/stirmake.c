@@ -4395,7 +4395,7 @@ void merge_db(void)
   }
   */
   f = dbf;
-  fprintf(f, "@v1\n\n");
+  fprintf(f, "@v1@\n\n");
   LINKED_LIST_FOR_EACH(node, &db.ll)
   {
     struct dbe *dbe = ABCE_CONTAINER_OF(node, struct dbe, llnode);

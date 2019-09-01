@@ -30,7 +30,7 @@
 
 :         return COLON;
 
-@v1 return V1;
+@v1@ return V1;
 
 
 \"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
