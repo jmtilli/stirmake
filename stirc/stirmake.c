@@ -5396,8 +5396,8 @@ int main(int argc, char **argv)
                main.rules[i].isbothcleanhook,
                main.rules[i].prefix, main.rules[i].scopeidx);
       if (   (!ruleid_first_set)
-          && (   strcmp(fwd_path, ".") == 0
-              || strcmp(fwd_path, main.rules[i].prefix) == 0))
+          && (/* strcmp(fwd_path, ".") == 0 || */
+              strcmp(fwd_path, main.rules[i].prefix) == 0))
       {
         if (rules_size == 0)
         {
@@ -5436,7 +5436,7 @@ int main(int argc, char **argv)
                          main.rules[i].deps, main.rules[i].depsz, 0);
     }
   }
-  if (!ruleid_first_set)
+  if (!ruleid_first_set && optind == argc)
   {
     errxit("no applicable rules");
   }
