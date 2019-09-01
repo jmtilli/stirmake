@@ -88,6 +88,48 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
   stiryy_add_byte(stiryy, uset);
 }
 
+#define get_abce(stiryy) ((stiryy)->main->abce)
+
+int handle_tgt_tgtdepref(yyscan_t scanner, struct stiryy *stiryy, size_t bcodeoff, int is_dist)
+{
+  if (amyplanyy_do_emit(stiryy))
+  {
+    size_t strsz;
+    size_t i;
+    int ret;
+    char **strs;
+
+    stiryy_add_byte(stiryy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(stiryy), bcodeoff, "target", &strs, &strsz);
+    if (ret)
+    {
+      stiryyerror(scanner, stiryy, "error in targets");
+      return -EINVAL;
+    }
+
+    for (i = 0; i < strsz; i++)
+    {
+      stiryy_set_tgt(stiryy, strs[i], is_dist);
+      free(strs[i]);
+    }
+    free(strs);
+  }
+  return 0;
+}
+void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const char *tkn, int is_dist)
+{
+  if (amyplanyy_do_emit(stiryy))
+  {
+    if (!stiryy->main->freeform_token_seen)
+    {
+      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
+      stiryy->main->freeform_token_seen=1;
+    }
+    stiryy_set_tgt(stiryy, tkn, is_dist);
+  }
+}
+
 #define amyplanyy stiryy
 #define amyplanyy_add_byte stiryy_add_byte
 #define amyplanyy_add_double stiryy_add_double
@@ -95,8 +137,6 @@ void add_corresponding_set(struct stiryy *stiryy, double get)
 #define amyplanyy_add_fun_sym stiryy_add_fun_sym
 #define amyplan_symbol_add stiryy_symbol_add
 #define amyplanyyerror stiryyerror
-
-#define get_abce(stiryy) ((stiryy)->main->abce)
 
 %}
 
@@ -751,14 +791,7 @@ maybeignore:
 
 amyplanrules:
 | amyplanrules NEWLINE
-| amyplanrules maybe_disttgt assignrule
-{
-  if ($2) /* remember to retain this hack to eliminate shift-reduce conflict */
-  {
-    stiryyerror(scanner, stiryy, "disttgt can't appear here");
-    YYABORT;
-  }
-}
+| amyplanrules assignrule
 | amyplanrules FUNCTION VARREF_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2980,77 +3013,50 @@ tgtdepref:
 ;
 
 targets:
-  maybe_disttgt FREEFORM_TOKEN
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    if (!stiryy->main->freeform_token_seen)
-    {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
-      stiryy->main->freeform_token_seen=1;
-    }
-    //printf("target1 %s\n", $1);
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-    stiryy_set_tgt(stiryy, $2, $1);
-  }
-  free($2);
-}
-|
-/* // FIXME !
-{
-  $<d>$ = get_abce(amyplanyy)->bytecodesz;
-}
-*/
-  maybe_disttgt tgtdepref
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    size_t strsz;
-    size_t i;
-    int ret;
-    char **strs;
-
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-
-    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
-    if (ret)
-    {
-      stiryyerror(scanner, stiryy, "error in targets");
-      YYABORT;
-    }
-
-    for (i = 0; i < strsz; i++)
-    {
-      stiryy_set_tgt(stiryy, strs[i], $1);
-      free(strs[i]);
-    }
-    free(strs);
-  }
-}
-/*
-| VARREF_LITERAL
+  FREEFORM_TOKEN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-    printf("target1ref\n");
+    handle_tgt_freeform_token(scanner, stiryy, $1, 0);
   }
   free($1);
 }
-*/
+| DISTTGT FREEFORM_TOKEN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    handle_tgt_freeform_token(scanner, stiryy, $2, 1);
+  }
+  free($2);
+}
+| tgtdepref
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    if (handle_tgt_tgtdepref(scanner, stiryy, $1, 0))
+    {
+      YYABORT;
+    }
+  }
+}
+| DISTTGT tgtdepref
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if (handle_tgt_tgtdepref(scanner, stiryy, $2, 1))
+    {
+      YYABORT;
+    }
+  }
+}
 | targets maybe_disttgt FREEFORM_TOKEN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if (!stiryy->main->freeform_token_seen)
-    {
-      recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
-      stiryy->main->freeform_token_seen=1;
-    }
-    //printf("target %s\n", $3);
-    stiryy_set_tgt(stiryy, $3, $2);
+    handle_tgt_freeform_token(scanner, stiryy, $3, $2);
   }
   free($3);
 }
@@ -3058,38 +3064,12 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    size_t strsz;
-    int ret;
-    size_t i;
-    char **strs;
-
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz);
-    if (ret)
+    if (handle_tgt_tgtdepref(scanner, stiryy, $3, $2))
     {
-      stiryyerror(scanner, stiryy, "error in targets");
       YYABORT;
     }
-
-    for (i = 0; i < strsz; i++)
-    {
-      stiryy_set_tgt(stiryy, strs[i], $2);
-      free(strs[i]);
-    }
-    free(strs);
   }
 }
-/*
-| targets VARREF_LITERAL
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    printf("targetref\n");
-  }
-  free($2);
-}
-*/
 ;
 
 maybe_distrule:
