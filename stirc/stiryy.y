@@ -2477,6 +2477,7 @@ stirrule:
                stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
       recommend(scanner, stiryy, buf);
     }
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | CLEANHOOK COLON
@@ -2489,6 +2490,12 @@ stirrule:
   }
 }
   depspec NEWLINE shell_commands
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy->main->rule_in_progress = 0;
+  }
+}
 | DISTCLEANHOOK COLON
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2499,6 +2506,12 @@ stirrule:
   }
 }
   depspec NEWLINE shell_commands
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy->main->rule_in_progress = 0;
+  }
+}
 | BOTHCLEANHOOK COLON
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -2509,11 +2522,18 @@ stirrule:
   }
 }
   depspec NEWLINE shell_commands
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy->main->rule_in_progress = 0;
+  }
+}
 | RECTGTRULE COLON targetspec COLON depspec NEWLINE shell_commands
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_rectgt(stiryy);
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | DETOUCHRULE COLON targetspec COLON depspec NEWLINE shell_commands
@@ -2521,6 +2541,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_detouch(stiryy);
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
@@ -2528,6 +2549,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_phony(stiryy);
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | MAYBERULE COLON targetspec COLON depspec NEWLINE shell_commands
@@ -2535,6 +2557,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_maybe(stiryy);
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
@@ -2549,6 +2572,7 @@ stirrule:
                stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
       recommend(scanner, stiryy, buf);
     }
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | DEPONLY COLON targetspec COLON depspec NEWLINE
@@ -2556,6 +2580,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_deponly(stiryy);
+    stiryy->main->rule_in_progress = 0;
   }
 }
 | PATRULE COLON
@@ -2573,6 +2598,12 @@ stirrule:
   }
 }
   pattargetspec COLON patdepspec NEWLINE shell_commands
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy->main->rule_in_progress = 0;
+  }
+}
 ;
 
 shell_commands:

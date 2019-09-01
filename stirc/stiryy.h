@@ -133,6 +133,7 @@ struct stiryy_main {
   int freeform_token_seen;
   int parsing;
   int trial;
+  int rule_in_progress;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;
@@ -183,6 +184,7 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
   }
   main->realpathname = canon(buf3);
   main->subdirseen = 0;
+  main->rule_in_progress = 0;
 }
 
 static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
@@ -625,6 +627,7 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
     main->rules = (struct stiryyrule*)realloc(main->rules, sizeof(*main->rules)*newcapacity);
     main->rulecapacity = newcapacity;
   }
+  main->rule_in_progress = 1;
   main->rules[main->rulesz].basesz = 0;
   main->rules[main->rulesz].basecapacity = 0;
   main->rules[main->rulesz].bases = NULL;

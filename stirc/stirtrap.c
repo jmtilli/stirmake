@@ -105,10 +105,12 @@ size_t cache_add_str_nul(struct abce *abce, const char *str, int *err)
   return ret;
 }
 
-int stir_trap_ruleadd(struct abce *abce, const char *prefix)
+int stir_trap_ruleadd(struct stiryy_main *main,
+                      struct abce *abce, const char *prefix)
 {
   struct abce_mb tree = {};
   int ret = abce_verifymb(abce, -1, ABCE_T_T);
+  int errcod = 0;
   int err = 0;
   size_t tgts, deps, attrs, shells, name, rec, orderonly, phony;
   size_t rectgt, detouch, maybe, dist, deponly;
@@ -680,20 +682,30 @@ int stir_trap_ruleadd(struct abce *abce, const char *prefix)
     .itemsz = shellsz, .itemcapacity = shellsz, .items = yyshells
   };
 
-  char *prefix_ugh = strdup(prefix); // RFE make add_rule take const char*
-  add_rule(yytgts, tgtsz, yydeps, depsz, &shellsrc,
-           attrstruct.phony, attrstruct.rectgt, attrstruct.detouch,
-           attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
-           attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
-           prefix_ugh, abce->dynscope.u.area->u.sc.locidx);
+  char *prefix_ugh = strdup(prefix); // RFE make add_rule_yy take const char*
+  errcod = 0;
+  abce->err.code = ABCE_E_NONE;
+  if (add_rule_yy(main, yytgts, tgtsz, yydeps, depsz, &shellsrc,
+                  attrstruct.phony, attrstruct.rectgt, attrstruct.detouch,
+                  attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
+                  attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
+                  prefix_ugh, abce->dynscope.u.area->u.sc.locidx) != 0)
+  {
+    errcod = -EINVAL;
+  }
 
   free(prefix_ugh);
-  free(yytgts);
-  free(yydeps);
+  //free(yytgts); // Can't free this now
+  //free(yydeps); // Can't free this now
   //free(yyshells); // Can't free this now
   abce_mb_refdn(abce, &tree);
   abce_pop(abce);
-  return 0;
+  if (errcod && abce->err.code == ABCE_E_NONE)
+  {
+    abce->err.code = STIR_E_RULE_FROM_WITHIN_MIDRULE;
+    abce->err.mb.typ = ABCE_T_N;
+  }
+  return errcod;
 }
 
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
@@ -1924,7 +1936,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         prefix = ".";
       }
-      return stir_trap_ruleadd(abce, prefix);
+      return stir_trap_ruleadd(main, abce, prefix);
     case STIR_OPCODE_TOP_DIR:
       if (abce_scope_get_userdata(&abce->dynscope))
       {
