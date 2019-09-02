@@ -5140,20 +5140,21 @@ int main(int argc, char **argv)
         my_abort();
       }
       curupcnt++;
-      abce_init_opts(&abce, 1);
-      abce_inited = 1;
-      abce.trap = stir_trap;
-      abce.trap_baton = &main;
-      init_main_for_realpath(&main, storcwd);
-      main.abce = &abce;
-      main.parsing = 1;
-      main.trial = 1;
-      main.freeform_token_seen = 1;
-      stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, curcwd, "Stirfile", 1);
       f = fopen("Stirfile", "r");
       if (f)
       {
-        int ret = stiryydoparse(f, &stiryy);
+        int ret;
+        abce_init_opts(&abce, 1);
+        abce_inited = 1;
+        abce.trap = stir_trap;
+        abce.trap_baton = &main;
+        init_main_for_realpath(&main, storcwd);
+        main.abce = &abce;
+        main.parsing = 1;
+        main.trial = 1;
+        main.freeform_token_seen = 1;
+        stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, curcwd, "Stirfile", 1);
+        ret = stiryydoparse(f, &stiryy);
         fclose(f);
         if (ret == 0 && main.subdirseen)
         {
@@ -5174,11 +5175,11 @@ int main(int argc, char **argv)
             my_abort();
           }
         }
+        stiryy_free(&stiryy);
+        stiryy_main_free(&main);
+        abce_free(&abce);
+        abce_inited = 0;
       }
-      stiryy_free(&stiryy);
-      stiryy_main_free(&main);
-      abce_free(&abce);
-      abce_inited = 0;
     }
     printf("stirmake: Using directory %s\n", cwd);
     fflush(stdout);
@@ -5794,10 +5795,12 @@ int main(int argc, char **argv)
     printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
   merge_db();
+#if 0
   free(dupargv0);
   stiryy_main_free(&main);
   abce_free(&abce);
   free(rules);
   rules = NULL;
+#endif
   return 0;
 }
