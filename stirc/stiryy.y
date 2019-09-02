@@ -513,6 +513,11 @@ custom_rule:
   if (amyplanyy_do_emit(amyplanyy))
   {
 #ifdef WITH_LUA
+    if (abce_ensure_lua(get_abce(amyplanyy)->dynscope.u.area, get_abce(amyplanyy)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "Not enough memory for Lua");
+      YYABORT;
+    }
     if (luaL_dostring(get_abce(amyplanyy)->dynscope.u.area->u.sc.lua, $1) != 0)
     {
       stiryyerror(scanner, stiryy, "Lua error");
