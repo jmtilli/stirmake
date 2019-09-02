@@ -1,3 +1,5 @@
+- stat cache to avoid repeatedly statting same file; invalidate if tgt built
+
 - Option to check heap after every engine invocation to reveal refcnt bugs
 
 - Extra opcodes:
