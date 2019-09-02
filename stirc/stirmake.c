@@ -3111,16 +3111,16 @@ int do_exec(int ruleid)
           seen_nonphony = 1;
           continue;
         }
-        if (stat(sttable[e->nameidx], &statbuf) != 0)
+        int recommended = 0;
+        if (lstat(sttable[e->nameidx], &statbuf) != 0)
         {
           has_to_exec = 1;
           // break; // No break, we want to get accurate st_mtim
           continue;
-          //perror("can't stat");
+          //perror("can't lstat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //my_abort();
         }
-        int recommended = 0;
         if (S_ISDIR(statbuf.st_mode) && !e->is_orderonly && !recommended)
         {
           char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx];
@@ -3131,16 +3131,20 @@ int do_exec(int ruleid)
         {
           if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
           {
-              st_mtim = statbuf.st_mtim;
+            st_mtim = statbuf.st_mtim;
           }
           seen_nonphony = 1;
         }
-        if (lstat(sttable[e->nameidx], &statbuf) != 0)
+        if (!S_ISLNK(statbuf.st_mode))
+        {
+          continue;
+        }
+        if (stat(sttable[e->nameidx], &statbuf) != 0)
         {
           has_to_exec = 1;
           // break; // No break, we want to get accurate st_mtim
           continue;
-          //perror("can't lstat");
+          //perror("can't stat");
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //my_abort();
         }
