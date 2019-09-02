@@ -1,11 +1,3 @@
-- stat cache to avoid repeatedly statting same file; invalidate if tgt built
-  - A LRU cache of 256 entries would require 5% of 5020 targets, yet reduce
-    87.406% of 97779 lstat() calls, which make 0.76757*87.406 % = 67.090% of
-    all system calls.
-  - There would be a tree + 2 lists, free-list and LRU-list. Allocation happens
-    from free-list. If free-list is empty, evict() operation evicts the oldest
-    entry from LRU-list to free-list.
-
 - Option to check heap after every engine invocation to reveal refcnt bugs
 
 - Extra opcodes:

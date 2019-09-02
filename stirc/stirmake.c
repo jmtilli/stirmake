@@ -121,6 +121,7 @@ int isspecprog = 0;
 enum {
   RULEID_BY_TGT_SIZE = 8192,
   RULEIDS_BY_DEP_SIZE = 8192,
+  STATHASH_SIZE = 256,
   TGTS_SIZE = 64,
   DEPS_SIZE = 64,
   DEPS_REMAIN_SIZE = 64,
@@ -2790,6 +2791,164 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
 }
 
+struct stathashentry {
+  struct abce_rb_tree_node node;
+  struct linked_list_node llnode;
+  size_t nameidx;
+  int ret;
+  mode_t st_mode;
+  struct timespec st_mtim;
+};
+struct abce_rb_tree_nocmp stathash[STATHASH_SIZE];
+struct stathashentry stathashentries[STATHASH_SIZE];
+struct linked_list_head statlrulist =
+  STIR_LINKED_LIST_HEAD_INITER(statlrulist);
+struct linked_list_head statfreelist =
+  STIR_LINKED_LIST_HEAD_INITER(statfreelist);
+
+void statcache_init(void)
+{
+  size_t i;
+  for (i = 0; i < sizeof(stathashentries)/sizeof(*stathashentries); i++)
+  {
+    linked_list_add_tail(&stathashentries[i].llnode, &statfreelist);
+  }
+}
+
+static inline void stathashentry_evict(void)
+{
+  struct stathashentry *e;
+  uint32_t hash;
+  struct abce_rb_tree_nocmp *head;
+  e = ABCE_CONTAINER_OF(statlrulist.node.prev, struct stathashentry, llnode);
+  hash = abce_murmur32(HASH_SEED, e->nameidx);
+  head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
+  linked_list_delete(&e->llnode);
+  abce_rb_tree_nocmp_delete(head, &e->node);
+  linked_list_add_head(&e->llnode, &statfreelist);
+}
+
+static inline void stathashentry_ensure_evict(void)
+{
+  if (!linked_list_is_empty(&statfreelist))
+  {
+    return;
+  }
+  stathashentry_evict();
+  if (linked_list_is_empty(&statfreelist))
+  {
+    abort();
+  }
+}
+
+static inline int stathashentry_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct stathashentry *e = ABCE_CONTAINER_OF(n2, struct stathashentry, node);
+  int ret;
+  size_t str2;
+  str2 = e->nameidx;
+  ret = sizecmp(str, str2);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  return 0;
+}
+static inline int stathashentry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct stathashentry *e1 = ABCE_CONTAINER_OF(n1, struct stathashentry, node);
+  struct stathashentry *e2 = ABCE_CONTAINER_OF(n2, struct stathashentry, node);
+  int ret;
+  ret = sizecmp(e1->nameidx, e2->nameidx);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  return 0;
+}
+
+void stathashentry_evict_all(void)
+{
+  size_t i;
+  linked_list_head_init(&statlrulist);
+  linked_list_head_init(&statfreelist);
+  for (i = 0; i < sizeof(stathash)/sizeof(*stathash); i++)
+  {
+    abce_rb_tree_nocmp_init(&stathash[i]);
+  }
+  statcache_init();
+}
+void lstat_evict_named(size_t nameidx)
+{
+  struct stathashentry *e;
+  uint32_t hash;
+  struct abce_rb_tree_nocmp *head;
+  struct abce_rb_tree_node *n;
+
+  hash = abce_murmur32(HASH_SEED, nameidx);
+  head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, nameidx);
+  if (n == NULL)
+  {
+    return;
+  }
+  e = ABCE_CONTAINER_OF(n, struct stathashentry, node);
+  linked_list_delete(&e->llnode);
+  abce_rb_tree_nocmp_delete(head, &e->node);
+  linked_list_add_head(&e->llnode, &statfreelist);
+}
+struct stathashentry *lstat_cached(size_t nameidx)
+{
+  struct abce_rb_tree_node *n;
+  struct stathashentry *e;
+  uint32_t hash;
+  struct abce_rb_tree_nocmp *head;
+  int ret;
+  struct stat statbuf;
+  hash = abce_murmur32(HASH_SEED, nameidx);
+  head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, nameidx);
+  if (n != NULL)
+  {
+    e = ABCE_CONTAINER_OF(n, struct stathashentry, node);
+    if (statlrulist.node.next != &e->llnode)
+    {
+      linked_list_delete(&e->llnode);
+      linked_list_add_head(&e->llnode, &statlrulist);
+    }
+    if (statlrulist.node.next != &e->llnode)
+    {
+      abort();
+    }
+    return ABCE_CONTAINER_OF(n, struct stathashentry, node);
+  }
+  stathashentry_ensure_evict();
+  e = ABCE_CONTAINER_OF(statfreelist.node.next, struct stathashentry, llnode);
+  linked_list_delete(&e->llnode);
+  ret = lstat(sttable[nameidx], &statbuf);
+  if (ret == 0)
+  {
+    e->st_mode = statbuf.st_mode;
+    e->st_mtim = statbuf.st_mtim;
+  }
+  else
+  {
+    e->st_mode = 0;
+    e->st_mtim.tv_sec = 0;
+    e->st_mtim.tv_nsec = 0;
+  }
+  e->ret = ret;
+  e->nameidx = nameidx;
+  linked_list_add_head(&e->llnode, &statlrulist);
+  ret = abce_rb_tree_nocmp_insert_nonexist(head, stathashentry_cmp_sym, NULL, &e->node);
+  if (ret != 0)
+  {
+    abort();
+  }
+  return e;
+}
+
+
 void mark_executed(int ruleid, int was_actually_executed);
 
 struct timespec rec_mtim(struct rule *r, const char *name)
@@ -3112,7 +3271,9 @@ int do_exec(int ruleid)
           continue;
         }
         int recommended = 0;
-        if (lstat(sttable[e->nameidx], &statbuf) != 0)
+        struct stathashentry *she;
+        she = lstat_cached(e->nameidx);
+        if (she->ret != 0)
         {
           has_to_exec = 1;
           // break; // No break, we want to get accurate st_mtim
@@ -3121,7 +3282,7 @@ int do_exec(int ruleid)
           //fprintf(stderr, "file was: %s\n", it->c_str());
           //my_abort();
         }
-        if (S_ISDIR(statbuf.st_mode) && !e->is_orderonly && !recommended)
+        if (S_ISDIR(she->st_mode) && !e->is_orderonly && !recommended)
         {
           char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx];
           printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx], tgtname);
@@ -3129,13 +3290,13 @@ int do_exec(int ruleid)
         }
         if (!e->is_orderonly)
         {
-          if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+          if (!seen_nonphony || ts_cmp(she->st_mtim, st_mtim) > 0)
           {
-            st_mtim = statbuf.st_mtim;
+            st_mtim = she->st_mtim;
           }
           seen_nonphony = 1;
         }
-        if (!S_ISLNK(statbuf.st_mode))
+        if (!S_ISLNK(she->st_mode))
         {
           continue;
         }
@@ -3558,6 +3719,11 @@ void mark_executed(int ruleid, int was_actually_executed)
    * c:
    * ...and then somebody types "smka b" and we don't want to build a
    */
+  LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+  {
+    struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+    lstat_evict_named(e->tgtidx);
+  }
   LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
     struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
@@ -4282,6 +4448,7 @@ void do_clean(char *fwd_path, int objs, int bins)
       }
     }
   }
+  stathashentry_evict_all();
 }
 
 struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
@@ -4894,6 +5061,8 @@ int main(int argc, char **argv)
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
+
+  statcache_init();
 
   struct sigaction saseg;
   sigemptyset(&saseg.sa_mask);
