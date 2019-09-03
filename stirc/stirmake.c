@@ -2431,36 +2431,60 @@ size_t ruleid_by_pid_cnt;
 void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
 {
   size_t argcnt = 0;
-  struct iovec *iovs;
   char **argiter = argiter_orig;
   size_t i;
+  size_t tlen = 0;
+  char *tbuf = NULL;
+  size_t toff = 0;
+  int tret;
   while (*argiter != NULL)
   {
     argiter++;
     argcnt++;
   }
-  iovs = malloc(sizeof(*iovs)*(argcnt*2+6));
-  iovs[0].iov_base = "[";
-  iovs[0].iov_len = 1;
-  iovs[1].iov_base = (void*)tgtname;
-  iovs[1].iov_len = strlen(tgtname);
-  iovs[2].iov_base = ", ";
-  iovs[2].iov_len = 2;
-  iovs[3].iov_base = (void*)prefix;
-  iovs[3].iov_len = strlen(prefix);
-  iovs[4].iov_base = "] ";
-  iovs[4].iov_len = 2;
+  tlen += 1; // "["
+  tlen += strlen(tgtname);
+  tlen += 2; // ", "
+  tlen += strlen(prefix);
+  tlen += 2; // "] "
   for (i = 0; i < argcnt; i++)
   {
-    iovs[5+2*i+0].iov_base = argiter_orig[i];
-    iovs[5+2*i+0].iov_len = strlen(argiter_orig[i]);
-    iovs[5+2*i+1].iov_base = " ";
-    iovs[5+2*i+1].iov_len = 1;
+    tlen += strlen(argiter_orig[i]);
+    tlen += 1;
   }
-  iovs[5+2*argcnt].iov_base = "\n";
-  iovs[5+2*argcnt].iov_len = 1;
-  writev(1, iovs, 6+2*argcnt);
-  free(iovs);
+  tlen += 1; // "\n"
+  tlen += 1; // "\0"
+  /* Observe how we use standard malloc. A custom allocator using MAP_SHARED
+   * would not be safe to use in the child process. */
+  tbuf = malloc(tlen);
+  tret = snprintf(tbuf+toff, tlen-toff, "[%s, %s]", prefix, tgtname);
+  if (tret < 0 || (size_t)tret >= tlen - toff)
+  {
+    _exit(1);
+  }
+  toff += tret;
+  for (i = 0; i < argcnt; i++)
+  {
+    tret = snprintf(tbuf+toff, tlen-toff, " %s", argiter_orig[i]);
+    if (tret < 0 || (size_t)tret >= tlen - toff)
+    {
+      _exit(1);
+    }
+    toff += tret;
+  }
+  tret = snprintf(tbuf+toff, tlen-toff, "\n");
+  if (tret < 0 || (size_t)tret >= tlen - toff)
+  {
+    _exit(1);
+  }
+  toff += tret;
+  /*
+   * Why not writev, you ask. Well, writev is not atomic for terminals, at
+   * least on Linux. And, writev requires us to allocate memory for the iovec
+   * list too.
+   */
+  write(1, tbuf, toff);
+  free(tbuf); // We could let it leak, too...
 }
 
 const char *makecmds[] = {
