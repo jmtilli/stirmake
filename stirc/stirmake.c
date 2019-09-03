@@ -149,6 +149,7 @@ int jobserver_fd[2];
 struct stringtabentry {
   struct abce_rb_tree_node node;
   char *string;
+  size_t len;
   size_t idx;
 };
 
@@ -407,16 +408,35 @@ void update_recursive_pid(int parent)
   setenv("STIRMAKEPID", buf, 1);
 }
 
-static inline int stringtabentry_cmp_asym(const char *str, struct abce_rb_tree_node *n2, void *ud)
+struct string_plus_len {
+  const char *str;
+  size_t len;
+};
+
+static inline int stringtabentry_cmp_asym(const struct string_plus_len *stringlen, struct abce_rb_tree_node *n2, void *ud)
 {
   struct stringtabentry *e = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
   int ret;
-  char *str2;
+  const char *str2, *str1;
+  size_t len2, len1;
+  size_t minlen;
+  str1 = stringlen->str;
+  len1 = stringlen->len;
   str2 = e->string;
-  ret = strcmp(str, str2);
+  len2 = e->len;
+  minlen = (len1 < len2) ? len1 : len2;
+  ret = memcmp(str1, str2, minlen);
   if (ret != 0)
   {
     return ret;
+  }
+  if (len1 < len2)
+  {
+    return -1;
+  }
+  if (len1 > len2)
+  {
+    return 1;
   }
   return 0;
 }
@@ -425,10 +445,21 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
   struct stringtabentry *e1 = ABCE_CONTAINER_OF(n1, struct stringtabentry, node);
   struct stringtabentry *e2 = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
   int ret;
-  ret = strcmp(e1->string, e2->string);
+  size_t len1 = e1->len;
+  size_t len2 = e2->len;
+  size_t minlen = (len1 < len2) ? len1 : len2;
+  ret = memcmp(e1->string, e2->string, minlen);
   if (ret != 0)
   {
     return ret;
+  }
+  if (len1 < len2)
+  {
+    return -1;
+  }
+  if (len1 > len2)
+  {
+    return 1;
   }
   return 0;
 }
@@ -534,6 +565,13 @@ void my_free(void *ptr)
 {
   // nop
 }
+void *my_strdup_len(const char *str, size_t sz)
+{
+  char *result = my_malloc(sz + 1);
+  memcpy(result, str, sz);
+  result[sz] = '\0';
+  return result;
+}
 void *my_strdup(const char *str)
 {
   size_t sz = strlen(str);
@@ -631,10 +669,11 @@ size_t stringtab_get(const char *symbol)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur_buf(HASH_SEED, symbol, strlen(symbol));
+  struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
+  hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
   hashloc = hashval % (sizeof(st)/sizeof(*st));
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym,
-NULL, symbol);
+NULL, &stringlen);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
@@ -647,17 +686,18 @@ size_t stringtab_add(const char *symbol)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur_buf(HASH_SEED, symbol, strlen(symbol));
+  struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
+  hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
   hashloc = hashval % (sizeof(st)/sizeof(*st));
-  n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, 
-NULL, symbol);
+  n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, NULL, &stringlen);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
   }
   stringtab_cnt++;
   struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
-  stringtabentry->string = my_strdup(symbol);
+  stringtabentry->string = my_strdup_len(symbol, stringlen.len);
+  stringtabentry->len = stringlen.len;
   if (st_cnt >= st_cap)
   {
     errxit("stringtab full");
