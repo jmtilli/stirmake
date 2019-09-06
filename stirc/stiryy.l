@@ -88,6 +88,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@endfunction return ENDFUNCTION;
 <INITIAL,STRICT>@locvar   return LOCVAR;
 <INITIAL,STRICT>@recdep   return RECDEP;
+<INITIAL,STRICT>@order   return ORDER;
 <INITIAL,STRICT>@orderonly   return ORDERONLY;
 <INITIAL,STRICT>@once return ONCE;
 <INITIAL,STRICT>@endonce return ENDONCE;

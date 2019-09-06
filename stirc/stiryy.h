@@ -123,10 +123,19 @@ struct stiryyrule {
   unsigned patfrozen:1;
 };
 
+struct stiryyorder {
+  char *rules[2];
+  char *rulesnodir[2];
+  int rulecnt;
+};
+
 struct stiryy_main {
   struct stiryyrule *rules;
   size_t rulesz;
   size_t rulecapacity;
+  struct stiryyorder *orders;
+  size_t ordersz;
+  size_t ordercapacity;
   struct abce *abce;
   char *realpathname;
   int subdirseen;
@@ -311,6 +320,37 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   free(can);
 }
 
+static inline void stiryy_main_set_order(struct stiryy_main *main, const char *curprefix, const char *name)
+{
+  struct stiryyorder *order = &main->orders[main->ordersz - 1];
+  size_t sz = strlen(curprefix) + strlen(name) + 2;
+  char *can, *tmp = malloc(sz);
+  if (name[0] == '/')
+  {
+    if (snprintf(tmp, sz, "%s", name) >= sz)
+    {
+      my_abort();
+    }
+  }
+  else
+  {
+    if (snprintf(tmp, sz, "%s/%s", curprefix, name) >= sz)
+    {
+      my_abort();
+    }
+  }
+  can = canon(tmp);
+  free(tmp);
+  if (order->rulecnt >= 2)
+  {
+    my_abort();
+  }
+  order->rules[order->rulecnt] = strdup(can); // Let's copy it to compact it
+  order->rulesnodir[order->rulecnt] = strdup(name);
+  order->rulecnt++;
+  free(can);
+}
+
 static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
@@ -355,6 +395,32 @@ static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int
 static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly)
 {
   stiryy_main_set_dep(stiryy->main, stiryy->curprefix, dep, rec, orderonly);
+}
+
+static inline void stiryy_main_add_order(struct stiryy_main *main)
+{
+  size_t newcapacity;
+  if (main->ordersz >= main->ordercapacity)
+  {
+    newcapacity = 2*main->ordercapacity + 1;
+    main->orders = (struct stiryyorder*)realloc(main->orders, sizeof(*main->orders)*newcapacity);
+    main->ordercapacity = newcapacity;
+  }
+  main->orders[main->ordersz].rulecnt = 0;
+  main->orders[main->ordersz].rules[0] = NULL;
+  main->orders[main->ordersz].rules[1] = NULL;
+  main->ordersz++;
+}
+
+
+static inline void stiryy_add_order(struct stiryy *stiryy)
+{
+  stiryy_main_add_order(stiryy->main);
+}
+
+static inline void stiryy_set_order(struct stiryy *stiryy, const char *name)
+{
+  stiryy_main_set_order(stiryy->main, stiryy->curprefix, name);
 }
 
 static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const char *curprefix, const char *tgt)

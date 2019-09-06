@@ -218,6 +218,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token ENDFUNCTION
 %token LOCVAR
 %token RECDEP
+%token ORDER
 %token ORDERONLY
 %token DEPONLY
 
@@ -506,8 +507,56 @@ custom_callable:
 }
 ;
 
+ordertoken:
+  FREEFORM_TOKEN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_set_order(stiryy, $1);
+  }
+  free($1);
+}
+| tgtdepref
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    int ret;
+    char **strs;
+    size_t strsz;
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+
+    ret = engine_stringlist(get_abce(amyplanyy), $1, "order spec", &strs, &strsz);
+
+    if (ret)
+    {
+      stiryyerror(scanner, stiryy, "error in @order");
+      YYABORT;
+    }
+
+    if (strsz != 1)
+    {
+      stiryyerror(scanner, stiryy, "error in @order: stringlist size not 1");
+      YYABORT;
+    }
+
+    stiryy_set_order(stiryy, strs[0]);
+    free(strs[0]);
+    free(strs);
+  }
+}
+;
+
 custom_rule:
-  stirrule
+  ORDER
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    stiryy_add_order(stiryy);
+  }
+}
+  ordertoken ordertoken NEWLINE
+| stirrule
 | PERCENTLUA_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))
