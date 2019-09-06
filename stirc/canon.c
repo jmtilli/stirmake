@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "canon.h"
 
@@ -181,4 +182,60 @@ char *construct_backpath(const char *frontpath)
   }
   *ptr++ = '\0';
   return ret;
+}
+
+char *neighpath(const char *path, const char *file)
+{
+  char *pathcanon, *filecanon;
+  char *pathslash, *fileslash;
+  filecanon = canon(file);
+  if (filecanon == NULL)
+  {
+    return NULL;
+  }
+  pathcanon = canon(path);
+  if (pathcanon == NULL)
+  {
+    free(filecanon);
+    return NULL;
+  }
+  file = filecanon;
+  path = pathcanon;
+  for (;;)
+  {
+    pathslash = strchr(path, '/');
+    fileslash = strchr(file, '/');
+    if (   pathslash == NULL || fileslash == NULL
+        || pathslash - path != fileslash - file)
+    {
+      char *bp = construct_backpath(path);
+      size_t bufsiz;
+      char *buf;
+      if (bp == NULL)
+      {
+        free(pathcanon);
+        free(filecanon);
+        return NULL;
+      }
+      bufsiz = strlen(bp)+strlen(file)+2;
+      buf = malloc(bufsiz);
+      if (buf == NULL)
+      {
+        free(bp);
+        free(pathcanon);
+        free(filecanon);
+        return NULL;
+      }
+      if (snprintf(buf, bufsiz, "%s/%s", bp, file) >= bufsiz)
+      {
+        abort();
+      }
+      free(bp);
+      free(pathcanon);
+      free(filecanon);
+      return buf;
+    }
+    file = fileslash + 1;
+    path = pathslash + 1;
+  }
 }

@@ -7,4 +7,6 @@ char *canon(const char *old);
 
 char *construct_backpath(const char *frontpath);
 
+char *neighpath(const char *path, const char *file);
+
 #endif
