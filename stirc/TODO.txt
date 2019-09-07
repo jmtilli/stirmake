@@ -31,3 +31,5 @@
 - setting number of tokens a job requires
 
 - @ignore, @noecho and @ismake for sub-commands
+
+- remove targets that are being built if stirmake is interrupted
