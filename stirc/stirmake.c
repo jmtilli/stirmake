@@ -3383,7 +3383,6 @@ int do_exec(int ruleid)
       LINKED_LIST_FOR_EACH(node, &r->tgtlist)
       {
         struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-        struct stat statbuf;
         if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
         {
           has_to_exec = 1;
@@ -3392,15 +3391,17 @@ int do_exec(int ruleid)
         {
           printf("statting %s\n", sttable[e->tgtidx]);
         }
-        if (stat(sttable[e->tgtidx], &statbuf) != 0)
+        struct stathashentry *she;
+        she = lstat_cached(e->tgtidx);
+        if (she->ret != 0)
         {
           has_to_exec = 1;
           //break; // can't break, has to compare all commands from DB
           continue;
         }
-        if (!seen_tgt || ts_cmp(statbuf.st_mtim, st_mtimtgt) < 0)
+        if (!seen_tgt || ts_cmp(she->st_mtim, st_mtimtgt) < 0)
         {
-          st_mtimtgt = statbuf.st_mtim;
+          st_mtimtgt = she->st_mtim;
         }
         seen_tgt = 1;
       }
@@ -3428,7 +3429,7 @@ int do_exec(int ruleid)
       {
         struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
         struct stat statbuf;
-        if (stat(sttable[e->tgtidx], &statbuf) != 0)
+        if (lstat(sttable[e->tgtidx], &statbuf) != 0)
         {
           has_to_exec = 1;
           break;
@@ -3744,7 +3745,7 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      if (stat(sttable[e->tgtidx], &statbuf) != 0)
+      if (lstat(sttable[e->tgtidx], &statbuf) != 0)
       {
         fprintf(stderr, "stirmake: *** Target %s was not created by rule.\n",
                sttable[e->tgtidx]);
@@ -4450,7 +4451,7 @@ void do_clean(char *fwd_path, int objs, int bins)
         char *name = sttable[tgt->tgtidx];
         struct stat statbuf;
         int ret = 0;
-        ret = stat(name, &statbuf);
+        ret = lstat(name, &statbuf);
         if (ret != 0 && errno == ENOENT)
         {
           continue;
