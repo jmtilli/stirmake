@@ -10,9 +10,6 @@
 
 - memory leaks
 
-- ".ORDER: a b" statement to specify that if both a and b are built, a
-  is built before b
-
 - ".WAIT" dependency so that "a: b .WAIT c" executes b first and c only after
   b has been executed (assuming no other rules would cause c to be executed)
 

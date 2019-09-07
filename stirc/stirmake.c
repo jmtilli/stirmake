@@ -941,6 +941,7 @@ struct rule {
   unsigned is_distcleanhook:1;
   unsigned is_bothcleanhook:1;
   unsigned is_forked:1;
+  unsigned is_traversed:1;
   size_t diridx;
   struct cmdsrc cmdsrc;
   struct cmd cmd; // calculated from cmdsrc
@@ -1824,7 +1825,7 @@ void ins_ruleid_by_dep(size_t depidx, int ruleid)
   return;
 }
 
-void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *parents)
+void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *parents, int mark_traversed)
 {
   struct linked_list_node *node;
   if (no_cycles[cur])
@@ -1858,14 +1859,18 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
     int ruleid = get_ruleid_by_tgt(e->nameidx);
     if (ruleid >= 0)
     {
-      better_cycle_detect_impl(ruleid, no_cycles, parents);
+      better_cycle_detect_impl(ruleid, no_cycles, parents, mark_traversed);
     }
   }
   parents[cur] = 0;
   no_cycles[cur] = 1;
+  if (mark_traversed)
+  {
+    rules[cur]->is_traversed = 1;
+  }
 }
 
-unsigned char *better_cycle_detect(int cur)
+unsigned char *better_cycle_detect(int cur, int mark_traversed)
 {
   unsigned char *no_cycles, *parents;
   no_cycles = malloc(rules_size);
@@ -1874,7 +1879,7 @@ unsigned char *better_cycle_detect(int cur)
   memset(no_cycles, 0, rules_size);
   memset(parents, 0, rules_size);
 
-  better_cycle_detect_impl(cur, no_cycles, parents);
+  better_cycle_detect_impl(cur, no_cycles, parents, mark_traversed);
   free(parents);
   return no_cycles;
 }
@@ -5071,7 +5076,7 @@ out:
     LINKED_LIST_FOR_EACH(node, &rules_remain_list)
     {
       int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
-      free(better_cycle_detect(ruleid));
+      free(better_cycle_detect(ruleid, 0));
     }
     my_abort();
   }
@@ -5124,6 +5129,56 @@ int my_get_nprocs(void)
 #endif
 }
 
+void process_orders(struct stiryy_main *main)
+{
+  size_t i;
+
+  if (!deps_remain_calculated)
+  {
+    abort();
+  }
+
+  for (i = 0; i < main->ordersz; i++)
+  {
+    struct rule *rule;
+    if (main->orders[i].rulecnt != 2)
+    {
+      my_abort();
+    }
+    size_t first = stringtab_get(main->orders[i].rules[0]);
+    size_t second = stringtab_get(main->orders[i].rules[1]);
+    if (first == (size_t)-1)
+    {
+      errxit("@order rule '%s' not found", main->orders[i].rules[0]);
+    }
+    if (second == (size_t)-1)
+    {
+      errxit("@order rule '%s' not found", main->orders[i].rules[1]);
+    }
+    int firstrule = get_ruleid_by_tgt(first);
+    int secondrule = get_ruleid_by_tgt(second);
+    if (firstrule < 0)
+    {
+      errxit("@order rule '%s' not found", main->orders[i].rules[0]);
+    }
+    if (secondrule < 0)
+    {
+      errxit("@order rule '%s' not found", main->orders[i].rules[1]);
+    }
+    if (!rules[firstrule]->is_traversed || !rules[secondrule]->is_traversed)
+    {
+      continue;
+    }
+    rule = rules[secondrule];
+    ins_dep(rule, first, rule->diridx, (size_t)-1, 0, 0, 0);
+    ins_ruleid_by_dep(first, secondrule);
+    if (debug)
+    {
+      printf("added order %s %s\n", main->orders[i].rules[0], main->orders[i].rules[1]);
+    }
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -5149,6 +5204,7 @@ int main(int argc, char **argv)
   int ruleid_first = 0;
   int ruleid_first_set = 0;
   char *outsyncmflag = NULL;
+  struct linked_list_node *node;
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
@@ -5897,7 +5953,7 @@ int main(int argc, char **argv)
 
   if (optind == argc)
   {
-    free(better_cycle_detect(ruleid_first));
+    //free(better_cycle_detect(ruleid_first, 1));
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
@@ -5915,7 +5971,7 @@ int main(int argc, char **argv)
       {
         errxit("rule '%s' not found", argv[i]);
       }
-      free(better_cycle_detect(ruleid));
+      //free(better_cycle_detect(ruleid, 1));
       //ruleremain_add(rules[ruleid]); // later!
     }
     if (clean || cleanbinaries)
@@ -5930,7 +5986,7 @@ int main(int argc, char **argv)
       {
         errxit("rule '%s' not found", argv[i]);
       }
-      free(better_cycle_detect(ruleid));
+      //free(better_cycle_detect(ruleid, 0));
       ruleremain_add(rules[ruleid]);
     }
   }
@@ -5952,7 +6008,7 @@ int main(int argc, char **argv)
       {
         errxit("rule '%s' not found", argv[i]);
       }
-      free(better_cycle_detect(ruleid));
+      //free(better_cycle_detect(ruleid, 1));
       //ruleremain_add(rules[ruleid]); // later!
       free(can);
     }
@@ -5976,7 +6032,7 @@ int main(int argc, char **argv)
       {
         errxit("rule '%s' not found", argv[i]);
       }
-      free(better_cycle_detect(ruleid));
+      //free(better_cycle_detect(ruleid, 0));
       ruleremain_add(rules[ruleid]);
       free(can);
     }
@@ -5999,7 +6055,7 @@ int main(int argc, char **argv)
       {
         errxit("rule '%s' not found", argv[i]);
       }
-      free(better_cycle_detect(ruleid));
+      //free(better_cycle_detect(ruleid, 1));
       //ruleremain_add(rules[ruleid]); // later!
       free(can);
     }
@@ -6023,7 +6079,7 @@ int main(int argc, char **argv)
       {
         errxit("rule '%s' not found", argv[i]);
       }
-      free(better_cycle_detect(ruleid));
+      //free(better_cycle_detect(ruleid, 0));
       ruleremain_add(rules[ruleid]);
       free(can);
     }
@@ -6037,6 +6093,23 @@ int main(int argc, char **argv)
       calc_deps_remain(rules[i]);
     }
     deps_remain_calculated = 1;
+  }
+
+  LINKED_LIST_FOR_EACH(node, &rules_remain_list)
+  {
+    int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
+    free(better_cycle_detect(ruleid, 1));
+  }
+
+  process_orders(&main);
+
+  if (main.ordersz > 0)
+  {
+    LINKED_LIST_FOR_EACH(node, &rules_remain_list)
+    {
+      int ruleid = ABCE_CONTAINER_OF(node, struct rule, remainllnode)->ruleid;
+      free(better_cycle_detect(ruleid, 0));
+    }
   }
 
   run_loop();
