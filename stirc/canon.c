@@ -188,6 +188,16 @@ char *neighpath(const char *path, const char *file)
 {
   char *pathcanon, *filecanon;
   const char *pathslash, *fileslash;
+  size_t pathlen;
+  if (file[0] == '/' || strcmp(path, ".") == 0)
+  {
+    return strdup(file);
+  }
+  pathlen = strlen(path);
+  if (strncmp(path, file, pathlen) == 0 && file[pathlen] == '/')
+  {
+    return strdup(file+pathlen+1);
+  }
   filecanon = canon(file);
   if (filecanon == NULL)
   {
