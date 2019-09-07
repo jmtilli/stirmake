@@ -29,3 +29,5 @@
 - Custom errors to strings
 
 - setting number of tokens a job requires
+
+- @wait might be buggy
