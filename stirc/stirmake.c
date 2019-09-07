@@ -871,6 +871,7 @@ struct dep_remain {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
   int ruleid;
+  int waitcnt;
 };
 
 static inline int dep_remain_cmp_asym(int ruleid, struct abce_rb_tree_node *n2, void *ud)
@@ -1606,7 +1607,23 @@ int deps_remain_has(struct rule *rule, int ruleid)
   return n != NULL;
 }
 
-void deps_remain_erase(struct rule *rule, int ruleid, int waitcnt_decrement)
+void deps_remain_forwait(struct rule *rule, int ruleid)
+{
+  struct abce_rb_tree_node *n;
+  uint32_t hashval;
+  size_t hashloc;
+  hashval = abce_murmur32(HASH_SEED, ruleid);
+  hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
+  if (n == NULL)
+  {
+    abort();
+  }
+  struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
+  dep_remain->waitcnt++;
+}
+
+void deps_remain_erase(struct rule *rule, int ruleid)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -1622,10 +1639,7 @@ void deps_remain_erase(struct rule *rule, int ruleid, int waitcnt_decrement)
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
   linked_list_delete(&dep_remain->llnode);
   rule->deps_remain_cnt--;
-  if (waitcnt_decrement)
-  {
-    rule->wait_remain_cnt--;
-  }
+  rule->wait_remain_cnt -= dep_remain->waitcnt;
   my_free(dep_remain);
 }
 
@@ -1646,6 +1660,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   dep_remain_cnt++;
   struct dep_remain *dep_remain = my_malloc(sizeof(struct dep_remain));
   dep_remain->ruleid = ruleid;
+  dep_remain->waitcnt = 0;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
   {
     printf("4\n");
@@ -3579,6 +3594,7 @@ int consider(int ruleid)
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
         toexecute = 1;
+        deps_remain_forwait(r, idbytgt);
         r->wait_remain_cnt++;
       }
     }
@@ -3641,10 +3657,10 @@ void reconsider(int ruleid, int ruleid_executed)
       printf("rule not executing %s\n", sttable[first_tgt->tgtidx]);
     }
     // Must do this always in case the rule is to be executed in future.
-    deps_remain_erase(r, ruleid_executed, 0);
+    deps_remain_erase(r, ruleid_executed);
     return;
   }
-  deps_remain_erase(r, ruleid_executed, 1);
+  deps_remain_erase(r, ruleid_executed);
   //if (!linked_list_is_empty(&r->depremainlist))
   if (r->deps_remain_cnt > 0)
   {
@@ -3687,6 +3703,7 @@ void reconsider(int ruleid, int ruleid_executed)
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
         toexecute2 = 1;
+        deps_remain_forwait(r, idbytgt);
         r->wait_remain_cnt++;
       }
     }

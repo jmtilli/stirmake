@@ -4,6 +4,7 @@
 @phonyrule: 'all': 'a' @wait 'b' @wait 'c' @wait 'd'
 @phonyrule: 'nowait': 'a' 'b' 'c' 'd'
 @phonyrule: 'two': 'a' 'b' @wait 'c' 'd'
+@phonyrule: 'messed': 'a2' @wait 'b2' @wait 'c2' @wait 'd2'
 
 @phonyrule: 'a':
 	echo a
@@ -13,3 +14,10 @@
 	echo c
 @phonyrule: 'd':
 	echo d
+
+'a2' 'c2':
+	touch a2
+	touch c2
+'b2' 'd2':
+	touch b2
+	touch d2

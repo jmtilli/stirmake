@@ -29,14 +29,3 @@
 - Custom errors to strings
 
 - setting number of tokens a job requires
-
-- @wait might be buggy: if a b @wait c d and c is executed for some other
-  reason, we have miscalculation... Wa need another hash table for @wait
-
-- A thing to think about @wait: what if we have:
-
-@phonyrule: 'all': 'a' @wait 'b' @wait 'c' @wait 'd'
-@phonyrule: 'a' 'c':
-	echo ac
-@phonyrule: 'b' 'd':
-	echo bd
