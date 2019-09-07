@@ -1,0 +1,14 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'a' @wait 'b' @wait 'c' @wait 'd'
+@phonyrule: 'nowait': 'a' 'b' 'c' 'd'
+
+@phonyrule: 'a':
+	echo a
+@phonyrule: 'b':
+	echo b
+@phonyrule: 'c':
+	echo c
+@phonyrule: 'd':
+	echo d

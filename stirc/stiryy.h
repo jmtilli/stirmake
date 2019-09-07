@@ -90,6 +90,7 @@ struct dep {
   char *namenodir;
   int rec;
   int orderonly;
+  int wait;
 };
 struct tgt {
   char *name;
@@ -280,7 +281,7 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
   stiryy->main->cdepincludesz++;
 }
 
-static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly)
+static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
@@ -316,6 +317,7 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   rule->deps[rule->depsz].namenodir = strdup(dep);
   rule->deps[rule->depsz].rec = rec;
   rule->deps[rule->depsz].orderonly = orderonly;
+  rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
   free(can);
 }
@@ -351,7 +353,7 @@ static inline void stiryy_main_set_order(struct stiryy_main *main, const char *c
   free(can);
 }
 
-static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly)
+static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
@@ -383,18 +385,19 @@ static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *cur
   rule->deps[rule->depsz].namenodir = strdup(dep);
   rule->deps[rule->depsz].rec = rec;
   rule->deps[rule->depsz].orderonly = orderonly;
+  rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
   free(can);
 }
 
-static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly)
+static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait)
 {
-  stiryy_main_set_patdep(stiryy->main, stiryy->curprefix, dep, rec, orderonly);
+  stiryy_main_set_patdep(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait);
 }
 
-static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly)
+static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait)
 {
-  stiryy_main_set_dep(stiryy->main, stiryy->curprefix, dep, rec, orderonly);
+  stiryy_main_set_dep(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait);
 }
 
 static inline void stiryy_main_add_order(struct stiryy_main *main)

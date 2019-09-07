@@ -14,7 +14,7 @@ int add_rule_yy(struct stiryy_main *main, struct tgt *tgts, size_t tgtsz,
 int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 char **deps, size_t depsz,
                                 char *prefix,
-                                int rec, int orderonly);
+                                int rec, int orderonly, int wait);
 
 void *my_memrchr(const void *s, int c, size_t n);
 

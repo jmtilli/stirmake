@@ -219,6 +219,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token LOCVAR
 %token RECDEP
 %token ORDER
+%token WAIT
 %token ORDERONLY
 %token DEPONLY
 
@@ -3150,13 +3151,17 @@ maybe_rec:
 {
   $$ = 0;
 }
-| RECDEP
+| maybe_rec RECDEP
 {
-  $$ = 1;
+  $$ = ((int)$$) | 1;
 }
-| ORDERONLY
+| maybe_rec ORDERONLY
 {
-  $$ = 2;
+  $$ = ((int)$$) | 2;
+}
+| maybe_rec WAIT
+{
+  $$ = ((int)$$) | 4;
 }
 ;
 
@@ -3171,7 +3176,7 @@ patdeps:
       stiryy->main->freeform_token_seen=1;
     }
     //printf("dep %s rec? %d\n", $3, (int)$2);
-    stiryy_set_patdep(stiryy, $3, $2 == 1, $2 == 2);
+    stiryy_set_patdep(stiryy, $3, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
   }
   free($3);
 }
@@ -3195,7 +3200,7 @@ patdeps:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_patdep(stiryy, strs[i], $2 == 1, $2 == 2);
+      stiryy_set_patdep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
       free(strs[i]);
     }
     free(strs);
@@ -3214,7 +3219,7 @@ deps:
       stiryy->main->freeform_token_seen=1;
     }
     //printf("dep %s rec? %d\n", $3, (int)$2);
-    stiryy_set_dep(stiryy, $3, $2 == 1, $2 == 2);
+    stiryy_set_dep(stiryy, $3, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
   }
   free($3);
 }
@@ -3224,7 +3229,7 @@ deps:
   if (amyplanyy_do_emit(amyplanyy))
   {
     //printf("dep %s rec? %d\n", $3.str, (int)$2);
-    stiryy_set_dep(stiryy, $3.str, $2 == 1, $2 == 2);
+    stiryy_set_dep(stiryy, $3.str, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
   }
   free($3.str);
 }
@@ -3257,7 +3262,7 @@ deps:
 
     for (i = 0; i < strsz; i++)
     {
-      stiryy_set_dep(stiryy, strs[i], $2 == 1, $2 == 2);
+      stiryy_set_dep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
       free(strs[i]);
     }
     free(strs);

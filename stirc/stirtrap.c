@@ -1862,8 +1862,10 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb tree = {};
       struct abce_mb orderonly = {};
       struct abce_mb rec = {};
+      struct abce_mb wait = {};
       struct abce_mb *orderonlyres = NULL;
       struct abce_mb *recres = NULL;
+      struct abce_mb *waitres = NULL;
       if (abce_scope_get_userdata(&abce->dynscope))
       {
         prefix =
@@ -1940,12 +1942,31 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         orderonlyres = NULL;
       }
       abce_mb_refdn(abce, &orderonly);
+
+      wait = abce_mb_create_string_nul(abce, "wait");
+      if (wait.typ == ABCE_T_N)
+      {
+        abce_mb_refdn(abce, &depar);
+        abce_mb_refdn(abce, &tgtar);
+        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
+        abce_pop(abce);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      if (abce_tree_get_str(abce, &waitres, &tree, &wait) != 0)
+      {
+        waitres = NULL;
+      }
+      abce_mb_refdn(abce, &wait);
+
       if (recres && recres->typ != ABCE_T_B && recres->typ != ABCE_T_D)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, recres);
         //abce_mb_refdn(abce, &recres);
         //abce_mb_refdn(abce, &orderonlyres);
+        //abce_mb_refdn(abce, &waitres);
         abce_mb_refdn(abce, &depar);
         abce_mb_refdn(abce, &tgtar);
         abce_mb_refdn(abce, &tree);
@@ -1960,6 +1981,22 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce->err.mb = abce_mb_refup(abce, orderonlyres);
         //abce_mb_refdn(abce, &recres);
         //abce_mb_refdn(abce, &orderonlyres);
+        //abce_mb_refdn(abce, &waitres);
+        abce_mb_refdn(abce, &depar);
+        abce_mb_refdn(abce, &tgtar);
+        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
+        abce_pop(abce);
+        abce_pop(abce);
+        return -EINVAL;
+      }
+      if (waitres && waitres->typ != ABCE_T_B && waitres->typ != ABCE_T_D)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb = abce_mb_refup(abce, waitres);
+        //abce_mb_refdn(abce, &recres);
+        //abce_mb_refdn(abce, &orderonlyres);
+        //abce_mb_refdn(abce, &waitres);
         abce_mb_refdn(abce, &depar);
         abce_mb_refdn(abce, &tgtar);
         abce_mb_refdn(abce, &tree);
@@ -1987,7 +2024,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
                                         deps, depar.u.area->u.ar.size,
                                         prefix,
                                         recres && recres->u.d != 0,
-                                        orderonlyres && orderonlyres->u.d != 0)
+                                        orderonlyres && orderonlyres->u.d != 0,
+                                        waitres && waitres->u.d != 0)
             != 0)
         {
           abce->err.code = STIR_E_RULE_NOT_FOUND;
@@ -2015,7 +2053,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       for (i = 0; i < depar.u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &depar.u.area->u.ar.mbs[i];
-        stiryy_main_set_dep(main, prefix, mb->u.area->u.str.buf, recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0);
+        stiryy_main_set_dep(main, prefix, mb->u.area->u.str.buf, recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
       }
       stiryy_main_mark_deponly(main);
 

@@ -864,6 +864,7 @@ struct stirdep {
   size_t nameidxnodir;
   unsigned is_recursive:1;
   unsigned is_orderonly:1;
+  unsigned is_wait:1;
 };
 
 struct dep_remain {
@@ -958,6 +959,7 @@ struct rule {
   size_t deps_remain_cnt;
   size_t scopeidx;
   struct syncbuf output;
+  struct stirdep *waitloc;
 };
 
 char **argdup(char **cmdargs);
@@ -1531,7 +1533,7 @@ size_t stirdep_cnt;
 
 int ins_dep(struct rule *rule,
             size_t depidx, size_t diridx, size_t depidxnodir,
-            int is_recursive, int orderonly, int primary)
+            int is_recursive, int orderonly, int wait, int primary)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct stirdep *e;
@@ -1566,6 +1568,7 @@ int ins_dep(struct rule *rule,
 #endif
   e->is_recursive = !!is_recursive;
   e->is_orderonly = !!orderonly;
+  e->is_wait = !!wait;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
   if (ret == 0)
@@ -2114,7 +2117,7 @@ size_t rule_cnt;
 int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 char **deps, size_t depsz,
                                 char *prefix,
-                                int rec, int orderonly)
+                                int rec, int orderonly, int wait)
 {
   size_t i, j;
   size_t prefixlen = strlen(prefix);
@@ -2179,7 +2182,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                 deps[j]);
         return -ENOENT;
       }
-      ins_dep(rule, depidx, rule->diridx, (size_t)-1, rec, orderonly, 0);
+      ins_dep(rule, depidx, rule->diridx, (size_t)-1, rec, orderonly, wait, 0);
       deps_remain_insert(rule, otherid);
       ins_ruleid_by_dep(depidx, ruleid);
     }
@@ -2220,7 +2223,7 @@ void process_additional_deps(size_t global_scopeidx)
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-        ins_dep(rule, dep->depidx, rule->diridx, (size_t)-1, 0, 0, 0);
+        ins_dep(rule, dep->depidx, rule->diridx, (size_t)-1, 0, 0, 0, 0);
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
@@ -2241,7 +2244,7 @@ void process_additional_deps(size_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      ins_dep(rule, dep->depidx, rule->diridx, (size_t)-1, 0, 0, 0);
+      ins_dep(rule, dep->depidx, rule->diridx, (size_t)-1, 0, 0, 0, 0);
     }
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
@@ -2353,7 +2356,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     size_t nameidx = stringtab_add(deps[i].name);
     size_t nameidxnodir = stringtab_add(deps[i].namenodir);
-    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, 1) == 0)
+    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1) == 0)
     {
       ins_ruleid_by_dep(nameidx, rule->ruleid);
     }
@@ -3550,6 +3553,11 @@ int consider(int ruleid)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     int idbytgt = get_ruleid_by_tgt(e->nameidx);
+    r->waitloc = e;
+    if (toexecute && e->is_wait)
+    {
+      break;
+    }
     if (idbytgt >= 0)
     {
       if (consider(idbytgt))
@@ -3606,6 +3614,7 @@ void reconsider(int ruleid, int ruleid_executed)
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
   int toexecute = 0;
+  struct linked_list_node *node;
   if (debug)
   {
     printf("reconsidering %s\n", sttable[first_tgt->tgtidx]);
@@ -3635,7 +3644,6 @@ void reconsider(int ruleid, int ruleid_executed)
     toexecute = 1;
     if (debug)
     {
-      struct linked_list_node *node;
       printf("deps remain: %zu\n", r->deps_remain_cnt);
       LINKED_LIST_FOR_EACH(node, &r->depremainlist)
       {
@@ -3644,6 +3652,46 @@ void reconsider(int ruleid, int ruleid_executed)
         struct stirtgt *first_tgt =
           ABCE_CONTAINER_OF(rules[rem->ruleid]->tgtlist.node.next, struct stirtgt, llnode);
         printf("  dep_remain: %d / %s\n", rem->ruleid, sttable[first_tgt->tgtidx]);
+      }
+    }
+  }
+  int toexecute2 = 0;
+  for (node = &r->waitloc->llnode; node != &r->deplist.node; node = node->next)
+  {
+    struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+    int idbytgt = get_ruleid_by_tgt(e->nameidx);
+    r->waitloc = e;
+    if (toexecute2 && e->is_wait)
+    {
+      break;
+    }
+    if (idbytgt >= 0)
+    {
+      if (consider(idbytgt))
+      {
+        //execed_some = 1;
+      }
+      //execed_some = execed_some || consider(idbytgt); // BAD! DON'T DO THIS!
+      if (!rules[idbytgt]->is_executed)
+      {
+        if (debug)
+        {
+          printf("rule %d not executed, executing rule %d\n", idbytgt, ruleid);
+          //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
+        }
+        toexecute2 = 1;
+      }
+    }
+    else
+    {
+      if (debug)
+      {
+        printf("ruleid by target %s not found\n", sttable[e->nameidx]);
+      }
+      if (access(sttable[e->nameidx], F_OK) == -1)
+      {
+        errxit("No %s and rule not found", sttable[e->nameidx]);
+        exit(1);
       }
     }
   }
@@ -5170,7 +5218,7 @@ void process_orders(struct stiryy_main *main)
       continue;
     }
     rule = rules[secondrule];
-    ins_dep(rule, first, rule->diridx, (size_t)-1, 0, 0, 0);
+    ins_dep(rule, first, rule->diridx, (size_t)-1, 0, 0, 0, 0);
     ins_ruleid_by_dep(first, secondrule);
     if (debug)
     {
