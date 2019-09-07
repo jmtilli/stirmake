@@ -8,20 +8,20 @@
 .Nd scalable true implementation of recursive make
 .Sh SYNOPSIS
 .Nm stirmake
-.Op Fl bcdv
+.Op Fl bcdqv
 .Op Fl j Ar jobcnt
 .Op Fl f Ar Stirfile | Fl t | Fl p | Fl a
 .Op Ar target ...
 .Nm smka
-.Op Fl bcdv
+.Op Fl bcdqv
 .Op Fl j Ar jobcnt
 .Op Ar target ...
 .Nm smkp
-.Op Fl bcdv
+.Op Fl bcdqv
 .Op Fl j Ar jobcnt
 .Op Ar target ...
 .Nm smkt
-.Op Fl bcdv
+.Op Fl bcdqv
 .Op Fl j Ar jobcnt
 .Op Ar target ...
 .Sh DESCRIPTION
@@ -116,6 +116,9 @@ Build things relative to current directory. This is automatic if
 .Nm stirmake
 is invoked as 
 .Nm smkt .
+.It Fl q
+Exit with status 0 if target is up-to-date and with status 1 if target is
+not up-to-date. Don't do any build steps.
 .It Fl v
 Print version information and exit.
 .El
@@ -833,8 +836,12 @@ was included with
 .Sh "EXIT STATUS"
 .Nm stirmake
 exits with zero exit status for success, if all Stirfiles could be read, parsed
-and all targets / clean operations were successfully performed. An exit status
-of one is used for error cases.
+and all targets / clean operations were successfully performed, or if
+.Fl q
+was used and the targets are up-to-date. An exit status of one is used for
+.Fl q
+in cases where the targets are not up-do-date, and an exit status of two will
+be reported for error cases.
 .Sh "FILES"
 .Bl -column Stirfile -compact
 .It Pa Stirfile Ta instructions to build a module

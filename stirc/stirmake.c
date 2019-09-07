@@ -77,6 +77,8 @@ void subproc_sighup_handler(int x)
 struct abce abce = {};
 int abce_inited = 0;
 
+int test = 0;
+
 enum out_sync {
   OUT_SYNC_NONE = 0,
   OUT_SYNC_LINE = 1, // unsupported now
@@ -176,7 +178,7 @@ void errxit(const char *fmt, ...)
   if (pid < 0 && errno == ECHILD)
   {
     merge_db();
-    exit(1);
+    exit(2);
   }
   if (pid > 0)
   {
@@ -206,7 +208,7 @@ void errxit(const char *fmt, ...)
       {
         fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
         merge_db();
-        exit(1);
+        exit(2);
       }
       printf("29.E\n");
       my_abort();
@@ -548,7 +550,7 @@ void *my_malloc(size_t sz)
     if (my_arena == NULL || my_arena == MAP_FAILED)
     {
       errxit("Can't mmap new arena");
-      exit(1);
+      exit(2);
     }
     my_arena_ptr = my_arena;
     result = my_arena_ptr;
@@ -701,7 +703,7 @@ size_t stringtab_add(const char *symbol)
   if (st_cnt >= st_cap)
   {
     errxit("stringtab full");
-    exit(1);
+    exit(2);
   }
   sttable[st_cnt] = stringtabentry->string;
   stringtabentry->idx = st_cnt++;
@@ -815,7 +817,7 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
   if (ret != 0)
   {
     errxit("ruleid by tgt %s already exists", sttable[tgtidx]);
-    exit(1); // FIXME print (filename, linenumber) pair
+    exit(2); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
 }
@@ -1512,7 +1514,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir, int is_dist)
   if (ret != 0)
   {
     errxit("Target %s already exists in rule", sttable[tgtidx]);
-    exit(1); // FIXME print (filename, linenumber) pair
+    exit(2); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
 }
@@ -1873,7 +1875,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
       }
     }
     errxit("cycle found, cannot proceed further");
-    exit(1);
+    exit(2);
   }
   parents[cur] = 1;
   LINKED_LIST_FOR_EACH(node, &rules[cur]->deplist)
@@ -2331,12 +2333,12 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   if (tgtsz <= 0)
   {
     errxit("Rules must have at least 1 target");
-    exit(1);
+    exit(2);
   }
   if (phony && tgtsz != 1)
   {
     errxit("Phony rules must not have multiple targets");
-    exit(1);
+    exit(2);
   }
   if (debug)
   {
@@ -2814,7 +2816,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     errxit("Unable to fork child");
     my_abort();
-    exit(1);
+    exit(2);
   }
   else if (pid == 0)
   {
@@ -3079,13 +3081,13 @@ struct timespec rec_mtim(struct rule *r, const char *name)
   if (stat(name, &statbuf) != 0)
   {
     errxit("can't open file %s", name);
-    exit(1);
+    exit(2);
   }
   max = statbuf.st_mtim;
   if (lstat(name, &statbuf) != 0)
   {
     errxit("can't open file %s", name);
-    exit(1);
+    exit(2);
   }
   if (ts_cmp(statbuf.st_mtim, max) > 0)
   {
@@ -3094,7 +3096,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
   if (dir == NULL)
   {
     errxit("can't open dir %s", name);
-    exit(1);
+    exit(2);
   }
   for (;;)
   {
@@ -3132,13 +3134,13 @@ struct timespec rec_mtim(struct rule *r, const char *name)
       if (stat(nam2, &statbuf) != 0)
       {
         errxit("can't open file %s", nam2);
-        exit(1);
+        exit(2);
       }
       cur = statbuf.st_mtim;
       if (lstat(nam2, &statbuf) != 0)
       {
         errxit("can't open file %s", nam2);
-        exit(1);
+        exit(2);
       }
       if (ts_cmp(statbuf.st_mtim, cur) > 0)
       {
@@ -3220,7 +3222,7 @@ void reccap_mtim(const char *name, struct timespec cap)
   if (dir == NULL)
   {
     errxit("can't open dir %s", name);
-    exit(1);
+    exit(2);
   }
   for (;;)
   {
@@ -3257,7 +3259,7 @@ void reccap_mtim(const char *name, struct timespec cap)
       if (stat(nam2, &statbuf) != 0)
       {
         errxit("can't open file %s", nam2);
-        exit(1);
+        exit(2);
       }
       if (ts_cmp(statbuf.st_mtim, cap) > 0)
       {
@@ -3266,7 +3268,7 @@ void reccap_mtim(const char *name, struct timespec cap)
       if (lstat(nam2, &statbuf) != 0)
       {
         errxit("can't open file %s", nam2);
-        exit(1);
+        exit(2);
       }
       if (ts_cmp(statbuf.st_mtim, cap) > 0)
       {
@@ -3297,7 +3299,7 @@ void reccap_mtim(const char *name, struct timespec cap)
   if (stat(name, &statbuf) != 0)
   {
     errxit("can't open file %s", name);
-    exit(1);
+    exit(2);
   }
   if (ts_cmp(statbuf.st_mtim, cap) > 0)
   {
@@ -3306,7 +3308,7 @@ void reccap_mtim(const char *name, struct timespec cap)
   if (lstat(name, &statbuf) != 0)
   {
     errxit("can't open file %s", name);
-    exit(1);
+    exit(2);
   }
   if (ts_cmp(statbuf.st_mtim, cap) > 0)
   {
@@ -3607,7 +3609,7 @@ int consider(int ruleid)
       if (access(sttable[e->nameidx], F_OK) == -1)
       {
         errxit("No %s and rule not found", sttable[e->nameidx]);
-        exit(1);
+        exit(2);
       }
     }
   }
@@ -3716,7 +3718,7 @@ void reconsider(int ruleid, int ruleid_executed)
       if (access(sttable[e->nameidx], F_OK) == -1)
       {
         errxit("No %s and rule not found", sttable[e->nameidx]);
-        exit(1);
+        exit(2);
       }
     }
   }
@@ -4098,19 +4100,21 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-vdcb] [-j jobcnt] [target...]\n", argv0);
+    fprintf(stderr, "%s [-vdcbq] [-j jobcnt] [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
+    fprintf(stderr, "  -b and -c options are incompatible with -q\n");
   }
   else
   {
-    fprintf(stderr, "%s [-vdcb] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]\n", argv0);
+    fprintf(stderr, "%s [-vdcbq] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
+    fprintf(stderr, "  -b and -c options are incompatible with -q\n");
   }
-  exit(1);
+  exit(2);
 }
 
 void do_narration(void)
@@ -4166,7 +4170,7 @@ void recursion_misuse_prevention(void)
       fprintf(stderr, "stirmake: *** Recursion misuse detected.\n");
       fprintf(stderr, "stirmake: *** Stirmake is designed to be used non-recursively.\n");
       fprintf(stderr, "stirmake: *** Exiting.\n");
-      exit(1);
+      exit(2);
     }
   }
   update_recursive_pid(0);
@@ -4653,13 +4657,13 @@ void load_db(void)
   if (dbf == NULL)
   {
     fprintf(stderr, "stirmake: *** Can't open DB. Exiting.\n");
-    exit(1);
+    exit(2);
   }
   int dbfd = fileno(dbf);
   if (dbfd < 0)
   {
     fprintf(stderr, "stirmake: *** Can't get DB fileno. Exiting.\n");
-    exit(1);
+    exit(2);
   }
   fl.l_type = F_WRLCK;
   fl.l_whence = SEEK_SET;
@@ -4668,13 +4672,13 @@ void load_db(void)
   if (fcntl(dbfd, F_SETLK, &fl) != 0)
   {
     fprintf(stderr, "stirmake: *** Can't lock DB. Other stirmake running? Exiting.\n");
-    exit(1);
+    exit(2);
   }
   ret = dbyydoparse(dbf, &dbyy);
-  if (ftruncate(dbfd, 0) != 0)
+  if (!test && ftruncate(dbfd, 0) != 0)
   {
     fprintf(stderr, "stirmake: *** Can't truncate DB. Exiting.\n");
-    exit(1);
+    exit(2);
   }
   if (ret)
   {
@@ -4697,6 +4701,10 @@ void merge_db(void)
   struct linked_list_node *node;
   FILE *f;
   int firstrule = 1;
+  if (test)
+  {
+    return;
+  }
   for (i = 0; i < rules_size; i++)
   {
     struct rule *rule = rules[i];
@@ -4731,7 +4739,7 @@ void merge_db(void)
   if (f == NULL)
   {
     fprintf(stderr, "Can't open .stir.db"); // can't use errxit
-    exit(1);
+    exit(2);
   }
   */
   f = dbf;
@@ -4852,7 +4860,7 @@ void do_setrlimit(void)
   if (getrlimit(RLIMIT_CORE, &corelimit))
   {
     perror("can't getrlimit");
-    exit(1);
+    exit(2);
   }
   corelimit.rlim_cur = 256*1024*1024;
   if (   corelimit.rlim_max != RLIM_INFINITY
@@ -4863,7 +4871,7 @@ void do_setrlimit(void)
   if (setrlimit(RLIMIT_CORE, &corelimit))
   {
     perror("can't setrlimit");
-    exit(1);
+    exit(2);
   }
 }
 
@@ -4927,8 +4935,16 @@ back:
 
   if (ruleids_to_run_size == 0)
   {
+    if (test)
+    {
+      exit(0);
+    }
     fprintf(stderr, "stirmake: Nothing to be done.\n");
     goto out;
+  }
+  else if (test)
+  {
+    exit(1);
   }
 
   while (ruleids_to_run_size > 0)
@@ -4986,19 +5002,19 @@ back:
     {
       handle_signal(SIGTERM);
       errxit("Got SIGTERM");
-      exit(1);
+      exit(2);
     }
     if (sigint_atomic)
     {
       handle_signal(SIGINT);
       errxit("Got SIGINT");
-      exit(1);
+      exit(2);
     }
     if (sighup_atomic)
     {
       handle_signal(SIGHUP);
       errxit("Got SIGHUP");
-      exit(1);
+      exit(2);
     }
     int fdit;
     for (fdit = 0; fdit <= globmaxfd; fdit++)
@@ -5344,7 +5360,7 @@ int main(int argc, char **argv)
   if (sttable == NULL || sttable == MAP_FAILED)
   {
     errxit("Can't mmap sttable");
-    exit(1);
+    exit(2);
   }
 
   sizeof_my_arena = 1024*1024;
@@ -5352,7 +5368,7 @@ int main(int argc, char **argv)
   if (my_arena == NULL || my_arena == MAP_FAILED)
   {
     errxit("Can't mmap arena");
-    exit(1);
+    exit(2);
   }
   my_arena_ptr = my_arena;
 
@@ -5397,7 +5413,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:q")) != -1)
   {
     switch (opt)
     {
@@ -5405,6 +5421,9 @@ int main(int argc, char **argv)
       version(argv[0]);
     case 'd':
       debug = 1;
+      break;
+    case 'q':
+      test = 1;
       break;
     case 'O':
       if (optarg[0] == 'n')
@@ -5485,6 +5504,11 @@ int main(int argc, char **argv)
     case 'h':
       usage(argv[0]);
     }
+  }
+
+  if (test && (clean || cleanbinaries))
+  {
+    usage(argv[0]);
   }
 
   if (mode == MODE_NONE && !filename_set)
@@ -5666,7 +5690,7 @@ int main(int argc, char **argv)
           if (strcnt(tgt, '%') != 1)
           {
             errxit("Target %s must have exactly one %% sign", tgt);
-            exit(1);
+            exit(2);
           }
           loc = strchr(tgt, '%');
           locp1 = loc+1;
@@ -5674,12 +5698,12 @@ int main(int argc, char **argv)
           if (memcmp(basenodir, tgt, loc-tgt) != 0)
           {
             errxit("Target %s didn't match base %s", tgt, basenodir);
-            exit(1);
+            exit(2);
           }
           if (memcmp(basenodir+strlen(basenodir)-locp1sz, locp1, locp1sz) != 0)
           {
             errxit("Target %s didn't match base %s", tgt, basenodir);
-            exit(1);
+            exit(2);
           }
           meatsz = strlen(basenodir)-strlen(tgt)+1;
           meat = malloc(meatsz+1);
@@ -5697,7 +5721,7 @@ int main(int argc, char **argv)
             if (strcnt(tgt, '%') != 1)
             {
               errxit("Target %s must have exactly one %% sign", tgt);
-              exit(1);
+              exit(2);
             }
             loc = strchr(tgt, '%');
             locp1 = loc+1;
@@ -5733,7 +5757,7 @@ int main(int argc, char **argv)
             if (strcnt(dep, '%') > 1)
             {
               errxit("Dep %s must have exactly zero or one %% signs", dep);
-              exit(1);
+              exit(2);
             }
             loc = strchr(dep, '%');
             if (loc == NULL)
