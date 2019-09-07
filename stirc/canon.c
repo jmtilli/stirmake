@@ -187,7 +187,7 @@ char *construct_backpath(const char *frontpath)
 char *neighpath(const char *path, const char *file)
 {
   char *pathcanon, *filecanon;
-  char *pathslash, *fileslash;
+  const char *pathslash, *fileslash;
   filecanon = canon(file);
   if (filecanon == NULL)
   {
@@ -205,17 +205,30 @@ char *neighpath(const char *path, const char *file)
   {
     pathslash = strchr(path, '/');
     fileslash = strchr(file, '/');
-    if (   pathslash == NULL || fileslash == NULL
-        || pathslash - path != fileslash - file)
+    if (pathslash == NULL)
     {
-      char *bp = construct_backpath(path);
+      pathslash = path + strlen(path);
+    }
+    if (fileslash == NULL)
+    {
+      fileslash = file + strlen(file);
+    }
+    if (   pathslash - path != fileslash - file
+        || pathslash - path == 0
+        || memcmp(path, file, pathslash - path) != 0)
+    {
+      char *bp = construct_backpath((*path) ? path : ".");
       size_t bufsiz;
-      char *buf;
+      char *buf, *result;
       if (bp == NULL)
       {
         free(pathcanon);
         free(filecanon);
         return NULL;
+      }
+      if (*file == '\0')
+      {
+        file = ".";
       }
       bufsiz = strlen(bp)+strlen(file)+2;
       buf = malloc(bufsiz);
@@ -233,9 +246,11 @@ char *neighpath(const char *path, const char *file)
       free(bp);
       free(pathcanon);
       free(filecanon);
-      return buf;
+      result = canon(buf);
+      free(buf);
+      return result;
     }
-    file = fileslash + 1;
-    path = pathslash + 1;
+    file = (*fileslash) ? (fileslash + 1) : fileslash;
+    path = (*pathslash) ? (pathslash + 1) : pathslash;
   }
 }
