@@ -29,3 +29,5 @@
 - @order and @wait to README.md
 
 - setting number of tokens a job requires
+
+- @ignore, @noecho and @ismake for sub-commands
