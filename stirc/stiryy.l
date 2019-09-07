@@ -83,6 +83,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@autophony return AUTOPHONY;
 <INITIAL,STRICT>@autotarget return AUTOTARGET;
 <INITIAL,STRICT>@ignore return IGNORE;
+<INITIAL,STRICT>@noecho return NOECHO;
 
 <INITIAL,STRICT>@function return FUNCTION;
 <INITIAL,STRICT>@endfunction return ENDFUNCTION;

@@ -256,6 +256,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token AUTOPHONY
 %token AUTOTARGET
 %token IGNORE
+%token NOECHO
 %token DYNO
 %token LEXO
 %token IMMO
@@ -330,6 +331,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %type<d> cdepspecifiers
 %type<d> cdepspecifier
 %type<d> maybeignore
+%type<d> rulespecifiers
 
 %type<d> scopetype
 %type<d> beginscope
@@ -2894,12 +2896,12 @@ shell_command:
     }
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_attab(stiryy, codeloc);
+    stiryy_add_shell_attab(stiryy, codeloc, 0, 0); // FIXME "-", "+", "@"
   }
 
   free($1);
 }
-| ATTAB
+| ATTAB rulespecifiers
 {
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
@@ -2908,10 +2910,10 @@ shell_command:
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_attab(stiryy, $<d>2);
+    stiryy_add_shell_attab(stiryy, $<d>3, ((int)$2)&1, ((int)$2)&2);
   }
 }
-| ATATTAB
+| ATATTAB rulespecifiers
 {
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
@@ -2920,8 +2922,22 @@ shell_command:
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_atattab(stiryy, $<d>2);
+    stiryy_add_shell_atattab(stiryy, $<d>3, ((int)$2)&1, ((int)$2)&2);
   }
+}
+;
+
+rulespecifiers:
+{
+  $$ = 0;
+}
+| rulespecifiers IGNORE
+{
+  $$ = ((int)$1) | 1;
+}
+| rulespecifiers NOECHO
+{
+  $$ = ((int)$1) | 2;
 }
 ;
 
