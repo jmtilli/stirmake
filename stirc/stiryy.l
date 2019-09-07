@@ -84,6 +84,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@autotarget return AUTOTARGET;
 <INITIAL,STRICT>@ignore return IGNORE;
 <INITIAL,STRICT>@noecho return NOECHO;
+<INITIAL,STRICT>@ismake return ISMAKE;
 
 <INITIAL,STRICT>@function return FUNCTION;
 <INITIAL,STRICT>@endfunction return ENDFUNCTION;

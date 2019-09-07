@@ -257,6 +257,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token AUTOTARGET
 %token IGNORE
 %token NOECHO
+%token ISMAKE
 %token DYNO
 %token LEXO
 %token IMMO
@@ -2896,7 +2897,7 @@ shell_command:
     }
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_attab(stiryy, codeloc, 0, 0); // FIXME "-", "+", "@"
+    stiryy_add_shell_attab(stiryy, codeloc, 0, 0, 0); // FIXME "-", "+", "@"
   }
 
   free($1);
@@ -2910,7 +2911,7 @@ shell_command:
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_attab(stiryy, $<d>3, ((int)$2)&1, ((int)$2)&2);
+    stiryy_add_shell_attab(stiryy, $<d>3, ((int)$2)&1, ((int)$2)&2, ((int)$2)&4);
   }
 }
 | ATATTAB rulespecifiers
@@ -2922,7 +2923,7 @@ shell_command:
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_atattab(stiryy, $<d>3, ((int)$2)&1, ((int)$2)&2);
+    stiryy_add_shell_atattab(stiryy, $<d>3, ((int)$2)&1, ((int)$2)&2, ((int)$2)&4);
   }
 }
 ;
@@ -2938,6 +2939,10 @@ rulespecifiers:
 | rulespecifiers NOECHO
 {
   $$ = ((int)$1) | 2;
+}
+| rulespecifiers ISMAKE
+{
+  $$ = ((int)$1) | 4;
 }
 ;
 

@@ -68,6 +68,7 @@ struct cmdsrcitem {
   unsigned isfun:1;
   unsigned ignore:1;
   unsigned noecho:1;
+  unsigned ismake:1;
   size_t sz; // for args
   size_t capacity; // for args
   union {
@@ -636,7 +637,7 @@ static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 }
 
 static inline void stiryy_add_shell_attab(struct stiryy *stiryy, size_t locidx,
-                                          int ignore, int noecho)
+                                          int ignore, int noecho, int ismake)
 {
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
@@ -655,12 +656,13 @@ static inline void stiryy_add_shell_attab(struct stiryy *stiryy, size_t locidx,
   cmdsrc->items[cmdsrc->itemsz].capacity = 0;
   cmdsrc->items[cmdsrc->itemsz].ignore = !!ignore;
   cmdsrc->items[cmdsrc->itemsz].noecho = !!noecho;
+  cmdsrc->items[cmdsrc->itemsz].ismake = !!ismake;
   cmdsrc->items[cmdsrc->itemsz].u.locidx = locidx;
   cmdsrc->itemsz++;
 }
 static inline void stiryy_add_shell_atattab(struct stiryy *stiryy,
                                             size_t locidx,
-                                            int ignore, int noecho)
+                                            int ignore, int noecho, int ismake)
 {
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
@@ -679,6 +681,7 @@ static inline void stiryy_add_shell_atattab(struct stiryy *stiryy,
   cmdsrc->items[cmdsrc->itemsz].capacity = 0;
   cmdsrc->items[cmdsrc->itemsz].ignore = !!ignore;
   cmdsrc->items[cmdsrc->itemsz].noecho = !!noecho;
+  cmdsrc->items[cmdsrc->itemsz].ismake = !!ismake;
   cmdsrc->items[cmdsrc->itemsz].u.locidx = locidx;
   cmdsrc->itemsz++;
 }
@@ -702,6 +705,7 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
   cmdsrc->items[cmdsrc->itemsz].capacity = 0;
   cmdsrc->items[cmdsrc->itemsz].ignore = 0;
   cmdsrc->items[cmdsrc->itemsz].noecho = 0;
+  cmdsrc->items[cmdsrc->itemsz].ismake = 0;
   cmdsrc->items[cmdsrc->itemsz].u.args = NULL;
   cmdsrc->itemsz++;
 }

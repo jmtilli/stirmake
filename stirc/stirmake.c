@@ -967,7 +967,7 @@ struct rule {
   struct stirdep *waitloc;
 };
 
-char **argdup(int ignore, int noecho, char **cmdargs);
+char **argdup(int ignore, int noecho, int ismake, char **cmdargs);
 
 static size_t
 cmdsrc_cache_add_str_nul(struct abce *abce, const char *str, int *err)
@@ -985,6 +985,8 @@ char *st_ignore = "ignore";
 char *st_noignore = "noignore";
 char *st_noecho = "noecho";
 char *st_echo = "echo";
+char *st_make = "make";
+char *st_nomake = "nomake";
 
 
 char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
@@ -1340,9 +1342,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
             abce_mb_refdn(abce, &mb);
             return NULL;
           }
-          char **cmd = my_malloc((mb.u.area->u.ar.mbs[j].u.area->u.ar.size+3)*sizeof(*cmd));
+          char **cmd = my_malloc((mb.u.area->u.ar.mbs[j].u.area->u.ar.size+4)*sizeof(*cmd));
           cmd[0] = cmdsrc->items[i].ignore ? st_ignore : st_noignore;
           cmd[1] = cmdsrc->items[i].noecho ? st_noecho : st_echo;
+          cmd[2] = cmdsrc->items[i].ismake ? st_make : st_nomake;
           for (k = 0; k < mb.u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
           {
             if (mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
@@ -1354,11 +1357,11 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
               abce_mb_refdn(abce, &mb);
               return NULL;
             }
-            cmd[2+k] =
+            cmd[3+k] =
               my_strdup(
                 mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
           }
-          cmd[2+mb.u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
+          cmd[3+mb.u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
           if (resultsz >= resultcap)
           {
             resultcap = 2*resultsz + 16;
@@ -1369,9 +1372,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       }
       else
       {
-        char **cmd = my_malloc((mb.u.area->u.ar.size+3)*sizeof(*cmd));
+        char **cmd = my_malloc((mb.u.area->u.ar.size+4)*sizeof(*cmd));
         cmd[0] = cmdsrc->items[i].ignore ? st_ignore : st_noignore;
         cmd[1] = cmdsrc->items[i].noecho ? st_noecho : st_echo;
+        cmd[2] = cmdsrc->items[i].ismake ? st_make : st_nomake;
         for (j = 0; j < mb.u.area->u.ar.size; j++)
         {
           if (mb.u.area->u.ar.mbs[j].typ != ABCE_T_S)
@@ -1381,9 +1385,9 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
             abce_mb_refdn(abce, &mb);
             return NULL;
           }
-          cmd[2+j] = my_strdup(mb.u.area->u.ar.mbs[j].u.area->u.str.buf);
+          cmd[3+j] = my_strdup(mb.u.area->u.ar.mbs[j].u.area->u.str.buf);
         }
-        cmd[2+mb.u.area->u.ar.size] = NULL;
+        cmd[3+mb.u.area->u.ar.size] = NULL;
         if (resultsz >= resultcap)
         {
           resultcap = 2*resultsz + 16;
@@ -1421,7 +1425,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         resultcap = 2*resultsz + 16;
         result = realloc(result, resultcap * sizeof(*result));
       }
-      result[resultsz++] = argdup(cmdsrc->items[i].ignore, cmdsrc->items[i].noecho, cmdsrc->items[i].u.args);
+      result[resultsz++] = argdup(cmdsrc->items[i].ignore, cmdsrc->items[i].noecho, cmdsrc->items[i].ismake, cmdsrc->items[i].u.args);
       continue;
     }
     for (j = 0; cmdsrc->items[i].u.cmds[j] != NULL; j++)
@@ -1431,7 +1435,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         resultcap = 2*resultsz + 16;
         result = realloc(result, resultcap * sizeof(*result));
       }
-      result[resultsz++] = argdup(cmdsrc->items[i].ignore, cmdsrc->items[i].noecho, cmdsrc->items[i].u.cmds[j]);
+      result[resultsz++] = argdup(cmdsrc->items[i].ignore, cmdsrc->items[i].noecho, cmdsrc->items[i].ismake, cmdsrc->items[i].u.cmds[j]);
     }
   }
   if (resultsz >= resultcap)
@@ -2114,7 +2118,7 @@ void zero_rule(struct rule *rule)
 
 char **null_cmds[] = {NULL};
 
-char **argdup(int ignore, int noecho, char **cmdargs)
+char **argdup(int ignore, int noecho, int ismake, char **cmdargs)
 {
   size_t cnt = 0;
   size_t i;
@@ -2123,14 +2127,15 @@ char **argdup(int ignore, int noecho, char **cmdargs)
   {
     cnt++;
   }
-  result = my_malloc((cnt+3) * sizeof(*result));
+  result = my_malloc((cnt+4) * sizeof(*result));
   result[0] = ignore ? st_ignore : st_noignore;
   result[1] = noecho ? st_noecho : st_echo;
+  result[2] = ismake ? st_make : st_nomake;
   for (i = 0; i < cnt; i++)
   {
-    result[i+2] = my_strdup(cmdargs[i]);
+    result[i+3] = my_strdup(cmdargs[i]);
   }
-  result[cnt+2] = NULL;
+  result[cnt+3] = NULL;
   return result;
 }
 
@@ -2141,7 +2146,7 @@ char ***argsdupcnt(char ***cmdargs, size_t cnt)
   result = my_malloc((cnt+1) * sizeof(*result));
   for (i = 0; i < cnt; i++)
   {
-    result[i] = cmdargs[i] ? argdup(0, 0, cmdargs[i]) : NULL;
+    result[i] = cmdargs[i] ? argdup(0, 0, 0, cmdargs[i]) : NULL;
   }
   result[cnt] = NULL;
   return result;
@@ -2627,9 +2632,9 @@ int is_makecmd(const char *cmd)
   return 0;
 }
 
-void do_makecmd(const char *cmd, int create_fd, int create_make_fd, int outpipewr)
+void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr)
 {
-  if (is_makecmd(cmd))
+  if (ismake || is_makecmd(cmd))
   {
     char env[128] = {0};
     if (create_make_fd)
@@ -2688,7 +2693,7 @@ void do_makecmd(const char *cmd, int create_fd, int create_make_fd, int outpipew
   }
 }
 
-void child_execvp_wait(int ignore, int noecho, const char *tgtname, const char *prefix, const char *cmd, char **args, int create_fd, int create_make_fd, int outpipewr)
+void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, const char *prefix, const char *cmd, char **args, int create_fd, int create_make_fd, int outpipewr)
 {
   pid_t pid = fork();
   if (pid < 0)
@@ -2702,7 +2707,7 @@ void child_execvp_wait(int ignore, int noecho, const char *tgtname, const char *
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
 #endif
-    do_makecmd(cmd, create_fd, create_make_fd, outpipewr);
+    do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr);
     if (!noecho)
     {
       print_cmd(tgtname, prefix, args);
@@ -2880,24 +2885,24 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     update_recursive_pid(0);
     while (argcnt > 1)
     {
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[2], &(*argiter)[2], create_fd, create_make_fd, outpipewr);
+      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       argiter++;
       argcnt--;
     }
     if (strcmp((*argiter)[0], st_ignore) == 0)
     {
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[2], &(*argiter)[2], create_fd, create_make_fd, outpipewr);
+      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       _exit(0);
     }
     else
     {
       update_recursive_pid(1);
-      do_makecmd((*argiter)[2], create_fd, create_make_fd, outpipewr);
+      do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
       if (strcmp((*argiter)[1], st_noecho) != 0)
       {
-        print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[2]);
+        print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[3]);
       }
-      execvp((*argiter)[2], &(*argiter)[2]);
+      execvp((*argiter)[3], &(*argiter)[3]);
       //write(1, "Err\n", 4);
       _exit(1);
     }
