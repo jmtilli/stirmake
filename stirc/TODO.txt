@@ -24,8 +24,6 @@
 
 - @elseif and @else to top-level directive syntax
 
-- shortcutting
-
 - Custom errors to strings
 
 - setting number of tokens a job requires
