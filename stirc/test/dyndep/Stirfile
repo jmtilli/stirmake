@@ -4,13 +4,16 @@
 
 @function $ADDDEP()
   @adddeps(["a"], ["c"], {})
-  @return []
+  @return [["echo", "b"]]
 @endfunction
 
 @phonyrule: a: b
 
-@phonyrule: b:
+@phonyrule: b: d
 @@	$ADDDEP()
 
 @phonyrule: c:
 	echo c
+
+@phonyrule: d:
+	echo d
