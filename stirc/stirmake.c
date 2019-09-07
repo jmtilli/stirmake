@@ -946,6 +946,7 @@ struct rule {
   unsigned is_bothcleanhook:1;
   unsigned is_forked:1;
   unsigned is_traversed:1;
+  unsigned is_under_consideration:1;
   size_t diridx;
   struct cmdsrc cmdsrc;
   struct cmd cmd; // calculated from cmdsrc
@@ -3572,6 +3573,7 @@ int consider(int ruleid)
     return 0;
   }
   r->is_executing = 1;
+  r->is_under_consideration = 1;
   LINKED_LIST_FOR_EACH(node, &r->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
@@ -3622,10 +3624,13 @@ int consider(int ruleid)
 */
   if (!toexecute && !r->is_queued)
   {
-    return do_exec(ruleid);
+    int ret = do_exec(ruleid);
+    r->is_under_consideration = 0;
+    return ret;
     //ruleids_to_run.push_back(ruleid);
     //r.queued = true;
   }
+  r->is_under_consideration = 0;
   return execed_some;
 /*
   ruleids_to_run.push_back(ruleid);
@@ -3652,11 +3657,11 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     return;
   }
-  if (!r->is_executing)
+  if (!r->is_executing || r->is_under_consideration)
   {
     if (debug)
     {
-      printf("rule not executing %s\n", sttable[first_tgt->tgtidx]);
+      printf("rule not executing or is under consideration %s\n", sttable[first_tgt->tgtidx]);
     }
     // Must do this always in case the rule is to be executed in future.
     deps_remain_erase(r, ruleid_executed);
@@ -3681,6 +3686,7 @@ void reconsider(int ruleid, int ruleid_executed)
     }
   }
   int toexecute2 = 0;
+  r->is_under_consideration = 1;
   for (node = &r->waitloc->llnode; node != &r->deplist.node; node = node->next)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
@@ -3728,6 +3734,7 @@ void reconsider(int ruleid, int ruleid_executed)
     //ruleids_to_run.push_back(ruleid);
     //r.queued = true;
   }
+  r->is_under_consideration = 0;
 }
 
 void mark_executed(int ruleid, int was_actually_executed)
