@@ -3,6 +3,7 @@
 
 @phonyrule: 'all': 'a' @wait 'b' @wait 'c' @wait 'd'
 @phonyrule: 'nowait': 'a' 'b' 'c' 'd'
+@phonyrule: 'two': 'a' 'b' @wait 'c' 'd'
 
 @phonyrule: 'a':
 	echo a

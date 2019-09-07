@@ -957,6 +957,7 @@ struct rule {
   struct linked_list_head dupedeplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   size_t deps_remain_cnt;
+  size_t wait_remain_cnt;
   size_t scopeidx;
   struct syncbuf output;
   struct stirdep *waitloc;
@@ -1605,7 +1606,7 @@ int deps_remain_has(struct rule *rule, int ruleid)
   return n != NULL;
 }
 
-void deps_remain_erase(struct rule *rule, int ruleid)
+void deps_remain_erase(struct rule *rule, int ruleid, int waitcnt_decrement)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -1621,6 +1622,10 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
   linked_list_delete(&dep_remain->llnode);
   rule->deps_remain_cnt--;
+  if (waitcnt_decrement)
+  {
+    rule->wait_remain_cnt--;
+  }
   my_free(dep_remain);
 }
 
@@ -2076,6 +2081,7 @@ void zero_rule(struct rule *rule)
   linked_list_head_init(&rule->tgtlist);
   syncbuf_init(&rule->output);
   rule->deps_remain_cnt = 0;
+  rule->wait_remain_cnt = 0;
   linked_list_head_init(&rule->depremainlist);
 }
 
@@ -3554,7 +3560,7 @@ int consider(int ruleid)
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     int idbytgt = get_ruleid_by_tgt(e->nameidx);
     r->waitloc = e;
-    if (toexecute && e->is_wait)
+    if (r->wait_remain_cnt > 0 && e->is_wait)
     {
       break;
     }
@@ -3573,6 +3579,7 @@ int consider(int ruleid)
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
         toexecute = 1;
+        r->wait_remain_cnt++;
       }
     }
     else
@@ -3634,10 +3641,10 @@ void reconsider(int ruleid, int ruleid_executed)
       printf("rule not executing %s\n", sttable[first_tgt->tgtidx]);
     }
     // Must do this always in case the rule is to be executed in future.
-    deps_remain_erase(r, ruleid_executed);
+    deps_remain_erase(r, ruleid_executed, 0);
     return;
   }
-  deps_remain_erase(r, ruleid_executed);
+  deps_remain_erase(r, ruleid_executed, 1);
   //if (!linked_list_is_empty(&r->depremainlist))
   if (r->deps_remain_cnt > 0)
   {
@@ -3661,7 +3668,7 @@ void reconsider(int ruleid, int ruleid_executed)
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     int idbytgt = get_ruleid_by_tgt(e->nameidx);
     r->waitloc = e;
-    if (toexecute2 && e->is_wait)
+    if (r->wait_remain_cnt > 0 && e->is_wait)
     {
       break;
     }
@@ -3680,6 +3687,7 @@ void reconsider(int ruleid, int ruleid_executed)
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
         toexecute2 = 1;
+        r->wait_remain_cnt++;
       }
     }
     else
