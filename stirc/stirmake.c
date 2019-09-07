@@ -5300,6 +5300,7 @@ void process_orders(struct stiryy_main *main)
     }
     rule = rules[secondrule];
     ins_dep(rule, first, rule->diridx, (size_t)-1, 0, 0, 0, 0);
+    deps_remain_insert(rule, firstrule);
     ins_ruleid_by_dep(first, secondrule);
     if (debug)
     {
