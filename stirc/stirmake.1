@@ -549,6 +549,67 @@ is that the latter contains duplicate dependencies, if some dependencies are
 duplicated.) If you want a list of order-only dependencies, use the special
 variable
 .Va $| .
+.Pp
+Parallelism can be controlled by
+.Va @order
+and
+.Va @wait .
+The
+.Va @order
+specifies an order in which two rules are executed. For example:
+.Pp
+.Bd -literal
+@order 'all' 'install'
+.Ed
+.Pp
+means that the target
+.Sq all
+is executed before the target
+.Sq install ,
+if both targets are executed. However, this does not mark
+.Sq install
+dependent on the target
+.Sq all ,
+meaning that if only
+.Sq install
+is requested to be executed,
+.Sq all
+won't be executed. Note it's easy to make circular dependencies that appear
+only if some combination of targets is specified if the
+.Va @order
+directive is used.
+.Pp
+It's also possible to use
+.Va @wait
+to specify that when evaluating dependency lists, there is a wait position in
+which dependencies after the wait position are evaluated only after
+dependencies before the wait position are evaluated. An example:
+.Pp
+.Bd -literal
+@phonyrule: 'all': 'a' 'b' @wait 'c' 'd'
+@phonyrule: 'a':
+	echo a
+@phonyrule: 'b':
+	echo b
+@phonyrule: 'c':
+	echo c
+@phonyrule: 'd':
+	echo d
+.Ed
+.Pp
+means that
+.Sq a
+and
+.Sq b
+are executed first, and only when both
+.Sq a
+and
+.Sq b
+have been executed, will
+.Sq c
+and
+.Sq d
+be executed afterwards.
 .Sh "LUAJIT INTEGRATION"
 .Pp
 .Nm stirmake

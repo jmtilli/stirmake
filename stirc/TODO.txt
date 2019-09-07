@@ -26,6 +26,6 @@
 
 - Custom errors to strings
 
-- @order and @wait to README.md and man page
+- @order and @wait to README.md
 
 - setting number of tokens a job requires
