@@ -2760,8 +2760,44 @@ shell_command:
     size_t len = strlen($1);
     size_t i;
     size_t codeloc = amyplanyy->main->abce->bytecodesz;
+    size_t shidx;
+    size_t dashcidx;
+    size_t emptyidx;
+    int ismake = 0;
+    int noecho = 0;
+    int ignore = 0;
+    shidx = abce_cache_add_str(amyplanyy->main->abce, "sh", 2);
+    dashcidx = abce_cache_add_str(amyplanyy->main->abce, "-c", 2);
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_NEW_ARRAY);
-    for (i = 0; i < len; i++)
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+    abce_add_double(amyplanyy->main->abce, shidx);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+    abce_add_double(amyplanyy->main->abce, dashcidx);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+    emptyidx = abce_cache_add_str(amyplanyy->main->abce, "", 0);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+    abce_add_double(amyplanyy->main->abce, emptyidx);
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+    i = 0;
+    if ($1[i] == '-')
+    {
+      ignore = 1;
+      i++;
+    }
+    else if ($1[i] == '+')
+    {
+      ismake = 1;
+      i++;
+    }
+    else if ($1[i] == '@')
+    {
+      noecho = 1;
+      i++;
+    }
+    for (; i < len; i++)
     {
       if ($1[i] == '\\')
       {
@@ -2783,101 +2819,51 @@ shell_command:
         if (outsz)
         {
           size_t cidx;
+          /*
           if (i > 0 && $1[i] != ' ')
           {
             recommend(scanner, stiryy, "Recommend putting space before variable name, because new argument is created");
           }
+          */
           cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           outsz = 0;
         }
-        if (i+1 < len && $1[i+1] == '<')
+        if (i+1 < len && ($1[i+1] == '<' || $1[i+1] == '@'))
         {
           size_t cidx;
-          cidx = abce_cache_add_str(amyplanyy->main->abce, "<", 1);
+          cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           i++;
           continue;
         }
-        if (i+1 < len && $1[i+1] == '@')
+        if (i+1 < len && ($1[i+1] == '^' || $1[i+1] == '+' || $1[i+1] == '|'))
         {
           size_t cidx;
-          cidx = abce_cache_add_str(amyplanyy->main->abce, "@", 1);
+          cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+          abce_add_double(amyplanyy->main->abce, cidx);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+          cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
-          //abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
-          i++;
-          continue;
-        }
-        if (i+1 < len && $1[i+1] == '^')
-        {
-          size_t cidx;
-          cidx = abce_cache_add_str(amyplanyy->main->abce, "^", 1);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
-          abce_add_double(amyplanyy->main->abce, cidx);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
-          i++;
-          continue;
-        }
-        if (i+1 < len && $1[i+1] == '+')
-        {
-          size_t cidx;
-          cidx = abce_cache_add_str(amyplanyy->main->abce, "+", 1);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
-          abce_add_double(amyplanyy->main->abce, cidx);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
-          i++;
-          continue;
-        }
-        if (i+1 < len && $1[i+1] == '|')
-        {
-          size_t cidx;
-          cidx = abce_cache_add_str(amyplanyy->main->abce, "|", 1);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
-          abce_add_double(amyplanyy->main->abce, cidx);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
-          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPENDALL_MAINTAIN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRLISTJOIN);
+          abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           i++;
           continue;
         }
         my_abort();
-      }
-      else if ($1[i] == ' ')
-      {
-        size_t cidx;
-        while ($1[i] == ' ')
-        {
-          i++;
-        }
-        i--; // will be incremented by for
-
-        cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
-        abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
-        abce_add_double(amyplanyy->main->abce, cidx);
-        abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
-        abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
-        outsz = 0;
-        continue;
       }
       if (outsz >= outcap)
       {
@@ -2892,12 +2878,14 @@ shell_command:
       abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
       abce_add_double(amyplanyy->main->abce, cidx);
       abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
-      abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+      abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
       outsz = 0;
     }
 
+    abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
+
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
-    stiryy_add_shell_attab(stiryy, codeloc, 0, 0, 0); // FIXME "-", "+", "@"
+    stiryy_add_shell_attab(stiryy, codeloc, ignore, noecho, ismake);
   }
 
   free($1);

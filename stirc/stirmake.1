@@ -1008,15 +1008,15 @@ The
 .Va +=
 top-level array plus-assignment operator is buggy.
 .It
-The shell is not actually ever invoked unless specifically requested by 
-.Ic "sh -c" .
-.It
-The command-line syntax does not support quoted strings, breaking command-line
-to arguments by spaces even if the space is inside a quoted string. To avoid
-this, use the 
+Commands not using the
 .Va @-<TAB>
-expression based syntax that allows you to specify
-every command-line argument as a strongly typed string.
+expression based syntax cannot use variables other than
+.Va $@ ,
+.Va $< ,
+.Va $^ ,
+.Va $|
+and
+.Va $+ .
 .It
 .Nm stirmake
 can be slightly slower for null builds than GNU
