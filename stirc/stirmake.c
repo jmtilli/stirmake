@@ -54,6 +54,17 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
+int indentlevel = 0;
+
+void print_indent(void)
+{
+  int i;
+  for (i = 0; i < indentlevel; i++)
+  {
+    putc(' ', stdout);
+  }
+}
+
 sig_atomic_t sigterm_atomic;
 sig_atomic_t sigint_atomic;
 sig_atomic_t sighup_atomic;
@@ -544,6 +555,7 @@ void *my_malloc(size_t sz)
   {
     if (debug)
     {
+      print_indent();
       printf("allocating new arena\n");
     }
     my_arena = stir_do_mmap_madvise(sizeof_my_arena);
@@ -737,6 +749,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   {
     if (debug)
     {
+      print_indent();
       printf("target %s not found in cmd DB\n", sttable[tgtidx]);
     }
     return 0;
@@ -746,6 +759,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   {
     if (debug)
     {
+      print_indent();
       printf("target %s has different dir in cmd DB\n", sttable[tgtidx]);
     }
     return 0;
@@ -754,6 +768,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   {
     if (debug)
     {
+      print_indent();
       printf("target %s has different cmd in cmd DB\n", sttable[tgtidx]);
     }
     return 0;
@@ -2359,6 +2374,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   }
   if (debug)
   {
+    print_indent();
     printf("Rule %s (%s): add_rule\n", tgts[0].name, prefix);
   }
   if (rules_size >= rules_capacity)
@@ -2798,6 +2814,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 
   if (debug)
   {
+    print_indent();
     printf("start args:\n");
   }
   while (*argiter)
@@ -2805,6 +2822,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     oneargiter = *argiter++;
     if (debug)
     {
+      print_indent();
       printf(" ");
     }
     while (*oneargiter)
@@ -2823,6 +2841,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   if (debug)
   {
+    print_indent();
     printf("end args\n");
   }
 
@@ -3375,6 +3394,7 @@ int do_exec(int ruleid)
   //Rule &r = rules.at(ruleid);
   if (debug)
   {
+    print_indent();
     printf("do_exec %s\n", sttable[first_tgt->tgtidx]);
   }
   if (!r->is_queued)
@@ -3398,6 +3418,7 @@ int do_exec(int ruleid)
           {
             if (debug)
             {
+              print_indent();
               printf("rule %d/%s is phony\n", depid, sttable[e->nameidx]);
             }
             has_to_exec = 1;
@@ -3405,6 +3426,7 @@ int do_exec(int ruleid)
           }
           if (debug)
           {
+            print_indent();
             printf("ruleid %d/%s not phony\n", depid, sttable[e->nameidx]);
           }
         }
@@ -3412,6 +3434,7 @@ int do_exec(int ruleid)
         {
           if (debug)
           {
+            print_indent();
             printf("ruleid for tgt %s not found\n", sttable[e->nameidx]);
           }
         }
@@ -3445,6 +3468,11 @@ int do_exec(int ruleid)
         }
         if (!e->is_orderonly)
         {
+          if (debug)
+          {
+            print_indent();
+            printf("dep: %llu %llu\n", (unsigned long long)she->st_mtim.tv_sec, (unsigned long long)she->st_mtim.tv_nsec);
+          }
           if (!seen_nonphony || ts_cmp(she->st_mtim, st_mtim) > 0)
           {
             st_mtim = she->st_mtim;
@@ -3493,15 +3521,26 @@ int do_exec(int ruleid)
         }
         if (debug)
         {
+          print_indent();
           printf("statting %s\n", sttable[e->tgtidx]);
         }
         struct stathashentry *she;
         she = lstat_cached(e->tgtidx);
         if (she->ret != 0)
         {
+          if (debug)
+          {
+            print_indent();
+            printf("immediate has_to_exec\n");
+          }
           has_to_exec = 1;
           //break; // can't break, has to compare all commands from DB
           continue;
+        }
+        if (debug)
+        {
+          print_indent();
+          printf("tgt: %llu %llu\n", (unsigned long long)she->st_mtim.tv_sec, (unsigned long long)she->st_mtim.tv_nsec);
         }
         if (!seen_tgt || ts_cmp(she->st_mtim, st_mtimtgt) < 0)
         {
@@ -3518,6 +3557,11 @@ int do_exec(int ruleid)
         }
         if (seen_nonphony && ts_cmp(st_mtimtgt, st_mtim) < 0)
         {
+          if (debug)
+          {
+            print_indent();
+            printf("delayed has_to_exec\n");
+          }
           has_to_exec = 1;
         }
       }
@@ -3544,6 +3588,7 @@ int do_exec(int ruleid)
     {
       if (debug)
       {
+        print_indent();
         printf("do_exec: has_to_exec %d\n", ruleid);
       }
       if (ruleids_to_run_size >= ruleids_to_run_capacity)
@@ -3559,11 +3604,14 @@ int do_exec(int ruleid)
     {
       if (debug)
       {
+        print_indent();
         printf("do_exec: mark_executed %s has_to_exec %d\n",
                sttable[first_tgt->tgtidx], has_to_exec);
       }
       r->is_queued = 1;
+      indentlevel++;
       mark_executed(ruleid, 0);
+      indentlevel--;
       return 1;
     }
   }
@@ -3571,6 +3619,7 @@ int do_exec(int ruleid)
   {
     if (debug)
     {
+      print_indent();
       printf("do_exec: is queued already\n");
     }
   }
@@ -3587,12 +3636,14 @@ int consider(int ruleid)
   int execed_some = 0;
   if (debug)
   {
+    print_indent();
     printf("considering %s\n", sttable[first_tgt->tgtidx]);
   }
   if (r->is_executed)
   {
     if (debug)
     {
+      print_indent();
       printf("already execed %s\n", sttable[first_tgt->tgtidx]);
     }
     return 0;
@@ -3601,6 +3652,7 @@ int consider(int ruleid)
   {
     if (debug)
     {
+      print_indent();
       printf("already execing %s\n", sttable[first_tgt->tgtidx]);
     }
     return 0;
@@ -3618,15 +3670,18 @@ int consider(int ruleid)
     }
     if (idbytgt >= 0)
     {
+      indentlevel++;
       if (consider(idbytgt))
       {
         execed_some = 1;
       }
+      indentlevel--;
       //execed_some = execed_some || consider(idbytgt); // BAD! DON'T DO THIS!
       if (!rules[idbytgt]->is_executed)
       {
         if (debug)
         {
+          print_indent();
           printf("rule %d not executed, executing rule %d\n", idbytgt, ruleid);
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
@@ -3639,6 +3694,7 @@ int consider(int ruleid)
     {
       if (debug)
       {
+        print_indent();
         printf("ruleid by target %s not found\n", sttable[e->nameidx]);
       }
       if (access(sttable[e->nameidx], F_OK) == -1)
@@ -3657,7 +3713,9 @@ int consider(int ruleid)
 */
   if (!toexecute && !r->is_queued)
   {
+    indentlevel++;
     int ret = do_exec(ruleid);
+    indentlevel--;
     r->is_under_consideration = 0;
     return ret;
     //ruleids_to_run.push_back(ruleid);
@@ -3680,12 +3738,14 @@ void reconsider(int ruleid, int ruleid_executed)
   struct linked_list_node *node;
   if (debug)
   {
+    print_indent();
     printf("reconsidering %s\n", sttable[first_tgt->tgtidx]);
   }
   if (r->is_executed)
   {
     if (debug)
     {
+      print_indent();
       printf("already execed %s\n", sttable[first_tgt->tgtidx]);
     }
     return;
@@ -3694,6 +3754,7 @@ void reconsider(int ruleid, int ruleid_executed)
   {
     if (debug)
     {
+      print_indent();
       printf("rule not executing or is under consideration %s\n", sttable[first_tgt->tgtidx]);
     }
     // Must do this always in case the rule is to be executed in future.
@@ -3707,6 +3768,7 @@ void reconsider(int ruleid, int ruleid_executed)
     toexecute = 1;
     if (debug)
     {
+      print_indent();
       printf("deps remain: %zu\n", r->deps_remain_cnt);
       LINKED_LIST_FOR_EACH(node, &r->depremainlist)
       {
@@ -3714,6 +3776,7 @@ void reconsider(int ruleid, int ruleid_executed)
           ABCE_CONTAINER_OF(node, struct dep_remain, llnode);
         struct stirtgt *first_tgt =
           ABCE_CONTAINER_OF(rules[rem->ruleid]->tgtlist.node.next, struct stirtgt, llnode);
+        print_indent();
         printf("  dep_remain: %d / %s\n", rem->ruleid, sttable[first_tgt->tgtidx]);
       }
     }
@@ -3731,15 +3794,18 @@ void reconsider(int ruleid, int ruleid_executed)
     }
     if (idbytgt >= 0)
     {
+      indentlevel++;
       if (consider(idbytgt))
       {
         //execed_some = 1;
       }
+      indentlevel--;
       //execed_some = execed_some || consider(idbytgt); // BAD! DON'T DO THIS!
       if (!rules[idbytgt]->is_executed)
       {
         if (debug)
         {
+          print_indent();
           printf("rule %d not executed, executing rule %d\n", idbytgt, ruleid);
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
@@ -3752,6 +3818,7 @@ void reconsider(int ruleid, int ruleid_executed)
     {
       if (debug)
       {
+        print_indent();
         printf("ruleid by target %s not found\n", sttable[e->nameidx]);
       }
       if (access(sttable[e->nameidx], F_OK) == -1)
@@ -3763,7 +3830,9 @@ void reconsider(int ruleid, int ruleid_executed)
   }
   if (!toexecute && !r->is_queued)
   {
+    indentlevel++;
     do_exec(ruleid);
+    indentlevel--;
     //ruleids_to_run.push_back(ruleid);
     //r.queued = true;
   }
@@ -3862,6 +3931,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       {
         if (debug)
         {
+          print_indent();
           printf("utime %s won't move clock backwards!\n", sttable[e->tgtidx]);
         }
         continue;
@@ -3894,6 +3964,7 @@ void mark_executed(int ruleid, int was_actually_executed)
 #endif
       if (debug)
       {
+        print_indent();
         printf("utime %s succeeded? %d\n", sttable[e->tgtidx], (utimeret == 0));
       }
     }
@@ -3947,7 +4018,9 @@ void mark_executed(int ruleid, int was_actually_executed)
     {
       struct one_ruleid_by_dep_entry *one =
         ABCE_CONTAINER_OF(node2, struct one_ruleid_by_dep_entry, llnode);
+      indentlevel++;
       reconsider(one->ruleid, ruleid);
+      indentlevel--;
     }
   }
 }
@@ -4526,17 +4599,20 @@ void do_clean(char *fwd_path, int objs, int bins)
       linked_list_head_init(&tmplist);
       if (debug)
       {
+        print_indent();
         printf("itering tgt %s\n", oldname);
       }
       for (;;)
       {
         if (debug)
         {
+          print_indent();
           printf("itering dir %s\n", oldname);
         }
         name = dir_up(oldname);
         if (debug)
         {
+          print_indent();
           printf("dir-up %s\n", name);
         }
         free(oldname);
@@ -4579,6 +4655,7 @@ void do_clean(char *fwd_path, int objs, int bins)
         rules[ruleid]->is_cleanqueued = 1;
         if (debug)
         {
+          print_indent();
           printf("adding rule %d to rm list\n", ruleid);
         }
         linked_list_add_head(&rules[ruleid]->cleanllnode, &tmplist);
@@ -4757,6 +4834,7 @@ void merge_db(void)
           struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
           if (debug)
           {
+            print_indent();
             printf("removing %s from DB\n", sttable[e->tgtidx]);
           }
           maybe_del_dbe(&db, e->tgtidx);
@@ -4967,6 +5045,7 @@ back:
     {
       if (debug)
       {
+        print_indent();
         printf("goto back\n");
       }
       goto back; // this can edit the list, need to re-start iteration
@@ -4998,6 +5077,7 @@ back:
     }
     if (debug)
     {
+      print_indent();
       printf("forking1 child\n");
     }
     int pipefd = -1;
@@ -5036,6 +5116,7 @@ back:
            &readfds, NULL, NULL, NULL);
     if (debug)
     {
+      print_indent();
       printf("select returned\n");
     }
     if (sigterm_atomic)
@@ -5177,6 +5258,7 @@ back:
       }
       if (debug)
       {
+        print_indent();
         printf("forking child\n");
       }
       //std::cout << "forking child" << std::endl;
@@ -5304,6 +5386,7 @@ void process_orders(struct stiryy_main *main)
     ins_ruleid_by_dep(first, secondrule);
     if (debug)
     {
+      print_indent();
       printf("added order %s %s\n", main->orders[i].rules[0], main->orders[i].rules[1]);
     }
   }
@@ -5704,6 +5787,7 @@ int main(int argc, char **argv)
       }
       if (debug)
       {
+        print_indent();
         printf("ADDING RULE\n");
       }
       if (main.rules[i].ispat)
@@ -5896,6 +5980,7 @@ int main(int argc, char **argv)
       }
       if (debug)
       {
+        print_indent();
         printf("ADDING DEP\n");
       }
       add_dep_from_rules(main.rules[i].targets, main.rules[i].targetsz,
@@ -5925,6 +6010,7 @@ int main(int argc, char **argv)
     }
     if (debug)
     {
+      print_indent();
       printf("reading cdepincludes from %s\n", fname);
     }
     f = fopen(fname, "r");
@@ -5950,6 +6036,7 @@ int main(int argc, char **argv)
       //std::copy(it->targets, it->targets+it->targetsz, std::back_inserter(tgt));
       if (debug)
       {
+        print_indent();
         printf("Adding dep\n");
         for (k = 0; k < incyy.rules[j].targetsz; k++)
         {
