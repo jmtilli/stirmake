@@ -613,6 +613,48 @@ have been executed, will
 and
 .Sq d
 be executed afterwards.
+.Pp
+In
+.Va @-<TAB>
+syntax, one can specify the identifiers
+.Va @ignore ,
+.Va @noecho
+and
+.Va @ismake .
+The
+.Va @ignore
+means exit status is ignored and is used as follows:
+.Pp
+.Bd -literal
+@phonyrule: 'all':
+@	@ignore ["false"]
+.Ed
+.Pp
+The
+.Va @noecho
+means the command is not echoed and is used as follows:
+.Pp
+.Bd -literal
+@phonyrule: 'all':
+@	@noecho ["echo", "foo"]
+.Ed
+.Pp
+The
+.Va @ismake
+means the command is a sub-make for which
+.Ev MAKEFLAGS
+environment variable needs to be set up and is used as follows:
+.Pp
+.Bd -literal
+@phonyrule: 'all':
+@	@ismake ["make", "-C", "subdir"]
+.Ed
+.Pp
+Note that stirmake is able to detect typical paths to the
+.Xr make 1
+binary, so in many cases, the
+.Va @ismake
+specifier is not required.
 .Sh "LUAJIT INTEGRATION"
 .Pp
 .Nm stirmake
