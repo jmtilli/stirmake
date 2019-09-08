@@ -981,12 +981,12 @@ cmdsrc_cache_add_str_nul(struct abce *abce, const char *str, int *err)
   return ret;
 }
 
-char *st_ignore = "ignore";
-char *st_noignore = "noignore";
-char *st_noecho = "noecho";
-char *st_echo = "echo";
-char *st_make = "make";
-char *st_nomake = "nomake";
+char *st_ignore = "I";
+char *st_noignore = "NI";
+char *st_noecho = "NE";
+char *st_echo = "E";
+char *st_make = "M";
+char *st_nomake = "NM";
 
 
 char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
