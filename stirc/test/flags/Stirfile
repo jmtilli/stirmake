@@ -1,0 +1,16 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'a' 'b' 'c' 'd'
+
+@phonyrule: 'a':
+@	@ignore ["false"]
+
+@phonyrule: 'b':
+@	@noecho ["echo", "b"]
+
+@phonyrule: 'c':
+@	@ismake ["sh", "-c", "echo $MAKEFLAGS"]
+
+@phonyrule: 'd':
+@	["sh", "-c", "echo $MAKEFLAGS"]
