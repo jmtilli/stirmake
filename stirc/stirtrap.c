@@ -69,24 +69,36 @@
   },
   "shells": [ // default: []
     {
-      "embed": true, // default: false
-      "isfun": false, // default: false
-      "cmds": [["true"], ["true"]]
+      "embed": @true, // default: @false
+      "isfun": @false, // default: @false
+      "ignore": @true, // if missing, default @false
+      "ismake": @false, // if missing, default @false
+      "noecho": @false, // if missing, default @false
+      "cmds": [["true"], ["false"]]
     },
     {
-      "embed": false,
-      "isfun": false,
-      "cmd": ["true"]
+      "embed": @false,
+      "isfun": @false,
+      "ignore": @true, // if missing, default @false
+      "ismake": @false, // if missing, default @false
+      "noecho": @false, // if missing, default @false
+      "cmd": ["false"]
     },
     {
-      "embed": true,
-      "isfun": true,
+      "embed": @true,
+      "isfun": @true,
+      "ignore": @true, // if missing, default @false
+      "ismake": @false, // if missing, default @false
+      "noecho": @false, // if missing, default @false
       "fun": $FNMANY,
       "arg": $FNMANYARG
     },
     {
-      "embed": false,
-      "isfun": true,
+      "embed": @false,
+      "isfun": @true,
+      "ignore": @true, // if missing, default @false
+      "ismake": @false, // if missing, default @false
+      "noecho": @false, // if missing, default @false
       "fun": $FN,
       "arg": $FNARG
     }
@@ -183,6 +195,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   size_t rectgt, detouch, maybe, dist, deponly;
   size_t iscleanhook, isdistcleanhook, isbothcleanhook;
   size_t embed, isfun, cmds, cmd, fun, arg;
+  size_t ismake, noecho, ignore;
   struct abce_mb *tgtres, *depres, *attrsres, *mbstr, *shellsres;
   struct tgt *yytgts;
   size_t tgtsz;
@@ -223,6 +236,9 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   cmd = cache_add_str_nul(abce, "cmd", &err);
   fun = cache_add_str_nul(abce, "fun", &err);
   arg = cache_add_str_nul(abce, "arg", &err);
+  ismake = cache_add_str_nul(abce, "ismake", &err);
+  noecho = cache_add_str_nul(abce, "noecho", &err);
+  ignore = cache_add_str_nul(abce, "ignore", &err);
   if (err)
   {
     abce_mb_refdn(abce, &tree);
@@ -392,6 +408,36 @@ int stir_trap_ruleadd(struct stiryy_main *main,
         return -EINVAL;
       }
       boolisfun = !!attr1->u.d;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[ismake]) == 0)
+    {
+      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce_mb_refdn(abce, &tree);
+        return -EINVAL;
+      }
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[noecho]) == 0)
+    {
+      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce_mb_refdn(abce, &tree);
+        return -EINVAL;
+      }
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[ignore]) == 0)
+    {
+      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      {
+        abce->err.code = ABCE_E_EXPECT_BOOL;
+        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce_mb_refdn(abce, &tree);
+        return -EINVAL;
+      }
     }
     if (boolisfun)
     {
@@ -666,6 +712,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     struct abce_mb *attr1;
     int boolembed = 0;
     int boolisfun = 0;
+    int boolismake = 0, boolnoecho = 0, boolignore = 0;
 
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[embed]) == 0)
     {
@@ -675,6 +722,18 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     {
       boolisfun = !!attr1->u.d;
     }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[ismake]) == 0)
+    {
+      boolismake = !!attr1->u.d;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[noecho]) == 0)
+    {
+      boolnoecho = !!attr1->u.d;
+    }
+    if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[ignore]) == 0)
+    {
+      boolignore = !!attr1->u.d;
+    }
     if (boolisfun)
     {
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[fun]) != 0)
@@ -682,6 +741,9 @@ int stir_trap_ruleadd(struct stiryy_main *main,
         my_abort();
       }
       yyshells[i].merge = !!boolembed;
+      yyshells[i].ignore = !!boolignore;
+      yyshells[i].noecho = !!boolnoecho;
+      yyshells[i].ismake = !!boolismake;
       yyshells[i].isfun = 1;
       yyshells[i].iscode = 0;
       yyshells[i].sz = 0;
@@ -709,6 +771,9 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       yyshells[i].merge = 1;
       yyshells[i].iscode = 0;
       yyshells[i].isfun = 0;
+      yyshells[i].ignore = !!boolignore;
+      yyshells[i].noecho = !!boolnoecho;
+      yyshells[i].ismake = !!boolismake;
       yyshells[i].sz = attr1->u.area->u.ar.size;
       yyshells[i].capacity = attr1->u.area->u.ar.size+1;
       yyshells[i].u.cmds = // FIXME leaks
@@ -739,6 +804,9 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       yyshells[i].merge = 0;
       yyshells[i].iscode = 0;
       yyshells[i].isfun = 0;
+      yyshells[i].ignore = !!boolignore;
+      yyshells[i].noecho = !!boolnoecho;
+      yyshells[i].ismake = !!boolismake;
       yyshells[i].sz = attr1->u.area->u.ar.size;
       yyshells[i].capacity = attr1->u.area->u.ar.size+1;
       yyshells[i].u.args =
