@@ -800,10 +800,22 @@ The
 .Va shells
 is an array of shell invocations, where shell invocation can
 have 
-.Va embed
+.Va embed ,
+.Va isfun ,
+.Va ismake ,
+.Va ignore ,
 and
-.Va isfun
-boolean attributes. Here
+.Va noecho
+boolean attributes.
+Here
+.Va ismake
+means it's a sub-make so pass the jobserver and
+.Ev MAKEFLAGS
+environment variable to it, and
+.Va ignore
+means ignore a non-zero exit status. Furthermore,
+.Va noecho
+means that the command line is not echoed. Also,
 .Va embed
 means
 it's an array of arrays of command-line arguments that should be embedded, and
@@ -1039,15 +1051,8 @@ refer to strings containing the special
 .Sq %
 character.
 .It
-.Nm stirmake
-has undocumented support for specifying
-.Va @ignore ,
-.Va @noecho
-and
-.Va @ismake
-for commands added from
-.Nm Amyplan .
-This support should be documented.
+If stirmake is interrupted, targets that are being built are not removed after the
+children are dead.
 .El
 .Sh AUTHOR
 Juha-Matti Tilli (juha-matti.tilli@iki.fi)
