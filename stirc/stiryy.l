@@ -197,6 +197,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>== return EQ;
 <INITIAL,STRICT>\+=         return PLUSEQUALS;
 <INITIAL,STRICT>\?=         return QMEQUALS;
+<INITIAL,STRICT>\`=         return SHELLEQUALS;
+<INITIAL,STRICT>\`\`=       return SHELLSHELLEQUALS;
 <INITIAL,STRICT>\<\< return SHL;
 <INITIAL,STRICT>\>\> return SHR;
 <INITIAL,STRICT>\<        return LT;

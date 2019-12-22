@@ -9,6 +9,10 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "abce/abce.h"
 #include "canon.h"
 #include "stirtrap.h"
@@ -30,6 +34,86 @@ struct CSnippet {
   size_t len;
   size_t capacity;
 };
+
+static inline char *fd_grok(int fd)
+{
+  char *buf = NULL;
+  const size_t xfer = 1024;
+  size_t sz = 0, cap = 2048;
+  ssize_t ret;
+  buf = malloc(cap);
+  for (;;)
+  {
+    if (sz + xfer + 1 < cap)
+    {
+      cap = 2*cap + xfer + 1;
+      buf = realloc(buf, cap);
+    }
+    ret = read(fd, buf + sz, xfer);
+    if (ret == 0)
+    {
+      buf[sz] = '\0';
+      return buf;
+    }
+    if (ret < 0)
+    {
+      free(buf);
+      return NULL;
+    }
+    sz += (size_t)ret;
+  }
+}
+
+static inline char *eval_cmd(char **argv)
+{
+  pid_t child;
+  int pipefds[2];
+
+  if (pipe(pipefds) != 0)
+  {
+    return NULL;
+  }
+  child = fork();
+  if (child < 0)
+  {
+    close(pipefds[0]);
+    close(pipefds[1]);
+    return NULL;
+  }
+  if (child == 0)
+  {
+    close(0);
+    if (open("/dev/null", O_RDONLY) != 0)
+    {
+      _exit(1);
+    }
+    dup2(pipefds[1], 1);
+    close(pipefds[0]);
+    close(pipefds[1]);
+    execvp(argv[0], argv);
+    _exit(1);
+  }
+  else
+  {
+    char *result;
+    int wstatus;
+    close(pipefds[1]);
+    result = fd_grok(pipefds[0]);
+    close(pipefds[0]);
+    waitpid(child, &wstatus, 0);
+    if (!WIFEXITED(wstatus))
+    {
+      free(result);
+      return NULL;
+    }
+    if (WEXITSTATUS(wstatus) != 0)
+    {
+      free(result);
+      return NULL;
+    }
+    return result;
+  }
+}
 
 static inline void csadd(struct CSnippet *cs, char ch)
 {

@@ -1,0 +1,9 @@
+@toplevel
+@strict
+
+$(FOO) ``= ["echo", "h e l l o     world"]
+$(BAR) `= ["echo", "h e l l o     world"]
+
+@phonyrule: 'all':
+@	["echo", @$(FOO)]
+@	["echo", $(BAR)]
