@@ -1060,6 +1060,7 @@ assignrule:
           amyplanyyerror(scanner, amyplanyy, "shell-assign failed in abce (OOM)");
           YYABORT;
         }
+        abce_mb_refdn(get_abce(amyplanyy), &mbstr);
         it = it2 + strspn(res + it2, " \t\r\n");
       }
 
