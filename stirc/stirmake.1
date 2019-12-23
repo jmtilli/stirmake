@@ -229,6 +229,30 @@ is required to embed the list containing many entries into the parent list.
 Note also the syntax to break the line into two, which requires the \\ sign
 to be just before the line feed.
 .Pp
+It is possible to invoke external utilities to set variable values. For
+example:
+.Pp
+.Bd -literal
+$PY3PREFIX `= ["python3-config", "--prefix"]
+$PY3LIBS ``= ["python3-config", "--libs"]
+.Ed
+.Pp
+Here
+.Va $PY3PREFIX
+defined by using one backtick before command is a string (containing the final
+newline too) and
+.Va $PY3LIBS
+defined by using two backticks before command is an array. Arrays created by
+the command invocation syntax are split by spaces, newlines and tabulators.
+.Pp
+To remove the newline from
+.Va $PY3PREFIX ,
+use
+.Pp
+.Bd -literal
+$PY3PREFIXLINE = @strgsub($PY3PREFIX, "\\n", "")
+.Ed
+.Pp
 Of course, functions can be defined in a full programming language:
 .Pp
 .Bd -literal
