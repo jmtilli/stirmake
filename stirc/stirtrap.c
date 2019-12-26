@@ -697,6 +697,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     yydeps[i].namenodir = strdup(mbstr->u.area->u.str.buf);
     yydeps[i].rec = 0;
     yydeps[i].orderonly = 0;
+    yydeps[i].wait = 0;
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[rec]) == 0)
     {
       yydeps[i].rec = !!attr1->u.d;
