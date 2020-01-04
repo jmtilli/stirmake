@@ -2999,7 +2999,8 @@ shell_command:
           i++;
           continue;
         }
-        my_abort();
+        stiryyerror(scanner, stiryy, "Old-style shell commands support only $@, $<, $^, $+ and $| as variables");
+        YYABORT;
       }
       if (outsz >= outcap)
       {
