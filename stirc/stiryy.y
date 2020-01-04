@@ -36,6 +36,8 @@ typedef void *yyscan_t;
 
 void my_abort(void);
 
+int shell_dummy;
+
 void stiryyerror(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy, const char *str)
 {
   //fprintf(stderr, "error: %s at line %d col %d\n",str, yylloc->first_line, yylloc->first_column);
@@ -2867,8 +2869,13 @@ stirrule:
     stiryy_freeze_patrule(stiryy);
   }
 }
-  pattargetspec COLON patdepspec NEWLINE shell_commands
+  pattargetspec COLON patdepspec NEWLINE
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     if ($2)
