@@ -1,0 +1,23 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'first' 'second'
+
+$(FIRST) = \
+	"foo"
+
+$(SECOND) = \
+	[ \
+		"bar", \
+		"baz", \
+		"barf" \
+	]
+
+@phonyrule: 'first':
+	echo $(FIRST)
+	echo $(@SECOND)
+
+@phonyrule: 'second':
+	echo bar
+	echo baz
+	echo barf
