@@ -298,7 +298,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>\n                                { ++yylineno; yycolumn=1; return NEWLINE; }
 <INITIAL,STRICT>\\\n                              { ++yylineno; yycolumn=1; }
 <INITIAL,STRICT>\t {
-  if (yycolumn == 2)
+  if (yycolumn == 2 && yyextra != NULL)
   {
     yy_push_state(SHELL, yyscanner);
   }
