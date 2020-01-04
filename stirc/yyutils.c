@@ -10,14 +10,16 @@ typedef void *yyscan_t;
 extern int stiryyparse(yyscan_t scanner, struct stiryy *stiryy);
 extern int stiryylex_init(yyscan_t *scanner);
 extern void stiryyset_in(FILE *in_str, yyscan_t yyscanner);
-extern void stiryyset_extra (void *user_defined, yyscan_t yyscanner);
+extern void stiryyset_extra (unsigned int user_defined, yyscan_t yyscanner);
 extern int stiryylex_destroy(yyscan_t yyscanner);
 
 int stiryydoparse(FILE *filein, struct stiryy *stiryy)
 {
   yyscan_t scanner;
   stiryylex_init(&scanner);
-  stiryyset_extra(NULL, scanner);
+  // 1 == in environment where shell commands can occur
+  // 2 == last newline was line continuation or no newline seen yet
+  stiryyset_extra(2, scanner);
   stiryyset_in(filein, scanner);
   if (stiryyparse(scanner, stiryy) != 0)
   {
