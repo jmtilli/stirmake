@@ -25,6 +25,7 @@
 
 %option reentrant bison-bridge
 %option stack
+%option extra-type="unsigned int"
 %x SHELL
 %x PERCENTLUA
 %x STRICT
@@ -224,8 +225,26 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>\<\> return MAYBE_CALL;
 <INITIAL,STRICT>[.] return PERIOD;
 
-<INITIAL,STRICT>@\t return ATTAB;
-<INITIAL,STRICT>@@\t return ATATTAB;
+<INITIAL,STRICT>@\t {
+  if (yycolumn == 3 && (yyextra&1) != 0 && (yyextra&2) == 0)
+  {
+    return ATTAB;
+  }
+  else
+  {
+    // ignore
+  }
+}
+<INITIAL,STRICT>@@\t {
+  if (yycolumn == 4 && (yyextra&1) != 0 && (yyextra&2) == 0)
+  {
+    return ATATTAB;
+  }
+  else
+  {
+    // ignore
+  }
+}
 
 
 <INITIAL,STRICT>[$]^ {
@@ -295,10 +314,10 @@ struct CSnippet luaSnippet = {
 <PERCENTLUA>.             { csadd(&luaSnippet, yytext[0]); }
 <PERCENTLUA>"\n"          { csadd(&luaSnippet, yytext[0]); ++yylineno; yycolumn=1; }
 
-<INITIAL,STRICT>\n                                { ++yylineno; yycolumn=1; return NEWLINE; }
-<INITIAL,STRICT>\\\n                              { ++yylineno; yycolumn=1; }
+<INITIAL,STRICT>\n                                { ++yylineno; yycolumn=1; yyextra &= (~2); return NEWLINE; }
+<INITIAL,STRICT>\\\n                              { ++yylineno; yycolumn=1; yyextra |= 2; }
 <INITIAL,STRICT>\t {
-  if (yycolumn == 2 && yyextra != NULL)
+  if (yycolumn == 2 && (yyextra&1) != 0 && (yyextra&2) == 0)
   {
     yy_push_state(SHELL, yyscanner);
   }
@@ -331,6 +350,7 @@ struct CSnippet luaSnippet = {
   yycolumn=1;
   (void)yy_top_state(yyscanner); // so that it's not unused
   yy_pop_state(yyscanner);
+  yyextra &= (~2);
   return NEWLINE;
 }
 <INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
