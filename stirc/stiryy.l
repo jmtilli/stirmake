@@ -232,7 +232,7 @@ struct CSnippet luaSnippet = {
   }
   else
   {
-    // ignore
+    return AT;
   }
 }
 <INITIAL,STRICT>@@\t {
@@ -242,7 +242,8 @@ struct CSnippet luaSnippet = {
   }
   else
   {
-    // ignore
+    // Ouch. We should return two tokens. However, this is not valid.
+    return ERROR_TOK;
   }
 }
 
