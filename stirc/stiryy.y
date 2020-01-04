@@ -2987,6 +2987,7 @@ shell_command:
     }
     for (; i < len; i++)
     {
+#if 0
       if ($1[i] == '\\')
       {
         if (i+1 >= len)
@@ -3002,7 +3003,8 @@ shell_command:
         i++;
         continue;
       }
-      else if ($1[i] == '$')
+#endif
+      if ($1[i] == '$')
       {
         if (outsz)
         {
@@ -3029,6 +3031,7 @@ shell_command:
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+          abce_add_ins(amyplanyy->main->abce, STIR_OPCODE_SHELL_ESCAPE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           i++;
           continue;
@@ -3047,6 +3050,7 @@ shell_command:
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRLISTJOIN);
+          abce_add_ins(amyplanyy->main->abce, STIR_OPCODE_SHELL_ESCAPE);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           i++;
           continue;
@@ -3083,6 +3087,7 @@ shell_command:
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRLISTJOIN);
+            abce_add_ins(amyplanyy->main->abce, STIR_OPCODE_SHELL_ESCAPE);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           }
           else
@@ -3093,6 +3098,7 @@ shell_command:
             abce_add_double(amyplanyy->main->abce, cidx);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+            abce_add_ins(amyplanyy->main->abce, STIR_OPCODE_SHELL_ESCAPE);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
           }
           i = end;
