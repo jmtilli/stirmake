@@ -2987,7 +2987,7 @@ shell_command:
     }
     for (; i < len; i++)
     {
-#if 0
+#if 1
       if ($1[i] == '\\')
       {
         if (i+1 >= len)
