@@ -2730,8 +2730,13 @@ valuelistentry:
 /* End of copypaste */
 
 stirrule:
-  targetspec COLON depspec NEWLINE shell_commands
+  targetspec COLON depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     if (stiryy_check_rule(stiryy) != 0)
@@ -2753,8 +2758,13 @@ stirrule:
     stiryy_set_cleanhooktgt(stiryy, "CLEAN");
   }
 }
-  depspec NEWLINE shell_commands
+  depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy->main->rule_in_progress = 0;
@@ -2769,8 +2779,13 @@ stirrule:
     stiryy_set_cleanhooktgt(stiryy, "DISTCLEAN");
   }
 }
-  depspec NEWLINE shell_commands
+  depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy->main->rule_in_progress = 0;
@@ -2785,15 +2800,25 @@ stirrule:
     stiryy_set_cleanhooktgt(stiryy, "BOTHCLEAN");
   }
 }
-  depspec NEWLINE shell_commands
+  depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy->main->rule_in_progress = 0;
   }
 }
-| RECTGTRULE maybe_distrule COLON targetspec COLON depspec NEWLINE shell_commands
+| RECTGTRULE maybe_distrule COLON targetspec COLON depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_rectgt(stiryy);
@@ -2804,8 +2829,13 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| DETOUCHRULE maybe_distrule COLON targetspec COLON depspec NEWLINE shell_commands
+| DETOUCHRULE maybe_distrule COLON targetspec COLON depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_detouch(stiryy);
@@ -2816,24 +2846,39 @@ stirrule:
     stiryy->main->rule_in_progress = 0;
   }
 }
-| PHONYRULE COLON targetspec COLON depspec NEWLINE shell_commands
+| PHONYRULE COLON targetspec COLON depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_phony(stiryy);
     stiryy->main->rule_in_progress = 0;
   }
 }
-| MAYBERULE COLON targetspec COLON depspec NEWLINE shell_commands
+| MAYBERULE COLON targetspec COLON depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_maybe(stiryy);
     stiryy->main->rule_in_progress = 0;
   }
 }
-| DISTRULE COLON targetspec COLON depspec NEWLINE shell_commands
+| DISTRULE COLON targetspec COLON depspec
 {
+  stiryyset_extra(&shell_dummy, scanner);
+}
+  NEWLINE shell_commands
+{
+  stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_dist(stiryy);
@@ -2869,11 +2914,11 @@ stirrule:
     stiryy_freeze_patrule(stiryy);
   }
 }
-  pattargetspec COLON patdepspec NEWLINE
+  pattargetspec COLON patdepspec
 {
   stiryyset_extra(&shell_dummy, scanner);
 }
-  shell_commands
+  NEWLINE shell_commands
 {
   stiryyset_extra(NULL, scanner);
   if (amyplanyy_do_emit(amyplanyy))
