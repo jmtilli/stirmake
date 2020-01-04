@@ -3051,7 +3051,54 @@ shell_command:
           i++;
           continue;
         }
-        stiryyerror(scanner, stiryy, "Old-style shell commands support only $@, $<, $^, $+ and $| as variables");
+        if (i+1 < len && $1[i+1] == '(')
+        {
+          size_t end;
+          size_t cidxvar, cidx;
+          int isarray = 0;
+          if (i+2 < len && $1[i+2] == '@')
+          {
+            isarray = 1;
+          }
+          for (end = i+1; end < len && $1[end] != ')'; end++)
+          {
+            // nop
+          }
+          if (end == len)
+          {
+            stiryyerror(scanner, stiryy, "Old-style shell command varref literal not terminated");
+            YYABORT;
+          }
+          cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + isarray, end - (i+2+isarray));
+          if (isarray)
+          {
+            cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+            abce_add_double(amyplanyy->main->abce, cidx);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+            cidx = cidxvar;
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+            abce_add_double(amyplanyy->main->abce, cidx);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRLISTJOIN);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
+          }
+          else
+          {
+            cidx = cidxvar;
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
+            abce_add_double(amyplanyy->main->abce, cidx);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_SCOPEVAR);
+            abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_STRAPPEND);
+          }
+          i = end;
+          continue;
+        }
+        stiryyerror(scanner, stiryy, "Old-style shell commands support only $@, $<, $^, $+, $|, $(VARNAME) and $(@VARNAME) as variables");
         YYABORT;
       }
       if (outsz >= outcap)
