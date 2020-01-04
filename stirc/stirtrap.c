@@ -35,6 +35,7 @@
 
 #define GETMB(mb, idx) GETGENERIC(abce_getmb, mb, idx)
 #define GETMBAR(mb, idx) GETGENERIC(abce_getmbar, mb, idx)
+#define GETMBSTR(mb, idx) GETGENERIC(abce_getmbstr, mb, idx)
 
 /*
   Planned argument for STIR_OPCODE_RULE_ADD:
@@ -182,6 +183,78 @@ int attr_sanity(const struct attrstruct *as)
     return 0;
   }
   return 0;
+}
+
+static inline void emit(char **buf, size_t *sz, size_t *cap, char ch)
+{
+  if ((*sz) + 2 >= *cap)
+  {
+    *cap = 2*(*cap) + 2;
+    char *newbuf = realloc(*buf, *cap);
+    if (newbuf == NULL)
+    {
+      free(*buf);
+    }
+    *buf = newbuf;
+  }
+  if (*buf == NULL)
+  {
+    return;
+  }
+  (*buf)[(*sz)++] = ch;
+  (*buf)[(*sz)] = '\0';
+}
+
+char *stir_shellescape(const char *old, size_t oldsz, size_t *newszptr)
+{
+  size_t newsz = 0;
+  size_t newcap = 0;
+  char *newbuf = NULL;
+  size_t i;
+  *newszptr = 0;
+  for (i = 0; i < oldsz; i++)
+  {
+    if (old[i] == '\n' || old[i] == '\t')
+    { 
+      emit(&newbuf, &newsz, &newcap, '"');
+      emit(&newbuf, &newsz, &newcap, old[i]);
+      emit(&newbuf, &newsz, &newcap, '"');
+      continue;
+    }
+    if (   old[i] == '$' // var
+        || old[i] == '\\' // escape
+        || old[i] == '"' // quote
+        || old[i] == '\'' // quote
+        || old[i] == '*' // wildcard
+        || old[i] == '?' // single-char wildcard
+        || old[i] == '`' // inline command
+        || old[i] == '<' // redir
+        || old[i] == '>' // redir
+        || old[i] == '#' // comment
+        || old[i] == '&' // background, and-operator
+        || old[i] == '(' // ???
+        || old[i] == ')' // ???
+        || old[i] == ';' // multiple commands on same line
+        || old[i] == '|' // pipe
+        || old[i] == '~' // home directory
+        || old[i] == '%' // unknown, but safest to escape
+        || old[i] == '=' // unknown, but safest to escape, probably set -k
+        || old[i] == '[' // example: source.[ch]
+        || old[i] == ']' // example: source.[ch], probably just [ would be ok
+        || old[i] == '!' // history substitution
+        || old[i] == '{' // brace expansion: source.{c,h}
+        || old[i] == '}' // brace expansion, probably just } would be ok
+        || old[i] == '^' // unknown, but safest to quote
+       )
+    {
+      emit(&newbuf, &newsz, &newcap, '\\');
+      emit(&newbuf, &newsz, &newcap, old[i]);
+      continue;
+    }
+    emit(&newbuf, &newsz, &newcap, old[i]);
+  }
+  *newszptr = newsz;
+  return newbuf;
 }
 
 int stir_trap_ruleadd(struct stiryy_main *main,
@@ -2178,6 +2251,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         abce->err.code = ABCE_E_STACK_OVERFLOW;
         abce->err.mb = abce_mb_refup_noinline(abce, &mb);
+        abce_mb_refdn(abce, &mb);
         return -EOVERFLOW;
       }
       abce_mb_refdn(abce, &mb);
@@ -2205,10 +2279,46 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         abce->err.code = ABCE_E_STACK_OVERFLOW;
         abce->err.mb = abce_mb_refup_noinline(abce, &mb);
+        abce_mb_refdn(abce, &mb);
         return -EOVERFLOW;
       }
       abce_mb_refdn(abce, &mb);
       return 0;
+    case STIR_OPCODE_SHELL_ESCAPE:
+      {
+        struct abce_mb mbarg = {}, mbnew = {};
+        size_t newsz;
+        char *newstr;
+        GETMBSTR(&mbarg, -1);
+        newstr = stir_shellescape(mbarg.u.area->u.str.buf,
+                                  mbarg.u.area->u.str.size, &newsz);
+        if (newstr == NULL)
+        {
+          abce_mb_refdn(abce, &mbarg);
+          return -ENOMEM;
+        }
+        mbnew = abce_mb_create_string(abce, newstr, newsz);
+        if (mb.typ == ABCE_T_N)
+        {
+          abce_mb_refdn(abce, &mbarg);
+          free(newstr);
+          return -ENOMEM;
+        }
+        abce_pop(abce);
+        if (abce_push_mb(abce, &mbnew) != 0)
+        {
+          abce->err.code = ABCE_E_STACK_OVERFLOW;
+          abce->err.mb = abce_mb_refup_noinline(abce, &mbnew);
+          abce_mb_refdn(abce, &mbnew);
+          abce_mb_refdn(abce, &mbarg);
+          free(newstr);
+          return -EOVERFLOW;
+        }
+        abce_mb_refdn(abce, &mbnew);
+        abce_mb_refdn(abce, &mbarg);
+        free(newstr);
+        return 0;
+      }
     default:
       abce->err.code = ABCE_E_UNKNOWN_INSTRUCTION;
       abce->err.mb.typ = ABCE_T_D;

@@ -22,6 +22,7 @@ enum stir_opcode {
   STIR_OPCODE_GLOB = 81,
   STIR_OPCODE_JSON_IN = 82,
   STIR_OPCODE_SUFFILTEROUT = 83,
+  STIR_OPCODE_SHELL_ESCAPE = 84,
 };
 
 #endif

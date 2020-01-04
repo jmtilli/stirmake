@@ -4,12 +4,12 @@
 @phonyrule: 'all': 'first' 'second'
 
 $(FIRST) = \
-	"foo"
+	"*"
 
 $(SECOND) = \
 	[ \
 		"bar", \
-		"baz", \
+		"*", \
 		"barf" \
 	]
 
@@ -18,6 +18,8 @@ $(SECOND) = \
 	echo $(@SECOND)
 
 @phonyrule: 'second':
-	echo bar
+	echo *
+	echo \*
+	echo \\*
 	echo baz
 	echo barf
