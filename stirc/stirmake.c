@@ -966,6 +966,7 @@ struct rule {
   size_t diridx;
   struct cmdsrc cmdsrc;
   struct cmd cmd; // calculated from cmdsrc
+  size_t execcnt;
   struct timespec st_mtim;
   int ruleid;
   struct abce_rb_tree_nocmp tgts[TGTS_SIZE];
@@ -2129,7 +2130,26 @@ void zero_rule(struct rule *rule)
   syncbuf_init(&rule->output);
   rule->deps_remain_cnt = 0;
   rule->wait_remain_cnt = 0;
+  rule->execcnt = 0;
   linked_list_head_init(&rule->depremainlist);
+}
+
+size_t get_cmdcnt(struct rule *rule)
+{
+  char ***argiter;
+  size_t cnt = 0;
+  argiter = rule->cmd.args;
+  while (*argiter)
+  {
+    cnt++;
+    argiter++;
+  }
+  return cnt;
+}
+
+int is_ignore(struct rule *rule)
+{
+  return strcmp(rule->cmd.args[rule->execcnt][0], st_ignore) == 0;
 }
 
 char **null_cmds[] = {NULL};
@@ -2841,13 +2861,18 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     }
     argcnt++;
   }
+  if (rules[ruleid]->execcnt >= argcnt)
+  {
+    my_abort();
+  }
   if (debug)
   {
     print_indent();
     printf("end args\n");
   }
 
-  argiter = args;
+  argiter = &args[rules[ruleid]->execcnt];
+  argcnt = 1;
 
   if (argcnt == 0)
   {
@@ -2910,7 +2935,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
       argiter++;
       argcnt--;
     }
-    if (strcmp((*argiter)[0], st_ignore) == 0)
+    if (0 && strcmp((*argiter)[0], st_ignore) == 0) // old code path
     {
       child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       _exit(0);
@@ -5166,6 +5191,7 @@ back:
       for (;;)
       {
         pid_t pid;
+        int ruleid;
         pid = waitpid(-1, &wstatus, WNOHANG);
         if (pid == 0)
         {
@@ -5176,7 +5202,7 @@ back:
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
             int fd = -1;
-            int ruleid = ruleid_by_pid_erase(pid, &fd);
+            ruleid = ruleid_by_pid_erase(pid, &fd);
             if (ruleid < 0)
             {
               printf("31.1\n");
@@ -5188,6 +5214,10 @@ back:
               syncbuf_dump(&rules[ruleid]->output, 1);
               close(fd);
               FD_CLR(fd, &globfds);
+            }
+            if (is_ignore(rules[ruleid]))
+            {
+              goto success_after_all;
             }
             children--;
             fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
@@ -5225,7 +5255,7 @@ back:
           my_abort();
         }
         int fd = -1;
-        int ruleid = ruleid_by_pid_erase(pid, &fd);
+        ruleid = ruleid_by_pid_erase(pid, &fd);
         if (ruleid < 0)
         {
           printf("31\n");
@@ -5239,17 +5269,38 @@ back:
           close(fd);
           FD_CLR(fd, &globfds);
         }
-        //ruleremain_rm(rules[ruleid]);
-        mark_executed(ruleid, 1);
-        children--;
-        if (children != 0)
+        struct rule *r;
+success_after_all:
+        r = rules[ruleid];
+        r->execcnt++;
+        if (r->execcnt < get_cmdcnt(r))
         {
-          write(jobserver_fd[1], ".", 1);
+          int pipefd = -1;
+          children--;
+          fork_child(ruleid, out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+          if (pipefd >= 0)
+          {
+            FD_SET(pipefd, &globfds);
+            if (pipefd > globmaxfd)
+            {
+              globmaxfd = pipefd;
+            }
+          }
         }
-        forkedchildcnt++;
-        if (((forkedchildcnt % 10) == 0) && narration)
+        else
         {
-          do_narration();
+          //ruleremain_rm(rules[ruleid]);
+          mark_executed(ruleid, 1);
+          children--;
+          if (children != 0)
+          {
+            write(jobserver_fd[1], ".", 1);
+          }
+          forkedchildcnt++;
+          if (((forkedchildcnt % 10) == 0) && narration)
+          {
+            do_narration();
+          }
         }
       }
     }
