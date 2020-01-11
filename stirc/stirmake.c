@@ -2811,6 +2811,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     outpiperd = outpipe[0];
     outpipewr = outpipe[1];
     set_nonblock(outpiperd); // not for outpipewr
+    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
   }
 
   if (debug)
