@@ -5191,7 +5191,8 @@ back:
       for (;;)
       {
         pid_t pid;
-        int ruleid;
+        int ruleid = -1;
+        int fd = -1;
         pid = waitpid(-1, &wstatus, WNOHANG);
         if (pid == 0)
         {
@@ -5201,12 +5202,15 @@ back:
         {
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
-            int fd = -1;
             ruleid = ruleid_by_pid_erase(pid, &fd);
             if (ruleid < 0)
             {
               printf("31.1\n");
               my_abort();
+            }
+            if (is_ignore(rules[ruleid]))
+            {
+              goto success_after_all;
             }
             if (fd >= 0)
             {
@@ -5214,10 +5218,6 @@ back:
               syncbuf_dump(&rules[ruleid]->output, 1);
               close(fd);
               FD_CLR(fd, &globfds);
-            }
-            if (is_ignore(rules[ruleid]))
-            {
-              goto success_after_all;
             }
             children--;
             fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
@@ -5254,7 +5254,6 @@ back:
           printf("30\n");
           my_abort();
         }
-        int fd = -1;
         ruleid = ruleid_by_pid_erase(pid, &fd);
         if (ruleid < 0)
         {
@@ -5262,15 +5261,18 @@ back:
           my_abort();
         }
         // FIXME do something with fd
+        struct rule *r;
+success_after_all:
         if (fd >= 0)
         {
           drain_pipe(rules[ruleid], fd);
-          syncbuf_dump(&rules[ruleid]->output, 1);
+          if (out_sync == OUT_SYNC_LINE)
+          {
+            syncbuf_dump(&rules[ruleid]->output, 1);
+          }
           close(fd);
           FD_CLR(fd, &globfds);
         }
-        struct rule *r;
-success_after_all:
         r = rules[ruleid];
         r->execcnt++;
         if (r->execcnt < get_cmdcnt(r))
@@ -5290,6 +5292,7 @@ success_after_all:
         else
         {
           //ruleremain_rm(rules[ruleid]);
+          syncbuf_dump(&rules[ruleid]->output, 1);
           mark_executed(ruleid, 1);
           children--;
           if (children != 0)
@@ -5575,8 +5578,7 @@ int main(int argc, char **argv)
     }
     else if (outsyncmflag[0] == 'l')
     {
-      fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
-      out_sync = OUT_SYNC_TARGET;
+      out_sync = OUT_SYNC_LINE;
     }
     else if (outsyncmflag[0] == 't')
     {
@@ -5613,8 +5615,7 @@ int main(int argc, char **argv)
       }
       else if (optarg[0] == 'l')
       {
-        fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
-        out_sync = OUT_SYNC_TARGET;
+        out_sync = OUT_SYNC_LINE;
       }
       else if (optarg[0] == 't')
       {
