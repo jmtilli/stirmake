@@ -2580,7 +2580,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
 
 size_t ruleid_by_pid_cnt;
 
-void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
+void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, int ruleid, int buf_present)
 {
   size_t argcnt = 0;
   char **argiter = argiter_orig;
@@ -2635,7 +2635,14 @@ void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
    * least on Linux. And, writev requires us to allocate memory for the iovec
    * list too.
    */
-  write(1, tbuf, toff);
+  if (buf_present)
+  {
+    syncbuf_append(&rules[ruleid]->output, tbuf, toff);
+  }
+  else
+  {
+    write(1, tbuf, toff);
+  }
   free(tbuf); // We could let it leak, too...
 }
 
@@ -2888,7 +2895,9 @@ void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, 
     do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr);
     if (!noecho)
     {
+#if 0
       print_cmd(tgtname, prefix, args);
+#endif
     }
     execvp(cmd, args);
     //write(1, "Err\n", 4);
@@ -3023,6 +3032,11 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     my_abort();
   }
 
+  if (strcmp((*argiter)[1], st_noecho) != 0)
+  {
+    print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[3], ruleid, create_fd);
+  }
+
   char *progname = resolv_exec_path((*argiter)[3]);
   if (progname == NULL)
   {
@@ -3107,11 +3121,6 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     {
       //update_recursive_pid(1);
       //do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
-      if (strcmp((*argiter)[1], st_noecho) != 0)
-      {
-        // FIXME move earlier to parent, print directly to buffer if it's used
-        print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[3]);
-      }
       execve(progname, &(*argiter)[3], environ);
       //write(1, "Err\n", 4);
       _exit(1);
