@@ -3050,7 +3050,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   predo_makecmd(dir, strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, &oldout, &olderr, &olddir);
   char **argv = &(*argiter)[3];
 
-  pid = fork();
+  pid = vfork();
   if (pid == 0)
   {
     execve(progname, argv, environ);
