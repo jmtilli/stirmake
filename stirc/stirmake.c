@@ -3051,81 +3051,16 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   char **argv = &(*argiter)[3];
 
   pid = fork();
-  if (pid < 0)
+  if (pid == 0)
+  {
+    execve(progname, argv, environ);
+    _exit(1);
+  }
+  else if (pid < 0)
   {
     errxit("Unable to fork child");
     my_abort();
     exit(2);
-  }
-  else if (pid == 0)
-  {
-    struct sigaction sa, saint, saterm, sahup;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
-    sigaction(SIGCHLD, &sa, NULL);
-    sigemptyset(&saint.sa_mask);
-    saint.sa_flags = 0;
-    saint.sa_handler = subproc_sigint_handler;
-    sigaction(SIGINT, &saint, NULL);
-    sigemptyset(&saterm.sa_mask);
-    saterm.sa_flags = 0;
-    saterm.sa_handler = subproc_sigterm_handler;
-    sigaction(SIGTERM, &saterm, NULL);
-    sigemptyset(&sahup.sa_mask);
-    sahup.sa_flags = 0;
-    sahup.sa_handler = subproc_sighup_handler;
-    sigaction(SIGHUP, &sahup, NULL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGQUIT, SIG_DFL);
-    signal(SIGSYS, SIG_DFL);
-    signal(SIGXCPU, SIG_DFL);
-    signal(SIGXFSZ, SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGALRM, SIG_DFL);
-#if 0
-    // moved to parent process
-    if (chdir(dir) != 0)
-    {
-      write(1, "CHDIRERR\n", 9);
-      _exit(1);
-    }
-#endif
-#if 0
-    // cloexec
-    close(fileno(dbf));
-    close(self_pipe_fd[0]);
-    close(self_pipe_fd[1]);
-    if (create_fd)
-    {
-      close(outpiperd);
-    }
-#endif
-    //update_recursive_pid(0);
-    while (argcnt > 1)
-    {
-      abort();
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
-      argiter++;
-      argcnt--;
-    }
-    if (0 && strcmp((*argiter)[0], st_ignore) == 0) // old code path
-    {
-      abort();
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
-      _exit(0);
-    }
-    else
-    {
-      //update_recursive_pid(1);
-      //do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
-      execve(progname, argv, environ);
-      //write(1, "Err\n", 4);
-      _exit(1);
-    }
   }
   else
   {
