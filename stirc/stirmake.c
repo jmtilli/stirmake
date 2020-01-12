@@ -2670,6 +2670,126 @@ int is_makecmd(const char *cmd)
   return 0;
 }
 
+void cloexec_on(int fd)
+{
+  fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) | FD_CLOEXEC);
+}
+void cloexec_off(int fd)
+{
+  fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) & (~FD_CLOEXEC));
+}
+
+void undo_makecmd(int oldout, int olderr)
+{
+  if (oldout >= 0)
+  {
+    if (dup2(oldout, 1) < 0)
+    {
+      my_abort();
+    }
+    close(oldout);
+  }
+  if (olderr >= 0)
+  {
+    if (dup2(olderr, 2) < 0)
+    {
+      my_abort();
+    }
+    close(olderr);
+  }
+  unsetenv("MAKEFLAGS");
+}
+
+void predo_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr, int *oldout, int *olderr)
+{
+  *oldout = -1;
+  *olderr = -1;
+  if (ismake || is_makecmd(cmd))
+  {
+    char env[128] = {0};
+    if (create_make_fd)
+    {
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j -Orecurse",
+               jobserver_fd[0], jobserver_fd[1]);
+    }
+    else if (create_fd)
+    {
+      // FIXME -Oline!!!
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j -Otarget",
+               jobserver_fd[0], jobserver_fd[1]);
+    }
+    else
+    {
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j",
+               jobserver_fd[0], jobserver_fd[1]);
+    }
+    setenv("MAKEFLAGS", env, 1);
+    if (create_make_fd)
+    {
+      *oldout = dup(1);
+      *olderr = dup(2);
+      if (*oldout < 0)
+      {
+        my_abort();
+      }
+      if (*olderr < 0)
+      {
+        my_abort();
+      }
+      cloexec_on(*oldout);
+      cloexec_on(*olderr);
+      if (dup2(outpipewr, 1) < 0)
+      {
+        my_abort();
+      }
+      if (dup2(outpipewr, 2) < 0)
+      {
+        my_abort();
+      }
+      cloexec_off(1);
+      cloexec_off(2);
+      close(outpipewr);
+    }
+    else if (create_fd)
+    {
+      close(outpipewr);
+    }
+    cloexec_off(jobserver_fd[0]);
+    cloexec_off(jobserver_fd[1]);
+  }
+  else
+  {
+    cloexec_on(jobserver_fd[0]);
+    cloexec_on(jobserver_fd[1]);
+    if (create_fd)
+    {
+      *oldout = dup(1);
+      *olderr = dup(2);
+      if (*oldout < 0)
+      {
+        my_abort();
+      }
+      if (*olderr < 0)
+      {
+        my_abort();
+      }
+      cloexec_on(*oldout);
+      cloexec_on(*olderr);
+      if (dup2(outpipewr, 1) < 0)
+      {
+        my_abort();
+      }
+      if (dup2(outpipewr, 2) < 0)
+      {
+        my_abort();
+      }
+      cloexec_off(1);
+      cloexec_off(2);
+      close(outpipewr);
+    }
+  }
+}
+
 void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr)
 {
   if (ismake || is_makecmd(cmd))
@@ -2835,7 +2955,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     outpiperd = outpipe[0];
     outpipewr = outpipe[1];
     set_nonblock(outpiperd); // not for outpipewr
-    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
+    cloexec_on(outpiperd);
   }
 
   if (debug)
@@ -2892,6 +3012,10 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     exit(2);
   }
 
+  int oldout = -1, olderr = -1;
+
+  predo_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, &oldout, &olderr);
+
   pid = fork();
   if (pid < 0)
   {
@@ -2930,9 +3054,12 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     signal(SIGALRM, SIG_DFL);
     if (chdir(dir) != 0)
     {
+      // FIXME move to parent process
       write(1, "CHDIRERR\n", 9);
       _exit(1);
     }
+#if 0
+    // cloexec
     close(fileno(dbf));
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
@@ -2940,24 +3067,28 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     {
       close(outpiperd);
     }
-    update_recursive_pid(0);
+#endif
+    //update_recursive_pid(0);
     while (argcnt > 1)
     {
+      abort();
       child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       argiter++;
       argcnt--;
     }
     if (0 && strcmp((*argiter)[0], st_ignore) == 0) // old code path
     {
+      abort();
       child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       _exit(0);
     }
     else
     {
-      update_recursive_pid(1);
-      do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
+      //update_recursive_pid(1);
+      //do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
       if (strcmp((*argiter)[1], st_noecho) != 0)
       {
+        // FIXME move earlier to parent, print directly to buffer if it's used
         print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[3]);
       }
       execve(progname, &(*argiter)[3], environ);
@@ -2967,6 +3098,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   else
   {
+    undo_makecmd(oldout, olderr);
     free(progname);
     ruleid_by_pid_cnt++;
     struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
@@ -4826,6 +4958,7 @@ void load_db(void)
     fprintf(stderr, "stirmake: *** Can't get DB fileno. Exiting.\n");
     exit(2);
   }
+  cloexec_on(dbfd);
   fl.l_type = F_WRLCK;
   fl.l_whence = SEEK_SET;
   fl.l_start = 0;
@@ -6204,6 +6337,8 @@ int main(int argc, char **argv)
   }
   set_nonblock(self_pipe_fd[0]);
   set_nonblock(self_pipe_fd[1]);
+  cloexec_on(self_pipe_fd[0]);
+  cloexec_on(self_pipe_fd[1]);
 
   if (process_jobserver(jobserver_fd) != 0)
   {
