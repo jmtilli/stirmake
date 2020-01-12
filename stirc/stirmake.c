@@ -3048,6 +3048,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   int oldout = -1, olderr = -1, olddir = -1;
 
   predo_makecmd(dir, strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, &oldout, &olderr, &olddir);
+  char **argv = &(*argiter)[3];
 
   pid = fork();
   if (pid < 0)
@@ -3121,7 +3122,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     {
       //update_recursive_pid(1);
       //do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
-      execve(progname, &(*argiter)[3], environ);
+      execve(progname, argv, environ);
       //write(1, "Err\n", 4);
       _exit(1);
     }
