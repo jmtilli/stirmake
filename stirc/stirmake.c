@@ -2811,6 +2811,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     outpiperd = outpipe[0];
     outpipewr = outpipe[1];
     set_nonblock(outpiperd); // not for outpipewr
+    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
   }
 
   if (debug)
@@ -2939,6 +2940,10 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     bypid->ruleid = ruleid;
     bypid->fd = outpiperd;
     children++;
+    if (create_fd)
+    {
+      close(outpipewr);
+    }
     hashval = abce_murmur32(HASH_SEED, pid);
     hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
     if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
