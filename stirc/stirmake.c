@@ -16,6 +16,7 @@
 #include <libgen.h>
 #include <poll.h>
 #include <time.h>
+#include <stdarg.h>
 #include "stircommon.h"
 
 #ifdef __FreeBSD__
