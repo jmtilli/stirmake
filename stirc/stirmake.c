@@ -18,6 +18,7 @@
 #include <time.h>
 #include <stdarg.h>
 #include "stircommon.h"
+#include "resolvexecpath.h"
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
@@ -2732,6 +2733,7 @@ void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, 
 
 void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, const char *prefix, const char *cmd, char **args, int create_fd, int create_make_fd, int outpipewr)
 {
+  abort(); // Unused now
   pid_t pid = fork();
   if (pid < 0)
   {
@@ -2803,6 +2805,8 @@ void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, 
 void set_nonblock(int fd);
 
 extern FILE *dbf;
+
+extern char **environ;
 
 pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
@@ -2880,6 +2884,14 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     my_abort();
   }
 
+  char *progname = resolv_exec_path((*argiter)[3]);
+  if (progname == NULL)
+  {
+    errxit("Unable to find executable %s", (*argiter)[3]);
+    my_abort();
+    exit(2);
+  }
+
   pid = fork();
   if (pid < 0)
   {
@@ -2948,13 +2960,14 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
       {
         print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[3]);
       }
-      execvp((*argiter)[3], &(*argiter)[3]);
+      execve(progname, &(*argiter)[3], environ);
       //write(1, "Err\n", 4);
       _exit(1);
     }
   }
   else
   {
+    free(progname);
     ruleid_by_pid_cnt++;
     struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
     uint32_t hashval;
