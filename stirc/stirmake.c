@@ -2679,7 +2679,7 @@ void cloexec_off(int fd)
   fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) & (~FD_CLOEXEC));
 }
 
-void undo_makecmd(int oldout, int olderr)
+void undo_makecmd(int oldout, int olderr, int olddir)
 {
   if (oldout >= 0)
   {
@@ -2698,12 +2698,31 @@ void undo_makecmd(int oldout, int olderr)
     close(olderr);
   }
   unsetenv("MAKEFLAGS");
+  if (fchdir(olddir) != 0)
+  {
+    my_abort();
+  }
+  close(olddir);
 }
 
-void predo_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr, int *oldout, int *olderr)
+void predo_makecmd(const char *dir, int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr, int *oldout, int *olderr, int *olddir)
 {
   *oldout = -1;
   *olderr = -1;
+  *olddir = open(".", O_RDONLY);
+  if (*olddir < 0)
+  {
+    my_abort();
+  }
+  cloexec_on(*olddir);
+
+  if (chdir(dir) != 0)
+  {
+    errxit("Can't change directory to %s", dir);
+    my_abort();
+    _exit(1);
+  }
+
   if (ismake || is_makecmd(cmd))
   {
     char env[128] = {0};
@@ -3012,9 +3031,9 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     exit(2);
   }
 
-  int oldout = -1, olderr = -1;
+  int oldout = -1, olderr = -1, olddir = -1;
 
-  predo_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, &oldout, &olderr);
+  predo_makecmd(dir, strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, &oldout, &olderr, &olddir);
 
   pid = fork();
   if (pid < 0)
@@ -3052,12 +3071,14 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     signal(SIGABRT, SIG_DFL);
     signal(SIGBUS, SIG_DFL);
     signal(SIGALRM, SIG_DFL);
+#if 0
+    // moved to parent process
     if (chdir(dir) != 0)
     {
-      // FIXME move to parent process
       write(1, "CHDIRERR\n", 9);
       _exit(1);
     }
+#endif
 #if 0
     // cloexec
     close(fileno(dbf));
@@ -3098,7 +3119,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   else
   {
-    undo_makecmd(oldout, olderr);
+    undo_makecmd(oldout, olderr, olddir);
     free(progname);
     ruleid_by_pid_cnt++;
     struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
