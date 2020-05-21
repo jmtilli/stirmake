@@ -2022,7 +2022,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx, size_t dep
   uint32_t hashval;
   size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, depidx);
-  hashloc = hashval % (sizeof(entry->add_deps)/sizeof(entry->add_deps));
+  hashloc = hashval % (sizeof(entry->add_deps)/sizeof(*entry->add_deps));
   n = ABCE_RB_TREE_NOCMP_FIND(&entry->add_deps[hashloc], add_dep_cmp_asym, NULL, depidx);
   if (n != NULL)
   {
@@ -2051,7 +2051,7 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   size_t hashloc;
   size_t i;
   hashval = abce_murmur32(HASH_SEED, tgtidx);
-  hashloc = hashval % (sizeof(add_deps)/sizeof(add_deps));
+  hashloc = hashval % (sizeof(add_deps)/sizeof(*add_deps));
   n = ABCE_RB_TREE_NOCMP_FIND(&add_deps[hashloc], add_deps_cmp_asym, NULL, tgtidx);
   if (n != NULL)
   {
