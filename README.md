@@ -70,7 +70,14 @@ cd stirc
 ./install.sh
 ```
 
-...which installs it to `~/.local`.
+...which installs it to `~/.local`. If the directory `~/.local` does not exist,
+it needs to be created with `mkdir`. Note that in some cases, when installing
+to `~/.local`, the `~/.local/bin` might not exist (it is automatically created
+then). If the directory `~/.local/bin` needed to be created, it might be
+necessary to log out of the Linux system and log in again. In graphical logins,
+closing the terminal may not be enough. If this is not done, the `PATH`
+environment value might not contain the needed directories. Most modern Linux
+systems place it into `PATH` if it exists.
 
 ## Data model
 
