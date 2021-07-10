@@ -1047,10 +1047,11 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
     {
       unsigned char tmpbuf[64] = {};
       size_t tmpsiz = 0;
-      struct abce_mb mb = {};
+      struct abce_mb mbstruct = {};
+      struct abce_mb *mb = NULL;
       //struct abce_mb mbkey = {};
       struct abce_mb mbnil = {.typ = ABCE_T_N};
-      struct abce_mb mbval = {};
+      struct abce_mb *mbval = NULL;
       int first = 1;
 
 #if 0
@@ -1060,20 +1061,21 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
 #endif
-      mbval = abce_mb_create_string(abce, tgt, strlen(tgt));
-      if (mbval.typ == ABCE_T_N)
+      mbval = abce_mb_cpush_create_string(abce, tgt, strlen(tgt));
+      if (mbval == NULL)
       {
         //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[atidx], &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[atidx], mbval) != 0)
       {
         //abce_mb_refdn(abce, &mbkey);
-        abce_mb_refdn(abce, &mbval);
+        abce_cpop(abce);
         return NULL;
       }
       //abce_mb_refdn(abce, &mbkey);
-      abce_mb_refdn(abce, &mbval);
+      //abce_mb_refdn(abce, &mbval);
+      abce_cpop(abce);
 
 #if 0
       mbkey = abce_mb_create_string(abce, "+", 1);
@@ -1082,16 +1084,17 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
 #endif
-      mbval = abce_mb_create_array(abce);
-      if (mbval.typ == ABCE_T_N)
+      mbval = abce_mb_cpush_create_array(abce);
+      if (mbval == NULL)
       {
         //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[plusidx], &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[plusidx], mbval) != 0)
       {
         //abce_mb_refdn(abce, &mbkey);
-        abce_mb_refdn(abce, &mbval);
+        //abce_mb_refdn(abce, &mbval);
+        abce_cpop(abce);
         return NULL;
       }
       //abce_mb_refdn(abce, &mbkey);
@@ -1107,28 +1110,34 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         if (dep->nameidxnodir != (size_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir];
-          mb = abce_mb_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
         }
         else
         {
           namenodir = neighpath(sttable[rule->diridx], sttable[dep->nameidx]);
-          mb = abce_mb_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
           free(namenodir);
         }
-        if (mb.typ == ABCE_T_N)
+        if (mb == NULL)
         {
-          abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mbval);
+	  abce_cpop(abce);
           return NULL;
         }
-        if (abce_mb_array_append(abce, &mbval, &mb) != 0)
+        if (abce_mb_array_append(abce, mbval, mb) != 0)
         {
-          abce_mb_refdn(abce, &mbval);
-          abce_mb_refdn(abce, &mb);
+          //abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mb);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           return NULL;
         }
-        abce_mb_refdn(abce, &mb);
+	mb = NULL;
+        //abce_mb_refdn(abce, &mb);
+	abce_cpop(abce);
       }
-      abce_mb_refdn(abce, &mbval);
+      abce_cpop(abce);
+      mbval = NULL;
 
 #if 0
       mbkey = abce_mb_create_string(abce, "|", 1);
@@ -1137,16 +1146,17 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
 #endif
-      mbval = abce_mb_create_array(abce);
-      if (mbval.typ == ABCE_T_N)
+      mbval = abce_mb_cpush_create_array(abce);
+      if (mbval == NULL)
       {
         //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[baridx], &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[baridx], mbval) != 0)
       {
         //abce_mb_refdn(abce, &mbkey);
-        abce_mb_refdn(abce, &mbval);
+        //abce_mb_refdn(abce, &mbval);
+	abce_cpop(abce);
         return NULL;
       }
       //abce_mb_refdn(abce, &mbkey);
@@ -1162,28 +1172,34 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         if (dep->nameidxnodir != (size_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir];
-          mb = abce_mb_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
         }
         else
         {
           namenodir = neighpath(sttable[rule->diridx], sttable[dep->nameidx]);
-          mb = abce_mb_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
           free(namenodir);
         }
-        if (mb.typ == ABCE_T_N)
+        if (mb == NULL)
         {
-          abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mbval);
+	  abce_cpop(abce);
           return NULL;
         }
-        if (abce_mb_array_append(abce, &mbval, &mb) != 0)
+        if (abce_mb_array_append(abce, mbval, mb) != 0)
         {
-          abce_mb_refdn(abce, &mbval);
-          abce_mb_refdn(abce, &mb);
+          //abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mb);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           return NULL;
         }
-        abce_mb_refdn(abce, &mb);
+        //abce_mb_refdn(abce, &mb);
+	abce_cpop(abce);
+	mb = NULL;
       }
-      abce_mb_refdn(abce, &mbval);
+      //abce_mb_refdn(abce, &mbval);
+      abce_cpop(abce);
 
 #if 0
       mbkey = abce_mb_create_string(abce, "^", 1);
@@ -1192,16 +1208,17 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
 #endif
-      mbval = abce_mb_create_array(abce);
-      if (mbval.typ == ABCE_T_N)
+      mbval = abce_mb_cpush_create_array(abce);
+      if (mbval == NULL)
       {
         //abce_mb_refdn(abce, &mbkey);
         return NULL;
       }
-      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[hatidx], &mbval) != 0)
+      if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[hatidx], mbval) != 0)
       {
         //abce_mb_refdn(abce, &mbkey);
-        abce_mb_refdn(abce, &mbval);
+        //abce_mb_refdn(abce, &mbval);
+	abce_cpop(abce);
         return NULL;
       }
       //abce_mb_refdn(abce, &mbkey);
@@ -1217,23 +1234,26 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         if (dep->nameidxnodir != (size_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir];
-          mb = abce_mb_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
         }
         else
         {
           namenodir = neighpath(sttable[rule->diridx], sttable[dep->nameidx]);
-          mb = abce_mb_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
           free(namenodir);
         }
-        if (mb.typ == ABCE_T_N)
+        if (mb == NULL)
         {
-          abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mbval);
+	  abce_cpop(abce);
           return NULL;
         }
-        if (abce_mb_array_append(abce, &mbval, &mb) != 0)
+        if (abce_mb_array_append(abce, mbval, mb) != 0)
         {
-          abce_mb_refdn(abce, &mbval);
-          abce_mb_refdn(abce, &mb);
+          //abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mb);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           return NULL;
         }
         if (first)
@@ -1246,23 +1266,29 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
             return NULL;
           }
 #endif
-          if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], &mb) != 0)
+          if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], mb) != 0)
           {
-            abce_mb_refdn(abce, &mbval);
+            //abce_mb_refdn(abce, &mbval);
             //abce_mb_refdn(abce, &mbkey);
-            abce_mb_refdn(abce, &mb);
+            //abce_mb_refdn(abce, &mb);
+	    abce_cpop(abce);
+	    abce_cpop(abce);
             return NULL;
           }
           //abce_mb_refdn(abce, &mbkey);
           first = 0;
         }
-        abce_mb_refdn(abce, &mb);
+	abce_cpop(abce);
+	mb = NULL;
+        //abce_mb_refdn(abce, &mb);
       }
-      abce_mb_refdn(abce, &mbval);
+      abce_cpop(abce);
+      mbval = NULL;
+      //abce_mb_refdn(abce, &mbval);
       if (first) // set it to nil if no targets
       {
-        mb.typ = ABCE_T_N;
-        mb.u.d = 0;
+        mbstruct.typ = ABCE_T_N;
+        mbstruct.u.d = 0;
 #if 0
         mbkey = abce_mb_create_string(abce, "<", 1);
         if (mbkey.typ == ABCE_T_N)
@@ -1271,9 +1297,9 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
           return NULL;
         }
 #endif
-        if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], &mb) != 0)
+        if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[ltidx], &mbstruct) != 0)
         {
-          abce_mb_refdn(abce, &mbval);
+          //abce_mb_refdn(abce, &mbval);
           //abce_mb_refdn(abce, &mbkey);
           return NULL;
         }
@@ -1330,54 +1356,57 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         return NULL;
       }
       abce->dynscope = oldscope;
-      if (abce_getmb(&mb, abce, 0) != 0)
+      if (abce_getmbptr(&mb, abce, 0) != 0)
       {
         return NULL;
       }
-      abce_pop(abce);
-      if (abce->sp != 0)
+      if (abce->sp != 1)
       {
         abort();
       }
       // Beware. Now only ref is out of stack. Can't alloc abce memory!
-      if (mb.typ != ABCE_T_A)
+      if (mb->typ != ABCE_T_A)
       {
         abce->err.code = ABCE_E_EXPECT_ARRAY;
-        abce->err.mb = abce_mb_refup(abce, &mb);
-        abce_mb_refdn(abce, &mb);
+	abce_mb_errreplace_noinline(abce, mb);
+        //abce->err.mb = abce_mb_refup(abce, mb);
+        //abce_mb_refdn(abce, &mb);
+	abce_pop(abce);
         return NULL;
       }
       if (cmdsrc->items[i].merge)
       {
-        for (j = 0; j < mb.u.area->u.ar.size; j++)
+        for (j = 0; j < mb->u.area->u.ar.size; j++)
         {
-          if (mb.u.area->u.ar.mbs[j].typ != ABCE_T_A)
+          if (mb->u.area->u.ar.mbs[j].typ != ABCE_T_A)
           {
             abce->err.code = ABCE_E_EXPECT_ARRAY;
-            abce->err.mb = abce_mb_refup(abce, &mb.u.area->u.ar.mbs[j]);
-            abce_mb_refdn(abce, &mb);
+            abce->err.mb = abce_mb_refup(abce, &mb->u.area->u.ar.mbs[j]);
+            //abce_mb_refdn(abce, &mb);
+	    abce_pop(abce);
             return NULL;
           }
-          char **cmd = my_malloc((mb.u.area->u.ar.mbs[j].u.area->u.ar.size+4)*sizeof(*cmd));
+          char **cmd = my_malloc((mb->u.area->u.ar.mbs[j].u.area->u.ar.size+4)*sizeof(*cmd));
           cmd[0] = cmdsrc->items[i].ignore ? st_ignore : st_noignore;
           cmd[1] = cmdsrc->items[i].noecho ? st_noecho : st_echo;
           cmd[2] = cmdsrc->items[i].ismake ? st_make : st_nomake;
-          for (k = 0; k < mb.u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
+          for (k = 0; k < mb->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
           {
-            if (mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
+            if (mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
             {
               abce->err.code = ABCE_E_EXPECT_STR;
               abce->err.mb =
                 abce_mb_refup(
-                  abce, &mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k]);
-              abce_mb_refdn(abce, &mb);
+                  abce, &mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k]);
+              //abce_mb_refdn(abce, &mb);
+	      abce_pop(abce);
               return NULL;
             }
             cmd[3+k] =
               my_strdup(
-                mb.u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
+                mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
           }
-          cmd[3+mb.u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
+          cmd[3+mb->u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
           if (resultsz >= resultcap)
           {
             resultcap = 2*resultsz + 16;
@@ -1388,28 +1417,34 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       }
       else
       {
-        char **cmd = my_malloc((mb.u.area->u.ar.size+4)*sizeof(*cmd));
+        char **cmd = my_malloc((mb->u.area->u.ar.size+4)*sizeof(*cmd));
         cmd[0] = cmdsrc->items[i].ignore ? st_ignore : st_noignore;
         cmd[1] = cmdsrc->items[i].noecho ? st_noecho : st_echo;
         cmd[2] = cmdsrc->items[i].ismake ? st_make : st_nomake;
-        for (j = 0; j < mb.u.area->u.ar.size; j++)
+        for (j = 0; j < mb->u.area->u.ar.size; j++)
         {
-          if (mb.u.area->u.ar.mbs[j].typ != ABCE_T_S)
+          if (mb->u.area->u.ar.mbs[j].typ != ABCE_T_S)
           {
             abce->err.code = ABCE_E_EXPECT_STR;
-            abce->err.mb = abce_mb_refup(abce, &mb.u.area->u.ar.mbs[j]);
-            abce_mb_refdn(abce, &mb);
+            abce->err.mb = abce_mb_refup(abce, &mb->u.area->u.ar.mbs[j]);
+            //abce_mb_refdn(abce, &mb);
+	    abce_pop(abce);
             return NULL;
           }
-          cmd[3+j] = my_strdup(mb.u.area->u.ar.mbs[j].u.area->u.str.buf);
+          cmd[3+j] = my_strdup(mb->u.area->u.ar.mbs[j].u.area->u.str.buf);
         }
-        cmd[3+mb.u.area->u.ar.size] = NULL;
+        cmd[3+mb->u.area->u.ar.size] = NULL;
         if (resultsz >= resultcap)
         {
           resultcap = 2*resultsz + 16;
           result = realloc(result, resultcap * sizeof(*result));
         }
         result[resultsz++] = cmd;
+      }
+      abce_pop(abce);
+      if (abce->sp != 0)
+      {
+        abort();
       }
       if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[atidx], &mbnil) != 0)
       {
@@ -1431,7 +1466,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       {
         return NULL;
       }
-      abce_mb_refdn(abce, &mb);
+      //abce_mb_refdn(abce, &mb);
       continue;
     }
     if (!cmdsrc->items[i].merge)

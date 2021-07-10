@@ -13,6 +13,28 @@
 #include "jsonyyutils.h"
 #include "stircommon.h"
 
+static inline void abce_npoppush(struct abce *abce, size_t n, struct abce_mb *mb)
+{
+        int ret;
+        ret = abce_mb_stackreplace(abce, -(int64_t)n, mb);
+#if POPABORTS
+        if (ret != 0)
+        {
+                abort();
+        }
+#endif
+        for (size_t i = 1; i < n; i++)
+        {
+                ret = abce_pop(abce);
+#if POPABORTS
+                if (ret != 0)
+                {
+                        abort();
+                }
+#endif
+        }
+}
+
 #define VERIFYMB(idx, type) \
   if(1) { \
     int _getdbl_rettmp = abce_verifymb(abce, (idx), (type)); \
@@ -33,9 +55,9 @@
     } \
   }
 
-#define GETMB(mb, idx) GETGENERIC(abce_getmb, mb, idx)
-#define GETMBAR(mb, idx) GETGENERIC(abce_getmbar, mb, idx)
-#define GETMBSTR(mb, idx) GETGENERIC(abce_getmbstr, mb, idx)
+#define GETMBPTR(mb, idx) GETGENERIC(abce_getmbptr, mb, idx)
+#define GETMBARPTR(mb, idx) GETGENERIC(abce_getmbarptr, mb, idx)
+#define GETMBSTRPTR(mb, idx) GETGENERIC(abce_getmbstrptr, mb, idx)
 
 /*
   Planned argument for STIR_OPCODE_RULE_ADD:
@@ -260,7 +282,7 @@ char *stir_shellescape(const char *old, size_t oldsz, size_t *newszptr)
 int stir_trap_ruleadd(struct stiryy_main *main,
                       struct abce *abce, const char *prefix)
 {
-  struct abce_mb tree = {};
+  struct abce_mb *tree;
   int ret = abce_verifymb(abce, -1, ABCE_T_T);
   int errcod = 0;
   int err = 0;
@@ -283,7 +305,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   {
     return ret;
   }
-  if (abce_getmb(&tree, abce, -1) != 0)
+  if (abce_getmbptr(&tree, abce, -1) != 0)
   {
     abort();
   }
@@ -314,21 +336,21 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   ignore = cache_add_str_nul(abce, "ignore", &err);
   if (err)
   {
-    abce_mb_refdn(abce, &tree);
+    abce_pop(abce);
     return -ENOMEM;
   }
 
-  if (abce_tree_get_str(abce, &tgtres, &tree, &abce->cachebase[tgts]) != 0)
+  if (abce_tree_get_str(abce, &tgtres, tree, &abce->cachebase[tgts]) != 0)
   {
     abce->err.code = STIR_E_TARGETS_MISSING;
-    abce_mb_refdn(abce, &tree);
+    abce_pop(abce);
     return -EINVAL;
   }
   if (tgtres->typ != ABCE_T_A)
   {
     abce->err.code = ABCE_E_EXPECT_ARRAY;
     abce->err.mb.typ = ABCE_T_N; // FIXME
-    abce_mb_refdn(abce, &tree);
+    abce_pop(abce);
     return -EINVAL;
   }
   tgtsz = tgtres->u.area->u.ar.size;
@@ -340,20 +362,20 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
       abce->err.mb.typ = ABCE_T_N; // FIXME
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
       abce->err.code = STIR_E_NAME_MISSING;
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     if (mbstr->typ != ABCE_T_S)
     {
       abce->err.code = ABCE_E_EXPECT_STR;
       abce->err.mb.typ = ABCE_T_N; // FIXME
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
@@ -362,13 +384,13 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
   }
 
-  if (abce_tree_get_str(abce, &depres, &tree, &abce->cachebase[deps]) != 0)
+  if (abce_tree_get_str(abce, &depres, tree, &abce->cachebase[deps]) != 0)
   {
     depres = NULL;
   }
@@ -376,7 +398,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   {
     abce->err.code = ABCE_E_EXPECT_ARRAY;
     abce->err.mb.typ = ABCE_T_N; // FIXME
-    abce_mb_refdn(abce, &tree);
+    abce_pop(abce);
     return -EINVAL;
   }
   depsz = 0;
@@ -392,20 +414,20 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
       abce->err.mb.typ = ABCE_T_N; // FIXME
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
       abce->err.code = STIR_E_NAME_MISSING;
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     if (mbstr->typ != ABCE_T_S)
     {
       abce->err.code = ABCE_E_EXPECT_STR;
       abce->err.mb.typ = ABCE_T_N; // FIXME
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[rec]) == 0)
@@ -414,7 +436,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
@@ -424,13 +446,13 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
   }
 
-  if (abce_tree_get_str(abce, &shellsres, &tree, &abce->cachebase[shells]) != 0)
+  if (abce_tree_get_str(abce, &shellsres, tree, &abce->cachebase[shells]) != 0)
   {
     shellsres = NULL;
   }
@@ -438,7 +460,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   {
     abce->err.code = ABCE_E_EXPECT_ARRAY;
     abce->err.mb.typ = ABCE_T_N; // FIXME
-    abce_mb_refdn(abce, &tree);
+    abce_pop(abce);
     return -EINVAL;
   }
   shellsz = 0;
@@ -454,7 +476,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
       abce->err.mb.typ = ABCE_T_N; // FIXME
-      abce_mb_refdn(abce, &tree);
+      abce_pop(abce);
       return -EINVAL;
     }
     int boolembed = 0;
@@ -466,7 +488,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       boolembed = !!attr1->u.d;
@@ -477,7 +499,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       boolisfun = !!attr1->u.d;
@@ -488,7 +510,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
@@ -498,7 +520,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
@@ -508,7 +530,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
@@ -518,21 +540,21 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = STIR_E_NO_SHELLARG;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       if (attr1->typ != ABCE_T_F)
       {
         abce->err.code = ABCE_E_EXPECT_FUNC;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[arg]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
     }
@@ -543,14 +565,14 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = STIR_E_NO_SHELLARG;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       if (attr1->typ != ABCE_T_A)
       {
         abce->err.code = ABCE_E_EXPECT_ARRAY;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
@@ -560,7 +582,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
         {
           abce->err.code = ABCE_E_EXPECT_ARRAY;
           abce->err.mb.typ = ABCE_T_N; // FIXME
-          abce_mb_refdn(abce, &tree);
+          abce_pop(abce);
           return -EINVAL;
         }
         for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
@@ -569,7 +591,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
           {
             abce->err.code = ABCE_E_EXPECT_STR;
             abce->err.mb.typ = ABCE_T_N; // FIXME
-            abce_mb_refdn(abce, &tree);
+            abce_pop(abce);
             return -EINVAL;
           }
         }
@@ -582,14 +604,14 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = STIR_E_NO_SHELLARG;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       if (attr1->typ != ABCE_T_A)
       {
         abce->err.code = ABCE_E_EXPECT_ARRAY;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
@@ -598,14 +620,14 @@ int stir_trap_ruleadd(struct stiryy_main *main,
         {
           abce->err.code = ABCE_E_EXPECT_STR;
           abce->err.mb.typ = ABCE_T_N; // FIXME
-          abce_mb_refdn(abce, &tree);
+          abce_pop(abce);
           return -EINVAL;
         }
       }
     }
   }
 
-  if (abce_tree_get_str(abce, &attrsres, &tree, &abce->cachebase[attrs]) != 0)
+  if (abce_tree_get_str(abce, &attrsres, tree, &abce->cachebase[attrs]) != 0)
   {
     attrsres = NULL;
   }
@@ -613,7 +635,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   {
     abce->err.code = ABCE_E_EXPECT_TREE;
     abce->err.mb.typ = ABCE_T_N; // FIXME
-    abce_mb_refdn(abce, &tree);
+    abce_pop(abce);
     return -EINVAL;
   }
   if (attrsres)
@@ -625,7 +647,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.phony = !!attr1->u.d;
@@ -636,7 +658,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.rectgt = !!attr1->u.d;
@@ -647,7 +669,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.detouch = !!attr1->u.d;
@@ -658,7 +680,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.maybe = !!attr1->u.d;
@@ -669,7 +691,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.dist = !!attr1->u.d;
@@ -680,7 +702,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.deponly = !!attr1->u.d;
@@ -691,7 +713,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.iscleanhook = !!attr1->u.d;
@@ -702,7 +724,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.isdistcleanhook = !!attr1->u.d;
@@ -713,7 +735,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb.typ = ABCE_T_N; // FIXME
-        abce_mb_refdn(abce, &tree);
+        abce_pop(abce);
         return -EINVAL;
       }
       attrstruct.isbothcleanhook = !!attr1->u.d;
@@ -949,7 +971,6 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   //free(yytgts); // Can't free this now
   //free(yydeps); // Can't free this now
   //free(yyshells); // Can't free this now
-  abce_mb_refdn(abce, &tree);
   abce_pop(abce);
   if (errcod && abce->err.code == ABCE_E_NONE)
   {
@@ -965,467 +986,354 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   size_t i;
   char *prefix, *backpath;
   struct abce *abce = ABCE_CONTAINER_OF(pbaton, struct abce, trap_baton);
-  struct abce_mb mb = {};
+  struct abce_mb *mb;
   struct stiryy_main *main = *pbaton;
   switch (ins)
   {
     case STIR_OPCODE_SUFFILTER:
     {
-      struct abce_mb suf = {};
-      struct abce_mb bases = {};
-      struct abce_mb mods = {};
+      struct abce_mb *suf;
+      struct abce_mb *bases;
+      struct abce_mb *mods;
       size_t bcnt, bsz, ssz, i;
       VERIFYMB(-1, ABCE_T_S); // suffix
       VERIFYMB(-2, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&suf, -2); // now the indices are different
-      GETMB(&bases, -3);
-      bcnt = bases.u.area->u.ar.size;
-      ssz = suf.u.area->u.str.size;
+      GETMBPTR(&suf, -1);
+      GETMBPTR(&bases, -2);
+      bcnt = bases->u.area->u.ar.size;
+      ssz = suf->u.area->u.str.size;
       for (i = 0; i < bcnt; i++)
       {
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &suf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+	  abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (   bsz < ssz
-            || memcmp(&bases.u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
-                      suf.u.area->u.str.buf, ssz) != 0)
+            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
+                      suf->u.area->u.str.buf, ssz) != 0)
         {
           continue;
         }
-        if (abce_mb_array_append(abce, &mods, &bases.u.area->u.ar.mbs[i]) != 0)
+        if (abce_mb_array_append(abce, mods, &bases->u.area->u.ar.mbs[i]) != 0)
         {
-          abce_mb_refdn(abce, &suf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
           abce_pop(abce);
           abce_pop(abce);
-          abce_pop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &suf);
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 2, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_SUFFILTEROUT:
     {
-      struct abce_mb suf = {};
-      struct abce_mb bases = {};
-      struct abce_mb mods = {};
+      struct abce_mb *suf;
+      struct abce_mb *bases;
+      struct abce_mb *mods;
       size_t bcnt, bsz, ssz, i;
       VERIFYMB(-1, ABCE_T_S); // suffix
       VERIFYMB(-2, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&suf, -2); // now the indices are different
-      GETMB(&bases, -3);
-      bcnt = bases.u.area->u.ar.size;
-      ssz = suf.u.area->u.str.size;
+      GETMBPTR(&suf, -1);
+      GETMBPTR(&bases, -2);
+      bcnt = bases->u.area->u.ar.size;
+      ssz = suf->u.area->u.str.size;
       for (i = 0; i < bcnt; i++)
       {
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &suf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+	  abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (!(   bsz < ssz
-              || memcmp(&bases.u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
-                        suf.u.area->u.str.buf, ssz) != 0))
+              || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
+                        suf->u.area->u.str.buf, ssz) != 0))
         {
           continue;
         }
-        if (abce_mb_array_append(abce, &mods, &bases.u.area->u.ar.mbs[i]) != 0)
+        if (abce_mb_array_append(abce, mods, &bases->u.area->u.ar.mbs[i]) != 0)
         {
-          abce_mb_refdn(abce, &suf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
           abce_pop(abce);
           abce_pop(abce);
           abce_pop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &suf);
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 2, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHBASENAMEALL:
     {
-      struct abce_mb bases = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       size_t bcnt, bsz, i;
       VERIFYMB(-1, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&bases, -2); // now the indices are different
-      bcnt = bases.u.area->u.ar.size;
+      GETMBPTR(&bases, -1);
+      bcnt = bases->u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
         char *cutpoint, *buf, *cutpoint2;
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+	  abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
         cutpoint = my_memrchr(buf, '.', bsz);
         cutpoint2 = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL || cutpoint < cutpoint2)
         {
-          if (abce_mb_array_append(abce, &mods,
-                                   &bases.u.area->u.ar.mbs[i]) != 0)
+          if (abce_mb_array_append(abce, mods,
+                                   &bases->u.area->u.ar.mbs[i]) != 0)
           {
-            abce_mb_refdn(abce, &bases);
-            abce_mb_refdn(abce, &mods);
-            abce_mb_refdn(abce, &newstr);
+	    abce_cpop(abce);
             abce_pop(abce);
             abce_pop(abce);
             return -ENOMEM;
           }
           continue;
         }
-        newstr = abce_mb_create_string(abce, buf, cutpoint-buf);
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, buf, cutpoint-buf);
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           abce_pop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &abce->oneblock);
-        abce_mb_refdn(abce, &newstr);
+	abce_cpop(abce);
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 1, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHSUFFIXALL:
     {
-      struct abce_mb bases = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       size_t bcnt, bsz, i;
       VERIFYMB(-1, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&bases, -2); // now the indices are different
-      bcnt = bases.u.area->u.ar.size;
+      GETMBPTR(&bases, -1);
+      bcnt = bases->u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
         char *cutpoint, *buf, *cutpoint2;
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+	  abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
         cutpoint = my_memrchr(buf, '.', bsz);
         cutpoint2 = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL || cutpoint < cutpoint2)
         {
-          newstr = abce_mb_create_string(abce, "", 0);
-          if (newstr.typ == ABCE_T_N)
+          newstr = abce_mb_cpush_create_string(abce, "", 0);
+          if (newstr == NULL)
           {
-            abce_mb_refdn(abce, &bases);
-            abce_mb_refdn(abce, &mods);
+	    abce_cpop(abce);
             return -ENOMEM;
           }
-          abce->oneblock = abce_mb_refup(abce, &newstr);
-          if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+          if (abce_mb_array_append(abce, mods, newstr) != 0)
           {
-            abce_mb_refdn(abce, &bases);
-            abce_mb_refdn(abce, &mods);
-            abce_mb_refdn(abce, &newstr);
-            abce_mb_refdn(abce, &abce->oneblock);
+	    abce_cpop(abce);
+	    abce_cpop(abce);
             abce_pop(abce);
             abce_pop(abce);
             return -ENOMEM;
           }
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
+	  abce_cpop(abce);
           continue;
         }
-        newstr = abce_mb_create_string(abce, cutpoint, bsz-(cutpoint-buf));
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, cutpoint, bsz-(cutpoint-buf));
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &abce->oneblock);
-        abce_mb_refdn(abce, &newstr);
+	abce_cpop(abce);
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 1, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHNOTDIRALL:
     {
-      struct abce_mb bases = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       size_t bcnt, bsz, i;
       VERIFYMB(-1, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&bases, -2); // now the indices are different
-      bcnt = bases.u.area->u.ar.size;
+      GETMBPTR(&bases, -1);
+      bcnt = bases->u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
         char *cutpoint, *buf;
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+	  abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
         cutpoint = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL)
         {
-          if (abce_mb_array_append(abce, &mods,
-                                   &bases.u.area->u.ar.mbs[i]) != 0)
+          if (abce_mb_array_append(abce, mods,
+                                   &bases->u.area->u.ar.mbs[i]) != 0)
           {
-            abce_mb_refdn(abce, &bases);
-            abce_mb_refdn(abce, &mods);
             abce_pop(abce);
-            abce_pop(abce);
+	    abce_cpop(abce);
             return -ENOMEM;
           }
           continue;
         }
-        newstr = abce_mb_create_string(abce, cutpoint+1, bsz-(cutpoint+1-buf));
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, cutpoint+1, bsz-(cutpoint+1-buf));
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
-          abce_pop(abce);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &newstr);
-        abce_mb_refdn(abce, &abce->oneblock);
+	abce_cpop(abce);
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 1, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHDIRALL:
     {
-      struct abce_mb bases = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       size_t bcnt, bsz, i;
       VERIFYMB(-1, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&bases, -2); // now the indices are different
-      bcnt = bases.u.area->u.ar.size;
+      GETMBPTR(&bases, -1); // now the indices are different
+      bcnt = bases->u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
         char *cutpoint, *buf;
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+	  abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases.u.area->u.ar.mbs[i].u.area->u.str.buf;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
         cutpoint = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL)
         {
-          newstr = abce_mb_create_string(abce, "./", 2);
-          if (newstr.typ == ABCE_T_N)
+          newstr = abce_mb_cpush_create_string(abce, "./", 2);
+          if (newstr == NULL)
           {
-            abce_mb_refdn(abce, &bases);
-            abce_mb_refdn(abce, &mods);
+	    abce_cpop(abce);
             return -ENOMEM;
           }
-          abce->oneblock = abce_mb_refup(abce, &newstr);
-          if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+          if (abce_mb_array_append(abce, mods, newstr) != 0)
           {
-            abce_mb_refdn(abce, &bases);
-            abce_mb_refdn(abce, &mods);
-            abce_mb_refdn(abce, &newstr);
-            abce_mb_refdn(abce, &abce->oneblock);
             abce_pop(abce);
             abce_pop(abce);
+	    abce_cpop(abce);
+	    abce_cpop(abce);
             return -ENOMEM;
           }
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
+	  abce_cpop(abce);
           continue;
         }
-        newstr = abce_mb_create_string(abce, buf, cutpoint + 1 - buf);
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, buf, cutpoint + 1 - buf);
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
+	  abce_cpop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &newstr);
-        abce_mb_refdn(abce, &abce->oneblock);
+	abce_cpop(abce);
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 1, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_JSON_IN:
     {
-      struct abce_mb base = {};
-      struct abce_mb mb = {};
+      struct abce_mb *base;
+      struct abce_mb *mb;
       struct jsonyy jsonyy = {.abce = abce};
       int fdolddir;
       VERIFYMB(-1, ABCE_T_S); // base
@@ -1451,56 +1359,44 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce->err.mb.typ = ABCE_T_N;
         return -ENOTDIR;
       }
-      GETMB(&base, -1);
-      if (jsonyynameparse(base.u.area->u.str.buf, &jsonyy) != 0)
+      GETMBPTR(&base, -1);
+      if (jsonyynameparse(base->u.area->u.str.buf, &jsonyy) != 0)
       {
         abce->err.code = STIR_E_BAD_JSON;
         abce->err.mb.typ = ABCE_T_N;
-        abce_mb_refdn(abce, &base);
         return -EBADMSG;
       }
       if (fchdir(fdolddir) != 0)
       {
         abce->err.code = STIR_E_DIR_NOT_FOUND;
         abce->err.mb.typ = ABCE_T_N;
-        abce_mb_refdn(abce, &base);
         return -ENOTDIR;
       }
       close(fdolddir);
-      GETMB(&mb, -1);
-      abce_pop(abce); // mb
-      abce_pop(abce); // base
-      if (abce_push_mb(abce, &mb) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &mb);
+      GETMBPTR(&mb, -1); // JSON parser has pushed stuff to stack
+      abce_npoppush(abce, 2, mb);
       return 0;
     }
     case STIR_OPCODE_GLOB:
     {
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *base;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       glob_t globbuf;
       size_t i;
       int fdolddir;
       VERIFYMB(-1, ABCE_T_S); // base
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
-      }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
       }
       fdolddir = open(".", O_RDONLY);
       if (fdolddir < 0)
       {
         abce->err.code = STIR_E_DIR_NOT_FOUND;
         abce->err.mb.typ = ABCE_T_N;
+	abce_cpop(abce);
         return -ENOTDIR;
       }
       globbuf.gl_offs = 0;
@@ -1517,14 +1413,16 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         abce->err.code = STIR_E_DIR_NOT_FOUND;
         abce->err.mb.typ = ABCE_T_N;
+	abce_cpop(abce);
         return -ENOTDIR;
       }
-      GETMB(&base, -2); // now the indices are different
-      int ret = glob(base.u.area->u.str.buf, 0, NULL, &globbuf);
+      GETMBPTR(&base, -1);
+      int ret = glob(base->u.area->u.str.buf, 0, NULL, &globbuf);
       if (ret != 0 && ret != GLOB_NOMATCH)
       {
         abce->err.code = STIR_E_GLOB_FAILED;
         abce->err.mb.typ = ABCE_T_N;
+	abce_cpop(abce);
         return -EINVAL;
       }
       else if (ret == GLOB_NOMATCH)
@@ -1536,475 +1434,352 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce->err.code = STIR_E_DIR_NOT_FOUND;
         abce->err.mb.typ = ABCE_T_N;
         globfree(&globbuf);
-        abce_mb_refdn(abce, &base);
+	abce_cpop(abce);
         return -ENOTDIR;
       }
       close(fdolddir);
       for (i = 0; i < globbuf.gl_pathc; i++)
       {
-        newstr = abce_mb_create_string(abce, globbuf.gl_pathv[i],
-                                       strlen(globbuf.gl_pathv[i]));
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, globbuf.gl_pathv[i],
+                                             strlen(globbuf.gl_pathv[i]));
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &base);
-          abce_mb_refdn(abce, &mods);
+          abce_cpop(abce);
           return -ENOMEM;
         }
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &base);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
-          abce_pop(abce);
+	  abce_cpop(abce);
+          abce_cpop(abce);
           abce_pop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &newstr);
-        abce_mb_refdn(abce, &abce->oneblock);
+	abce_cpop(abce);
       }
       globfree(&globbuf);
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 1, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHSIMPLIFYALL:
     {
-      struct abce_mb bases = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       size_t bcnt, bsz, i;
       VERIFYMB(-1, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&bases, -2); // now the indices are different
-      bcnt = bases.u.area->u.ar.size;
+      GETMBPTR(&bases, -1); // now the indices are different
+      bcnt = bases->u.area->u.ar.size;
       for (i = 0; i < bcnt; i++)
       {
         char *can;
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
-        can = canon(bases.u.area->u.ar.mbs[i].u.area->u.str.buf);
-        newstr = abce_mb_create_string(abce, can, strlen(can));
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        can = canon(bases->u.area->u.ar.mbs[i].u.area->u.str.buf);
+        newstr = abce_mb_cpush_create_string(abce, can, strlen(can));
         free(can);
-        if (newstr.typ == ABCE_T_N)
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
           return -ENOMEM;
         }
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &newstr);
-        abce_mb_refdn(abce, &abce->oneblock);
+	abce_cpop(abce);
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 1, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_SUFSUBALL:
     {
-      struct abce_mb oldsuf = {};
-      struct abce_mb newsuf = {};
-      struct abce_mb bases = {};
-      struct abce_mb newstr = {};
-      struct abce_mb mods = {};
+      struct abce_mb *oldsuf;
+      struct abce_mb *newsuf;
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
       size_t bcnt, bsz, osz, nsz, i;
       VERIFYMB(-1, ABCE_T_S); // newsuffix
       VERIFYMB(-2, ABCE_T_S); // oldsuffix
       VERIFYMB(-3, ABCE_T_A); // bases
-      mods = abce_mb_create_array(abce);
-      if (mods.typ == ABCE_T_N)
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        return -EOVERFLOW;
-      }
-      GETMB(&newsuf, -2); // now the indices are different
-      GETMB(&oldsuf, -3);
-      GETMB(&bases, -4);
-      bcnt = bases.u.area->u.ar.size;
-      osz = oldsuf.u.area->u.str.size;
-      nsz = newsuf.u.area->u.str.size;
+      GETMBPTR(&newsuf, -1);
+      GETMBPTR(&oldsuf, -2);
+      GETMBPTR(&bases, -3);
+      bcnt = bases->u.area->u.ar.size;
+      osz = oldsuf->u.area->u.str.size;
+      nsz = newsuf->u.area->u.str.size;
       for (i = 0; i < bcnt; i++)
       {
-        if (bases.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &oldsuf);
-          abce_mb_refdn(abce, &newsuf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_cpop(abce);
           return -EINVAL;
         }
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (   bsz < osz
-            || memcmp(&bases.u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-osz],
-                      oldsuf.u.area->u.str.buf, osz) != 0)
+            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-osz],
+                      oldsuf->u.area->u.str.buf, osz) != 0)
         {
           fprintf(stderr, "stirmake: %s does not end with %s\n",
-                  bases.u.area->u.ar.mbs[i].u.area->u.str.buf,
-                  oldsuf.u.area->u.str.buf);
+                  bases->u.area->u.ar.mbs[i].u.area->u.str.buf,
+                  oldsuf->u.area->u.str.buf);
           abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
-          abce->err.mb = abce_mb_refup(abce, &bases.u.area->u.ar.mbs[i]);
-          abce_mb_refdn(abce, &oldsuf);
-          abce_mb_refdn(abce, &newsuf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_cpop(abce);
           return -EINVAL;
         }
       }
       for (i = 0; i < bcnt; i++)
       {
-        bsz = bases.u.area->u.ar.mbs[i].u.area->u.str.size;
-        newstr = abce_mb_create_string_to_be_filled(abce, bsz-osz+nsz);
-        if (newstr.typ == ABCE_T_N)
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        newstr = abce_mb_cpush_create_string_to_be_filled(abce, bsz-osz+nsz);
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &oldsuf);
-          abce_mb_refdn(abce, &newsuf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
           abce_pop(abce);
           abce_pop(abce);
           abce_pop(abce);
-          abce_pop(abce);
+          abce_cpop(abce);
           return -ENOMEM;
         }
-        memcpy(newstr.u.area->u.str.buf,
-               bases.u.area->u.ar.mbs[i].u.area->u.str.buf, bsz-osz);
-        memcpy(newstr.u.area->u.str.buf + (bsz - osz),
-               newsuf.u.area->u.str.buf, nsz);
-        newstr.u.area->u.str.buf[bsz-osz+nsz] = '\0';
-        abce->oneblock = abce_mb_refup(abce, &newstr);
-        if (abce_mb_array_append(abce, &mods, &newstr) != 0)
+        memcpy(newstr->u.area->u.str.buf,
+               bases->u.area->u.ar.mbs[i].u.area->u.str.buf, bsz-osz);
+        memcpy(newstr->u.area->u.str.buf + (bsz - osz),
+               newsuf->u.area->u.str.buf, nsz);
+        newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
-          abce_mb_refdn(abce, &oldsuf);
-          abce_mb_refdn(abce, &newsuf);
-          abce_mb_refdn(abce, &bases);
-          abce_mb_refdn(abce, &mods);
-          abce_mb_refdn(abce, &newstr);
-          abce_mb_refdn(abce, &abce->oneblock);
           abce_pop(abce);
           abce_pop(abce);
           abce_pop(abce);
-          abce_pop(abce);
+          abce_cpop(abce);
+	  abce_cpop(abce);
           return -ENOMEM;
         }
-        abce_mb_refdn(abce, &abce->oneblock);
-        abce_mb_refdn(abce, &newstr);
+	abce_cpop(abce);
       }
-      abce_pop(abce);
-      abce_pop(abce);
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &mods) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &oldsuf);
-      abce_mb_refdn(abce, &newsuf);
-      abce_mb_refdn(abce, &bases);
-      abce_mb_refdn(abce, &mods);
+      abce_npoppush(abce, 3, mods);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHSIMPLIFY:
     {
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
+      struct abce_mb *base;
+      struct abce_mb *newstr;
       char *can;
       VERIFYMB(-1, ABCE_T_S); // base
-      GETMB(&base, -1);
+      GETMBPTR(&base, -1);
 
-      can = canon(base.u.area->u.str.buf); // RFE '\0' in filename
-      newstr = abce_mb_create_string(abce, can, strlen(can));
+      can = canon(base->u.area->u.str.buf); // RFE '\0' in filename
+      newstr = abce_mb_cpush_create_string(abce, can, strlen(can));
       free(can);
-      if (newstr.typ == ABCE_T_N)
+      if (newstr == NULL)
       {
-        abce_mb_refdn(abce, &base);
         abce_pop(abce);
         return -ENOMEM;
       }
-      abce_pop(abce);
-      if (abce_push_mb(abce, &newstr) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &newstr);
+      abce_npoppush(abce, 1, newstr);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHBASENAME:
     {
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
+      struct abce_mb *base;
+      struct abce_mb *newstr;
       size_t bsz;
       char *cutpoint, *cutpoint2;
       VERIFYMB(-1, ABCE_T_S); // base
-      GETMB(&base, -1);
-      bsz = base.u.area->u.str.size;
+      GETMBPTR(&base, -1);
+      bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base.u.area->u.str.buf, '.', bsz);
-      cutpoint2 = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(base->u.area->u.str.buf, '.', bsz);
+      cutpoint2 = my_memrchr(base->u.area->u.str.buf, '/', bsz);
       if (cutpoint == NULL || cutpoint < cutpoint2)
       {
-        abce_pop(abce);
-        if (abce_push_mb(abce, &base) != 0)
-        {
-          my_abort();
-        }
-        abce_mb_refdn(abce, &base);
+        abce_npoppush(abce, 1, base);
         return 0;
       }
 
-      newstr = abce_mb_create_string(abce, base.u.area->u.str.buf,
-                                     cutpoint - base.u.area->u.str.buf);
-      if (newstr.typ == ABCE_T_N)
+      newstr = abce_mb_cpush_create_string(abce, base->u.area->u.str.buf,
+                                           cutpoint - base->u.area->u.str.buf);
+      if (newstr == NULL)
       {
-        abce_mb_refdn(abce, &base);
         abce_pop(abce);
         return -ENOMEM;
       }
-      abce_pop(abce);
-      if (abce_push_mb(abce, &newstr) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &newstr);
+      abce_npoppush(abce, 1, newstr);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHDIR:
     {
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
+      struct abce_mb *base;
+      struct abce_mb *newstr;
       size_t bsz;
       char *cutpoint;
       VERIFYMB(-1, ABCE_T_S); // base
-      GETMB(&base, -1);
-      bsz = base.u.area->u.str.size;
+      GETMBPTR(&base, -1);
+      bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(base->u.area->u.str.buf, '/', bsz);
       if (cutpoint == NULL)
       {
-        abce_pop(abce);
-        newstr = abce_mb_create_string(abce, "./", 2);
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, "./", 2);
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &base);
+	  abce_pop(abce);
           return -ENOMEM;
         }
-        if (abce_push_mb(abce, &newstr) != 0)
-        {
-          my_abort();
-        }
-        abce_mb_refdn(abce, &newstr);
-        abce_mb_refdn(abce, &base);
+        abce_npoppush(abce, 1, newstr);
+        abce_cpop(abce);
         return 0;
       }
 
-      newstr = abce_mb_create_string(abce, base.u.area->u.str.buf,
-                                     cutpoint + 1 - base.u.area->u.str.buf);
-      if (newstr.typ == ABCE_T_N)
+      newstr = abce_mb_cpush_create_string(abce, base->u.area->u.str.buf,
+                                           cutpoint + 1 - base->u.area->u.str.buf);
+      if (newstr == NULL)
       {
-        abce_mb_refdn(abce, &base);
         abce_pop(abce);
         return -ENOMEM;
       }
-      abce_pop(abce);
-      if (abce_push_mb(abce, &newstr) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &newstr);
+      abce_npoppush(abce, 1, newstr);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHNOTDIR:
     {
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
+      struct abce_mb *base;
+      struct abce_mb *newstr;
       size_t bsz;
       char *cutpoint;
       VERIFYMB(-1, ABCE_T_S); // base
-      GETMB(&base, -1);
-      bsz = base.u.area->u.str.size;
+      GETMBPTR(&base, -1);
+      bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(base->u.area->u.str.buf, '/', bsz);
       if (cutpoint == NULL)
       {
-        abce_pop(abce);
-        abce_push_mb(abce, &base);
-        abce_mb_refdn(abce, &base);
+        abce_npoppush(abce, 1, base);
         return 0;
       }
 
-      newstr = abce_mb_create_string(abce, cutpoint+1,
-                                     bsz - (cutpoint+1-base.u.area->u.str.buf));
-      if (newstr.typ == ABCE_T_N)
+      newstr = abce_mb_cpush_create_string(abce, cutpoint+1,
+                                           bsz - (cutpoint+1-base->u.area->u.str.buf));
+      if (newstr == NULL)
       {
-        abce_mb_refdn(abce, &base);
         abce_pop(abce);
         return -ENOMEM;
       }
-      abce_pop(abce);
-      if (abce_push_mb(abce, &newstr) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &newstr);
+      abce_npoppush(abce, 1, newstr);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_PATHSUFFIX:
     {
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
+      struct abce_mb *base;
+      struct abce_mb *newstr;
       size_t bsz;
       char *cutpoint, *cutpoint2;
       VERIFYMB(-1, ABCE_T_S); // base
-      GETMB(&base, -1);
-      bsz = base.u.area->u.str.size;
+      GETMBPTR(&base, -1);
+      bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base.u.area->u.str.buf, '.', bsz);
-      cutpoint2 = my_memrchr(base.u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(base->u.area->u.str.buf, '.', bsz);
+      cutpoint2 = my_memrchr(base->u.area->u.str.buf, '/', bsz);
       if (cutpoint == NULL || cutpoint < cutpoint2)
       {
-        abce_mb_refdn(abce, &base);
-        abce_pop(abce);
-
-        newstr = abce_mb_create_string(abce, "", 0);
-        if (newstr.typ == ABCE_T_N)
+        newstr = abce_mb_cpush_create_string(abce, "", 0);
+        if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &base);
           return -ENOMEM;
         }
-        abce_push_mb(abce, &newstr);
-        abce_mb_refdn(abce, &newstr);
+	abce_npoppush(abce, 1, newstr);
+	abce_cpop(abce);
         return 0;
       }
 
-      newstr = abce_mb_create_string(abce, cutpoint,
-                                     bsz - (cutpoint-base.u.area->u.str.buf));
-      if (newstr.typ == ABCE_T_N)
+      newstr = abce_mb_cpush_create_string(abce, cutpoint,
+                                           bsz - (cutpoint-base->u.area->u.str.buf));
+      if (newstr == NULL)
       {
-        abce_mb_refdn(abce, &base);
         abce_pop(abce);
         return -ENOMEM;
       }
-      abce_pop(abce);
-      if (abce_push_mb(abce, &newstr) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &newstr);
+      abce_npoppush(abce, 1, newstr);
+      abce_cpop(abce);
       return 0;
     }
     case STIR_OPCODE_SUFSUBONE:
     {
-      struct abce_mb oldsuf = {};
-      struct abce_mb newsuf = {};
-      struct abce_mb base = {};
-      struct abce_mb newstr = {};
+      struct abce_mb *oldsuf;
+      struct abce_mb *newsuf;
+      struct abce_mb *base;
+      struct abce_mb *newstr;
       size_t bsz, osz, nsz;
       VERIFYMB(-1, ABCE_T_S); // newsuffix
       VERIFYMB(-2, ABCE_T_S); // oldsuffix
       VERIFYMB(-3, ABCE_T_S); // base
-      GETMB(&newsuf, -1);
-      GETMB(&oldsuf, -2);
-      GETMB(&base, -3);
-      bsz = base.u.area->u.str.size;
-      osz = oldsuf.u.area->u.str.size;
-      nsz = newsuf.u.area->u.str.size;
+      GETMBPTR(&newsuf, -1);
+      GETMBPTR(&oldsuf, -2);
+      GETMBPTR(&base, -3);
+      bsz = base->u.area->u.str.size;
+      osz = oldsuf->u.area->u.str.size;
+      nsz = newsuf->u.area->u.str.size;
       if (   bsz < osz
-          || memcmp(&base.u.area->u.str.buf[bsz-osz], oldsuf.u.area->u.str.buf,
+          || memcmp(&base->u.area->u.str.buf[bsz-osz], oldsuf->u.area->u.str.buf,
                     osz) != 0)
       {
         fprintf(stderr, "stirmake: %s does not end with %s\n",
-                base.u.area->u.str.buf, oldsuf.u.area->u.str.buf);
+                base->u.area->u.str.buf, oldsuf->u.area->u.str.buf);
         abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
-        abce->err.mb = abce_mb_refup(abce, &base);
-        abce_mb_refdn(abce, &oldsuf);
-        abce_mb_refdn(abce, &newsuf);
-        abce_mb_refdn(abce, &base);
+	abce_mb_errreplace_noinline(abce, base);
         return -EINVAL;
       }
-      newstr = abce_mb_create_string_to_be_filled(abce, bsz-osz+nsz);
-      if (newstr.typ == ABCE_T_N)
+      newstr = abce_mb_cpush_create_string_to_be_filled(abce, bsz-osz+nsz);
+      if (newstr == NULL)
       {
-        abce_mb_refdn(abce, &oldsuf);
-        abce_mb_refdn(abce, &newsuf);
-        abce_mb_refdn(abce, &base);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
         return -ENOMEM;
       }
-      memcpy(newstr.u.area->u.str.buf, base.u.area->u.str.buf, bsz-osz);
-      memcpy(newstr.u.area->u.str.buf + (bsz - osz),
-             newsuf.u.area->u.str.buf, nsz);
-      newstr.u.area->u.str.buf[bsz-osz+nsz] = '\0';
-      abce_pop(abce);
-      abce_pop(abce);
-      abce_pop(abce);
-      if (abce_push_mb(abce, &newstr) != 0)
-      {
-        my_abort();
-      }
-      abce_mb_refdn(abce, &oldsuf);
-      abce_mb_refdn(abce, &newsuf);
-      abce_mb_refdn(abce, &base);
-      abce_mb_refdn(abce, &newstr);
+      memcpy(newstr->u.area->u.str.buf, base->u.area->u.str.buf, bsz-osz);
+      memcpy(newstr->u.area->u.str.buf + (bsz - osz),
+             newsuf->u.area->u.str.buf, nsz);
+      newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+      abce_npoppush(abce, 3, newstr);
+      abce_cpop(abce);
       return 0;
     }
     // FIXME what if there are many deps? Is it added for all rules?
     case STIR_OPCODE_DEP_ADD:
     {
-      struct abce_mb depar = {};
-      struct abce_mb tgtar = {};
-      struct abce_mb tree = {};
-      struct abce_mb orderonly = {};
-      struct abce_mb rec = {};
-      struct abce_mb wait = {};
+      struct abce_mb *depar;
+      struct abce_mb *tgtar;
+      struct abce_mb *tree;
+      struct abce_mb *orderonly;
+      struct abce_mb *rec;
+      struct abce_mb *wait;
       struct abce_mb *orderonlyres = NULL;
       struct abce_mb *recres = NULL;
       struct abce_mb *waitres = NULL;
@@ -2020,98 +1795,80 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       VERIFYMB(-1, ABCE_T_T);
       VERIFYMB(-2, ABCE_T_A);
       VERIFYMB(-3, ABCE_T_A);
-      GETMB(&tree, -1);
-      GETMB(&depar, -2);
-      GETMB(&tgtar, -3);
+      GETMBPTR(&tree, -1);
+      GETMBPTR(&depar, -2);
+      GETMBPTR(&tgtar, -3);
 
-      for (i = 0; i < depar.u.area->u.ar.size; i++)
+      for (i = 0; i < depar->u.area->u.ar.size; i++)
       {
-        const struct abce_mb *mb = &depar.u.area->u.ar.mbs[i];
+        const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
         if (mb->typ != ABCE_T_S)
         {
-          abce_mb_refdn(abce, &depar);
-          abce_mb_refdn(abce, &tgtar);
-          abce_mb_refdn(abce, &tree);
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, mb);
+	  abce_mb_errreplace_noinline(abce, mb);
           return -EINVAL;
         }
       }
-      for (i = 0; i < tgtar.u.area->u.ar.size; i++)
+      for (i = 0; i < tgtar->u.area->u.ar.size; i++)
       {
-        const struct abce_mb *mb = &tgtar.u.area->u.ar.mbs[i];
+        const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
         if (mb->typ != ABCE_T_S)
         {
-          abce_mb_refdn(abce, &depar);
-          abce_mb_refdn(abce, &tgtar);
-          abce_mb_refdn(abce, &tree);
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb = abce_mb_refup(abce, mb);
+	  abce_mb_errreplace_noinline(abce, mb);
           return -EINVAL;
         }
       }
 
-      rec = abce_mb_create_string_nul(abce, "rec");
-      if (rec.typ == ABCE_T_N)
+      rec = abce_mb_cpush_create_string_nul(abce, "rec");
+      if (rec == NULL)
       {
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
         return -ENOMEM;
       }
-      if (abce_tree_get_str(abce, &recres, &tree, &rec) != 0)
+      if (abce_tree_get_str(abce, &recres, tree, rec) != 0)
       {
         recres = NULL;
       }
-      abce_mb_refdn(abce, &rec);
+      abce_cpop(abce);
 
-      orderonly = abce_mb_create_string_nul(abce, "orderonly");
-      if (orderonly.typ == ABCE_T_N)
+      orderonly = abce_mb_cpush_create_string_nul(abce, "orderonly");
+      if (orderonly == NULL)
       {
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
         return -ENOMEM;
       }
-      if (abce_tree_get_str(abce, &orderonlyres, &tree, &orderonly) != 0)
+      if (abce_tree_get_str(abce, &orderonlyres, tree, orderonly) != 0)
       {
         orderonlyres = NULL;
       }
-      abce_mb_refdn(abce, &orderonly);
+      abce_cpop(abce);
 
-      wait = abce_mb_create_string_nul(abce, "wait");
-      if (wait.typ == ABCE_T_N)
+      wait = abce_mb_cpush_create_string_nul(abce, "wait");
+      if (wait == NULL)
       {
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
         return -ENOMEM;
       }
-      if (abce_tree_get_str(abce, &waitres, &tree, &wait) != 0)
+      if (abce_tree_get_str(abce, &waitres, tree, wait) != 0)
       {
         waitres = NULL;
       }
-      abce_mb_refdn(abce, &wait);
+      abce_cpop(abce);
 
       if (recres && recres->typ != ABCE_T_B && recres->typ != ABCE_T_D)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb = abce_mb_refup(abce, recres);
+	abce_mb_errreplace_noinline(abce, recres);
         //abce_mb_refdn(abce, &recres);
         //abce_mb_refdn(abce, &orderonlyres);
         //abce_mb_refdn(abce, &waitres);
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
@@ -2120,13 +1877,10 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       if (orderonlyres && orderonlyres->typ != ABCE_T_B && orderonlyres->typ != ABCE_T_D)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb = abce_mb_refup(abce, orderonlyres);
+	abce_mb_errreplace_noinline(abce, orderonlyres);
         //abce_mb_refdn(abce, &recres);
         //abce_mb_refdn(abce, &orderonlyres);
         //abce_mb_refdn(abce, &waitres);
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
@@ -2135,13 +1889,10 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       if (waitres && waitres->typ != ABCE_T_B && waitres->typ != ABCE_T_D)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb = abce_mb_refup(abce, waitres);
+	abce_mb_errreplace_noinline(abce, waitres);
         //abce_mb_refdn(abce, &recres);
         //abce_mb_refdn(abce, &orderonlyres);
         //abce_mb_refdn(abce, &waitres);
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
@@ -2150,20 +1901,20 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 
       if (!main->parsing)
       {
-        char **tgts = malloc(sizeof(*tgts) * tgtar.u.area->u.ar.size);
-        char **deps = malloc(sizeof(*deps) * depar.u.area->u.ar.size);
-        for (i = 0; i < depar.u.area->u.ar.size; i++)
+        char **tgts = malloc(sizeof(*tgts) * tgtar->u.area->u.ar.size);
+        char **deps = malloc(sizeof(*deps) * depar->u.area->u.ar.size);
+        for (i = 0; i < depar->u.area->u.ar.size; i++)
         {
-          const struct abce_mb *mb = &depar.u.area->u.ar.mbs[i];
+          const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
           deps[i] = mb->u.area->u.str.buf;
         }
-        for (i = 0; i < tgtar.u.area->u.ar.size; i++)
+        for (i = 0; i < tgtar->u.area->u.ar.size; i++)
         {
-          const struct abce_mb *mb = &tgtar.u.area->u.ar.mbs[i];
+          const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
           tgts[i] = mb->u.area->u.str.buf;
         }
-        if (add_dep_after_parsing_stage(tgts, tgtar.u.area->u.ar.size,
-                                        deps, depar.u.area->u.ar.size,
+        if (add_dep_after_parsing_stage(tgts, tgtar->u.area->u.ar.size,
+                                        deps, depar->u.area->u.ar.size,
                                         prefix,
                                         recres && recres->u.d != 0,
                                         orderonlyres && orderonlyres->u.d != 0,
@@ -2172,14 +1923,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         {
           abce->err.code = STIR_E_RULE_NOT_FOUND;
           abce->err.mb.typ = ABCE_T_N;
-          abce_mb_refdn(abce, &depar);
-          abce_mb_refdn(abce, &tgtar);
-          abce_mb_refdn(abce, &tree);
           return -ENOENT;
         }
-        abce_mb_refdn(abce, &depar);
-        abce_mb_refdn(abce, &tgtar);
-        abce_mb_refdn(abce, &tree);
         abce_pop(abce);
         abce_pop(abce);
         abce_pop(abce);
@@ -2187,23 +1932,20 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       stiryy_main_emplace_rule(main, prefix, abce->dynscope.u.area->u.sc.locidx);
-      for (i = 0; i < tgtar.u.area->u.ar.size; i++)
+      for (i = 0; i < tgtar->u.area->u.ar.size; i++)
       {
-        const struct abce_mb *mb = &tgtar.u.area->u.ar.mbs[i];
+        const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
         stiryy_main_set_tgt(main, prefix, mb->u.area->u.str.buf, 0);
       }
-      for (i = 0; i < depar.u.area->u.ar.size; i++)
+      for (i = 0; i < depar->u.area->u.ar.size; i++)
       {
-        const struct abce_mb *mb = &depar.u.area->u.ar.mbs[i];
+        const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
         stiryy_main_set_dep(main, prefix, mb->u.area->u.str.buf, recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
       }
       stiryy_main_mark_deponly(main);
 
       //abce_mb_refdn(abce, &recres);
       //abce_mb_refdn(abce, &orderonlyres);
-      abce_mb_refdn(abce, &depar);
-      abce_mb_refdn(abce, &tgtar);
-      abce_mb_refdn(abce, &tree);
       abce_pop(abce);
       abce_pop(abce);
       abce_pop(abce);
@@ -2241,20 +1983,20 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         prefix = ".";
       }
       backpath = construct_backpath(prefix);
-      mb = abce_mb_create_string(abce, backpath, strlen(backpath));
+      mb = abce_mb_cpush_create_string(abce, backpath, strlen(backpath));
       free(backpath);
-      if (mb.typ == ABCE_T_N)
+      if (mb == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mb) != 0)
+      if (abce_push_mb(abce, mb) != 0)
       {
         abce->err.code = ABCE_E_STACK_OVERFLOW;
-        abce->err.mb = abce_mb_refup_noinline(abce, &mb);
-        abce_mb_refdn(abce, &mb);
+	abce_mb_errreplace_noinline(abce, mb);
+        abce_cpop(abce);
         return -EOVERFLOW;
       }
-      abce_mb_refdn(abce, &mb);
+      abce_cpop(abce);
       return 0;
     case STIR_OPCODE_CUR_DIR_FROM_TOP:
       if (abce_scope_get_userdata(&abce->dynscope))
@@ -2270,52 +2012,40 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         prefix = ".";
       }
-      mb = abce_mb_create_string(abce, prefix, strlen(prefix));
-      if (mb.typ == ABCE_T_N)
+      mb = abce_mb_cpush_create_string(abce, prefix, strlen(prefix));
+      if (mb == NULL)
       {
         return -ENOMEM;
       }
-      if (abce_push_mb(abce, &mb) != 0)
+      if (abce_push_mb(abce, mb) != 0)
       {
         abce->err.code = ABCE_E_STACK_OVERFLOW;
-        abce->err.mb = abce_mb_refup_noinline(abce, &mb);
-        abce_mb_refdn(abce, &mb);
+	abce_mb_errreplace_noinline(abce, mb);
+        abce_cpop(abce);
         return -EOVERFLOW;
       }
-      abce_mb_refdn(abce, &mb);
+      abce_cpop(abce);
       return 0;
     case STIR_OPCODE_SHELL_ESCAPE:
       {
-        struct abce_mb mbarg = {}, mbnew = {};
+        struct abce_mb *mbarg, *mbnew;
         size_t newsz;
         char *newstr;
-        GETMBSTR(&mbarg, -1);
-        newstr = stir_shellescape(mbarg.u.area->u.str.buf,
-                                  mbarg.u.area->u.str.size, &newsz);
+        GETMBSTRPTR(&mbarg, -1);
+        newstr = stir_shellescape(mbarg->u.area->u.str.buf,
+                                  mbarg->u.area->u.str.size, &newsz);
         if (newstr == NULL)
         {
-          abce_mb_refdn(abce, &mbarg);
           return -ENOMEM;
         }
-        mbnew = abce_mb_create_string(abce, newstr, newsz);
-        if (mb.typ == ABCE_T_N)
+        mbnew = abce_mb_cpush_create_string(abce, newstr, newsz);
+        if (mbnew == NULL)
         {
-          abce_mb_refdn(abce, &mbarg);
           free(newstr);
           return -ENOMEM;
         }
-        abce_pop(abce);
-        if (abce_push_mb(abce, &mbnew) != 0)
-        {
-          abce->err.code = ABCE_E_STACK_OVERFLOW;
-          abce->err.mb = abce_mb_refup_noinline(abce, &mbnew);
-          abce_mb_refdn(abce, &mbnew);
-          abce_mb_refdn(abce, &mbarg);
-          free(newstr);
-          return -EOVERFLOW;
-        }
-        abce_mb_refdn(abce, &mbnew);
-        abce_mb_refdn(abce, &mbarg);
+	abce_npoppush(abce, 1, mbnew);
+	abce_cpop(abce);
         free(newstr);
         return 0;
       }

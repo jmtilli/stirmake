@@ -392,7 +392,7 @@ engine_stringlist(struct abce *abce,
   unsigned char tmpbuf[64] = {};
   size_t tmpsiz = 0;
   size_t i;
-  struct abce_mb mb = {};
+  struct abce_mb *mb;
 
   *strs = NULL;
   *strsz = 0;
@@ -425,43 +425,42 @@ engine_stringlist(struct abce *abce,
     abce_mb_dump(&abce->err.mb);
     return -EINVAL;
   }
-  if (abce_getmb(&mb, abce, 0) != 0)
+  if (abce_getmbptr(&mb, abce, 0) != 0)
   {
     printf("can't get item from stack in %s\n", directive);
     return -EINVAL;
     //printf("expected array, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
   }
-  if (mb.typ == ABCE_T_S)
+  if (mb->typ == ABCE_T_S)
   {
     *strsz = 1;
     *strs = malloc(sizeof(**strs) * (*strsz));
-    (*strs)[0] = strdup(mb.u.area->u.str.buf);
+    (*strs)[0] = strdup(mb->u.area->u.str.buf);
   }
-  else if (mb.typ == ABCE_T_A)
+  else if (mb->typ == ABCE_T_A)
   {
-    for (i = 0; i < mb.u.area->u.ar.size; i++)
+    for (i = 0; i < mb->u.area->u.ar.size; i++)
     {
-      if (mb.u.area->u.ar.mbs[i].typ != ABCE_T_S)
+      if (mb->u.area->u.ar.mbs[i].typ != ABCE_T_S)
       {
         printf("expected string, got type %d for directive %s\n",
-               mb.u.area->u.ar.mbs[i].typ, directive);
+               mb->u.area->u.ar.mbs[i].typ, directive);
         return -EINVAL;
       }
     }
-    *strsz = mb.u.area->u.ar.size;
+    *strsz = mb->u.area->u.ar.size;
     *strs = malloc(sizeof(**strs) * (*strsz));
     for (i = 0; i < *strsz; i++)
     {
-      (*strs)[i] = strdup(mb.u.area->u.ar.mbs[i].u.area->u.str.buf);
+      (*strs)[i] = strdup(mb->u.area->u.ar.mbs[i].u.area->u.str.buf);
     }
   }
   else
   {
     printf("expected str or array, got type %d in %s\n",
-           mb.typ, directive);
+           mb->typ, directive);
     return -EINVAL;
   }
-  abce_mb_refdn(abce, &mb);
   if (abce->sp != 1)
   {
     abort();

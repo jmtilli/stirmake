@@ -69,14 +69,14 @@ json:
 }
 | STRING_LITERAL
 {
-  struct abce_mb mb;
-  mb = abce_mb_create_string(jsonyy->abce, $1.str, $1.sz);
-  if (mb.typ == ABCE_T_N)
+  struct abce_mb *mb;
+  mb = abce_mb_cpush_create_string(jsonyy->abce, $1.str, $1.sz);
+  if (mb == NULL)
   {
     YYABORT;
   }
-  abce_push_mb(jsonyy->abce, &mb);
-  abce_mb_refdn(jsonyy->abce, &mb);
+  abce_push_mb(jsonyy->abce, mb);
+  abce_cpop(jsonyy->abce);
 }
 | object
 | array
@@ -88,26 +88,26 @@ json:
 object:
   OPEN_BRACE
 {
-  struct abce_mb mb = abce_mb_create_tree(jsonyy->abce);
-  if (mb.typ == ABCE_T_N)
+  struct abce_mb *mb = abce_mb_cpush_create_tree(jsonyy->abce);
+  if (mb == NULL)
   {
     YYABORT;
   }
-  abce_push_mb(jsonyy->abce, &mb);
-  abce_mb_refdn(jsonyy->abce, &mb);
+  abce_push_mb(jsonyy->abce, mb);
+  abce_cpop(jsonyy->abce);
 }
   maybe_objlist CLOSE_BRACE ;
 
 array:
   OPEN_BRACKET
 {
-  struct abce_mb mb = abce_mb_create_array(jsonyy->abce);
-  if (mb.typ == ABCE_T_N)
+  struct abce_mb *mb = abce_mb_cpush_create_array(jsonyy->abce);
+  if (mb == NULL)
   {
     YYABORT;
   }
-  abce_push_mb(jsonyy->abce, &mb);
-  abce_mb_refdn(jsonyy->abce, &mb);
+  abce_push_mb(jsonyy->abce, mb);
+  abce_cpop(jsonyy->abce);
 }
   maybe_jsonlist CLOSE_BRACKET ;
 
@@ -125,25 +125,25 @@ jsonlist:
 listentry:
   json
 {
-  struct abce_mb mb, mbar;
-  if (abce_getmb(&mb, jsonyy->abce, -1) != 0)
+  struct abce_mb *mb, *mbar;
+  if (abce_getmbptr(&mb, jsonyy->abce, -1) != 0)
   {
     YYABORT;
   }
-  if (abce_getmb(&mbar, jsonyy->abce, -2) != 0)
+  if (abce_getmbptr(&mbar, jsonyy->abce, -2) != 0)
   {
-    abce_mb_refdn(jsonyy->abce, &mb);
+    //abce_mb_refdn(jsonyy->abce, &mb);
     YYABORT;
   }
-  if (abce_mb_array_append(jsonyy->abce, &mbar, &mb) != 0)
+  if (abce_mb_array_append(jsonyy->abce, mbar, mb) != 0)
   {
-    abce_mb_refdn(jsonyy->abce, &mb);
-    abce_mb_refdn(jsonyy->abce, &mbar);
+    //abce_mb_refdn(jsonyy->abce, &mb);
+    //abce_mb_refdn(jsonyy->abce, &mbar);
     YYABORT;
   }
   abce_pop(jsonyy->abce);
-  abce_mb_refdn(jsonyy->abce, &mb);
-  abce_mb_refdn(jsonyy->abce, &mbar);
+  //abce_mb_refdn(jsonyy->abce, &mb);
+  //abce_mb_refdn(jsonyy->abce, &mbar);
 }
 ;
 
@@ -155,44 +155,45 @@ objlist:
 objentry:
   STRING_LITERAL
 {
-  struct abce_mb mb;
-  mb = abce_mb_create_string(jsonyy->abce, $1.str, $1.sz);
-  if (mb.typ == ABCE_T_N)
+  struct abce_mb *mb;
+  mb = abce_mb_cpush_create_string(jsonyy->abce, $1.str, $1.sz);
+  if (mb == NULL)
   {
     YYABORT;
   }
-  abce_push_mb(jsonyy->abce, &mb);
-  abce_mb_refdn(jsonyy->abce, &mb);
+  abce_push_mb(jsonyy->abce, mb);
+  abce_cpop(jsonyy->abce);
+  //abce_mb_refdn(jsonyy->abce, &mb);
 }
   COLON json
 {
-  struct abce_mb mb, mbkey, mbt;
-  if (abce_getmb(&mb, jsonyy->abce, -1) != 0)
+  struct abce_mb *mb, *mbkey, *mbt;
+  if (abce_getmbptr(&mb, jsonyy->abce, -1) != 0)
   {
     YYABORT;
   }
-  if (abce_getmb(&mbkey, jsonyy->abce, -2) != 0)
+  if (abce_getmbptr(&mbkey, jsonyy->abce, -2) != 0)
   {
-    abce_mb_refdn(jsonyy->abce, &mb);
+    //abce_mb_refdn(jsonyy->abce, &mb);
     YYABORT;
   }
-  if (abce_getmb(&mbt, jsonyy->abce, -3) != 0)
+  if (abce_getmbptr(&mbt, jsonyy->abce, -3) != 0)
   {
-    abce_mb_refdn(jsonyy->abce, &mbkey);
-    abce_mb_refdn(jsonyy->abce, &mb);
+    //abce_mb_refdn(jsonyy->abce, &mbkey);
+    //abce_mb_refdn(jsonyy->abce, &mb);
     YYABORT;
   }
-  if (abce_tree_set_str(jsonyy->abce, &mbt, &mbkey, &mb) != 0)
+  if (abce_tree_set_str(jsonyy->abce, mbt, mbkey, mb) != 0)
   {
-    abce_mb_refdn(jsonyy->abce, &mbt);
-    abce_mb_refdn(jsonyy->abce, &mbkey);
-    abce_mb_refdn(jsonyy->abce, &mb);
+    //abce_mb_refdn(jsonyy->abce, &mbt);
+    //abce_mb_refdn(jsonyy->abce, &mbkey);
+    //abce_mb_refdn(jsonyy->abce, &mb);
     YYABORT;
   }
   abce_pop(jsonyy->abce);
   abce_pop(jsonyy->abce);
-  abce_mb_refdn(jsonyy->abce, &mb);
-  abce_mb_refdn(jsonyy->abce, &mbkey);
-  abce_mb_refdn(jsonyy->abce, &mbt);
+  //abce_mb_refdn(jsonyy->abce, &mb);
+  //abce_mb_refdn(jsonyy->abce, &mbkey);
+  //abce_mb_refdn(jsonyy->abce, &mbt);
 }
 ;

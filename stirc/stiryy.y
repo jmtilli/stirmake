@@ -897,39 +897,51 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
   {
     size_t oldscopeidx = get_abce(amyplanyy)->dynscope.u.area->u.sc.locidx;
     struct abce_mb oldscope;
-    struct abce_mb key;
+    struct abce_mb *newscope;
+    struct abce_mb keystatic;
+    struct abce_mb *key;
     void *ud = abce_scope_get_userdata(&get_abce(amyplanyy)->dynscope);
 
     if ($3)
     {
-      key = abce_mb_create_string(get_abce(amyplanyy), $3, strlen($3));
+      key = abce_mb_cpush_create_string(get_abce(amyplanyy), $3, strlen($3));
     }
     else
     {
-      key.typ = ABCE_T_N;
+      keystatic.typ = ABCE_T_N;
+      key = &keystatic;
+      abce_cpush_nil(get_abce(amyplanyy));
     }
-    abce_push_mb(get_abce(amyplanyy), &key); // for GC to see it
+    //abce_push_mb(get_abce(amyplanyy), key); // for GC to see it
 
     oldscope = get_abce(amyplanyy)->dynscope;
+    abce_cpush_mb(get_abce(amyplanyy), &oldscope);
+    abce_mb_refdn(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope);
     oldscopeidx = oldscope.u.area->u.sc.locidx;
-    get_abce(amyplanyy)->dynscope = abce_mb_create_scope(get_abce(amyplanyy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, (int)$2);
-
-    if (get_abce(amyplanyy)->dynscope.typ == ABCE_T_N)
+    newscope = abce_mb_cpush_create_scope(get_abce(amyplanyy), ABCE_DEFAULT_SCOPE_SIZE, &oldscope, (int)$2);
+    if (newscope == NULL)
     {
       fprintf(stderr, "out of memory\n");
       YYABORT;
     }
+    get_abce(amyplanyy)->dynscope = abce_mb_refup(get_abce(amyplanyy), newscope);
+    abce_cpop(get_abce(amyplanyy));
+
     if ($3)
     {
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &oldscope, &key, &get_abce(amyplanyy)->dynscope);
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &oldscope, key, &get_abce(amyplanyy)->dynscope);
     }
     abce_scope_set_userdata(&get_abce(amyplanyy)->dynscope, ud);
-    abce_pop(get_abce(amyplanyy));
+    //abce_pop(get_abce(amyplanyy));
+    /*
     if ($3)
     {
       abce_mb_refdn(get_abce(amyplanyy), &key);
     }
-    abce_mb_refdn(get_abce(amyplanyy), &oldscope);
+    */
+    abce_cpop(get_abce(amyplanyy));
+    //abce_mb_refdn(get_abce(amyplanyy), &oldscope);
+    abce_cpop(get_abce(amyplanyy));
     $<d>$ = oldscopeidx;
   }
   free($3);
@@ -1048,38 +1060,51 @@ assignrule:
     {
       size_t it = 0;
       it = strspn(res, " \t\r\n");
-      struct abce_mb mbar = abce_mb_create_array(get_abce(amyplanyy));
-      abce_push_mb(get_abce(amyplanyy), &mbar);
-      abce_mb_refdn(get_abce(amyplanyy), &mbar);
+      struct abce_mb *mbar = abce_mb_cpush_create_array(get_abce(amyplanyy));
+      // FIXME what if it's null?
+      abce_push_mb(get_abce(amyplanyy), mbar);
+      abce_cpop(get_abce(amyplanyy));
+      mbar = NULL;
+      //abce_mb_refdn(get_abce(amyplanyy), &mbar);
 
       while (res[it] != '\0')
       {
         size_t it2;
         it2 = it + strcspn(res + it, " \t\r\n");
-        struct abce_mb mbstr = abce_mb_create_string(get_abce(amyplanyy), res + it, it2 - it);
-        if (abce_mb_array_append(get_abce(amyplanyy), &get_abce(amyplanyy)->stackbase[1], &mbstr) != 0)
+        struct abce_mb *mbstr = abce_mb_cpush_create_string(get_abce(amyplanyy), res + it, it2 - it);
+        // FIXME what if it's null?
+        if (abce_mb_array_append(get_abce(amyplanyy), &get_abce(amyplanyy)->stackbase[1], mbstr) != 0)
         {
           amyplanyyerror(scanner, amyplanyy, "shell-assign failed in abce (OOM)");
           YYABORT;
         }
-        abce_mb_refdn(get_abce(amyplanyy), &mbstr);
+        abce_cpop(get_abce(amyplanyy));
+        mbstr = NULL;
+        //abce_mb_refdn(get_abce(amyplanyy), &mbstr);
         it = it2 + strspn(res + it2, " \t\r\n");
       }
 
-      struct abce_mb key = abce_mb_create_string(get_abce(amyplanyy), $1, strlen($1));
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, &key, &get_abce(amyplanyy)->stackbase[1]);
-      abce_mb_refdn(get_abce(amyplanyy), &key);
+      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
+      // FIXME what if it's null?
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[1]);
+      abce_cpop(get_abce(amyplanyy));
+      key = NULL;
+      //abce_mb_refdn(get_abce(amyplanyy), &key);
       abce_pop(get_abce(amyplanyy));
     }
     else
     {
-      struct abce_mb mbstr = abce_mb_create_string(get_abce(amyplanyy), res, strlen(res));
-      abce_push_mb(get_abce(amyplanyy), &mbstr);
-      abce_mb_refdn(get_abce(amyplanyy), &mbstr);
+      struct abce_mb *mbstr = abce_mb_cpush_create_string(get_abce(amyplanyy), res, strlen(res));
+      // FIXME what if it's null?
+      abce_push_mb(get_abce(amyplanyy), mbstr);
+      abce_cpop(get_abce(amyplanyy));
+      //abce_mb_refdn(get_abce(amyplanyy), &mbstr);
 
-      struct abce_mb key = abce_mb_create_string(get_abce(amyplanyy), $1, strlen($1));
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, &key, &get_abce(amyplanyy)->stackbase[1]);
-      abce_mb_refdn(get_abce(amyplanyy), &key);
+      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
+      // FIXME what if it's null?
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[1]);
+      abce_cpop(get_abce(amyplanyy));
+      //abce_mb_refdn(get_abce(amyplanyy), &key);
       abce_pop(get_abce(amyplanyy));
     }
 
@@ -1151,9 +1176,11 @@ expr NEWLINE
       {
         abort();
       }
-      struct abce_mb key = abce_mb_create_string(get_abce(amyplanyy), $1, strlen($1));
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, &key, &get_abce(amyplanyy)->stackbase[0]);
-      abce_mb_refdn(get_abce(amyplanyy), &key);
+      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
+      // FIXME what if it's null?
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[0]);
+      abce_cpop(get_abce(amyplanyy));
+      //abce_mb_refdn(get_abce(amyplanyy), &key);
       abce_pop(get_abce(amyplanyy));
     }
   }
@@ -1235,9 +1262,11 @@ expr NEWLINE
       {
         abort();
       }
-      struct abce_mb key = abce_mb_create_string(get_abce(amyplanyy), $1, strlen($1));
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, &key, &get_abce(amyplanyy)->stackbase[0]);
-      abce_mb_refdn(get_abce(amyplanyy), &key);
+      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
+      // FIXME what if it's null?
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[0]);
+      //abce_mb_refdn(get_abce(amyplanyy), &key);
+      abce_cpop(get_abce(amyplanyy));
       abce_pop(get_abce(amyplanyy));
     }
   }
