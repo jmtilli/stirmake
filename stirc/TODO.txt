@@ -30,8 +30,6 @@
 
 - setting number of tokens a job requires
 
-- remove targets that are being built if stirmake is interrupted
-
 - move to starting childs for multi-cmd rules directly from master process
 
 - document shell assignment

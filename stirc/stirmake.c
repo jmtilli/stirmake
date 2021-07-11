@@ -170,83 +170,8 @@ struct stringtabentry {
 int children = 0;
 
 void merge_db(void);
-
-// FIXME do updates to DB here as well... Now they are not done.
-void errxit(const char *fmt, ...)
-{
-  va_list args;
-  const char *prefix = "stirmake: *** ";
-  const char *suffix = ". Exiting.\n";
-  size_t sz = strlen(prefix) + strlen(fmt) + strlen(suffix) + 1;
-  char *fmtdup = malloc(sz);
-  int wstatus;
-  pid_t pid;
-  snprintf(fmtdup, sz, "%s%s%s", prefix, fmt, suffix);
-  va_start(args, fmt);
-  vfprintf(stderr, fmtdup, args);
-  va_end(args);
-  free(fmtdup);
-  pid = waitpid(-1, &wstatus, WNOHANG);
-  if (pid < 0 && errno == ECHILD)
-  {
-    merge_db();
-    exit(2);
-  }
-  if (pid > 0)
-  {
-    if (children <= 0)
-    {
-      printf("27.E\n");
-      my_abort();
-    }
-    children--;
-    if (children != 0)
-    {
-      write(jobserver_fd[1], ".", 1);
-    }
-  }
-  fprintf(stderr, "stirmake: *** Waiting for child processes to die.\n");
-  for (;;)
-  {
-    pid = waitpid(-1, &wstatus, 0);
-    if (pid == 0)
-    {
-      printf("28.E\n");
-      my_abort();
-    }
-    if (children <= 0)
-    {
-      if (pid < 0 && errno == ECHILD)
-      {
-        fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
-        merge_db();
-        exit(2);
-      }
-      printf("29.E\n");
-      my_abort();
-    }
-    if (pid < 0)
-    {
-      printf("30.E\n");
-      perror("Error was");
-      printf("number of children: %d\n", children);
-      my_abort();
-    }
-#if 0 // Let's not do this, just in case the data is messed up.
-    int ruleid = ruleid_by_pid_erase(pid);
-    if (ruleid < 0)
-    {
-      printf("31.E\n");
-      my_abort();
-    }
-#endif
-    children--;
-    if (children != 0)
-    {
-      write(jobserver_fd[1], ".", 1);
-    }
-  }
-}
+int ruleid_by_pid_erase(pid_t pid, int *fd);
+void errxit(const char *fmt, ...);
 
 struct cmd {
   char ***args;
@@ -982,6 +907,148 @@ struct rule {
   struct syncbuf output;
   struct stirdep *waitloc;
 };
+
+extern struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
+extern fd_set globfds;
+
+void drain_pipe(struct rule *rule, int fdit);
+
+// FIXME do updates to DB here as well... Now they are not done.
+void errxit(const char *fmt, ...)
+{
+  va_list args;
+  const char *prefix = "stirmake: *** ";
+  const char *suffix = ". Exiting.\n";
+  size_t sz = strlen(prefix) + strlen(fmt) + strlen(suffix) + 1;
+  char *fmtdup = malloc(sz);
+  int wstatus;
+  int fd = -1;
+  pid_t pid;
+  snprintf(fmtdup, sz, "%s%s%s", prefix, fmt, suffix);
+  va_start(args, fmt);
+  vfprintf(stderr, fmtdup, args);
+  va_end(args);
+  free(fmtdup);
+  pid = waitpid(-1, &wstatus, WNOHANG);
+  if (pid < 0 && errno == ECHILD)
+  {
+    merge_db();
+    exit(2);
+  }
+  if (pid > 0)
+  {
+    int ruleid = ruleid_by_pid_erase(pid, &fd);
+    if (ruleid < 0)
+    {
+      printf("31.1\n");
+      my_abort();
+    }
+    if (fd >= 0)
+    {
+      drain_pipe(rules[ruleid], fd);
+      syncbuf_dump(&rules[ruleid]->output, 1);
+      close(fd);
+      FD_CLR(fd, &globfds);
+      fd = -1;
+    }
+    if (children <= 0)
+    {
+      printf("27.E\n");
+      my_abort();
+    }
+    children--;
+    if (children != 0)
+    {
+      write(jobserver_fd[1], ".", 1);
+    }
+    if (wstatus != 0 && pid > 0)
+    {
+      // FIXME how to find ruleid?
+      if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
+      {
+        struct linked_list_node *node;
+        LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
+        {
+          struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+          unlink(sttable[e->tgtidx]);
+        }
+      }
+    }
+  }
+  fprintf(stderr, "stirmake: *** Waiting for child processes to die.\n");
+  for (;;)
+  {
+    int ruleid = -1;
+    pid = waitpid(-1, &wstatus, 0);
+    if (pid == 0)
+    {
+      printf("28.E\n");
+      my_abort();
+    }
+    if (pid > 0)
+    {
+      ruleid = ruleid_by_pid_erase(pid, &fd);
+      if (ruleid < 0)
+      {
+        printf("31.1\n");
+        my_abort();
+      }
+      if (fd >= 0)
+      {
+        drain_pipe(rules[ruleid], fd);
+        syncbuf_dump(&rules[ruleid]->output, 1);
+        close(fd);
+        FD_CLR(fd, &globfds);
+        fd = -1;
+      }
+    }
+    if (wstatus != 0 && pid > 0)
+    {
+      // FIXME how to find ruleid?
+      if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
+      {
+        struct linked_list_node *node;
+        LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
+        {
+          struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+          unlink(sttable[e->tgtidx]);
+        }
+      }
+    }
+    if (children <= 0)
+    {
+      if (pid < 0 && errno == ECHILD)
+      {
+        fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
+        merge_db();
+        exit(2);
+      }
+      printf("29.E\n");
+      my_abort();
+    }
+    if (pid < 0)
+    {
+      printf("30.E\n");
+      perror("Error was");
+      printf("number of children: %d\n", children);
+      my_abort();
+    }
+#if 0 // Let's not do this, just in case the data is messed up.
+    int ruleid = ruleid_by_pid_erase(pid);
+    if (ruleid < 0)
+    {
+      printf("31.E\n");
+      my_abort();
+    }
+#endif
+    children--;
+    if (children != 0)
+    {
+      write(jobserver_fd[1], ".", 1);
+    }
+  }
+}
+
 
 char **argdup(int ignore, int noecho, int ismake, char **cmdargs);
 
@@ -5231,6 +5298,11 @@ back:
             }
             children--;
             fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
+            LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
+            {
+              struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+	      unlink(sttable[e->tgtidx]);
+	    }
             if (WIFSIGNALED(wstatus))
             {
               errxit("Error: signaled");
