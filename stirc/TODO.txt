@@ -35,5 +35,3 @@
 - move to starting childs for multi-cmd rules directly from master process
 
 - document shell assignment
-
-- for files with no dependencies: if not in .stir.db or diff in cmd, re-execute

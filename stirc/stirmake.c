@@ -3623,6 +3623,11 @@ int do_exec(int ruleid)
           has_to_exec = 1;
           break;
         }
+        if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
+        {
+          has_to_exec = 1;
+          break;
+        }
       }
     }
     if (has_to_exec && r->cmd.args[0] != NULL)
