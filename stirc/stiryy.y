@@ -782,6 +782,9 @@ custom_rule:
   OPEN_PAREN expr CLOSE_PAREN NEWLINE
 {
   double oldval = amyplanyy->do_emit;
+  $<d>$ = oldval;
+}
+{
   if (amyplanyy_do_emit(amyplanyy))
   {
     unsigned char tmpbuf[64] = {};
@@ -835,14 +838,131 @@ custom_rule:
       amyplanyy->do_emit = 0;
     }
     abce_pop(get_abce(amyplanyy));
+    $<d>$ = !!b;
   }
-  $<d>$ = oldval;
+  else
+  {
+    $<d>$ = 1;
+  }
 }
   amyplanrules
+{
+  $<d>$ = $<d>8;
+  amyplanyy->do_emit = (int)$<d>7;
+}
+  maybe_stirelseifs
+  maybe_stirelse
   ENDIF NEWLINE
 {
   amyplanyy->do_emit = (int)$<d>7;
 }
+;
+
+maybe_stirelseifs:
+{
+  $<d>$ = $<d>0;
+}
+| maybe_stirelseifs ELSEIF
+{
+  size_t exprloc = get_abce(amyplanyy)->bytecodesz;
+  $<d>$ = exprloc;
+  if (!(int)$<d>1)
+  {
+    amyplanyy->do_emit = 1;
+  }
+}
+OPEN_PAREN expr CLOSE_PAREN NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if ((int)$<d>1)
+    {
+      $<d>$ = 1;
+      amyplanyy->do_emit = 0;
+    }
+    else
+    {
+      unsigned char tmpbuf[64] = {};
+      size_t tmpsiz = 0;
+
+      amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
+      abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+      abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>3);
+      abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
+      //get_abce(amyplanyy)->ip = $<d>2;
+      //printf("ip: %d\n", (int)get_abce(amyplanyy)->ip);
+      if (get_abce(amyplanyy)->sp != 0)
+      {
+        abort();
+      }
+      if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+      {
+        size_t i;
+        printf("Error executing bytecode for @if directive\n");
+        printf("error %s\n", abce_err_to_str(get_abce(amyplanyy)->err.code));
+        printf("Backtrace:\n");
+        for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
+        {
+          if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
+          {
+            printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+          }
+          else
+          {
+            printf("(-)\n");
+          }
+        }
+        printf("Additional information:\n");
+        abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+        stiryyerror(scanner, stiryy, "error in @if");
+        YYABORT;
+      }
+      if (get_abce(amyplanyy)->sp != 1)
+      {
+        abort();
+      }
+      int b;
+      if (abce_getboolean(&b, get_abce(amyplanyy), 0) != 0)
+      {
+        printf("expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+        stiryyerror(scanner, stiryy, "error in @if");
+        YYABORT;
+      }
+      if (!b)
+      {
+        amyplanyy->do_emit = 0;
+      }
+      abce_pop(get_abce(amyplanyy));
+      $<d>$ = !!b;
+    }
+  }
+  else
+  {
+    $<d>$ = 1;
+  }
+}
+  amyplanrules
+{
+  $<d>$ = $<d>8;
+}
+;
+
+maybe_stirelse:
+| ELSE NEWLINE
+{
+  if (!(int)$<d>0)
+  {
+    amyplanyy->do_emit = 1;
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if ((int)$<d>0)
+    {
+      amyplanyy->do_emit = 0;
+    }
+  }
+}
+  amyplanrules
 ;
 
 maybeignore:

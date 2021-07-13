@@ -22,8 +22,6 @@
 
 - @detouchrule to README.md
 
-- @elseif and @else to top-level directive syntax
-
 - Custom errors to strings
 
 - @order and @wait to README.md
