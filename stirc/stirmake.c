@@ -5968,24 +5968,6 @@ int main(int argc, char **argv)
   stack_conf();
 
   this_path = calc_forward_path(storcwd, upcnt);
-  if (pretend != NULL)
-  {
-    struct pretend *iter = pretend;
-    char pathbuf[PATH_MAX+1];
-    while (iter != NULL)
-    {
-      if (iter->relative)
-      {
-        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= sizeof(pathbuf))
-        {
-          errxit("too long pathname to pretend being modified: %s", iter->fname);
-        }
-        iter->fname = canon(pathbuf);
-        iter->relative = 0;
-      }
-      iter = iter->next;
-    }
-  }
   if (mode == MODE_ALL || mode == MODE_NONE)
   {
     fwd_path = ".";
@@ -6005,6 +5987,32 @@ int main(int argc, char **argv)
   else
   {
     my_abort();
+  }
+  if (pretend != NULL)
+  {
+    struct pretend *iter = pretend;
+    char pathbuf[PATH_MAX+1];
+    while (iter != NULL)
+    {
+      if (iter->relative)
+      {
+        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= sizeof(pathbuf))
+        {
+          errxit("too long pathname to pretend being modified: %s", iter->fname);
+        }
+        iter->fname = canon(pathbuf);
+        iter->relative = 0;
+      }
+      else
+      {
+        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", fwd_path, iter->fname) >= sizeof(pathbuf))
+        {
+          errxit("too long pathname to pretend being modified: %s", iter->fname);
+        }
+        iter->fname = canon(pathbuf);
+      }
+      iter = iter->next;
+    }
   }
   for (i = 0; i < main.rulesz; i++)
   {
