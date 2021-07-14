@@ -5655,10 +5655,17 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:q")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:")) != -1)
   {
     switch (opt)
     {
+    case 'C':
+      if (chdir(optarg) != 0)
+      {
+        fprintf(stderr, "stirmake: failed to chdir to %s\n", optarg);
+	exit(2);
+      }
+      break;
     case 'v':
       version(argv[0]);
     case 'd':
