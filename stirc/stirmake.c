@@ -66,6 +66,26 @@ void print_indent(void)
   }
 }
 
+struct pretend {
+  char *fname;
+  struct pretend *next;
+};
+struct pretend *pretend = NULL;
+
+int ispretend(const char *test)
+{
+  struct pretend *iter = pretend;
+  while (iter != NULL)
+  {
+    if (strcmp(iter->fname, test) == 0)
+    {
+      return 1;
+    }
+    iter = iter->next;
+  }
+  return 0;
+}
+
 sig_atomic_t sigterm_atomic;
 sig_atomic_t sigint_atomic;
 sig_atomic_t sighup_atomic;
@@ -3528,6 +3548,10 @@ int do_exec(int ruleid)
         struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         struct stat statbuf;
         int depid = get_ruleid_by_tgt(e->nameidx);
+        if (ispretend(sttable[e->nameidx]))
+        {
+          has_to_exec = 1;
+        }
         if (depid >= 0)
         {
           if (rules[depid]->is_phony)
@@ -5687,7 +5711,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikB")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikBW:")) != -1)
   {
     switch (opt)
     {
@@ -5700,6 +5724,14 @@ int main(int argc, char **argv)
       break;
     case 'v':
       version(argv[0]);
+    case 'W':
+    {
+      struct pretend *oldpretend = pretend;
+      pretend = malloc(sizeof(*pretend));
+      pretend->fname = canon(optarg);
+      pretend->next = oldpretend;
+      break;
+    }
     case 'i':
       ignoreerr = 1;
       break;
