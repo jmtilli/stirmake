@@ -69,6 +69,7 @@ void print_indent(void)
 struct pretend {
   char *fname;
   struct pretend *next;
+  int relative;
 };
 struct pretend *pretend = NULL;
 
@@ -5588,6 +5589,7 @@ int main(int argc, char **argv)
   size_t upcnt = 0;
   size_t upcnt_sameproj = 0;
   char *fwd_path = ".";
+  char *this_path = ".";
   int ruleid_first = 0;
   int ruleid_first_set = 0;
   char *outsyncmflag = NULL;
@@ -5711,7 +5713,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikBW:")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikBW:X:")) != -1)
   {
     switch (opt)
     {
@@ -5730,6 +5732,16 @@ int main(int argc, char **argv)
       pretend = malloc(sizeof(*pretend));
       pretend->fname = canon(optarg);
       pretend->next = oldpretend;
+      pretend->relative = 0;
+      break;
+    }
+    case 'X':
+    {
+      struct pretend *oldpretend = pretend;
+      pretend = malloc(sizeof(*pretend));
+      pretend->fname = canon(optarg);
+      pretend->next = oldpretend;
+      pretend->relative = 1;
       break;
     }
     case 'i':
@@ -5955,6 +5967,25 @@ int main(int argc, char **argv)
 
   stack_conf();
 
+  this_path = calc_forward_path(storcwd, upcnt);
+  if (pretend != NULL)
+  {
+    struct pretend *iter = pretend;
+    char pathbuf[PATH_MAX+1];
+    while (iter != NULL)
+    {
+      if (iter->relative)
+      {
+        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= sizeof(pathbuf))
+        {
+          errxit("too long pathname to pretend being modified: %s", iter->fname);
+        }
+        iter->fname = canon(pathbuf);
+        iter->relative = 0;
+      }
+      iter = iter->next;
+    }
+  }
   if (mode == MODE_ALL || mode == MODE_NONE)
   {
     fwd_path = ".";
