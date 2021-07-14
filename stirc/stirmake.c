@@ -156,6 +156,8 @@ enum {
 
 int debug = 0;
 int ignoreerr = 0;
+int doasmuchascan = 0;
+int cmdfailed = 0;
 
 int self_pipe_fd[2];
 
@@ -5306,15 +5308,35 @@ back:
 	    }
             if (WIFSIGNALED(wstatus))
             {
-              errxit("Error: signaled");
+              if (doasmuchascan)
+              {
+                fprintf(stderr, "Error: signaled\n");
+                cmdfailed = 1;
+              }
+              else
+              {
+                errxit("Error: signaled");
+              }
             }
             else if (WIFEXITED(wstatus))
             {
-              errxit("Error %d", (int)WEXITSTATUS(wstatus));
+              if (doasmuchascan)
+              {
+                fprintf(stderr, "Error %d\n", (int)WEXITSTATUS(wstatus));
+                cmdfailed = 1;
+              }
+              else
+              {
+                errxit("Error %d", (int)WEXITSTATUS(wstatus));
+              }
             }
             else
             {
               errxit("Unknown error");
+            }
+            if (doasmuchascan)
+            {
+              continue;
             }
             my_abort();
           }
@@ -5402,6 +5424,10 @@ out:
   }
   else
   {
+    if (doasmuchascan && cmdfailed)
+    {
+      errxit("Some of the commands failed");
+    }
     fprintf(stderr, "stirmake: *** Out of children, yet not all targets made.\n");
     LINKED_LIST_FOR_EACH(node, &rules_remain_list)
     {
@@ -5656,7 +5682,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:i")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ik")) != -1)
   {
     switch (opt)
     {
@@ -5671,6 +5697,9 @@ int main(int argc, char **argv)
       version(argv[0]);
     case 'i':
       ignoreerr = 1;
+      break;
+    case 'k':
+      doasmuchascan = 1;
       break;
     case 'd':
       debug = 1;
