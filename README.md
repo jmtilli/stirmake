@@ -287,6 +287,58 @@ that.
 
 ## Importing make auto-dependencies
 
+The C programming language has a header file inclusion mechanism that might
+make a C source file depend on numerous header files. It would be way too
+cumbersome to document every header dependency in a Makefile, so that's why C
+compilers typically support outputting automatically created dependencies in a
+format supported by make.
+
+In Make, one typically compiles dependencies in the following manner:
+
+```
+$(DEP): %.d: %.c
+	$(CC) $(CFLAGS) -MM -MP -MT "$*.d $*.o" -o $*.d $*.c
+```
+
+Note that `-MP` option is required to make compiling work after a header file
+has been deleted or renamed. It creates a phony dependency for every header
+file. Note also that the rule to create the dependencies must also have all
+headers as dependencies, so the `-MT "$*.d $*.o"` option is needed to make not
+only the object file but also the dependency file dependent on all headers.
+
+Then when the dependencies have been compiled, they are imported in make as
+follows:
+
+```
+-include *.d
+```
+
+In Stirmake, there is already support for creating the phony rules
+automatically on the fly to allow compiling to work after header file rename or
+deletion. Also there is automatic support to make the dependency file also
+depend on the headers. Thus, dependencies are created as follows:
+
+```
+$(SRC) = ["file1.c", "file2.c", "file3.c"]
+$(DEP) = @sufsuball($(SRC), ".c", ".d")
+
+@patrule: $(DEP): '%.d': '%.c'
+@       [$(CC), @$(CFLAGS), "-MM", "-o", $@, $<]
+
+```
+
+And imported as follows:
+
+```
+@cdepincludes @autophony @autotarget @ignore [@$(DEP)]
+```
+
+Note here `@autophony` that replaces the `-MP` option and `@autotarget` that
+replaces the `-MT "$*.d $*.o"` option. Note also `@ignore` that causes missing
+files to be ignored, so that compiling works in a freshly cloned or cleaned
+directory. Usually all of `@autophony`, `@autotarget` and `@ignore` should be
+used.
+
 ## Build command database
 
 Stirmake automatically stores a list of commands used to build targets into the
