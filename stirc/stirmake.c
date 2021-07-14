@@ -158,6 +158,7 @@ int debug = 0;
 int ignoreerr = 0;
 int doasmuchascan = 0;
 int cmdfailed = 0;
+int unconditional = 0;
 
 int self_pipe_fd[2];
 
@@ -3511,6 +3512,10 @@ int do_exec(int ruleid)
   if (!r->is_queued)
   {
     int has_to_exec = 0;
+    if (unconditional)
+    {
+      has_to_exec = 1;
+    }
     calc_cmd(ruleid);
     if (!r->is_phony && !linked_list_is_empty(&r->deplist))
     {
@@ -5682,7 +5687,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ik")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikB")) != -1)
   {
     switch (opt)
     {
@@ -5700,6 +5705,9 @@ int main(int argc, char **argv)
       break;
     case 'k':
       doasmuchascan = 1;
+      break;
+    case 'B':
+      unconditional = 1;
       break;
     case 'd':
       debug = 1;
