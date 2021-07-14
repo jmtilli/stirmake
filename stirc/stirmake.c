@@ -155,6 +155,7 @@ enum {
 
 
 int debug = 0;
+int ignoreerr = 0;
 
 int self_pipe_fd[2];
 
@@ -961,7 +962,7 @@ void errxit(const char *fmt, ...)
     {
       write(jobserver_fd[1], ".", 1);
     }
-    if (wstatus != 0 && pid > 0)
+    if (!ignoreerr && wstatus != 0 && pid > 0)
     {
       // FIXME how to find ruleid?
       if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
@@ -1002,7 +1003,7 @@ void errxit(const char *fmt, ...)
         fd = -1;
       }
     }
-    if (wstatus != 0 && pid > 0)
+    if (!ignoreerr && wstatus != 0 && pid > 0)
     {
       // FIXME how to find ruleid?
       if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
@@ -2867,11 +2868,11 @@ void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, 
     {
       _exit(1);
     }
-    if (!WIFEXITED(wstatus))
+    if (!ignoreerr && !WIFEXITED(wstatus))
     {
       _exit(1);
     }
-    if (WEXITSTATUS(wstatus) != 0)
+    if (!ignoreerr && WEXITSTATUS(wstatus) != 0)
     {
       if (!ignore)
       {
@@ -5278,7 +5279,7 @@ back:
         {
           break;
         }
-        if (wstatus != 0 && pid > 0)
+        if (!ignoreerr && wstatus != 0 && pid > 0)
         {
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
@@ -5655,7 +5656,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:i")) != -1)
   {
     switch (opt)
     {
@@ -5668,6 +5669,9 @@ int main(int argc, char **argv)
       break;
     case 'v':
       version(argv[0]);
+    case 'i':
+      ignoreerr = 1;
+      break;
     case 'd':
       debug = 1;
       break;
