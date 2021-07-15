@@ -180,6 +180,7 @@ int ignoreerr = 0;
 int doasmuchascan = 0;
 int cmdfailed = 0;
 int unconditional = 0;
+int dry_run = 0;
 
 int self_pipe_fd[2];
 
@@ -607,8 +608,13 @@ int read_jobserver(void)
   return (ret == 1);
 }
 
+struct sttable_entry {
+  char *s;
+  int is_remade;
+};
+
 struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
-char **sttable = NULL;
+struct sttable_entry *sttable = NULL;
 size_t st_cap = 1024*1024;
 size_t st_cnt;
 
@@ -668,7 +674,8 @@ size_t stringtab_add(const char *symbol)
     errxit("stringtab full");
     exit(2);
   }
-  sttable[st_cnt] = stringtabentry->string;
+  sttable[st_cnt].s = stringtabentry->string;
+  sttable[st_cnt].is_remade = 0;
   stringtabentry->idx = st_cnt++;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
   {
@@ -701,7 +708,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
     if (debug)
     {
       print_indent();
-      printf("target %s not found in cmd DB\n", sttable[tgtidx]);
+      printf("target %s not found in cmd DB\n", sttable[tgtidx].s);
     }
     return 0;
   }
@@ -711,7 +718,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
     if (debug)
     {
       print_indent();
-      printf("target %s has different dir in cmd DB\n", sttable[tgtidx]);
+      printf("target %s has different dir in cmd DB\n", sttable[tgtidx].s);
     }
     return 0;
   }
@@ -720,7 +727,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
     if (debug)
     {
       print_indent();
-      printf("target %s has different cmd in cmd DB\n", sttable[tgtidx]);
+      printf("target %s has different cmd in cmd DB\n", sttable[tgtidx].s);
     }
     return 0;
   }
@@ -782,7 +789,7 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, ruleid_by_tgt_entry_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
-    errxit("ruleid by tgt %s already exists", sttable[tgtidx]);
+    errxit("ruleid by tgt %s already exists", sttable[tgtidx].s);
     exit(2); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
@@ -995,7 +1002,7 @@ void errxit(const char *fmt, ...)
         LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
         {
           struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-          unlink(sttable[e->tgtidx]);
+          unlink(sttable[e->tgtidx].s);
         }
       }
     }
@@ -1036,7 +1043,7 @@ void errxit(const char *fmt, ...)
         LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
         {
           struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-          unlink(sttable[e->tgtidx]);
+          unlink(sttable[e->tgtidx].s);
         }
       }
     }
@@ -1126,11 +1133,11 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
 
   if (first_tgt->tgtidxnodir != (size_t)-1)
   {
-    tgt = sttable[first_tgt->tgtidxnodir];
+    tgt = sttable[first_tgt->tgtidxnodir].s;
   }
   else
   {
-    tgt = neighpath(sttable[rule->diridx], sttable[first_tgt->tgtidx]);
+    tgt = neighpath(sttable[rule->diridx].s, sttable[first_tgt->tgtidx].s);
   }
   result = malloc(resultcap * sizeof(*result));
   for (i = 0; i < cmdsrc->itemsz; i++)
@@ -1201,12 +1208,12 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         }
         if (dep->nameidxnodir != (size_t)-1)
         {
-          namenodir = sttable[dep->nameidxnodir];
+          namenodir = sttable[dep->nameidxnodir].s;
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
         }
         else
         {
-          namenodir = neighpath(sttable[rule->diridx], sttable[dep->nameidx]);
+          namenodir = neighpath(sttable[rule->diridx].s, sttable[dep->nameidx].s);
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
           free(namenodir);
         }
@@ -1263,12 +1270,12 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         }
         if (dep->nameidxnodir != (size_t)-1)
         {
-          namenodir = sttable[dep->nameidxnodir];
+          namenodir = sttable[dep->nameidxnodir].s;
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
         }
         else
         {
-          namenodir = neighpath(sttable[rule->diridx], sttable[dep->nameidx]);
+          namenodir = neighpath(sttable[rule->diridx].s, sttable[dep->nameidx].s);
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
           free(namenodir);
         }
@@ -1325,12 +1332,12 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         }
         if (dep->nameidxnodir != (size_t)-1)
         {
-          namenodir = sttable[dep->nameidxnodir];
+          namenodir = sttable[dep->nameidxnodir].s;
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
         }
         else
         {
-          namenodir = neighpath(sttable[rule->diridx], sttable[dep->nameidx]);
+          namenodir = neighpath(sttable[rule->diridx].s, sttable[dep->nameidx].s);
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
           free(namenodir);
         }
@@ -1670,7 +1677,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir, int is_dist)
   ret = abce_rb_tree_nocmp_insert_nonexist(head, tgt_cmp_sym, NULL, &e->node);
   if (ret != 0)
   {
-    errxit("Target %s already exists in rule", sttable[tgtidx]);
+    errxit("Target %s already exists in rule", sttable[tgtidx].s);
     exit(2); // FIXME print (filename, linenumber) pair
   }
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
@@ -1705,17 +1712,17 @@ int ins_dep(struct rule *rule,
   e->nameidx = depidx;
   e->nameidxnodir = depidxnodir;
 #if 0
-  if (strcmp(sttable[diridx], ".") == 0 || sttable[depidx][0] == '/')
+  if (strcmp(sttable[diridx].s, ".") == 0 || sttable[depidx].s[0] == '/')
   {
     e->nameidxnodir = depidx;
   }
   else
   {
-    char *backpath = construct_backpath(sttable[diridx]);
-    size_t backforthsz = strlen(backpath) + 1 + strlen(sttable[depidx]) + 1;
+    char *backpath = construct_backpath(sttable[diridx].s);
+    size_t backforthsz = strlen(backpath) + 1 + strlen(sttable[depidx].s) + 1;
     char *backforth = malloc(backforthsz);
     char *can = NULL;
-    if (snprintf(backforth, backforthsz, "%s/%s", backpath, sttable[depidx])
+    if (snprintf(backforth, backforthsz, "%s/%s", backpath, sttable[depidx].s)
         >= backforthsz)
     {
       abort();
@@ -1742,7 +1749,7 @@ int ins_dep(struct rule *rule,
     {
       size_t tgtidx = ABCE_CONTAINER_OF(rule->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
       fprintf(stderr, "stirmake: duplicate dep %s: %s detected\n",
-              sttable[tgtidx], sttable[depidx]);
+              sttable[tgtidx].s, sttable[depidx].s);
     }
     //my_abort();
     ret = -EEXIST;
@@ -2026,7 +2033,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
         LINKED_LIST_FOR_EACH(node, &rules[i]->tgtlist)
         {
           struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-          fprintf(stderr, " %s", sttable[e->tgtidx]);
+          fprintf(stderr, " %s", sttable[e->tgtidx].s);
         }
         fprintf(stderr, " )\n");
       }
@@ -2852,9 +2859,13 @@ void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, 
     close(self_pipe_fd[1]);
 #endif
     do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr);
-    if (!noecho)
+    if (!noecho || dry_run)
     {
       print_cmd(tgtname, prefix, args);
+    }
+    if (dry_run)
+    {
+      _exit(0);
     }
     execvp(cmd, args);
     //write(1, "Err\n", 4);
@@ -2916,7 +2927,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   char ***args;
   pid_t pid;
   struct cmd cmd = rules[ruleid]->cmd;
-  const char *dir = sttable[rules[ruleid]->diridx];
+  const char *dir = sttable[rules[ruleid]->diridx].s;
   char ***argiter;
   char **oneargiter;
   size_t argcnt = 0;
@@ -3033,22 +3044,26 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     update_recursive_pid(0);
     while (argcnt > 1)
     {
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
+      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx].s, dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       argiter++;
       argcnt--;
     }
     if (strcmp((*argiter)[0], st_ignore) == 0)
     {
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx], dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
+      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx].s, dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
       _exit(0);
     }
     else
     {
       update_recursive_pid(1);
       do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
-      if (strcmp((*argiter)[1], st_noecho) != 0)
+      if (strcmp((*argiter)[1], st_noecho) != 0 || dry_run)
       {
-        print_cmd(sttable[first_tgt->tgtidx], dir, &(*argiter)[3]);
+        print_cmd(sttable[first_tgt->tgtidx].s, dir, &(*argiter)[3]);
+      }
+      if (dry_run)
+      {
+        _exit(0);
       }
       execvp((*argiter)[3], &(*argiter)[3]);
       //write(1, "Err\n", 4);
@@ -3232,7 +3247,7 @@ struct stathashentry *lstat_cached(size_t nameidx)
   stathashentry_ensure_evict();
   e = ABCE_CONTAINER_OF(statfreelist.node.next, struct stathashentry, llnode);
   linked_list_delete(&e->llnode);
-  ret = lstat(sttable[nameidx], &statbuf);
+  ret = lstat(sttable[nameidx].s, &statbuf);
   if (ret == 0)
   {
     e->st_mode = statbuf.st_mode;
@@ -3515,7 +3530,7 @@ void calc_cmd(int ruleid)
   if (r->cmd.args == NULL)
   {
     errxit("evaluating shell commands for %s failed",
-           sttable[first_tgt->tgtidx]);
+           sttable[first_tgt->tgtidx].s);
   }
 }
 
@@ -3528,7 +3543,7 @@ int do_exec(int ruleid)
   if (debug)
   {
     print_indent();
-    printf("do_exec %s\n", sttable[first_tgt->tgtidx]);
+    printf("do_exec %s\n", sttable[first_tgt->tgtidx].s);
   }
   if (!r->is_queued)
   {
@@ -3549,7 +3564,7 @@ int do_exec(int ruleid)
         struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         struct stat statbuf;
         int depid = get_ruleid_by_tgt(e->nameidx);
-        if (ispretend(sttable[e->nameidx]))
+        if (ispretend(sttable[e->nameidx].s) || sttable[e->nameidx].is_remade)
         {
           has_to_exec = 1;
         }
@@ -3560,7 +3575,7 @@ int do_exec(int ruleid)
             if (debug)
             {
               print_indent();
-              printf("rule %d/%s is phony\n", depid, sttable[e->nameidx]);
+              printf("rule %d/%s is phony\n", depid, sttable[e->nameidx].s);
             }
             has_to_exec = 1;
             continue;
@@ -3568,7 +3583,7 @@ int do_exec(int ruleid)
           if (debug)
           {
             print_indent();
-            printf("ruleid %d/%s not phony\n", depid, sttable[e->nameidx]);
+            printf("ruleid %d/%s not phony\n", depid, sttable[e->nameidx].s);
           }
         }
         else
@@ -3576,12 +3591,12 @@ int do_exec(int ruleid)
           if (debug)
           {
             print_indent();
-            printf("ruleid for tgt %s not found\n", sttable[e->nameidx]);
+            printf("ruleid for tgt %s not found\n", sttable[e->nameidx].s);
           }
         }
         if (e->is_recursive)
         {
-          struct timespec st_rectim = rec_mtim(r, sttable[e->nameidx]);
+          struct timespec st_rectim = rec_mtim(r, sttable[e->nameidx].s);
           if (!seen_nonphony || ts_cmp(st_rectim, st_mtim) > 0)
           {
             st_mtim = st_rectim;
@@ -3603,8 +3618,8 @@ int do_exec(int ruleid)
         }
         if (S_ISDIR(she->st_mode) && !e->is_orderonly && !recommended)
         {
-          char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx];
-          printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx], tgtname);
+          char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s;
+          printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx].s, tgtname);
           recommended = 1;
         }
         if (!e->is_orderonly)
@@ -3624,7 +3639,7 @@ int do_exec(int ruleid)
         {
           continue;
         }
-        if (stat(sttable[e->nameidx], &statbuf) != 0)
+        if (stat(sttable[e->nameidx].s, &statbuf) != 0)
         {
           has_to_exec = 1;
           // break; // No break, we want to get accurate st_mtim
@@ -3635,8 +3650,8 @@ int do_exec(int ruleid)
         }
         if (S_ISDIR(statbuf.st_mode) && !e->is_orderonly && !recommended)
         {
-          char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx];
-          printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx], tgtname);
+          char *tgtname = sttable[ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s;
+          printf("stirmake: Recommend making directory dep %s of %s either @orderonly or @recdep.\n", sttable[e->nameidx].s, tgtname);
           recommended = 1;
         }
         if (!e->is_orderonly)
@@ -3663,7 +3678,7 @@ int do_exec(int ruleid)
         if (debug)
         {
           print_indent();
-          printf("statting %s\n", sttable[e->tgtidx]);
+          printf("statting %s\n", sttable[e->tgtidx].s);
         }
         struct stathashentry *she;
         she = lstat_cached(e->tgtidx);
@@ -3718,7 +3733,7 @@ int do_exec(int ruleid)
       {
         struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
         struct stat statbuf;
-        if (lstat(sttable[e->tgtidx], &statbuf) != 0)
+        if (lstat(sttable[e->tgtidx].s, &statbuf) != 0)
         {
           has_to_exec = 1;
           break;
@@ -3752,7 +3767,7 @@ int do_exec(int ruleid)
       {
         print_indent();
         printf("do_exec: mark_executed %s has_to_exec %d\n",
-               sttable[first_tgt->tgtidx], has_to_exec);
+               sttable[first_tgt->tgtidx].s, has_to_exec);
       }
       r->is_queued = 1;
       indentlevel++;
@@ -3783,14 +3798,14 @@ int consider(int ruleid)
   if (debug)
   {
     print_indent();
-    printf("considering %s\n", sttable[first_tgt->tgtidx]);
+    printf("considering %s\n", sttable[first_tgt->tgtidx].s);
   }
   if (r->is_executed)
   {
     if (debug)
     {
       print_indent();
-      printf("already execed %s\n", sttable[first_tgt->tgtidx]);
+      printf("already execed %s\n", sttable[first_tgt->tgtidx].s);
     }
     return 0;
   }
@@ -3799,7 +3814,7 @@ int consider(int ruleid)
     if (debug)
     {
       print_indent();
-      printf("already execing %s\n", sttable[first_tgt->tgtidx]);
+      printf("already execing %s\n", sttable[first_tgt->tgtidx].s);
     }
     return 0;
   }
@@ -3841,11 +3856,11 @@ int consider(int ruleid)
       if (debug)
       {
         print_indent();
-        printf("ruleid by target %s not found\n", sttable[e->nameidx]);
+        printf("ruleid by target %s not found\n", sttable[e->nameidx].s);
       }
-      if (access(sttable[e->nameidx], F_OK) == -1)
+      if (access(sttable[e->nameidx].s, F_OK) == -1)
       {
-        errxit("No %s and rule not found", sttable[e->nameidx]);
+        errxit("No %s and rule not found", sttable[e->nameidx].s);
         exit(2);
       }
     }
@@ -3885,14 +3900,14 @@ void reconsider(int ruleid, int ruleid_executed)
   if (debug)
   {
     print_indent();
-    printf("reconsidering %s\n", sttable[first_tgt->tgtidx]);
+    printf("reconsidering %s\n", sttable[first_tgt->tgtidx].s);
   }
   if (r->is_executed)
   {
     if (debug)
     {
       print_indent();
-      printf("already execed %s\n", sttable[first_tgt->tgtidx]);
+      printf("already execed %s\n", sttable[first_tgt->tgtidx].s);
     }
     return;
   }
@@ -3901,7 +3916,7 @@ void reconsider(int ruleid, int ruleid_executed)
     if (debug)
     {
       print_indent();
-      printf("rule not executing or is under consideration %s\n", sttable[first_tgt->tgtidx]);
+      printf("rule not executing or is under consideration %s\n", sttable[first_tgt->tgtidx].s);
     }
     // Must do this always in case the rule is to be executed in future.
     deps_remain_erase(r, ruleid_executed);
@@ -3923,7 +3938,7 @@ void reconsider(int ruleid, int ruleid_executed)
         struct stirtgt *first_tgt =
           ABCE_CONTAINER_OF(rules[rem->ruleid]->tgtlist.node.next, struct stirtgt, llnode);
         print_indent();
-        printf("  dep_remain: %d / %s\n", rem->ruleid, sttable[first_tgt->tgtidx]);
+        printf("  dep_remain: %d / %s\n", rem->ruleid, sttable[first_tgt->tgtidx].s);
       }
     }
   }
@@ -3965,11 +3980,11 @@ void reconsider(int ruleid, int ruleid_executed)
       if (debug)
       {
         print_indent();
-        printf("ruleid by target %s not found\n", sttable[e->nameidx]);
+        printf("ruleid by target %s not found\n", sttable[e->nameidx].s);
       }
-      if (access(sttable[e->nameidx], F_OK) == -1)
+      if (access(sttable[e->nameidx].s, F_OK) == -1)
       {
-        errxit("No %s and rule not found", sttable[e->nameidx]);
+        errxit("No %s and rule not found", sttable[e->nameidx].s);
         exit(2);
       }
     }
@@ -4008,7 +4023,7 @@ void mark_executed(int ruleid, int was_actually_executed)
     return;
   }
 #endif
-  if (r->is_detouch)
+  if (r->is_detouch && !dry_run)
   {
     struct timespec cap;
     int cap_valid = 0;
@@ -4016,18 +4031,18 @@ void mark_executed(int ruleid, int was_actually_executed)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
       struct stat statbuf;
-      if (stat(sttable[e->tgtidx], &statbuf) != 0)
+      if (stat(sttable[e->tgtidx].s, &statbuf) != 0)
       {
-        errxit("Can't stat %s", sttable[e->tgtidx]);
+        errxit("Can't stat %s", sttable[e->tgtidx].s);
       }
       if (!cap_valid || ts_cmp(statbuf.st_mtim, cap) < 0)
       {
         cap = statbuf.st_mtim;
         cap_valid = 1;
       }
-      if (lstat(sttable[e->tgtidx], &statbuf) != 0)
+      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0)
       {
-        errxit("Can't lstat %s", sttable[e->tgtidx]);
+        errxit("Can't lstat %s", sttable[e->tgtidx].s);
       }
       if (!cap_valid || ts_cmp(statbuf.st_mtim, cap) < 0)
       {
@@ -4044,18 +4059,18 @@ void mark_executed(int ruleid, int was_actually_executed)
       struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
       if (e->is_recursive)
       {
-        reccap_mtim(sttable[e->nameidx], cap);
+        reccap_mtim(sttable[e->nameidx].s, cap);
       }
     }
   }
-  else if (r->is_rectgt && r->st_mtim_valid)
+  else if (r->is_rectgt && r->st_mtim_valid && !dry_run)
   {
     LINKED_LIST_FOR_EACH(node, &r->deplist)
     {
       struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
       if (e->is_recursive)
       {
-        struct timespec st_mtim2 = rec_mtim(r, sttable[e->nameidx]);
+        struct timespec st_mtim2 = rec_mtim(r, sttable[e->nameidx].s);
         if (ts_cmp(st_mtim2, r->st_mtim) > 0)
         {
           r->st_mtim = st_mtim2;
@@ -4069,16 +4084,16 @@ void mark_executed(int ruleid, int was_actually_executed)
       struct timeval times[2];
       int utimeret;
       struct stat statbuf;
-      if (stat(sttable[e->tgtidx], &statbuf) != 0)
+      if (stat(sttable[e->tgtidx].s, &statbuf) != 0)
       {
-        errxit("Can't stat %s", sttable[e->tgtidx]);
+        errxit("Can't stat %s", sttable[e->tgtidx].s);
       }
       if (ts_cmp(r->st_mtim, statbuf.st_mtim) <= 0)
       {
         if (debug)
         {
           print_indent();
-          printf("utime %s won't move clock backwards!\n", sttable[e->tgtidx]);
+          printf("utime %s won't move clock backwards!\n", sttable[e->tgtidx].s);
         }
         continue;
       }
@@ -4089,12 +4104,12 @@ void mark_executed(int ruleid, int was_actually_executed)
       times[1].tv_sec = r->st_mtim.tv_sec;
       times[1].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
 #ifdef HAS_UTIMENSAT
-      utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx], timespecs, 0);
+      utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx].s, timespecs, 0);
 #else
       {
         struct timespec req;
         struct timespec rem;
-        utimeret = utimes(sttable[e->tgtidx], times);
+        utimeret = utimes(sttable[e->tgtidx].s, times);
         req.tv_sec = 0;
         req.tv_nsec = 2000; // let's sleep for 2 us to be rather safe than sorry
         for (;;)
@@ -4111,33 +4126,33 @@ void mark_executed(int ruleid, int was_actually_executed)
       if (debug)
       {
         print_indent();
-        printf("utime %s succeeded? %d\n", sttable[e->tgtidx], (utimeret == 0));
+        printf("utime %s succeeded? %d\n", sttable[e->tgtidx].s, (utimeret == 0));
       }
     }
   }
-  else if (!r->is_phony && !r->is_maybe && !r->is_inc)
+  else if (!r->is_phony && !r->is_maybe && !r->is_inc && !dry_run)
   {
     struct stat statbuf;
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      if (lstat(sttable[e->tgtidx], &statbuf) != 0)
+      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0)
       {
         fprintf(stderr, "stirmake: *** Target %s was not created by rule.\n",
-               sttable[e->tgtidx]);
+               sttable[e->tgtidx].s);
         fprintf(stderr, "stirmake: *** Hint: use @phonyrule for phony rules.\n");
         fprintf(stderr, "stirmake: *** Hint: use @mayberule for rules that may or may not update target.\n");
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
-        errxit("Target %s was not created by rule", sttable[e->tgtidx]);
+        errxit("Target %s was not created by rule", sttable[e->tgtidx].s);
       }
       if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0)
       {
         fprintf(stderr, "stirmake: *** Target %s was not updated by rule.\n",
-               sttable[e->tgtidx]);
+               sttable[e->tgtidx].s);
         fprintf(stderr, "stirmake: *** Hint: use @phonyrule for phony rules.\n");
         fprintf(stderr, "stirmake: *** Hint: use @mayberule for rules that may or may not update target.\n");
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
-        errxit("Target %s was not updated by rule", sttable[e->tgtidx]);
+        errxit("Target %s was not updated by rule", sttable[e->tgtidx].s);
       }
     }
   }
@@ -4151,6 +4166,10 @@ void mark_executed(int ruleid, int was_actually_executed)
   {
     struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
     lstat_evict_named(e->tgtidx);
+    if (dry_run && was_actually_executed)
+    {
+      sttable[e->tgtidx].is_remade = 1;
+    }
   }
   LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
@@ -4619,7 +4638,7 @@ void do_clean(char *fwd_path, int objs, int bins)
   for (i = 0; i < rules_size; i++)
   {
     int doit = all;
-    char *prefix = sttable[rules[i]->diridx];
+    char *prefix = sttable[rules[i]->diridx].s;
     if (strncmp(prefix, fwd_path, fp_len) == 0)
     {
       if (prefix[fp_len] == '/' || prefix[fp_len] == '\0')
@@ -4684,7 +4703,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     {
       size_t tgtidx = ABCE_CONTAINER_OF(rules[i]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
       // FIXME!!! The path to child is incorrect!
-      add_dep(&parent, 1, &sttable[tgtidx], 1, /*&cleanslash,*/ 0, 0);
+      add_dep(&parent, 1, &sttable[tgtidx].s, 1, /*&cleanslash,*/ 0, 0);
     }
 
     free(parent);
@@ -4708,7 +4727,7 @@ void do_clean(char *fwd_path, int objs, int bins)
   for (i = 0; i < rules_size; i++)
   {
     int doit = all;
-    char *prefix = sttable[rules[i]->diridx];
+    char *prefix = sttable[rules[i]->diridx].s;
     if (strncmp(prefix, fwd_path, fp_len) == 0)
     {
       if (prefix[fp_len] == '/' || prefix[fp_len] == '\0')
@@ -4735,7 +4754,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     LINKED_LIST_FOR_EACH(node2, &rules[i]->tgtlist)
     {
       struct stirtgt *tgt = ABCE_CONTAINER_OF(node2, struct stirtgt, llnode);
-      char *oldname = strdup(sttable[tgt->tgtidx]);
+      char *oldname = strdup(sttable[tgt->tgtidx].s);
       char *name;
       size_t stidx;
       int ruleid;
@@ -4786,7 +4805,7 @@ void do_clean(char *fwd_path, int objs, int bins)
           break;
         }
         prefixok = all;
-        rprefix = sttable[rules[ruleid]->diridx];
+        rprefix = sttable[rules[ruleid]->diridx].s;
         if (strncmp(rprefix, fwd_path, fp_len) == 0)
         {
           if (rprefix[fp_len] == '/' || rprefix[fp_len] == '\0')
@@ -4832,7 +4851,7 @@ void do_clean(char *fwd_path, int objs, int bins)
       int dist = tgt->is_dist || alldist;
       if ((objs && !dist) || (bins && dist))
       {
-        char *name = sttable[tgt->tgtidx];
+        char *name = sttable[tgt->tgtidx].s;
         struct stat statbuf;
         int ret = 0;
         ret = lstat(name, &statbuf);
@@ -4981,7 +5000,7 @@ void merge_db(void)
           if (debug)
           {
             print_indent();
-            printf("removing %s from DB\n", sttable[e->tgtidx]);
+            printf("removing %s from DB\n", sttable[e->tgtidx].s);
           }
           maybe_del_dbe(&db, e->tgtidx);
         }
@@ -5023,9 +5042,9 @@ void merge_db(void)
       fprintf(f, "\n");
     }
     fprintf(f, "\"");
-    escape_string(f, sttable[dbe->diridx]);
+    escape_string(f, sttable[dbe->diridx].s);
     fprintf(f, "\" \"");
-    escape_string(f, sttable[dbe->tgtidx]);
+    escape_string(f, sttable[dbe->tgtidx].s);
     fprintf(f, "\":\n");
     while (*argiter)
     {
@@ -5330,11 +5349,11 @@ back:
               FD_CLR(fd, &globfds);
             }
             children--;
-            fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx]);
+            fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s);
             LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
             {
               struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-	      unlink(sttable[e->tgtidx]);
+	      unlink(sttable[e->tgtidx].s);
 	    }
             if (WIFSIGNALED(wstatus))
             {
@@ -5713,7 +5732,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikBW:X:")) != -1)
+  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikBW:X:n")) != -1)
   {
     switch (opt)
     {
@@ -5758,6 +5777,9 @@ int main(int argc, char **argv)
       break;
     case 'q':
       test = 1;
+      break;
+    case 'n':
+      dry_run = 1;
       break;
     case 'O':
       if (optarg[0] == 'n')
