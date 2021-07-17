@@ -196,6 +196,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token CLEANHOOK DISTCLEANHOOK BOTHCLEANHOOK
 
 %token BEGINSCOPE BEGINHOLEYSCOPE ENDSCOPE
+%token FORDICT FORDICTPREV
 %token ONCE ENDONCE STDOUT STDERR ERROR DUMP EXIT
 %token EQUALS
 %token PLUSEQUALS
@@ -287,6 +288,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token PRINT
 %token PERIOD
 
+%token DICTNEXT DICTPREV
 %token ATQM SCOPE TRUE TYPE FALSE NIL STR_FROMCHR STR_LOWER STR_UPPER
 %token STR_REVERSE STRCMP STRSTR STRREP STRLISTJOIN STRSTRIP STRSUB
 %token STRGSUB STRSET STRWORD STRWORDCNT STRWORDLIST ABS ACOS ASIN ATAN
@@ -316,6 +318,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %type<d> value
 %type<d> tgtdepref
 %type<d> lvalue
+%type<d> fordict
 %type<d> arglist
 %type<d> valuelistentry
 %type<d> maybe_arglist
@@ -380,6 +383,156 @@ topmarker:
   }
 }
 ;
+
+shellequals: SHELLEQUALS {$$ = 0;} | SHELLSHELLEQUALS {$$ = 1;} ;
+
+custom_assign:
+  VARREF_LITERAL shellequals
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    size_t funloc = get_abce(amyplanyy)->bytecodesz;
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_HEADER);
+    amyplanyy_add_double(amyplanyy, 0);
+    $<d>$ = funloc;
+  }
+}
+  expr NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    unsigned char tmpbuf[256] = {};
+    size_t tmpsiz = 0;
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
+    amyplanyy_add_double(amyplanyy, amyplan_symbol_add(amyplanyy, $1, strlen($1)));
+    if (get_abce(amyplanyy)->sp != 0)
+    {
+      abort();
+    }
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
+    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>3);
+      //abce_sc_get_rec_str_fun(&get_abce(amyplanyy)->dynscope, $1, 1));
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_FUNIFY);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
+    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
+
+    get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
+    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
+    {
+      size_t i;
+      printf("Error executing bytecode for var %s\n", $1);
+      printf("error %s\n", abce_err_to_str(get_abce(amyplanyy)->err.code));
+      printf("Backtrace:\n");
+      for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
+      {
+        if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
+        {
+          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+        }
+        else
+        {
+          printf("(-)\n");
+        }
+      }
+      printf("Additional information:\n");
+      abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+      amyplanyyerror(scanner, amyplanyy, "error in assignment");
+      YYABORT;
+    }
+    if (get_abce(amyplanyy)->sp != 1)
+    {
+      abort();
+    }
+    if (get_abce(amyplanyy)->stackbase[0].typ != ABCE_T_A)
+    {
+      amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
+      YYABORT;
+    }
+    if (get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size == 0)
+    {
+      amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
+      YYABORT;
+    }
+    char **argv;
+    argv = malloc(sizeof(*argv) * (get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size + 1));
+    size_t idx;
+    for (idx = 0; idx < get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size; idx++)
+    {
+      if (get_abce(amyplanyy)->stackbase[0].u.area->u.ar.mbs[idx].typ != ABCE_T_S)
+      {
+        amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
+        YYABORT;
+      }
+      argv[idx] = get_abce(amyplanyy)->stackbase[0].u.area->u.ar.mbs[idx].u.area->u.str.buf;
+    }
+    argv[get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size] = NULL;
+    char *res = eval_cmd(argv);
+    if (res == NULL)
+    {
+      amyplanyyerror(scanner, amyplanyy, "shell-assign failed");
+      YYABORT;
+    }
+
+    if ($2)
+    {
+      size_t it = 0;
+      it = strspn(res, " \t\r\n");
+      struct abce_mb *mbar = abce_mb_cpush_create_array(get_abce(amyplanyy));
+      // FIXME what if it's null?
+      abce_push_mb(get_abce(amyplanyy), mbar);
+      abce_cpop(get_abce(amyplanyy));
+      mbar = NULL;
+      //abce_mb_refdn(get_abce(amyplanyy), &mbar);
+
+      while (res[it] != '\0')
+      {
+        size_t it2;
+        it2 = it + strcspn(res + it, " \t\r\n");
+        struct abce_mb *mbstr = abce_mb_cpush_create_string(get_abce(amyplanyy), res + it, it2 - it);
+        // FIXME what if it's null?
+        if (abce_mb_array_append(get_abce(amyplanyy), &get_abce(amyplanyy)->stackbase[1], mbstr) != 0)
+        {
+          amyplanyyerror(scanner, amyplanyy, "shell-assign failed in abce (OOM)");
+          YYABORT;
+        }
+        abce_cpop(get_abce(amyplanyy));
+        mbstr = NULL;
+        //abce_mb_refdn(get_abce(amyplanyy), &mbstr);
+        it = it2 + strspn(res + it2, " \t\r\n");
+      }
+
+      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
+      // FIXME what if it's null?
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[1]);
+      abce_cpop(get_abce(amyplanyy));
+      key = NULL;
+      //abce_mb_refdn(get_abce(amyplanyy), &key);
+      abce_pop(get_abce(amyplanyy));
+    }
+    else
+    {
+      struct abce_mb *mbstr = abce_mb_cpush_create_string(get_abce(amyplanyy), res, strlen(res));
+      // FIXME what if it's null?
+      abce_push_mb(get_abce(amyplanyy), mbstr);
+      abce_cpop(get_abce(amyplanyy));
+      //abce_mb_refdn(get_abce(amyplanyy), &mbstr);
+
+      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
+      // FIXME what if it's null?
+      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[1]);
+      abce_cpop(get_abce(amyplanyy));
+      //abce_mb_refdn(get_abce(amyplanyy), &key);
+      abce_pop(get_abce(amyplanyy));
+    }
+
+    abce_pop(get_abce(amyplanyy));
+  }
+
+  free($1);
+}
+;
+
 
 custom_stmt:
   ADD_DEPS OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
@@ -1018,21 +1171,28 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
     size_t oldscopeidx = get_abce(amyplanyy)->dynscope.u.area->u.sc.locidx;
     struct abce_mb oldscope;
     struct abce_mb *newscope;
-    struct abce_mb keystatic;
     struct abce_mb *key;
     void *ud = abce_scope_get_userdata(&get_abce(amyplanyy)->dynscope);
 
     if ($3)
     {
       key = abce_mb_cpush_create_string(get_abce(amyplanyy), $3, strlen($3));
+      if (key == NULL)
+      {
+        fprintf(stderr, "out of memory\n");
+        YYABORT;
+      }
     }
     else
     {
-      keystatic.typ = ABCE_T_N;
-      key = &keystatic;
-      abce_cpush_nil(get_abce(amyplanyy));
+      if (abce_cpush_nil(get_abce(amyplanyy)) != 0)
+      {
+        fprintf(stderr, "out of memory\n");
+        YYABORT;
+      }
+      key = &get_abce(amyplanyy)->cstackbase[get_abce(amyplanyy)->csp-1];
     }
-    //abce_push_mb(get_abce(amyplanyy), key); // for GC to see it
+    //abce_push_c(get_abce(amyplanyy)); // FIXME required? only for GC?
 
     oldscope = get_abce(amyplanyy)->dynscope;
     abce_cpush_mb(get_abce(amyplanyy), &oldscope);
@@ -1052,15 +1212,8 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
       abce_sc_replace_val_mb(get_abce(amyplanyy), &oldscope, key, &get_abce(amyplanyy)->dynscope);
     }
     abce_scope_set_userdata(&get_abce(amyplanyy)->dynscope, ud);
-    //abce_pop(get_abce(amyplanyy));
-    /*
-    if ($3)
-    {
-      abce_mb_refdn(get_abce(amyplanyy), &key);
-    }
-    */
+    //abce_pop(get_abce(amyplanyy)); // FIXME required? only for GC?
     abce_cpop(get_abce(amyplanyy));
-    //abce_mb_refdn(get_abce(amyplanyy), &oldscope);
     abce_cpop(get_abce(amyplanyy));
     $<d>$ = oldscopeidx;
   }
@@ -1086,153 +1239,8 @@ maybe_name: {$$ = NULL;} | VARREF_LITERAL {$$ = $1; } ;
 maybeqmequals: EQUALS {$$ = 0;} | QMEQUALS {$$ = 1;} ;
 maybe_maybe_call: {$$ = 0;} | MAYBE_CALL {$$ = 1;};
 
-shellequals: SHELLEQUALS {$$ = 0;} | SHELLSHELLEQUALS {$$ = 1;} ;
-
 assignrule:
-  VARREF_LITERAL shellequals
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    size_t funloc = get_abce(amyplanyy)->bytecodesz;
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_HEADER);
-    amyplanyy_add_double(amyplanyy, 0);
-    $<d>$ = funloc;
-  }
-}
-  expr NEWLINE
-{
-  if (amyplanyy_do_emit(amyplanyy))
-  {
-    unsigned char tmpbuf[256] = {};
-    size_t tmpsiz = 0;
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
-    amyplanyy_add_double(amyplanyy, amyplan_symbol_add(amyplanyy, $1, strlen($1)));
-    if (get_abce(amyplanyy)->sp != 0)
-    {
-      abort();
-    }
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
-    abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>3);
-      //abce_sc_get_rec_str_fun(&get_abce(amyplanyy)->dynscope, $1, 1));
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_FUNIFY);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
-    abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
-
-    get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
-    if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
-    {
-      size_t i;
-      printf("Error executing bytecode for var %s\n", $1);
-      printf("error %s\n", abce_err_to_str(get_abce(amyplanyy)->err.code));
-      printf("Backtrace:\n");
-      for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
-      {
-        if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
-        {
-          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
-        }
-        else
-        {
-          printf("(-)\n");
-        }
-      }
-      printf("Additional information:\n");
-      abce_mb_dump(&get_abce(amyplanyy)->err.mb);
-      amyplanyyerror(scanner, amyplanyy, "error in assignment");
-      YYABORT;
-    }
-    if (get_abce(amyplanyy)->sp != 1)
-    {
-      abort();
-    }
-    if (get_abce(amyplanyy)->stackbase[0].typ != ABCE_T_A)
-    {
-      amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
-      YYABORT;
-    }
-    if (get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size == 0)
-    {
-      amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
-      YYABORT;
-    }
-    char **argv;
-    argv = malloc(sizeof(*argv) * (get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size + 1));
-    size_t idx;
-    for (idx = 0; idx < get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size; idx++)
-    {
-      if (get_abce(amyplanyy)->stackbase[0].u.area->u.ar.mbs[idx].typ != ABCE_T_S)
-      {
-        amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
-        YYABORT;
-      }
-      argv[idx] = get_abce(amyplanyy)->stackbase[0].u.area->u.ar.mbs[idx].u.area->u.str.buf;
-    }
-    argv[get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size] = NULL;
-    char *res = eval_cmd(argv);
-    if (res == NULL)
-    {
-      amyplanyyerror(scanner, amyplanyy, "shell-assign failed");
-      YYABORT;
-    }
-
-    if ($2)
-    {
-      size_t it = 0;
-      it = strspn(res, " \t\r\n");
-      struct abce_mb *mbar = abce_mb_cpush_create_array(get_abce(amyplanyy));
-      // FIXME what if it's null?
-      abce_push_mb(get_abce(amyplanyy), mbar);
-      abce_cpop(get_abce(amyplanyy));
-      mbar = NULL;
-      //abce_mb_refdn(get_abce(amyplanyy), &mbar);
-
-      while (res[it] != '\0')
-      {
-        size_t it2;
-        it2 = it + strcspn(res + it, " \t\r\n");
-        struct abce_mb *mbstr = abce_mb_cpush_create_string(get_abce(amyplanyy), res + it, it2 - it);
-        // FIXME what if it's null?
-        if (abce_mb_array_append(get_abce(amyplanyy), &get_abce(amyplanyy)->stackbase[1], mbstr) != 0)
-        {
-          amyplanyyerror(scanner, amyplanyy, "shell-assign failed in abce (OOM)");
-          YYABORT;
-        }
-        abce_cpop(get_abce(amyplanyy));
-        mbstr = NULL;
-        //abce_mb_refdn(get_abce(amyplanyy), &mbstr);
-        it = it2 + strspn(res + it2, " \t\r\n");
-      }
-
-      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
-      // FIXME what if it's null?
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[1]);
-      abce_cpop(get_abce(amyplanyy));
-      key = NULL;
-      //abce_mb_refdn(get_abce(amyplanyy), &key);
-      abce_pop(get_abce(amyplanyy));
-    }
-    else
-    {
-      struct abce_mb *mbstr = abce_mb_cpush_create_string(get_abce(amyplanyy), res, strlen(res));
-      // FIXME what if it's null?
-      abce_push_mb(get_abce(amyplanyy), mbstr);
-      abce_cpop(get_abce(amyplanyy));
-      //abce_mb_refdn(get_abce(amyplanyy), &mbstr);
-
-      struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
-      // FIXME what if it's null?
-      abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[1]);
-      abce_cpop(get_abce(amyplanyy));
-      //abce_mb_refdn(get_abce(amyplanyy), &key);
-      abce_pop(get_abce(amyplanyy));
-    }
-
-    abce_pop(get_abce(amyplanyy));
-  }
-
-  free($1);
-}
+  custom_assign
 | VARREF_LITERAL maybe_maybe_call maybeqmequals
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -1252,6 +1260,7 @@ expr NEWLINE
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
     amyplanyy_add_double(amyplanyy, amyplan_symbol_add(amyplanyy, $1, strlen($1)));
+
     if ($2)
     {
       amyplanyy_add_fun_sym(amyplanyy, $1, $3, $<d>4);
@@ -1297,10 +1306,8 @@ expr NEWLINE
         abort();
       }
       struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
-      // FIXME what if it's null?
       abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[0]);
       abce_cpop(get_abce(amyplanyy));
-      //abce_mb_refdn(get_abce(amyplanyy), &key);
       abce_pop(get_abce(amyplanyy));
     }
   }
@@ -1383,9 +1390,7 @@ expr NEWLINE
         abort();
       }
       struct abce_mb *key = abce_mb_cpush_create_string(get_abce(amyplanyy), $1, strlen($1));
-      // FIXME what if it's null?
       abce_sc_replace_val_mb(get_abce(amyplanyy), &get_abce(amyplanyy)->dynscope, key, &get_abce(amyplanyy)->stackbase[0]);
-      //abce_mb_refdn(get_abce(amyplanyy), &key);
       abce_cpop(get_abce(amyplanyy));
       abce_pop(get_abce(amyplanyy));
     }
@@ -1594,6 +1599,101 @@ statement:
   maybe_elseifs
   maybe_else
   ENDIF
+| fordict VARREF_LITERAL COMMA VARREF_LITERAL OPEN_PAREN expr CLOSE_PAREN NEWLINE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    struct amyplan_locvarctx *ctx;
+    size_t locvarkey;
+    size_t locvarval;
+    locvarkey = amyplan_locvarctx_search_rec(amyplanyy->ctx, $2);
+    if (locvarkey < 0)
+    {
+      printf("var %s not found\n", $2);
+      YYABORT;
+    }
+    locvarval = amyplan_locvarctx_search_rec(amyplanyy->ctx, $4);
+    if (locvarval < 0)
+    {
+      printf("var %s not found\n", $4);
+      YYABORT;
+    }
+
+    //amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    //amyplanyy_add_double(amyplanyy, -50); // to be overwritten
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL); // key
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL); // val
+
+    size_t addressof_iter = get_abce(amyplanyy)->bytecodesz;
+  //iter:
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP); // pop val
+    if ($1 != 0)
+    {
+      amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_TRUE);
+    }
+    else
+    {
+      amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FALSE);
+    }
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DICTNEXT_SAFE);
+
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -2);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_STACK);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_TYPE);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, ABCE_T_N);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_NE);
+    size_t addressof_break = get_abce(amyplanyy)->bytecodesz;
+  //midpoint:
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    size_t tomodify = get_abce(amyplanyy)->bytecodesz;
+    amyplanyy_add_double(amyplanyy, -50); // to be overwritten
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_IF_NOT_JMP);
+
+    // set key and val to the named variables
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, locvarval);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -2);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_STACK);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_SET_STACK);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, locvarkey);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -3);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_STACK);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_SET_STACK);
+
+    ctx =
+      amyplan_locvarctx_alloc(amyplanyy->ctx, 0, addressof_break, addressof_iter);
+    ctx->sz = 3;
+    if (ctx == NULL)
+    {
+      printf("Out of memory\n");
+      YYABORT;
+    }
+    amyplanyy->ctx = ctx;
+    $<d>$ = tomodify;
+  }
+}
+  bodylinescont
+  ENDFOR
+{
+  struct amyplan_locvarctx *ctx = amyplanyy->ctx->parent;
+  amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+  amyplanyy_add_double(amyplanyy, amyplanyy->ctx->jmpaddr_continue);
+  amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JMP);
+//iterend:
+  amyplanyy_set_double(amyplanyy, $<d>9, get_abce(amyplanyy)->bytecodesz);
+  amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP); // pop val
+  amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP); // pop key
+  amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP); // pop dict ref
+
+  free(amyplanyy->ctx);
+  amyplanyy->ctx = ctx;
+}
 | FOR OPEN_PAREN statement COMMA
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -1877,6 +1977,17 @@ varref_tail:
 | OPEN_BRACE AT CLOSE_BRACE
 {
   $$ = ABCE_OPCODE_PBLEN; // This is very special: CAN assign to length query
+}
+;
+
+fordict:
+  FORDICT
+{
+  $$ = 0;
+}
+| FORDICTPREV
+{
+  $$ = 1;
 }
 ;
 
@@ -2536,6 +2647,42 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRSTR); }
 | STRREP OPEN_PAREN expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRREP); }
+| DICTPREV OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_TRUE);
+    // Stack: dict | key | bool
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DICTNEXT_SAFE);
+    // Stack: dict | nextkey | nextval
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
+    // Stack: dict | nextkey
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -2);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXCHANGE_TOP);
+    // Stack: nextkey | dict
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
+    // Stack: nextkey
+  }
+}
+| DICTNEXT OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FALSE);
+    // Stack: dict | key | bool
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DICTNEXT_SAFE);
+    // Stack: dict | nextkey | nextval
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
+    // Stack: dict | nextkey
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -2);
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXCHANGE_TOP);
+    // Stack: nextkey | dict
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
+    // Stack: nextkey
+  }
+}
 | STRLISTJOIN OPEN_PAREN expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRLISTJOIN); }
 | STRAPPEND OPEN_PAREN expr COMMA expr CLOSE_PAREN

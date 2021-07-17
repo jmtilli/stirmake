@@ -126,6 +126,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@elseif   return ELSEIF;
 <INITIAL,STRICT>@endif   return ENDIF;
 <INITIAL,STRICT>@for   return FOR;
+<INITIAL,STRICT>@fordict  return FORDICT;
+<INITIAL,STRICT>@fordictprev  return FORDICTPREV;
 <INITIAL,STRICT>@endfor   return ENDFOR;
 <INITIAL,STRICT>@while return WHILE;
 <INITIAL,STRICT>@endwhile return ENDWHILE;
@@ -133,6 +135,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@continue return CONTINUE;
 <INITIAL,STRICT>@return  return RETURN;
 <INITIAL,STRICT>@append   return APPEND;
+<INITIAL,STRICT>@dictnext return DICTNEXT;
+<INITIAL,STRICT>@dictprev return DICTPREV;
 <INITIAL,STRICT>@appendlist   return APPEND_LIST;
 <INITIAL,STRICT>@dynluacall  return DYNLUACALL;
 <INITIAL,STRICT>@lexluacall  return LEXLUACALL;
