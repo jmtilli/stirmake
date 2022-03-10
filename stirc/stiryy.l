@@ -167,6 +167,9 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@asin return ASIN;
 <INITIAL,STRICT>@atan return ATAN;
 <INITIAL,STRICT>@ceil return CEIL;
+<INITIAL,STRICT>@floor return FLOOR;
+<INITIAL,STRICT>@trunc return TRUNC;
+<INITIAL,STRICT>@round return ROUND;
 <INITIAL,STRICT>@cos return COS;
 <INITIAL,STRICT>@sin return SIN;
 <INITIAL,STRICT>@tan return TAN;

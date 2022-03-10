@@ -294,6 +294,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token STRGSUB STRSET STRWORD STRWORDCNT STRWORDLIST ABS ACOS ASIN ATAN
 %token CEIL COS SIN TAN EXP LOG SQRT DUP_NONRECURSIVE PB_NEW TOSTRING
 %token TONUMBER SCOPE_PARENT SCOPE_NEW GETSCOPE_DYN GETSCOPE_LEX
+%token FLOOR TRUNC ROUND
 
 
 %token DIRUP DIRDOWN
@@ -2709,6 +2710,12 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_ASIN); }
 | ATAN OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_ATAN); }
+| ROUND OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_ROUND); }
+| TRUNC OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_TRUNC); }
+| FLOOR OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FLOOR); }
 | CEIL OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_CEIL); }
 | COS OPEN_PAREN expr CLOSE_PAREN
