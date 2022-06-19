@@ -1019,6 +1019,9 @@ there will not be a rebuild of files depending on
 because its timestamp is older than that of
 .Pa file.o .
 .It
+If a rule to build target has no dependencies, and its commands are
+changed, then it is not rebuilt.
+.It
 Some error codes are translated to
 .Dq "Unknown error"
 instead of a descriptive
