@@ -312,26 +312,24 @@ static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol
 static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
   struct abce_mb mb;
-  struct abce_mb mbold;
+  const struct abce_mb *oldmb;
   int ret;
+  size_t retloc;
   mb.typ = ABCE_T_F;
   mb.u.d = loc;
-  ret = abce_sc_put_val_str_maybe_old(stiryy->main->abce, &stiryy->main->abce->dynscope, symbol, &mb, maybe, &mbold);
+  oldmb = abce_sc_get_rec_str_area(stiryy->main->abce->dynscope.u.area, symbol, 1);
+  if (oldmb == NULL)
+  {
+    return (size_t)-1;
+  }
+  retloc = abce_cache_add(stiryy->main->abce, oldmb);
+  ret = abce_sc_put_val_str_maybe_old(stiryy->main->abce, &stiryy->main->abce->dynscope, symbol, &mb, maybe, NULL);
   if (ret != 0 && ret != -EEXIST)
   {
     printf("can't add symbol %s\n", symbol);
     exit(1);
   }
-  if (mbold.typ == ABCE_T_N)
-  {
-    return (size_t)-1;
-  }
-  else
-  {
-    size_t ret = abce_cache_add(stiryy->main->abce, &mbold);
-    abce_mb_refdn(stiryy->main->abce, &mbold);
-    return ret;
-  }
+  return retloc;
 }
 
 static inline void stiryy_add_byte(struct stiryy *stiryy, uint16_t ins)
