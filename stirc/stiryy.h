@@ -316,7 +316,7 @@ static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbo
   int ret;
   mb.typ = ABCE_T_F;
   mb.u.d = loc;
-  ret = abce_sc_put_val_str_maybe_old(stiryy->main->abce, &stiryy->curscope, symbol, &mb, maybe, &mbold);
+  ret = abce_sc_put_val_str_maybe_old(stiryy->main->abce, &stiryy->main->abce->dynscope, symbol, &mb, maybe, &mbold);
   if (ret != 0 && ret != -EEXIST)
   {
     printf("can't add symbol %s\n", symbol);
