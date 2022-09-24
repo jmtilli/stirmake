@@ -318,11 +318,14 @@ static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbo
   mb.typ = ABCE_T_F;
   mb.u.d = loc;
   oldmb = abce_sc_get_rec_str_area(stiryy->main->abce->dynscope.u.area, symbol, 1);
-  if (oldmb == NULL)
+  if (oldmb != NULL)
   {
-    return (size_t)-1;
+    retloc = abce_cache_add(stiryy->main->abce, oldmb);
   }
-  retloc = abce_cache_add(stiryy->main->abce, oldmb);
+  else
+  {
+    retloc = (size_t)-1;
+  }
   ret = abce_sc_put_val_str_maybe_old(stiryy->main->abce, &stiryy->main->abce->dynscope, symbol, &mb, maybe, NULL);
   if (ret != 0 && ret != -EEXIST)
   {
