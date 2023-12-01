@@ -208,6 +208,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token SHELLSHELLEQUALS
 %token COLON
 %token COMMA
+%token INCLUDESCOPE
 %token <str> STRING_LITERAL
 %token <d> NUMBER
 %token <s> VARREF_LITERAL
@@ -347,6 +348,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %type<d> scopetype
 %type<d> beginscope
 %type<s> maybe_name
+%type<s> maybe_includescopevar
 
 %start st
 
@@ -852,6 +854,7 @@ custom_rule:
 {
   $<d>$ = get_abce(amyplanyy)->bytecodesz;
 }
+  maybe_includescopevar
   expr NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
@@ -868,10 +871,16 @@ custom_rule:
       stiryyerror(scanner, stiryy, "error in @dirinclude");
       YYABORT;
     }
+    if ($3 != NULL && strsz != 1)
+    {
+      printf("If setting include scope, must have 1 include, has %zu includes\n", strsz);
+      stiryyerror(scanner, stiryy, "error in @dirinclude");
+      YYABORT;
+    }
 
     for (i = 0; i < strsz; i++)
     {
-      if (do_dirinclude(stiryy, $1, strs[i]) != 0)
+      if (do_dirinclude(stiryy, $1, strs[i], $3) != 0)
       {
         YYABORT;
       }
@@ -1010,6 +1019,16 @@ custom_rule:
   ENDIF NEWLINE
 {
   amyplanyy->do_emit = (int)$<d>7;
+}
+;
+
+maybe_includescopevar:
+{
+  $$ = NULL;
+}
+| INCLUDESCOPE VARREF_LITERAL
+{
+  $$ = $2;
 }
 ;
 

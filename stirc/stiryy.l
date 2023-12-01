@@ -78,6 +78,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@patrule return PATRULE;
 <INITIAL,STRICT>@fileinclude return FILEINCLUDE;
 <INITIAL,STRICT>@dirinclude return DIRINCLUDE;
+<INITIAL,STRICT>@includescope return INCLUDESCOPE;
 <INITIAL,STRICT>@projdirinclude return PROJDIRINCLUDE;
 
 <INITIAL,STRICT>@cdepincludes return CDEPINCLUDES;

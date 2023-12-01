@@ -973,7 +973,7 @@ static inline void stiryy_free(struct stiryy *stiryy)
   memset(stiryy, 0, sizeof(*stiryy));
 }
 
-int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname);
+int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const char *scopevarname);
 
 int do_fileinclude(struct stiryy *stiryy, const char *fname, int ignore);
 

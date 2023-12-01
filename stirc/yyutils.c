@@ -260,7 +260,7 @@ int stiryydirparse(
   return stiryynameparse(pathbuf, stiryy, require);
 }
 
-int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
+int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const char *scopevarname)
 {
   struct stiryy stiryy2 = {};
   size_t fsz = strlen(stiryy->curprefix) + strlen(fname) + 8 + 3;
@@ -274,6 +274,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   int ret;
   FILE *f;
   struct abce_mb oldscope;
+  struct abce_mb *mbs, *mbsc;
   size_t oldscopeidx;
   if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, fname) >= psz)
   {
@@ -340,8 +341,34 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname)
   }
 
   stiryy_free(&stiryy2);
+  if (scopevarname)
+  {
+    int err = abce_cpush_mb(stiryy->main->abce, &stiryy->main->abce->dynscope);
+    if (err != 0)
+    {
+      fprintf(stderr, "stirmake: Out of C stack in including substirfile %s.\n", filename);
+      return -ENOMEM;
+    }
+    mbsc = &stiryy->main->abce->cstackbase[stiryy->main->abce->csp-1];
+    mbs = abce_mb_cpush_create_string(stiryy->main->abce, scopevarname, strlen(scopevarname));
+    if (mbs == NULL)
+    {
+      fprintf(stderr, "stirmake: Out of memory in including substirfile %s.\n", filename);
+      return -ENOMEM;
+    }
+  }
   abce_mb_refdn(stiryy->main->abce, &stiryy->main->abce->dynscope);
   stiryy->main->abce->dynscope = abce_mb_refup(stiryy->main->abce, &stiryy->main->abce->cachebase[oldscopeidx]);
+  if (scopevarname)
+  {
+    if (abce_sc_replace_val_mb(stiryy->main->abce, &stiryy->main->abce->dynscope, mbs, mbsc) != 0)
+    {
+      fprintf(stderr, "stirmake: Can't set scope to named variable %s.\n", scopevarname);
+      return -ENOMEM;
+    }
+    abce_cpop(stiryy->main->abce);
+    abce_cpop(stiryy->main->abce);
+  }
   //get_abce(stiryy)->dynscope = oldscope;
   // free(prefix2); // let it leak, FIXME free it someday
   // free(projprefix2); // let it leak, FIXME free it someday
