@@ -114,6 +114,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@DPO     return DPO;
 <INITIAL,STRICT>@LPO     return LPO;
 <INITIAL,STRICT>@IPO     return IPO;
+<INITIAL,STRICT>@SC      return SC;
+<INITIAL,STRICT>@SCO     return SCO;
 <INITIAL,STRICT>@dyn   return DYN;
 <INITIAL,STRICT>@lex   return LEX;
 <INITIAL,STRICT>@imm   return IMM;

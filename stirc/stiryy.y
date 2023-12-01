@@ -277,6 +277,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token IO
 %token DP LP IP DPO LPO IPO
 %token LOC
+%token SC SCO
 %token APPEND
 %token APPEND_LIST
 %token RETURN
@@ -2358,6 +2359,14 @@ scopetype:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETSCOPE_DYN);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_SCOPE_PARENT);
   }
+  $$ = 1;
+}
+| SC OPEN_PAREN expr CLOSE_PAREN
+{
+  $$ = 0;
+}
+| SCO OPEN_PAREN expr CLOSE_PAREN
+{
   $$ = 1;
 }
 ;
