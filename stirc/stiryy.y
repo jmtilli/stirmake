@@ -208,7 +208,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token SHELLSHELLEQUALS
 %token COLON
 %token COMMA
-%token INCLUDESCOPE
+%token SCOPENAME
 %token <str> STRING_LITERAL
 %token <d> NUMBER
 %token <s> VARREF_LITERAL
@@ -1026,7 +1026,7 @@ maybe_includescopevar:
 {
   $$ = NULL;
 }
-| INCLUDESCOPE VARREF_LITERAL
+| SCOPENAME VARREF_LITERAL
 {
   $$ = $2;
 }
