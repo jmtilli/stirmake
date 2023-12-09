@@ -423,11 +423,11 @@ but it is the author's opinion that
 works the best.
 .Pp
 If you invoke sub-make within the same directory, the targets need to be
-.Va @maybe
+.Va @mayberule
 like this:
 .Pp
 .Bd -literal
-@maybe: test: test.c test.mk
+@mayberule: test: test.c test.mk
 	make -f test.mk
 
 @cleanhook:
