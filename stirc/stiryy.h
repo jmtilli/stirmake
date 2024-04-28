@@ -536,7 +536,6 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   {
     my_abort();
   }
-  free(can);
 
   slashesnodirsz = strlen(tgt) + 4;
   slashesnodir = malloc(slashesnodirsz);
@@ -544,6 +543,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   {
     my_abort();
   }
+  free(can);
 
   if (rule->targetsz >= rule->targetcapacity)
   {
