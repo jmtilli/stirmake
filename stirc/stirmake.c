@@ -6441,6 +6441,7 @@ int main(int argc, char **argv)
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
+      merge_db();
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
