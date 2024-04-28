@@ -2540,7 +2540,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     size_t tgtidx = stringtab_add(tgts[i].name);
     size_t tgtidxnodir = stringtab_add(tgts[i].namenodir);
-    ins_tgt(rule, tgtidx, tgtidxnodir, !!tgts[i].is_dist);
+    ins_tgt(rule, tgtidx, tgtidxnodir, !!dist);
     ins_ruleid_by_tgt(tgtidx, rule->ruleid);
   }
   for (i = 0; i < depsz; i++)
