@@ -60,7 +60,8 @@ LUALIB:=/usr/lib/x86_64-linux-gnu/libluajit-5.1.a
 WITH_LUA:=no
 
 #CC=gcc
-CC=clang
+#CC=clang
+CC=cc
 CFLAGS=-O3 -Wall -g
 
 ifeq ($(WITH_LUA),yes)
