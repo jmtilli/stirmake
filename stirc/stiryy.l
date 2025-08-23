@@ -180,6 +180,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@log return LOG;
 <INITIAL,STRICT>@sqrt return SQRT;
 <INITIAL,STRICT>@getenv return GETENV;
+<INITIAL,STRICT>@chomp return CHOMP;
 <INITIAL,STRICT>@dupnonrec return DUP_NONRECURSIVE;
 <INITIAL,STRICT>@pbnew return PB_NEW;
 <INITIAL,STRICT>@tostring return TOSTRING;
