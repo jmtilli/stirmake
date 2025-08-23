@@ -36,3 +36,4 @@
 .*.sw?
 /jsonyytest
 /opts.smk
+/git.h
