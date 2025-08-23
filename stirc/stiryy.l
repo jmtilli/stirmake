@@ -43,6 +43,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@strict BEGIN(STRICT);
 <INITIAL,STRICT>@         return AT;
 <INITIAL,STRICT>@toplevel  return TOPLEVEL;
+<INITIAL,STRICT>@version  return VERSION;
 <INITIAL,STRICT>@subfile  return SUBFILE;
 <INITIAL,STRICT>@print    return PRINT;
 <INITIAL,STRICT>@call    return CALL;

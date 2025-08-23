@@ -81,6 +81,13 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @	["rm", "-f", $@]
 @	["ar", "rvs", $@, @@suffilter($^, ".o")]
 
+@deponly: 'stiryy.tab.c': 'git.h'
+
+'git.h': @recdep '../.git'
+@	["sh", "-c", "echo \"static char *gitshas[] = {\" > git.h"]
+@	["sh", "-c", "git log --pretty=format:\\\"%h\\\", --abbrev=40 >> git.h"]
+@	["sh", "-c", "echo \"};\" >> git.h"]
+
 @function $ADD_LEXX_YACC_DEPS($lex)
   @locvar $b = @sufsuball($lex, ".l", "")
   @locvar $i = 0

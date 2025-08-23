@@ -18,6 +18,7 @@
 #include <time.h>
 #include <stdarg.h>
 #include "stircommon.h"
+#include "git.h"
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
@@ -4346,7 +4347,8 @@ void stack_conf(void)
 
 void version(char *argv0)
 {
-  fprintf(stderr, "Stirmake 0.1, Copyright (C) 2017-19 Aalto University, 2018 Juha-Matti Tilli\n");
+  fprintf(stderr, "Stirmake %s\n", gitshas[0]);
+  fprintf(stderr, "Copyright (C) 2017-19 Aalto University, 2018, 2020-2025 Juha-Matti Tilli\n");
   fprintf(stderr, "Logo (C) 2019 Juha-Matti Tilli, All right reserved, license not applicable\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Authors:\n");
@@ -4373,12 +4375,22 @@ void version(char *argv0)
   exit(0);
 }
 
+void gitversions(char *argv0)
+{
+  size_t i;
+  for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
+  {
+    printf("%s\n", gitshas[i]);
+  }
+  exit(0);
+}
+
 void usage(char *argv0)
 {
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-vdcbq] [-j jobcnt] [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdcbq] [-j jobcnt] [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
@@ -4386,7 +4398,7 @@ void usage(char *argv0)
   }
   else
   {
-    fprintf(stderr, "%s [-vdcbq] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdcbq] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
@@ -5732,7 +5744,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vdf:Htpaj:hcbO:qC:ikBW:X:n")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:n")) != -1)
   {
     switch (opt)
     {
@@ -5745,6 +5757,8 @@ int main(int argc, char **argv)
       break;
     case 'v':
       version(argv[0]);
+    case 'G':
+      gitversions(argv[0]);
     case 'W':
     {
       struct pretend *oldpretend = pretend;

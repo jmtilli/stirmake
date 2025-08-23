@@ -32,6 +32,7 @@ typedef void *yyscan_t;
 #include "abce/amyplan.h"
 #include "abce/abceopcodes.h"
 #include "abce/amyplanlocvarctx.h"
+#include "git.h"
 #include <arpa/inet.h>
 
 void my_abort(void);
@@ -316,6 +317,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DIV MUL ADD SUB SHL SHR NE EQ LOGICAL_AND LOGICAL_OR LOGICAL_NOT MOD BITWISE_AND BITWISE_OR BITWISE_NOT BITWISE_XOR
 
 %token TOPLEVEL SUBFILE
+%token VERSION
 
 %token ERROR_TOK
 
@@ -1150,6 +1152,24 @@ maybeignore:
 amyplanrules:
 | amyplanrules NEWLINE
 | amyplanrules assignrule
+| amyplanrules VERSION OPEN_PAREN STRING_LITERAL CLOSE_PAREN NEWLINE
+{
+  int i;
+  int found = 0;
+  for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
+  {
+    if (strcmp($4.str, gitshas[i]) == 0 && strlen($4.str) == $4.sz)
+    {
+      found = 1;
+    }
+  }
+  if (!found)
+  {
+    fprintf(stderr, "Incompatible version of stirmake installed, expected to contain git SHA1:\n");
+    fprintf(stderr, "%s\n", $4.str);
+    YYABORT;
+  }
+}
 | amyplanrules FUNCTION VARREF_LITERAL
 {
   if (amyplanyy_do_emit(amyplanyy))

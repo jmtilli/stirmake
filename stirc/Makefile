@@ -180,4 +180,11 @@ jsonyy.tab.h: jsonyy.y Makefile
 	rm .tmph.jsonyy.tab.c
 	mv .tmph.jsonyy.tab.h jsonyy.tab.h
 
+stiryy.tab.c: git.h
+
+git.h:
+	echo "static char *gitshas[] = {" > git.h
+	git log --pretty=format:\"%h\", --abbrev=40 >> git.h
+	echo "};" >> git.h
+
 -include *.d
