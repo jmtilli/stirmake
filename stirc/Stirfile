@@ -82,6 +82,8 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @	["ar", "rvs", $@, @@suffilter($^, ".o")]
 
 @deponly: 'stiryy.tab.c': 'git.h'
+@deponly: 'stirmake.o': 'git.h'
+@deponly: 'stirmake.d': 'git.h'
 
 'git.h': @recdep '../.git'
 @	["sh", "-c", "echo \"static char *gitshas[] = {\" > git.h"]

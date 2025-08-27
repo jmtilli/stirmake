@@ -181,6 +181,8 @@ jsonyy.tab.h: jsonyy.y Makefile
 	mv .tmph.jsonyy.tab.h jsonyy.tab.h
 
 stiryy.tab.c: git.h
+stirmake.d: git.h
+stirmake.o: git.h
 
 git.h:
 	echo "static char *gitshas[] = {" > git.h
