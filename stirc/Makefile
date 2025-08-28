@@ -61,8 +61,8 @@ WITH_LUA:=no
 
 #CC=gcc
 #CC=clang
-CC=cc
-CFLAGS=-O3 -Wall -g
+CC?=cc
+CFLAGS?=-O3 -Wall -g
 
 ifeq ($(WITH_LUA),yes)
   CFLAGS += -I$(LUAINC) -DWITH_LUA
