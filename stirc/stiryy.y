@@ -191,6 +191,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token <s> SHELL_COMMAND
 %token ATTAB ATATTAB
 
+%token EIGHT SIXTEENBE THIRTYTWOBE SIXTEENLE THIRTYTWOLE
+
 %token NEWLINE
 %token DYNLUACALL LEXLUACALL
 
@@ -198,6 +200,9 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 
 %token BEGINSCOPE BEGINHOLEYSCOPE ENDSCOPE
 %token FORDICT FORDICTPREV
+
+%token FOPEN FCLOSE FREAD FSEEK FFLUSH FWRITE
+
 %token ONCE ENDONCE STDOUT STDERR ERROR DUMP EXIT
 %token EQUALS
 %token PLUSEQUALS
@@ -298,7 +303,9 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token CEIL COS SIN TAN EXP LOG SQRT DUP_NONRECURSIVE PB_NEW TOSTRING
 %token TONUMBER SCOPE_PARENT SCOPE_NEW GETSCOPE_DYN GETSCOPE_LEX
 %token GETENV CHOMP
+%token STR2PB PB2STR
 %token FLOOR TRUNC ROUND
+%token SPLICE
 
 
 %token DIRUP DIRDOWN
@@ -2036,9 +2043,9 @@ varref_tail:
 {
   $$ = ABCE_OPCODE_STRLEN; // This is special. Can't assign to length query.
 }
-| OPEN_BRACE AT expr CLOSE_BRACE
+| OPEN_BRACE AT expr COMMA expr CLOSE_BRACE
 {
-  $$ = ABCE_OPCODE_PBGET; // FIXME needs transfer size of operation
+  $$ = ABCE_OPCODE_PBGET; // offset comma transfer size (0, 1, 2, -1, -2)
 }
 | OPEN_BRACE AT CLOSE_BRACE
 {
@@ -2707,6 +2714,46 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_TYPE); }
 | FALSE { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FALSE); }
 | NIL { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL); }
+| EIGHT
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, 0);
+  }
+}
+| SIXTEENBE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, 1);
+  }
+}
+| THIRTYTWOBE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, 2);
+  }
+}
+| SIXTEENLE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -1);
+  }
+}
+| THIRTYTWOLE
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, -2);
+  }
+}
 | STR_FROMCHR OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STR_FROMCHR); }
 | STR_LOWER OPEN_PAREN expr CLOSE_PAREN
@@ -2763,6 +2810,20 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRAPPEND); }
 | STRSTRIP OPEN_PAREN expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRSTRIP); }
+| FOPEN OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_OPEN); }
+| FCLOSE OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_CLOSE); }
+| FFLUSH OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_FLUSH); }
+| FREAD OPEN_PAREN expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_GET); }
+| FSEEK OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_SEEK_TELL); }
+| FWRITE OPEN_PAREN expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_WRITE); }
+| SPLICE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LISTSPLICE); }
 | STRSUB OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRSUB); }
 | STRGSUB OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
@@ -2807,6 +2868,10 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETENV); }
 | CHOMP OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_CHOMP); }
+| STR2PB OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STR2PB); }
+| PB2STR OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PB2STR); }
 | DUP_NONRECURSIVE OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_DUP_NONRECURSIVE); }
 | PB_NEW OPEN_PAREN CLOSE_PAREN
