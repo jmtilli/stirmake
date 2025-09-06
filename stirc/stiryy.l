@@ -137,6 +137,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@fclose   return FCLOSE;
 <INITIAL,STRICT>@fread    return FREAD;
 <INITIAL,STRICT>@fseek    return FSEEK;
+<INITIAL,STRICT>@fgetdelim return FGETDELIM;
 <INITIAL,STRICT>@fflush   return FFLUSH;
 <INITIAL,STRICT>@fwrite   return FWRITE;
 <INITIAL,STRICT>@splice   return SPLICE;
