@@ -184,7 +184,7 @@ stiryy.tab.c: git.h
 stirmake.d: git.h
 stirmake.o: git.h
 
-git.h:
+git.h: ../.git/logs/HEAD
 	echo "static char *gitshas[] = {" > git.h
 	git log --pretty=format:\"%h\", --abbrev=40 >> git.h
 	echo "};" >> git.h
