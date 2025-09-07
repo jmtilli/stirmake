@@ -140,6 +140,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@fgetdelim return FGETDELIM;
 <INITIAL,STRICT>@fflush   return FFLUSH;
 <INITIAL,STRICT>@fwrite   return FWRITE;
+<INITIAL,STRICT>@jsonenc  return JSONENC;
+<INITIAL,STRICT>@jsondec  return JSONDEC;
 <INITIAL,STRICT>@splice   return SPLICE;
 <INITIAL,STRICT>@be8      return EIGHT;
 <INITIAL,STRICT>@le8      return EIGHT;
