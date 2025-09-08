@@ -73,7 +73,10 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @phonyrule: 'wc':
 @	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@suffilterout(@suffilterout(@glob("*.h"),".lex.h"),".tab.h")]
 
+# rm is necessary, since if $@ exists but is not in command database, this
+# has to be executed anyway and ln -s does not create symlink if it exists
 @patrule: $(SYM): '%':
+	rm -f $@
 	ln -s stirmake $@
 
 @patrule: $(PROG): '%': '%.o' 'libstirmake.a' 'abce/libabce.a'
