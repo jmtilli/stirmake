@@ -120,7 +120,7 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @deponly: 'stirmake.o': 'git.h'
 @deponly: 'stirmake.d': 'git.h'
 
-'git.h': @recdep '../.git'
+'git.h': '../.git/logs/HEAD'
 @	["sh", "-c", "echo \"static char *gitshas[] = {\" > git.h"]
 @	["sh", "-c", "git log --pretty=format:\\\"%h\\\", --abbrev=40 >> git.h"]
 @	["sh", "-c", "echo \"};\" >> git.h"]
