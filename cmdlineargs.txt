@@ -44,7 +44,7 @@ GNU options:
 --jobserver-fds R,W
   - supported only in $MAKEFLAGS
 -l load: if jobs running and load average >= load, don't start new jobs
-  - not supported
+  - supported
 -L: use the latest mtime between symlinks and target
   - not supported
 -o file: don't remake file, and also assume it's mtime is very old

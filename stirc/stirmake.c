@@ -5270,6 +5270,22 @@ void drain_pipe(struct rule *rule, int fdit)
   }
 }
 
+double loadavg_limit = 1e100;
+
+int loadavg_check(void)
+{
+  double loadavg = 0;
+  if (loadavg_limit >= 1e100)
+  {
+    return 1;
+  }
+  if (getloadavg(&loadavg, 1) != 1 || loadavg > loadavg_limit)
+  {
+    return 0;
+  }
+  return 1;
+}
+
 void run_loop(void)
 {
   struct linked_list_node *node;
@@ -5309,6 +5325,10 @@ back:
   {
     if (children)
     {
+      if (!loadavg_check())
+      {
+        break;
+      }
       if (!read_jobserver())
       {
         break;
@@ -5345,14 +5365,18 @@ back:
   while (children > 0)
   {
     int wstatus = 0;
+    struct timeval tv = {.tv_sec = 1, .tv_usec = 0}; // needed for load avg
     fd_set readfds = globfds;
     FD_SET(self_pipe_fd[0], &readfds);
     if (ruleids_to_run_size > 0)
     {
-      FD_SET(jobserver_fd[0], &readfds);
+      if (loadavg_check())
+      {
+        FD_SET(jobserver_fd[0], &readfds);
+      }
     }
     select((locmaxfd > globmaxfd) ? (locmaxfd+1) : (globmaxfd+1),
-           &readfds, NULL, NULL, NULL);
+           &readfds, NULL, NULL, &tv);
     if (debug)
     {
       print_indent();
@@ -5515,6 +5539,10 @@ back:
     {
       if (children)
       {
+        if (!loadavg_check())
+        {
+          break;
+        }
         if (!read_jobserver())
         {
           break;
@@ -5806,7 +5834,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:s")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:")) != -1)
   {
     switch (opt)
     {
@@ -5826,6 +5854,21 @@ int main(int argc, char **argv)
     case 's':
       silent = 1;
       break;
+    case 'l':
+    {
+      char *endptr = NULL;
+      loadavg_limit = strtod(optarg, &endptr);
+      if (*endptr == '\0' && *optarg != '\0')
+      {
+        // ok
+      }
+      else
+      {
+        fprintf(stderr, "stirmake: invalid load average limit: %s\n", optarg);
+        exit(2);
+      }
+      break;
+    }
     case 'W':
     {
       struct pretend *oldpretend = pretend;
