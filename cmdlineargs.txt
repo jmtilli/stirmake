@@ -5,18 +5,27 @@ POSIX options:
 -f stirfile: specify a different stirfile
   "-" shall denote the standard input
   XXX should probably support multiple stirfiles?
+  - supported
 -i: ignore error codes returned by invoked commands
+  - supported
 -k: do as much as you can if an error occurs
+  - supported, except not in $MAKEFLAGS
 -n: dry run
   TODO note that in this:
   a.txt: b.txt
   b.txt: c.txt
   ...if a.txt is newer than b.txt, and you do "touch c.txt; stirmake", it has
   to work.
+  - supported
 -q: exit with 0 if target up-to-date; otherwise, exit with 1. No commands.
+  - supported
 -S: opposite of -k, the default
+  - not supported since it's the default
+  - if -k was supported in $MAKEFLAGS, this might have use
 -s: silent, don't write to standard output any commands or touch messages
+  - not supported
 -t: touch mode: touch each not-up-to-date target, write "touch TGT" to stdout
+  - not supported and -t is for MODE_THIS, not for touch mode
 
 We probably won't support these POSIX options:
 -e: environment variable overrides
@@ -25,21 +34,38 @@ We probably won't support these POSIX options:
 
 GNU options:
 -B: unconditionally make all targets
+  - supported
 -C "/" -C "etc" -C "ssh": should go to /etc/ssh before reading any makefiles
--d: print debugging onformation
+  - supported
+-d: print debugging information
+  - supported
 -j JOBCNT: job count
+  - supported, and JOBCNT can be 'a' for CPU count autodetection
 --jobserver-fds R,W
+  - supported only in $MAKEFLAGS
 -l load: if jobs running and load average >= load, don't start new jobs
+  - not supported
 -L: use the latest mtime between symlinks and target
+  - not supported
 -o file: don't remake file, and also assume it's mtime is very old
+  - not supported
 -O: same as -O target
+-O none
+  - supported
 -O target: synchronize output of parallel jobs (entire recipe grouped)
+  - supported
 -O line: synchronize output of parallel jobs (one command-line grouped)
+  - automatically converted to -O target in stirmake
+-O recurse
+  - supported
 -v: print stirmake versions plus a copyright and license
+  - supported
 -W file: pretend file has just been modified
+  - we support this with -W and -X
 
 Maybe we could support these GNU options:
 --trace: information about the disposition of each target
+  - not supported
 
 We probably won't support these GNU options:
 -I dir: search dir for included makefiles
