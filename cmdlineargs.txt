@@ -23,7 +23,7 @@ POSIX options:
   - not supported since it's the default
   - if -k was supported in $MAKEFLAGS, this might have use
 -s: silent, don't write to standard output any commands or touch messages
-  - not supported
+  - supported
 -t: touch mode: touch each not-up-to-date target, write "touch TGT" to stdout
   - not supported and -t is for MODE_THIS, not for touch mode
 

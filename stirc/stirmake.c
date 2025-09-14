@@ -56,6 +56,7 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
+int silent = 0;
 int indentlevel = 0;
 
 void print_indent(void)
@@ -2755,7 +2756,10 @@ void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
    * least on Linux. And, writev requires us to allocate memory for the iovec
    * list too.
    */
-  write(1, tbuf, toff);
+  if (!silent)
+  {
+    write(1, tbuf, toff);
+  }
   free(tbuf); // We could let it leak, too...
 }
 
@@ -5290,7 +5294,10 @@ back:
     {
       exit(0);
     }
-    fprintf(stderr, "stirmake: Nothing to be done.\n");
+    if (!silent)
+    {
+      fprintf(stderr, "stirmake: Nothing to be done.\n");
+    }
     goto out;
   }
   else if (test)
@@ -5799,7 +5806,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:s")) != -1)
   {
     switch (opt)
     {
@@ -5812,8 +5819,13 @@ int main(int argc, char **argv)
       break;
     case 'v':
       version(argv[0]);
+      break;
     case 'G':
       gitversions(argv[0]);
+      break;
+    case 's':
+      silent = 1;
+      break;
     case 'W':
     {
       struct pretend *oldpretend = pretend;
@@ -6045,8 +6057,11 @@ int main(int argc, char **argv)
         abce_inited = 0;
       }
     }
-    printf("stirmake: Using directory %s\n", cwd);
-    fflush(stdout);
+    if (!silent)
+    {
+      printf("stirmake: Using directory %s\n", cwd);
+      fflush(stdout);
+    }
     if (chdir(cwd) != 0)
     {
       my_abort();
@@ -6088,14 +6103,20 @@ int main(int argc, char **argv)
   else if (mode == MODE_THIS)
   {
     fwd_path = calc_forward_path(storcwd, upcnt);
-    printf("stirmake: Forward path: %s\n", fwd_path);
-    fflush(stdout);
+    if (!silent)
+    {
+      printf("stirmake: Forward path: %s\n", fwd_path);
+      fflush(stdout);
+    }
   }
   else if (mode == MODE_PROJECT)
   {
     fwd_path = calc_forward_path(cwd_sameproj, upcnt - upcnt_sameproj);
-    printf("stirmake: Forward path: %s\n", fwd_path);
-    fflush(stdout);
+    if (!silent)
+    {
+      printf("stirmake: Forward path: %s\n", fwd_path);
+      fflush(stdout);
+    }
   }
   else
   {
