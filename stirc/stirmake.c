@@ -5855,20 +5855,31 @@ int main(int argc, char **argv)
       silent = 1;
       break;
     case 'l':
-    {
-      char *endptr = NULL;
-      loadavg_limit = strtod(optarg, &endptr);
-      if (*endptr == '\0' && *optarg != '\0')
+      if (optarg[0] == 'a') // a for auto
       {
-        // ok
+        loadavg_limit = my_get_nprocs();
+        if (loadavg_limit < 1)
+        {
+          fprintf(stderr, "stirmake: Processor count %d insane, using 1\n",
+                  (int)loadavg_limit);
+          loadavg_limit = 1;
+        }
       }
       else
       {
-        fprintf(stderr, "stirmake: invalid load average limit: %s\n", optarg);
-        exit(2);
+        char *endptr = NULL;
+        loadavg_limit = strtod(optarg, &endptr);
+        if (*endptr == '\0' && *optarg != '\0')
+        {
+          // ok
+        }
+        else
+        {
+          fprintf(stderr, "stirmake: invalid load average limit: %s\n", optarg);
+          exit(2);
+        }
       }
       break;
-    }
     case 'W':
     {
       struct pretend *oldpretend = pretend;
