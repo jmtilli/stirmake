@@ -67,19 +67,25 @@ void print_indent(void)
   }
 }
 
+enum pretendtype {
+	PRETEND_MODIFIED,
+	PRETEND_VERY_OLD_NO_REMAKE,
+};
+
 struct pretend {
   char *fname;
   struct pretend *next;
   int relative;
+  enum pretendtype pretendtype;
 };
 struct pretend *pretend = NULL;
 
-int ispretend(const char *test)
+int ispretend(const char *test, enum pretendtype typ)
 {
   struct pretend *iter = pretend;
   while (iter != NULL)
   {
-    if (strcmp(iter->fname, test) == 0)
+    if (strcmp(iter->fname, test) == 0 && iter->pretendtype == typ)
     {
       return 1;
     }
@@ -3540,6 +3546,7 @@ int do_exec(int ruleid)
   struct rule *r = rules[ruleid];
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
+  int seen_no_remake = 0;
   //Rule &r = rules.at(ruleid);
   if (debug)
   {
@@ -3565,7 +3572,7 @@ int do_exec(int ruleid)
         struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         struct stat statbuf;
         int depid = get_ruleid_by_tgt(e->nameidx);
-        if (ispretend(sttable[e->nameidx].s) || sttable[e->nameidx].is_remade)
+        if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || sttable[e->nameidx].is_remade)
         {
           has_to_exec = 1;
         }
@@ -3632,7 +3639,18 @@ int do_exec(int ruleid)
           }
           if (!seen_nonphony || ts_cmp(she->st_mtim, st_mtim) > 0)
           {
-            st_mtim = she->st_mtim;
+            if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
+            {
+              st_mtim = she->st_mtim;
+            }
+            else
+            {
+              if (debug)
+              {
+                print_indent();
+                printf("pretend %s is very old\n", sttable[e->nameidx].s);
+              }
+            }
           }
           seen_nonphony = 1;
         }
@@ -3659,7 +3677,18 @@ int do_exec(int ruleid)
         {
           if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
           {
-            st_mtim = statbuf.st_mtim;
+            if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
+            {
+              st_mtim = statbuf.st_mtim;
+            }
+            else
+            {
+              if (debug)
+              {
+                print_indent();
+                printf("pretend %s is very old\n", sttable[e->nameidx].s);
+              }
+            }
           }
           seen_nonphony = 1;
         }
@@ -3672,6 +3701,10 @@ int do_exec(int ruleid)
       LINKED_LIST_FOR_EACH(node, &r->tgtlist)
       {
         struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+        if (ispretend(sttable[e->tgtidx].s, PRETEND_VERY_OLD_NO_REMAKE))
+        {
+          seen_no_remake = 1;
+        }
         if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
         {
           has_to_exec = 1;
@@ -3746,7 +3779,7 @@ int do_exec(int ruleid)
         }
       }
     }
-    if (has_to_exec && r->cmd.args[0] != NULL)
+    if (has_to_exec && r->cmd.args[0] != NULL && !seen_no_remake)
     {
       if (debug)
       {
@@ -3761,6 +3794,19 @@ int do_exec(int ruleid)
       }
       ruleids_to_run[ruleids_to_run_size++] = ruleid;
       r->is_queued = 1;
+    }
+    else if (has_to_exec && seen_no_remake)
+    {
+      if (debug)
+      {
+        print_indent();
+        printf("do_exec: has_to_exec but seen no remake, setting !has_to_exec %d\n", ruleid);
+      }
+      r->is_queued = 1;
+      indentlevel++;
+      mark_executed(ruleid, 0);
+      indentlevel--;
+      return 1;
     }
     else
     {
@@ -4134,10 +4180,19 @@ void mark_executed(int ruleid, int was_actually_executed)
   else if (!r->is_phony && !r->is_maybe && !r->is_inc && !dry_run)
   {
     struct stat statbuf;
+    int seen_pretend = 0;
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0)
+      if (ispretend(sttable[e->tgtidx].s, PRETEND_VERY_OLD_NO_REMAKE))
+      {
+        seen_pretend = 1;
+      }
+    }
+    LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+    {
+      struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0 && !seen_pretend)
       {
         fprintf(stderr, "stirmake: *** Target %s was not created by rule.\n",
                sttable[e->tgtidx].s);
@@ -4146,7 +4201,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target %s was not created by rule", sttable[e->tgtidx].s);
       }
-      if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0)
+      if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0 && !seen_pretend)
       {
         fprintf(stderr, "stirmake: *** Target %s was not updated by rule.\n",
                sttable[e->tgtidx].s);
@@ -5744,7 +5799,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:n")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:")) != -1)
   {
     switch (opt)
     {
@@ -5766,6 +5821,7 @@ int main(int argc, char **argv)
       pretend->fname = canon(optarg);
       pretend->next = oldpretend;
       pretend->relative = 0;
+      pretend->pretendtype = PRETEND_MODIFIED;
       break;
     }
     case 'X':
@@ -5775,6 +5831,27 @@ int main(int argc, char **argv)
       pretend->fname = canon(optarg);
       pretend->next = oldpretend;
       pretend->relative = 1;
+      pretend->pretendtype = PRETEND_MODIFIED;
+      break;
+    }
+    case 'o': // don't remake and still pretend being very old
+    {
+      struct pretend *oldpretend = pretend;
+      pretend = malloc(sizeof(*pretend));
+      pretend->fname = canon(optarg);
+      pretend->next = oldpretend;
+      pretend->relative = 0;
+      pretend->pretendtype = PRETEND_VERY_OLD_NO_REMAKE;
+      break;
+    }
+    case 'r': // -o but relative
+    {
+      struct pretend *oldpretend = pretend;
+      pretend = malloc(sizeof(*pretend));
+      pretend->fname = canon(optarg);
+      pretend->next = oldpretend;
+      pretend->relative = 1;
+      pretend->pretendtype = PRETEND_VERY_OLD_NO_REMAKE;
       break;
     }
     case 'i':
@@ -6034,7 +6111,7 @@ int main(int argc, char **argv)
       {
         if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= sizeof(pathbuf))
         {
-          errxit("too long pathname to pretend being modified: %s", iter->fname);
+          errxit("too long pathname to pretend: %s", iter->fname);
         }
         iter->fname = canon(pathbuf);
         iter->relative = 0;
@@ -6043,7 +6120,7 @@ int main(int argc, char **argv)
       {
         if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", fwd_path, iter->fname) >= sizeof(pathbuf))
         {
-          errxit("too long pathname to pretend being modified: %s", iter->fname);
+          errxit("too long pathname to pretend: %s", iter->fname);
         }
         iter->fname = canon(pathbuf);
       }

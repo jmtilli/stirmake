@@ -48,7 +48,7 @@ GNU options:
 -L: use the latest mtime between symlinks and target
   - not supported
 -o file: don't remake file, and also assume it's mtime is very old
-  - not supported
+  - we support this with -o and -r
 -O: same as -O target
 -O none
   - supported
