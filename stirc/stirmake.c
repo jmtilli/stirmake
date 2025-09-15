@@ -57,6 +57,7 @@
 #include "syncbuf.h"
 
 int silent = 0;
+int touchmode = 0;
 int indentlevel = 0;
 
 void print_indent(void)
@@ -2933,6 +2934,135 @@ void set_nonblock(int fd);
 
 extern FILE *dbf;
 
+pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
+{
+  char ***args;
+  pid_t pid;
+  struct cmd cmd = rules[ruleid]->cmd;
+  const char *dir = sttable[rules[ruleid]->diridx].s;
+  int outpipe[2] = {-1,-1};
+  int outpiperd = -1, outpipewr = -1;
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
+
+  args = cmd.args;
+
+  if (create_fd)
+  {
+    if (pipe(outpipe) != 0)
+    {
+      errxit("can't pipe output of command");
+      my_abort();
+    }
+    outpiperd = outpipe[0];
+    outpipewr = outpipe[1];
+    set_nonblock(outpiperd); // not for outpipewr
+    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
+  }
+
+  pid = fork();
+  if (pid < 0)
+  {
+    errxit("Unable to fork child");
+    my_abort();
+    exit(2);
+  }
+  else if (pid == 0)
+  {
+    struct sigaction sa, saint, saterm, sahup;
+    struct linked_list_node *node;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
+    sigaction(SIGCHLD, &sa, NULL);
+    sigemptyset(&saint.sa_mask);
+    saint.sa_flags = 0;
+    saint.sa_handler = subproc_sigint_handler;
+    sigaction(SIGINT, &saint, NULL);
+    sigemptyset(&saterm.sa_mask);
+    saterm.sa_flags = 0;
+    saterm.sa_handler = subproc_sigterm_handler;
+    sigaction(SIGTERM, &saterm, NULL);
+    sigemptyset(&sahup.sa_mask);
+    sahup.sa_flags = 0;
+    sahup.sa_handler = subproc_sighup_handler;
+    sigaction(SIGHUP, &sahup, NULL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGSYS, SIG_DFL);
+    signal(SIGXCPU, SIG_DFL);
+    signal(SIGXFSZ, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGALRM, SIG_DFL);
+    if (chdir(dir) != 0)
+    {
+      write(1, "CHDIRERR\n", 9);
+      _exit(1);
+    }
+    close(fileno(dbf));
+    close(self_pipe_fd[0]);
+    close(self_pipe_fd[1]);
+    if (create_fd)
+    {
+      close(outpiperd);
+    }
+    update_recursive_pid(0);
+
+    LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
+    {
+      struct stirtgt *tgt = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      char *tgtname = neighpath(sttable[rules[ruleid]->diridx].s, sttable[tgt->tgtidx].s);
+      char *args[3] = {"touch", tgtname, NULL};
+      child_execvp_wait(0, 0, 0, sttable[first_tgt->tgtidx].s, dir, "touch", args, create_fd, create_make_fd, outpipewr);
+    }
+    _exit(0);
+  }
+  else
+  {
+    ruleid_by_pid_cnt++;
+    struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
+    uint32_t hashval;
+    size_t hashloc;
+    uint32_t hashvalfd;
+    size_t hashlocfd;
+    bypid->pid = pid;
+    bypid->ruleid = ruleid;
+    bypid->fd = outpiperd;
+    children++;
+    if (create_fd)
+    {
+      close(outpipewr);
+    }
+    hashval = abce_murmur32(HASH_SEED, pid);
+    hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
+    if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
+    {
+      printf("12\n");
+      my_abort();
+    }
+    if (bypid->fd >= 0)
+    {
+      hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
+      hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
+      if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_sym, NULL, &bypid->fdnode) != 0)
+      {
+        printf("12.5\n");
+        my_abort();
+      }
+    }
+    linked_list_add_tail(&bypid->llnode, &ruleid_by_pid_list);
+    rules[ruleid]->is_forked = 1;
+    if (fdout)
+    {
+      *fdout = bypid->fd;
+    }
+    return pid;
+  }
+}
+
 pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
   char ***args;
@@ -5340,7 +5470,14 @@ back:
       printf("forking1 child\n");
     }
     int pipefd = -1;
-    fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+    if (touchmode)
+    {
+      fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+    }
+    else
+    {
+      fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+    }
     if (pipefd >= 0)
     {
       FD_SET(pipefd, &globfds);
@@ -5555,7 +5692,14 @@ back:
       }
       //std::cout << "forking child" << std::endl;
       int pipefd = -1;
-      fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+      if (touchmode)
+      {
+        fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+      }
+      else
+      {
+        fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+      }
       if (pipefd >= 0)
       {
         FD_SET(pipefd, &globfds);
@@ -5834,7 +5978,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:T")) != -1)
   {
     switch (opt)
     {
@@ -5850,6 +5994,9 @@ int main(int argc, char **argv)
       break;
     case 'G':
       gitversions(argv[0]);
+      break;
+    case 'T':
+      touchmode = 1;
       break;
     case 's':
       silent = 1;
