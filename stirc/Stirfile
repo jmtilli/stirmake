@@ -93,11 +93,11 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 
 # rm is necessary, since if $@ exists but is not in command database, this
 # has to be executed anyway and ln -s does not create symlink if it exists
-@patrule: $(SYM): '%':
+@patrule @distrule: $(SYM): '%':
 	rm -f $@
 	ln -s stirmake $@
 
-@patrule: $(PROG): '%': '%.o' 'libstirmake.a' 'abce/libabce.a'
+@patrule @distrule: $(PROG): '%': '%.o' 'libstirmake.a' 'abce/libabce.a'
 @	[@$(CC), @$(CFLAGS), "-o", $@, $<, 'libstirmake.a', 'abce/libabce.a', @$(LUALIBS), '-lm', '-ldl']
 
 @patrule: $(OBJ): '%.o': '%.c' '%.d'
