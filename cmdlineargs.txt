@@ -25,7 +25,7 @@ POSIX options:
 -s: silent, don't write to standard output any commands or touch messages
   - supported
 -t: touch mode: touch each not-up-to-date target, write "touch TGT" to stdout
-  - not supported and -t is for MODE_THIS, not for touch mode
+  - supported but with -T since -t is for MODE_THIS, not for touch mode
 
 We probably won't support these POSIX options:
 -e: environment variable overrides
