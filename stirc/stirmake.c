@@ -59,6 +59,7 @@
 int silent = 0;
 int touchmode = 0;
 int indentlevel = 0;
+int do_trace = 0;
 
 void print_indent(void)
 {
@@ -3675,23 +3676,70 @@ void calc_cmd(int ruleid)
   }
 }
 
+void trace_add_vprintf(char **buf, size_t *cap, size_t *sz, const char *fmt, ...)
+{
+  va_list ap;
+  int need = 0;
+  int ret;
+  va_start(ap, fmt);
+  need = vsnprintf(NULL, 0, fmt, ap);
+  if (need < 0)
+  {
+    errxit("trace_add_vprintf failed");
+  }
+  va_end(ap);
+  need++;
+  if (*cap - *sz < need)
+  {
+    size_t cap2;
+    char *buf2;
+    cap2 = *cap + (need - (*cap - *sz));
+    buf2 = realloc(*buf, cap2);
+    if (buf2 == NULL)
+    {
+      errxit("trace_add_vprintf failed, out of memory");
+    }
+    *buf = buf2;
+    *cap = cap2;
+  }
+  va_start(ap, fmt);
+  ret = vsnprintf(*buf + *sz, *cap - *sz, fmt, ap);
+  if (ret < 0)
+  {
+    errxit("trace_add_vprintf failed");
+  }
+  va_end(ap);
+  *sz += ret;
+}
+
 int do_exec(int ruleid)
 {
   struct rule *r = rules[ruleid];
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
   int seen_no_remake = 0;
+  char *tracebuf = NULL;
+  size_t tracebufcap = 0;
+  size_t tracebufsz = 0;
   //Rule &r = rules.at(ruleid);
   if (debug)
   {
     print_indent();
     printf("do_exec %s\n", sttable[first_tgt->tgtidx].s);
   }
+  if (do_trace)
+  {
+    trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, "update target '%s' due to:", sttable[first_tgt->tgtidx].s);
+  }
   if (!r->is_queued)
   {
     int has_to_exec = 0;
     if (unconditional)
     {
+      if (do_trace)
+      {
+        trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " unconditional build of everything");
+      }
       has_to_exec = 1;
     }
     calc_cmd(ruleid);
@@ -3708,6 +3756,14 @@ int do_exec(int ruleid)
         int depid = get_ruleid_by_tgt(e->nameidx);
         if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || sttable[e->nameidx].is_remade)
         {
+          if (do_trace)
+          {
+            trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s'", sttable[e->nameidx].s);
+            if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED))
+            {
+              trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " (pretend)");
+            }
+          }
           has_to_exec = 1;
         }
         if (depid >= 0)
@@ -3718,6 +3774,10 @@ int do_exec(int ruleid)
             {
               print_indent();
               printf("rule %d/%s is phony\n", depid, sttable[e->nameidx].s);
+            }
+            if (do_trace)
+            {
+              trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s' (phony)", sttable[e->nameidx].s);
             }
             has_to_exec = 1;
             continue;
@@ -3751,6 +3811,10 @@ int do_exec(int ruleid)
         she = lstat_cached(e->nameidx);
         if (she->ret != 0)
         {
+          if (do_trace)
+          {
+            trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s' (nonexistent)", sttable[e->nameidx].s);
+          }
           has_to_exec = 1;
           // break; // No break, we want to get accurate st_mtim
           continue;
@@ -3794,6 +3858,10 @@ int do_exec(int ruleid)
         }
         if (stat(sttable[e->nameidx].s, &statbuf) != 0)
         {
+          if (do_trace)
+          {
+            trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s' (nonexistent)", sttable[e->nameidx].s);
+          }
           has_to_exec = 1;
           // break; // No break, we want to get accurate st_mtim
           continue;
@@ -3841,6 +3909,13 @@ int do_exec(int ruleid)
         }
         if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
         {
+          if (r->cmd.args[0] != NULL)
+          {
+            if (do_trace)
+            {
+              trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " command database mismatch");
+            }
+          }
           has_to_exec = 1;
         }
         if (debug)
@@ -3856,6 +3931,10 @@ int do_exec(int ruleid)
           {
             print_indent();
             printf("immediate has_to_exec\n");
+          }
+          if (do_trace)
+          {
+            trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " being nonexistent");
           }
           has_to_exec = 1;
           //break; // can't break, has to compare all commands from DB
@@ -3886,12 +3965,67 @@ int do_exec(int ruleid)
             print_indent();
             printf("delayed has_to_exec\n");
           }
+          if (do_trace)
+          {
+            LINKED_LIST_FOR_EACH(node, &r->deplist)
+            {
+              struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+              struct stathashentry *she;
+              struct stat statbuf;
+              if (e->is_recursive)
+              {
+                struct timespec st_rectim = rec_mtim(r, sttable[e->nameidx].s);
+                if (ts_cmp(st_mtimtgt, st_rectim) < 0)
+                {
+                  trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s'");
+                }
+                continue;
+              }
+              she = lstat_cached(e->nameidx);
+              if (she->ret != 0)
+              {
+                continue;
+              }
+              if (e->is_orderonly)
+              {
+                continue;
+              }
+              if (ts_cmp(st_mtimtgt, she->st_mtim) < 0)
+              {
+                if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
+                {
+                  trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s'", sttable[e->nameidx].s);
+                  continue;
+                }
+              }
+              if (!S_ISLNK(she->st_mode))
+              {
+                continue;
+              }
+              if (stat(sttable[e->nameidx].s, &statbuf) != 0)
+              {
+                continue;
+              }
+              if (ts_cmp(st_mtimtgt, statbuf.st_mtim) < 0)
+              {
+                if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
+                {
+                  trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s'", sttable[e->nameidx].s);
+                  continue;
+                }
+              }
+            }
+          }
           has_to_exec = 1;
         }
       }
     }
     else if (r->is_phony)
     {
+      if (do_trace)
+      {
+        trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " being phony");
+      }
       has_to_exec = 1;
     }
     else // no deps, check that all targets exist
@@ -3903,16 +4037,33 @@ int do_exec(int ruleid)
         struct stat statbuf;
         if (lstat(sttable[e->tgtidx].s, &statbuf) != 0)
         {
+          if (do_trace)
+          {
+            trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s' being nonexistent", sttable[e->tgtidx].s);
+          }
           has_to_exec = 1;
           break;
         }
         if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
         {
+          if (r->cmd.args[0] != NULL)
+          {
+            if (do_trace)
+            {
+              trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " command database mismatch");
+            }
+          }
           has_to_exec = 1;
           break;
         }
       }
     }
+    if (has_to_exec && (r->cmd.args[0] != NULL && !seen_no_remake) && do_trace)
+    {
+      printf("%s\n", tracebuf);
+    }
+    free(tracebuf);
+    tracebuf = NULL;
     if (has_to_exec && r->cmd.args[0] != NULL && !seen_no_remake)
     {
       if (debug)
@@ -5978,7 +6129,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:T")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TR")) != -1)
   {
     switch (opt)
     {
@@ -6057,6 +6208,9 @@ int main(int argc, char **argv)
       pretend->pretendtype = PRETEND_VERY_OLD_NO_REMAKE;
       break;
     }
+    case 'R': // trace
+      do_trace = 1;
+      break;
     case 'r': // -o but relative
     {
       struct pretend *oldpretend = pretend;
