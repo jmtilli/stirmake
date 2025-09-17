@@ -202,6 +202,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@chomp return CHOMP;
 <INITIAL,STRICT>@dupnonrec return DUP_NONRECURSIVE;
 <INITIAL,STRICT>@pbnew return PB_NEW;
+<INITIAL,STRICT>@fpclassify return FP_CLASSIFY;
 <INITIAL,STRICT>@tostring return TOSTRING;
 <INITIAL,STRICT>@tonumber return TONUMBER;
 <INITIAL,STRICT>@scopeparent return SCOPE_PARENT;

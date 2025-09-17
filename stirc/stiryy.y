@@ -307,6 +307,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token FLOOR TRUNC ROUND
 %token SPLICE
 %token JSONENC JSONDEC
+%token FP_CLASSIFY
 
 
 %token DIRUP DIRDOWN
@@ -2771,6 +2772,8 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JSON_ENCODE); }
 | JSONDEC OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_JSON_ENCODE); }
+| FP_CLASSIFY OPEN_PAREN expr CLOSE_PAREN
+{ if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FP_CLASSIFY); }
 | STRREP OPEN_PAREN expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRREP); }
 | DICTPREV OPEN_PAREN expr COMMA expr CLOSE_PAREN
