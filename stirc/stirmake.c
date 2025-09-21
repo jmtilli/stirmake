@@ -70,6 +70,8 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
+#undef TSDB
+
 int silent = 0;
 int touchmode = 0;
 int indentlevel = 0;
@@ -256,6 +258,16 @@ int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
   return 1;
 }
 
+struct tsdbe {
+  struct abce_rb_tree_node node;
+  struct linked_list_node llnode;
+  size_t stringtabidx;
+  size_t diridx; // non-key
+  struct timespec ts;
+  size_t sz;
+  int seen;
+};
+
 struct dbe {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
@@ -273,6 +285,32 @@ int sizecmp(size_t size1, size_t size2)
   if (size1 < size2)
   {
     return -1;
+  }
+  return 0;
+}
+
+static inline int tsdbe_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct tsdbe *e = ABCE_CONTAINER_OF(n2, struct tsdbe, node);
+  int ret;
+  size_t str2;
+  str2 = e->stringtabidx;
+  ret = sizecmp(str, str2);
+  if (ret != 0)
+  {
+    return ret;
+  }
+  return 0;
+}
+static inline int tsdbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
+{
+  struct tsdbe *e1 = ABCE_CONTAINER_OF(n1, struct tsdbe, node);
+  struct tsdbe *e2 = ABCE_CONTAINER_OF(n2, struct tsdbe, node);
+  int ret;
+  ret = sizecmp(e1->stringtabidx, e2->stringtabidx);
+  if (ret != 0)
+  {
+    return ret;
   }
   return 0;
 }
@@ -301,6 +339,54 @@ static inline int dbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
     return ret;
   }
   return 0;
+}
+
+struct tsdb {
+  struct abce_rb_tree_nocmp byname[DB_SIZE];
+  struct linked_list_head ll;
+};
+
+struct tsdb tsdb = {};
+
+void maybe_del_tsdbe(struct tsdb *tsdb, size_t tgtidx)
+{
+  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
+  struct abce_rb_tree_node *n;
+  struct abce_rb_tree_nocmp *head;
+  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, tgtidx);
+  if (n == NULL)
+  {
+    return;
+  }
+  abce_rb_tree_nocmp_delete(head, n);
+  linked_list_delete(&ABCE_CONTAINER_OF(n, struct tsdbe, node)->llnode);
+}
+
+void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe)
+{
+  uint32_t hash = abce_murmur32(HASH_SEED, tsdbe->stringtabidx);
+  struct abce_rb_tree_nocmp *head;
+  int ret;
+  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  ret = abce_rb_tree_nocmp_insert_nonexist(head, tsdbe_cmp_sym, NULL, &tsdbe->node);
+  if (ret != 0)
+  {
+    struct abce_rb_tree_node *n;
+    n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, tsdbe->stringtabidx);
+    if (n == NULL)
+    {
+      my_abort();
+    }
+    abce_rb_tree_nocmp_delete(head, n);
+    linked_list_delete(&ABCE_CONTAINER_OF(n, struct tsdbe, node)->llnode);
+    ret = abce_rb_tree_nocmp_insert_nonexist(head, tsdbe_cmp_sym, NULL, &tsdbe->node);
+    if (ret != 0)
+    {
+      my_abort();
+    }
+  }
+  linked_list_add_tail(&tsdbe->llnode, &tsdb->ll);
 }
 
 struct db {
@@ -811,6 +897,56 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
     {
       print_indent();
       printf("target %s has different cmd in cmd DB\n", sttable[tgtidx].s);
+    }
+    return 0;
+  }
+  return 1;
+}
+
+int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, size_t sz, int istarget)
+{
+  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  struct abce_rb_tree_nocmp *head;
+  struct abce_rb_tree_node *n;
+  struct tsdbe *tsdbe;
+  const char *tgtsrc = istarget ? "target" : "source";
+  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
+  if (n == NULL)
+  {
+    if (debug)
+    {
+      print_indent();
+      printf("%s %s not found in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
+    }
+    return 0;
+  }
+  tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
+  if (tsdbe->diridx != diridx)
+  {
+    if (debug)
+    {
+      print_indent();
+      printf("%s %s has different dir in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
+    }
+    return 0;
+  }
+  tsdbe->seen = 1;
+  if (tsdbe->sz != sz)
+  {
+    if (debug)
+    {
+      print_indent();
+      printf("%s %s has different size in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
+    }
+    return 0;
+  }
+  if (ts_cmp(tsdbe->ts, ts) != 0)
+  {
+    if (debug)
+    {
+      print_indent();
+      printf("%s %s has different timestamp in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
     }
     return 0;
   }
@@ -3335,6 +3471,7 @@ struct stathashentry {
   int ret;
   mode_t st_mode;
   struct timespec st_mtim;
+  size_t st_size;
 };
 struct abce_rb_tree_nocmp stathash[STATHASH_SIZE];
 struct stathashentry stathashentries[STATHASH_SIZE];
@@ -3467,12 +3604,14 @@ struct stathashentry *lstat_cached(size_t nameidx)
   {
     e->st_mode = statbuf.st_mode;
     e->st_mtim = statbuf.st_mtim;
+    e->st_size = statbuf.st_size;
   }
   else
   {
     e->st_mode = 0;
     e->st_mtim.tv_sec = 0;
     e->st_mtim.tv_nsec = 0;
+    e->st_size = 0;
   }
   e->ret = ret;
   e->nameidx = nameidx;
@@ -4013,6 +4152,13 @@ int do_exec(int ruleid)
           //break; // can't break, has to compare all commands from DB
           continue;
         }
+#ifdef TSDB
+        if (!tsszequal_db(&tsdb, e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
+        {
+          has_to_exec = 1;
+          continue;
+        }
+#endif
         if (debug)
         {
           print_indent();
@@ -4063,6 +4209,13 @@ int do_exec(int ruleid)
               {
                 continue;
               }
+#ifdef TSDB
+              if (!tsszequal_db(&tsdb, e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
+              {
+                has_to_exec = 1;
+                continue;
+              }
+#endif
               if (ts_cmp(st_mtimtgt, she->st_mtim) < 0)
               {
                 if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
@@ -4129,6 +4282,13 @@ int do_exec(int ruleid)
           has_to_exec = 1;
           break;
         }
+#ifdef TSDB
+        if (!tsszequal_db(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
+        {
+          has_to_exec = 1;
+          continue;
+        }
+#endif
       }
     }
     if (has_to_exec && (r->cmd.args[0] != NULL && !seen_no_remake) && do_trace)
@@ -6528,6 +6688,7 @@ int main(int argc, char **argv)
     }
   }
 
+  linked_list_head_init(&tsdb.ll);
   load_db();
   abce_init_opts(&abce, 1);
   abce_inited = 1;
