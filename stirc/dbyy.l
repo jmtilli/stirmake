@@ -29,8 +29,10 @@
   int last_newline_true = 1;
 
 :         return COLON;
+=         return EQUALS;
 
 @v1@ return V1;
+@v2@ return V2;
 
 
 \"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
@@ -53,5 +55,10 @@
 [ \t]                            /* ignore whitespaces */;
 .            return ERROR_TOK;
 
+-?[0-9]+ {
+  char *endptr;
+  yylval->ull = strtoull(yytext, &endptr, 10);
+  return INT_LITERAL;
+}
 
 %%

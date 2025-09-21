@@ -47,14 +47,18 @@ int dbyywrap(yyscan_t scanner)
 %union {
   char *s;
   struct escaped_string str;
+  unsigned long long ull;
 }
 
 %token NEWLINE
 
 %token COLON
+%token EQUALS
 %token TAB
 %token V1
+%token V2
 %token <str> STRING_LITERAL
+%token <ull> INT_LITERAL
 
 %token ERROR_TOK
 
@@ -68,6 +72,7 @@ st2: newlines stcont;
 
 stcont:
   V1 NEWLINE newlines maybe_dbrulesv1
+| V2 NEWLINE newlines maybe_dbrulesv2
 | maybe_dbrulesv1;
 
 newlines:
@@ -78,13 +83,26 @@ maybe_dbrulesv1:
 | dbrulesv1
 ;
 
+maybe_dbrulesv2:
+| dbrulesv2
+;
+
 dbrulesv1:
   dbrulev1 dbrulescontv1
+;
+
+dbrulesv2:
+  dbrulev2 dbrulescontv2
 ;
 
 dbrulescontv1:
 | dbrulescontv1 dbrulev1
 | dbrulescontv1 NEWLINE
+;
+
+dbrulescontv2:
+| dbrulescontv2 dbrulev2
+| dbrulescontv2 NEWLINE
 ;
 
 dbrulev1: STRING_LITERAL STRING_LITERAL COLON
@@ -103,6 +121,25 @@ dbrulev1: STRING_LITERAL STRING_LITERAL COLON
 }
   NEWLINE
   commands
+;
+
+dbrulev2: STRING_LITERAL STRING_LITERAL COLON
+{
+  if (strlen($1.str) != $1.sz)
+  {
+    fprintf(stderr, "NUL in DB\n");
+    YYABORT;
+  }
+  if (strlen($2.str) != $2.sz)
+  {
+    fprintf(stderr, "NUL in DB\n");
+    YYABORT;
+  }
+  dbyy_emplace_rule(dbyy, $1.str, $2.str);
+}
+  NEWLINE
+  commands
+| STRING_LITERAL STRING_LITERAL EQUALS INT_LITERAL INT_LITERAL INT_LITERAL NEWLINE
 ;
 
 cmdline: 
