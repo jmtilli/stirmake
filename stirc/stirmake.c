@@ -264,7 +264,9 @@ struct tsdbe {
   size_t stringtabidx;
   size_t diridx; // non-key
   struct timespec ts;
+  struct timespec tsnew;
   size_t sz;
+  size_t sznew;
   int seen;
 };
 
@@ -903,6 +905,54 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   return 1;
 }
 
+int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, size_t sz)
+{
+  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  struct abce_rb_tree_nocmp *head;
+  struct abce_rb_tree_node *n;
+  struct tsdbe *tsdbe;
+  const char *tgtsrc = "target";
+  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
+  if (n == NULL)
+  {
+    tsdbe = my_malloc(sizeof(struct dbe));
+    tsdbe->stringtabidx = stringtabidx;
+    tsdbe->diridx = diridx;
+    tsdbe->tsnew = ts;
+    tsdbe->ts = ts;
+    tsdbe->sznew = sz;
+    tsdbe->sz = sz;
+    tsdbe->seen = 1;
+    ins_tsdbe(tsdb, tsdbe);
+    return 0;
+  }
+  tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
+  if (tsdbe->diridx != diridx)
+  {
+    if (debug)
+    {
+      print_indent();
+      printf("%s %s has different dir in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
+    }
+    tsdbe->diridx = diridx;
+    tsdbe->tsnew = ts;
+    tsdbe->ts = ts;
+    tsdbe->sznew = sz;
+    tsdbe->sz = sz;
+    tsdbe->seen = 1;
+    return 0;
+  }
+  tsdbe->tsnew = ts;
+  tsdbe->ts = ts;
+  tsdbe->sznew = sz;
+  tsdbe->sz = sz;
+  tsdbe->seen = 1;
+  return 1;
+}
+
+int ts_cmp(struct timespec ta, struct timespec tb);
+
 int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, size_t sz, int istarget)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
@@ -931,7 +981,12 @@ int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, siz
     }
     return 0;
   }
-  tsdbe->seen = 1;
+  if (!istarget)
+  {
+    tsdbe->tsnew = ts;
+    tsdbe->sznew = sz;
+    tsdbe->seen = 1;
+  }
   if (tsdbe->sz != sz)
   {
     if (debug)
@@ -4728,6 +4783,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target %s was not updated by rule", sttable[e->tgtidx].s);
       }
+      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size);
     }
   }
   /* FIXME we need to handle:
