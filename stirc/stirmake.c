@@ -458,7 +458,11 @@ void *stir_do_mmap_madvise(size_t bytes)
   bytes = stir_topages(bytes);
   // Ugh. I wish all systems had simple and compatible interface.
 #ifdef MAP_ANON
+  #ifdef MAP_NORESERVE
+  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANON|MAP_NORESERVE, -1, 0);
+  #else
   ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANON, -1, 0);
+  #endif
 #else
   #ifdef MAP_ANONYMOUS
     #ifdef MAP_NORESERVE
@@ -474,7 +478,11 @@ void *stir_do_mmap_madvise(size_t bytes)
     {
       abort();
     }
-    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, fd, 0);
+    #ifdef MAP_FILE
+    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FILE, fd, 0);
+    #else
+    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    #endif
     close(fd);
   }
   #endif
