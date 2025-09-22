@@ -6148,7 +6148,7 @@ int main(int argc, char **argv)
     exit(2);
   }
 
-  sizeof_my_arena = 1024*1024;
+  sizeof_my_arena = 128*1024;
   my_arena = stir_do_mmap_madvise(sizeof_my_arena);
   if (my_arena == NULL)
   {
