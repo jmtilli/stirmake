@@ -667,6 +667,13 @@ struct sttable_entry {
 
 struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 struct sttable_entry *sttable = NULL;
+/*
+ * Linux kernel 22.9.2025, 26084 headers, 35778 c files, 6000 directories
+ * This gives a bit more than 128*1024 strings (each .c has .o and .d),
+ * so even 128*1024 would not be enough. However, on the other hand,
+ * settings st_cap to 256*1024 would on non-overcommit 64-bit systems
+ * allocate 4 megabytes of memory immediately.
+ */
 size_t st_cap = 64*1024;
 size_t st_cnt;
 
