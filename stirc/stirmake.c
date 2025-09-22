@@ -5925,12 +5925,15 @@ out:
 
 }
 
-int my_get_nprocs(void)
+int my_get_nprocs_impl(void)
 {
-#ifdef __linux__
-  return get_nprocs();
+#ifdef _SC_NPROCESSORS_ONLN
+  return sysconf(_SC_NPROCESSORS_ONLN);
 #else
-  #ifdef __APPLE__
+  #ifdef __linux__
+  return get_nprocs();
+  #else
+    #ifdef __APPLE__
   int count = 1;
   size_t count_len = sizeof(count);
   if (sysctlbyname("hw.logicalcpu", &count, &count_len, NULL, 0) != 0 ||
@@ -5940,8 +5943,8 @@ int my_get_nprocs(void)
     return 1;
   }
   return count;
-  #else
-    #ifdef __FreeBSD__
+    #else
+      #ifdef __FreeBSD__
   int count = 1;
   size_t count_len = sizeof(count);
   if (sysctlbyname("hw.ncpu", &count, &count_len, NULL, 0) != 0 ||
@@ -5951,8 +5954,8 @@ int my_get_nprocs(void)
     return 1;
   }
   return count;
-    #else
-      #ifdef __NetBSD__
+      #else
+        #ifdef __NetBSD__
   int count = 1;
   size_t count_len = sizeof(count);
   if (sysctlbyname("hw.ncpuonline", &count, &count_len, NULL, 0) != 0 ||
@@ -5962,13 +5965,29 @@ int my_get_nprocs(void)
     return 1;
   }
   return count;
-      #else
+        #else
   fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
   return 1;
+        #endif
       #endif
     #endif
   #endif
 #endif
+}
+int my_get_nprocs(void)
+{
+  int ret = my_get_nprocs_impl();
+  if (ret < 1)
+  {
+    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
+    return 1;
+  }
+  if (ret > 384)
+  {
+    fprintf(stderr, "stirmake: capping CPU count at 384.\n");
+    return 384; // To avoid hitting select() file descriptor count
+  }
+  return ret;
 }
 
 void process_orders(struct stiryy_main *main)
