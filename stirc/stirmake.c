@@ -667,8 +667,31 @@ struct sttable_entry {
 
 struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 struct sttable_entry *sttable = NULL;
-size_t st_cap = 1024*1024;
+size_t st_cap = 64*1024;
 size_t st_cnt;
+
+void st_grow(void)
+{
+  size_t st_newcap = st_cap * 2;
+  struct sttable_entry *sttable_new;
+  if (st_cnt < st_cap)
+  {
+    return;
+  }
+  if (st_newcap < 1024)
+  {
+    st_newcap = 1024;
+  }
+  sttable_new = stir_do_mmap_madvise(st_newcap*sizeof(*sttable_new));
+  if (sttable_new == NULL)
+  {
+    return;
+  }
+  memcpy(sttable_new, sttable, st_cnt*sizeof(*sttable_new));
+  stir_do_munmap(sttable, st_cap*sizeof(*sttable));
+  sttable = sttable_new;
+  st_cap = st_newcap;
+}
 
 void st_compact(void)
 {
@@ -721,6 +744,7 @@ size_t stringtab_add(const char *symbol)
   struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
   stringtabentry->string = my_strdup_len(symbol, stringlen.len);
   stringtabentry->len = stringlen.len;
+  st_grow();
   if (st_cnt >= st_cap)
   {
     errxit("stringtab full");
