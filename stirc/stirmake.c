@@ -20,7 +20,12 @@
 #include "stircommon.h"
 #include "git.h"
 
+// System provides getloadavg() function
+// Non-POSIX, so we enable only on systems where it is known to work
+#undef LOADAVG
+
 #ifdef __FreeBSD__
+#define LOADAVG 1
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #if __FreeBSD_version >= 1003000
@@ -28,19 +33,28 @@
 #endif
 #endif
 #ifdef __linux__
+#define LOADAVG 1
 #include <sys/sysinfo.h>
 #define HAS_UTIMENSAT 1
 #endif
 #ifdef __APPLE__
+#define LOADAVG 1
 #include <sys/sysctl.h>
 // Don't know how to detect MacOS version, so HAS_UTIMENSAT not set
 #endif
 #ifdef __NetBSD__
+#define LOADAVG 1
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #if __NetBSD_Version__ >= 600000000
 #define HAS_UTIMENSAT 1
 #endif
+#endif
+#ifdef __OpenBSD__
+#define LOADAVG 1
+#include <sys/param.h>
+#include <sys/sysctl.h>
+// Don't know how to detect OpenBSD version, so HAS_UTIMENSAT not set
 #endif
 
 #include <sys/select.h>
@@ -5569,6 +5583,7 @@ void drain_pipe(struct rule *rule, int fdit)
   }
 }
 
+#ifdef LOADAVG
 double loadavg_limit = 1e100;
 
 int loadavg_check(void)
@@ -5584,6 +5599,7 @@ int loadavg_check(void)
   }
   return 1;
 }
+#endif
 
 void run_loop(void)
 {
@@ -5624,10 +5640,12 @@ back:
   {
     if (children)
     {
+#ifdef LOADAVG
       if (!loadavg_check())
       {
         break;
       }
+#endif
       if (!read_jobserver())
       {
         break;
@@ -5676,10 +5694,12 @@ back:
     FD_SET(self_pipe_fd[0], &readfds);
     if (ruleids_to_run_size > 0)
     {
+#ifdef LOADAVG
       if (loadavg_check())
       {
         FD_SET(jobserver_fd[0], &readfds);
       }
+#endif
     }
     select((locmaxfd > globmaxfd) ? (locmaxfd+1) : (globmaxfd+1),
            &readfds, NULL, NULL, &tv);
@@ -5845,10 +5865,12 @@ back:
     {
       if (children)
       {
+#ifdef LOADAVG
         if (!loadavg_check())
         {
           break;
         }
+#endif
         if (!read_jobserver())
         {
           break;
@@ -6171,6 +6193,7 @@ int main(int argc, char **argv)
       silent = 1;
       break;
     case 'l':
+#ifdef LOADAVG
       if (optarg[0] == 'a') // a for auto
       {
         loadavg_limit = my_get_nprocs();
@@ -6195,6 +6218,10 @@ int main(int argc, char **argv)
           exit(2);
         }
       }
+#else
+      fprintf(stderr, "System does not support load average.\n");
+      exit(2);
+#endif
       break;
     case 'W':
     {
