@@ -1,0 +1,23 @@
+stirmake requires certain non-POSIX operations:
+- mmap() of anonymous memory, MAP_ANON or MAP_ANONYMOUS or /dev/zero
+- potential benefit from MAP_NORESERVE argument to mmap()
+- potential benefit from MADV_DONTNEED / MADV_FREE and madvise()
+- massive benefit from overcommitting memory and lazy demand paging
+
+stirmake uses obsolete setitimer() as opposed to the newer POSIX timer API
+- OpenBSD would probably not support the newer POSIX timer API
+
+stirmake benefits from availability of getloadavg() to enable -l option
+- but works without load averages, disabling -l
+
+stirmake benefits from availability of CPU core count, _SC_NPROCESSORS_ONLN
+- or some other alternate way of getting CPU core count
+- if CPU core count can't be determined, -ja or -la options assume 1 CPU core
+
+stirmake benefits from availability of MSG_DONTWAIT for sockets
+- not having MSG_DONTWAIT leads to very rare slight data race slowdown, if
+  jobserver is shared by stirmake and GNU make, there is a race condition that
+  GNU make can win, causing 10 milliseconds of penalty every time it happens
+
+stirmake benefits from availability of recent POSIX utimensat()
+- if utimensat() is not supported, older utimes() works acceptably
