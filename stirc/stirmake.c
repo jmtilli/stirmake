@@ -539,12 +539,22 @@ size_t sizeof_my_arena;
 void *my_malloc(size_t sz)
 {
   void *result = my_arena_ptr;
-  my_arena_ptr += (sz+7)/8*8;
   if (sz > sizeof_my_arena)
   {
-    fprintf(stderr, "too large alloc: %zu bytes\n", sz);
-    my_abort();
+    if (debug)
+    {
+      print_indent();
+      printf("allocating outside of arena, big allocation, %zu bytes\n", sz);
+    }
+    result = stir_do_mmap_madvise(sz);
+    if (result == NULL)
+    {
+      fprintf(stderr, "too large alloc, out of memory: %zu bytes\n", sz);
+      my_abort();
+    }
+    return result;
   }
+  my_arena_ptr += (sz+7)/8*8;
   if (my_arena_ptr >= my_arena + sizeof_my_arena)
   {
     if (debug)
@@ -553,7 +563,7 @@ void *my_malloc(size_t sz)
       printf("allocating new arena\n");
     }
     my_arena = stir_do_mmap_madvise(sizeof_my_arena);
-    if (my_arena == NULL || my_arena == MAP_FAILED)
+    if (my_arena == NULL)
     {
       errxit("Can't mmap new arena");
       exit(2);
@@ -6132,7 +6142,7 @@ int main(int argc, char **argv)
   do_setrlimit();
 
   sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
-  if (sttable == NULL || sttable == MAP_FAILED)
+  if (sttable == NULL)
   {
     errxit("Can't mmap sttable");
     exit(2);
@@ -6140,7 +6150,7 @@ int main(int argc, char **argv)
 
   sizeof_my_arena = 1024*1024;
   my_arena = stir_do_mmap_madvise(sizeof_my_arena);
-  if (my_arena == NULL || my_arena == MAP_FAILED)
+  if (my_arena == NULL)
   {
     errxit("Can't mmap arena");
     exit(2);
