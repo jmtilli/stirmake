@@ -157,7 +157,6 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 @endfunction
 @call $ADD_LEXX_YACC_DEPS($(LEX_LIB))
 
-# FIXME test breaking long command line to many shorter lines
 @patrule: $(LEXGEN_LIB): '%.lex.c' '%.lex.h': '%.l'
 @	[@$(FLEX), "--outfile=".$@, "--header-file=".@sufsubone($@,".c",".h"), $<]
 
