@@ -91,8 +91,21 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @phonyrule: 'wc':
 @	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@suffilterout(@suffilterout(@glob("*.h"),".lex.h"),".tab.h")]
 
+$FUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
+"strncmp|fmemopen|_exit|puts|ferror|isatty|sigaction|fread|strtod|".\
+"setsockopt|fcntl|setenv|write|getpid|atan|fclose|opendir|rmdir|strlen|".\
+"chdir|mmap|dup2|strchr|snprintf|strrchr|ftruncate|dirname|memset|getcwd|".\
+"close|pipe|log|strspn|closedir|cos|fputc|strcspn|acos|read|memcmp|".\
+"calloc|strcmp|putc|signal|sigemptyset|ftell|feof|strtol|clearerr|memcpy|".\
+"socketpair|kill|fileno|select|readdir|malloc|fflush|tan|fseek|fchdir|".\
+"setrlimit|realloc|munmap|setlocale|poll|waitpid|wctomb|sysconf|open|".\
+"access|fopen|perror|getopt|sin|strtoul|execvp|asin|glob|getppid|exit|".\
+"fwrite|getrlimit|sqrt|strdup|getc|fork|exp|stat|lstat|fstat"
+
 @phonyrule: 'funcs': 'stirmake'
-@	["sh", "-c", "objdump -T stirmake|grep UND|sed 's/.*0000000000000000/0/g'|sed 's/.* //g'|egrep -v '^(getenv|globfree|raise|free|recv|putchar|abort|unlink|round|strncmp|fmemopen|_exit|puts|ferror|isatty|sigaction|fread|strtod|setsockopt|fcntl|setenv|write|getpid|atan|fclose|opendir|rmdir|strlen|chdir|mmap|dup2|strchr|snprintf|strrchr|ftruncate|dirname|memset|getcwd|close|pipe|log|strspn|closedir|cos|fputc|strcspn|acos|read|memcmp|calloc|strcmp|putc|signal|sigemptyset|ftell|feof|strtol|clearerr|memcpy|socketpair|kill|fileno|select|readdir|malloc|fflush|tan|fseek|fchdir|setrlimit|realloc|munmap|setlocale|poll|waitpid|wctomb|sysconf|open|access|fopen|perror|getopt|sin|strtoul|execvp|asin|glob|getppid|exit|fwrite|getrlimit|sqrt|strdup|getc|fork|exp|stat|lstat|fstat)$'"]
+@	["sh", "-c", \
+	"objdump -T stirmake|grep UND|sed 's/.*0000000000000000/0/g'".\
+	"|sed 's/.* //g'|egrep -v '^(".$FUNCLIST.")$'"]
 
 # rm is necessary, since if $@ exists but is not in command database, this
 # has to be executed anyway and ln -s does not create symlink if it exists
