@@ -6722,6 +6722,7 @@ int main(int argc, char **argv)
               deps[k].namenodir = main.rules[i].deps[k].namenodir;
               deps[k].rec = main.rules[i].deps[k].rec;
               deps[k].orderonly = main.rules[i].deps[k].orderonly;
+              deps[k].wait = main.rules[i].deps[k].wait;
               continue;
             }
             locp1 = loc+1;
@@ -6747,6 +6748,7 @@ int main(int argc, char **argv)
             deps[k].namenodir = expdep;
             deps[k].rec = main.rules[i].deps[k].rec;
             deps[k].orderonly = main.rules[i].deps[k].orderonly;
+            deps[k].wait = main.rules[i].deps[k].wait;
             free(namedir);
           }
           if (   main.rules[i].iscleanhook
