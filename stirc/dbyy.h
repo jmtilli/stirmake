@@ -27,10 +27,20 @@ struct dbyyrule {
   size_t cmdscapacity;
 };
 
+struct tsdbentry {
+  char *dir;
+  char *tgt;
+  size_t filesz; // FIXME 64-bit size on 32-bit system
+  struct timespec ts;
+};
+
 struct dbyy {
   struct dbyyrule *rules;
+  struct tsdbentry *tsdb;
   size_t rulesz;
   size_t rulecapacity;
+  size_t tssz;
+  size_t tscapacity;
 };
 
 static inline void dbyy_add_cmd(struct dbyy *dbyy)
@@ -80,6 +90,23 @@ static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const c
   dbyy->rulesz++;
 }
 
+static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *dir, const char *tgt, size_t filesz, time_t sec, long nsec)
+{
+  size_t newcapacity;
+  if (dbyy->tssz >= dbyy->tscapacity)
+  {
+    newcapacity = 2*dbyy->tscapacity + 1;
+    dbyy->tsdb = (struct tsdbentry*)realloc(dbyy->tsdb, sizeof(*dbyy->tsdb)*newcapacity);
+    dbyy->tscapacity = newcapacity;
+  }
+  dbyy->tsdb[dbyy->tssz].dir = strdup(dir);
+  dbyy->tsdb[dbyy->tssz].tgt = strdup(tgt);
+  dbyy->tsdb[dbyy->tssz].filesz = filesz; // FIXME 64-bit size on 32-bit system
+  dbyy->tsdb[dbyy->tssz].ts.tv_sec = sec;
+  dbyy->tsdb[dbyy->tssz].ts.tv_nsec = nsec;
+  dbyy->tssz++;
+}
+
 static inline void dbyy_free(struct dbyy *dbyy)
 {
   size_t i;
@@ -100,6 +127,12 @@ static inline void dbyy_free(struct dbyy *dbyy)
     free(dbyy->rules[i].tgt);
   }
   free(dbyy->rules);
+  for (i = 0; i < dbyy->tssz; i++)
+  {
+    free(dbyy->tsdb[i].dir);
+    free(dbyy->tsdb[i].tgt);
+  }
+  free(dbyy->tsdb);
   memset(dbyy, 0, sizeof(*dbyy));
 }
 

@@ -53,12 +53,14 @@
   }
 }
 [ \t]                            /* ignore whitespaces */;
-.            return ERROR_TOK;
 
 -?[0-9]+ {
   char *endptr;
-  yylval->ull = strtoull(yytext, &endptr, 10);
+  yylval->ll = strtoll(yytext, &endptr, 10);
   return INT_LITERAL;
 }
+
+.          return ERROR_TOK;
+
 
 %%

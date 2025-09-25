@@ -47,7 +47,7 @@ int dbyywrap(yyscan_t scanner)
 %union {
   char *s;
   struct escaped_string str;
-  unsigned long long ull;
+  long long ll;
 }
 
 %token NEWLINE
@@ -58,7 +58,7 @@ int dbyywrap(yyscan_t scanner)
 %token V1
 %token V2
 %token <str> STRING_LITERAL
-%token <ull> INT_LITERAL
+%token <ll> INT_LITERAL
 
 %token ERROR_TOK
 
@@ -140,6 +140,19 @@ dbrulev2: STRING_LITERAL STRING_LITERAL COLON
   NEWLINE
   commands
 | STRING_LITERAL STRING_LITERAL EQUALS INT_LITERAL INT_LITERAL INT_LITERAL NEWLINE
+{
+  if (strlen($1.str) != $1.sz)
+  {
+    fprintf(stderr, "NUL in DB\n");
+    YYABORT;
+  }
+  if (strlen($2.str) != $2.sz)
+  {
+    fprintf(stderr, "NUL in DB\n");
+    YYABORT;
+  }
+  dbyy_emplace_tsdb(dbyy, $1.str, $2.str, $4, $5, $6);
+}
 ;
 
 cmdline: 

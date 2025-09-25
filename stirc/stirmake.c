@@ -221,7 +221,8 @@ struct stringtabentry {
 
 int children = 0;
 
-void merge_db(void);
+void merge_db_v1(void);
+void merge_db_v2(void);
 int ruleid_by_pid_erase(pid_t pid, int *fd);
 void errxit(const char *fmt, ...);
 
@@ -265,8 +266,8 @@ struct tsdbe {
   size_t diridx; // non-key
   struct timespec ts;
   struct timespec tsnew;
-  size_t sz;
-  size_t sznew;
+  size_t sz; // FIXME 64-bit size on 32-bit system
+  size_t sznew; // FIXME 64-bit size on 32-bit system
   int seen;
 };
 
@@ -1238,7 +1239,7 @@ void errxit(const char *fmt, ...)
   pid = waitpid(-1, &wstatus, WNOHANG);
   if (pid < 0 && errno == ECHILD)
   {
-    merge_db();
+    merge_db_v2();
     exit(2);
   }
   if (pid > 0)
@@ -1326,7 +1327,7 @@ void errxit(const char *fmt, ...)
       if (pid < 0 && errno == ECHILD)
       {
         fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
-        merge_db();
+        merge_db_v2();
         exit(2);
       }
       printf("29.E\n");
@@ -5616,9 +5617,19 @@ void load_db(void)
     dbe->cmds = dbyycmd_add(dbyy.rules[i].cmds, dbyy.rules[i].cmdssz);
     ins_dbe(&db, dbe);
   }
+  for (i = 0; i < dbyy.tssz; i++)
+  {
+    struct tsdbe *tsdbe = my_malloc(sizeof(struct tsdbe));
+    tsdbe->stringtabidx = stringtab_add(dbyy.tsdb[i].tgt);
+    tsdbe->diridx = stringtab_add(dbyy.tsdb[i].dir);
+    tsdbe->seen = 0;
+    tsdbe->sz = dbyy.tsdb[i].filesz;
+    tsdbe->ts = dbyy.tsdb[i].ts;
+    ins_tsdbe(&tsdb, tsdbe);
+  }
 }
 
-void merge_db(void)
+void merge_db_v1(void)
 {
   size_t i;
   struct linked_list_node *node;
@@ -5709,6 +5720,130 @@ void merge_db(void)
       }
       fprintf(f, "\n");
     }
+  }
+  fclose(f);
+  f = NULL;
+  dbf = NULL;
+}
+void merge_db_v2(void)
+{
+  size_t i;
+  struct linked_list_node *node;
+  FILE *f;
+  int firstrule = 1;
+  if (test)
+  {
+    return;
+  }
+  for (i = 0; i < rules_size; i++)
+  {
+    struct rule *rule = rules[i];
+    if (!rule->is_actually_executed)
+    {
+      if (rule->is_forked)
+      {
+        LINKED_LIST_FOR_EACH(node, &rule->tgtlist)
+        {
+          struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+          if (debug)
+          {
+            print_indent();
+            printf("removing %s from DB\n", sttable[e->tgtidx].s);
+          }
+          maybe_del_dbe(&db, e->tgtidx);
+        }
+      }
+      continue;
+    }
+    LINKED_LIST_FOR_EACH(node, &rule->tgtlist)
+    {
+      struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      struct dbe *dbe = my_malloc(sizeof(struct dbe));
+      dbe->tgtidx = e->tgtidx;
+      dbe->diridx = rule->diridx;
+      dbe->cmds = rule->cmd;
+      ins_dbe(&db, dbe);
+    }
+  }
+  /*
+  f = fopen(".stir.db", "w");
+  if (f == NULL)
+  {
+    fprintf(stderr, "Can't open .stir.db"); // can't use errxit
+    exit(2);
+  }
+  */
+  f = dbf;
+  fprintf(f, "@v2@\n\n");
+  LINKED_LIST_FOR_EACH(node, &db.ll)
+  {
+    struct dbe *dbe = ABCE_CONTAINER_OF(node, struct dbe, llnode);
+    char ***argiter = dbe->cmds.args;
+    char **oneargiter;
+    // dir tgt:
+    if (firstrule)
+    {
+      firstrule = 0;
+    }
+    else
+    {
+      fprintf(f, "\n");
+    }
+    fprintf(f, "\"");
+    escape_string(f, sttable[dbe->diridx].s);
+    fprintf(f, "\" \"");
+    escape_string(f, sttable[dbe->tgtidx].s);
+    fprintf(f, "\":\n");
+    while (*argiter)
+    {
+      int first = 1;
+      fprintf(f, "\t");
+      oneargiter = *argiter++;
+      while (*oneargiter)
+      {
+        if (first)
+        {
+          first = 0;
+        }
+        else
+        {
+          fprintf(f, " ");
+        }
+        fprintf(f, "\"");
+        escape_string(f, *oneargiter);
+        fprintf(f, "\"");
+        oneargiter++;
+      }
+      fprintf(f, "\n");
+    }
+  }
+  LINKED_LIST_FOR_EACH(node, &tsdb.ll)
+  {
+    struct tsdbe *tsdbe = ABCE_CONTAINER_OF(node, struct tsdbe, llnode);
+    if (!tsdbe->seen)
+    {
+      continue;
+    }
+    // dir tgt:
+    if (firstrule)
+    {
+      firstrule = 0;
+    }
+    else
+    {
+      fprintf(f, "\n");
+    }
+    fprintf(f, "\"");
+    escape_string(f, sttable[tsdbe->diridx].s);
+    fprintf(f, "\" \"");
+    escape_string(f, sttable[tsdbe->stringtabidx].s);
+    fprintf(f, "\" = ");
+    fprintf(f, "%zu", tsdbe->sznew); // FIXME populate, 64/32-bit
+    fprintf(f, " ");
+    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_sec); // FIXME populate
+    fprintf(f, " ");
+    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec); // FIXME populate
+    fprintf(f, "\n");
   }
   fclose(f);
   f = NULL;
@@ -7232,7 +7367,7 @@ int main(int argc, char **argv)
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
-      merge_db();
+      merge_db_v2();
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
@@ -7406,7 +7541,7 @@ int main(int argc, char **argv)
     printf("  rule: %zu\n", rule_cnt);
     printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
-  merge_db();
+  merge_db_v2();
 #if 0
   free(dupargv0);
   stiryy_main_free(&main);
