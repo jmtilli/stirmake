@@ -221,6 +221,7 @@ struct stringtabentry {
 
 int children = 0;
 
+void merge_db(void);
 void merge_db_v1(void);
 void merge_db_v2(void);
 int ruleid_by_pid_erase(pid_t pid, int *fd);
