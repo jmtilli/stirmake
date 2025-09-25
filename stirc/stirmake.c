@@ -917,7 +917,7 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
   if (n == NULL)
   {
-    tsdbe = my_malloc(sizeof(struct dbe));
+    tsdbe = my_malloc(sizeof(struct tsdbe));
     tsdbe->stringtabidx = stringtabidx;
     tsdbe->diridx = diridx;
     tsdbe->tsnew = ts;
