@@ -263,7 +263,6 @@ struct tsdbe {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
   size_t stringtabidx;
-  size_t diridx; // non-key
   struct timespec ts;
   struct timespec tsnew;
   size_t sz; // FIXME 64-bit size on 32-bit system
@@ -906,7 +905,42 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   return 1;
 }
 
-int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, size_t sz)
+int get_ruleid_by_tgt(size_t tgt);
+
+int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t sz)
+{
+  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  struct abce_rb_tree_nocmp *head;
+  struct abce_rb_tree_node *n;
+  struct tsdbe *tsdbe;
+  const char *tgtsrc = "source";
+  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
+  if (get_ruleid_by_tgt(stringtabidx) >= 0)
+  {
+    //return 0; // it's target too
+  }
+  if (n == NULL)
+  {
+    tsdbe = my_malloc(sizeof(struct tsdbe));
+    tsdbe->stringtabidx = stringtabidx;
+    tsdbe->tsnew = ts;
+    tsdbe->ts = ts;
+    tsdbe->sznew = sz;
+    tsdbe->sz = sz;
+    tsdbe->seen = 1;
+    ins_tsdbe(tsdb, tsdbe);
+    return 0;
+  }
+  tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
+  tsdbe->tsnew = ts;
+  tsdbe->ts = ts;
+  tsdbe->sznew = sz;
+  tsdbe->sz = sz;
+  tsdbe->seen = 1;
+  return 1;
+}
+int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t sz)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -919,7 +953,6 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   {
     tsdbe = my_malloc(sizeof(struct tsdbe));
     tsdbe->stringtabidx = stringtabidx;
-    tsdbe->diridx = diridx;
     tsdbe->tsnew = ts;
     tsdbe->ts = ts;
     tsdbe->sznew = sz;
@@ -929,21 +962,6 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
     return 0;
   }
   tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
-  if (tsdbe->diridx != diridx)
-  {
-    if (debug)
-    {
-      print_indent();
-      printf("%s %s has different dir in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
-    }
-    tsdbe->diridx = diridx;
-    tsdbe->tsnew = ts;
-    tsdbe->ts = ts;
-    tsdbe->sznew = sz;
-    tsdbe->sz = sz;
-    tsdbe->seen = 1;
-    return 0;
-  }
   tsdbe->tsnew = ts;
   tsdbe->ts = ts;
   tsdbe->sznew = sz;
@@ -973,15 +991,6 @@ int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, siz
     return 0;
   }
   tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
-  if (tsdbe->diridx != diridx && istarget) // dependencies are not diridx'd
-  {
-    if (debug)
-    {
-      print_indent();
-      printf("%s %s has different dir in tssz DB\n", tgtsrc, sttable[stringtabidx].s);
-    }
-    return 0;
-  }
   if (!istarget)
   {
     tsdbe->tsnew = ts;
@@ -4212,6 +4221,10 @@ int do_exec(int ruleid)
         {
           if (!tsszequal_db(&tsdb, e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
           {
+            if (do_trace)
+            {
+              trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " tsdb mismatch");
+            }
             has_to_exec = 1;
             continue;
           }
@@ -4270,6 +4283,10 @@ int do_exec(int ruleid)
               {
                 if (!tsszequal_db(&tsdb, e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
                 {
+                  if (do_trace)
+                  {
+                    trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " tsdb mismatch of dependency '%s'", sttable[e->nameidx].s);
+                  }
                   has_to_exec = 1;
                   continue;
                 }
@@ -4344,6 +4361,10 @@ int do_exec(int ruleid)
         {
           if (!tsszequal_db(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
           {
+            if (do_trace)
+            {
+              trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " tsdb mismatch");
+            }
             has_to_exec = 1;
             continue;
           }
@@ -4787,8 +4808,18 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target %s was not updated by rule", sttable[e->tgtidx].s);
       }
-      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size);
+      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
     }
+  }
+  LINKED_LIST_FOR_EACH(node, &r->deplist)
+  {
+    struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+    struct stat statbuf;
+    if (lstat(sttable[e->nameidx].s, &statbuf) != 0)
+    {
+      continue;
+    }
+    tsszstoresource(&tsdb, e->nameidx, statbuf.st_mtim, statbuf.st_size);
   }
   /* FIXME we need to handle:
    * a: b
@@ -5624,7 +5655,6 @@ void load_db(void)
   {
     struct tsdbe *tsdbe = my_malloc(sizeof(struct tsdbe));
     tsdbe->stringtabidx = stringtab_add(dbyy.tsdb[i].tgt);
-    tsdbe->diridx = stringtab_add(dbyy.tsdb[i].dir);
     tsdbe->seen = 0;
     tsdbe->sz = dbyy.tsdb[i].filesz;
     tsdbe->ts = dbyy.tsdb[i].ts;
@@ -5837,8 +5867,6 @@ void merge_db_v2(void)
       fprintf(f, "\n");
     }
     fprintf(f, "\"");
-    escape_string(f, sttable[tsdbe->diridx].s);
-    fprintf(f, "\" \"");
     escape_string(f, sttable[tsdbe->stringtabidx].s);
     fprintf(f, "\" = ");
     fprintf(f, "%zu", tsdbe->sznew); // FIXME populate, 64/32-bit
