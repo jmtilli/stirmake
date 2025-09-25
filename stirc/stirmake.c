@@ -973,7 +973,7 @@ int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, siz
     return 0;
   }
   tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
-  if (tsdbe->diridx != diridx)
+  if (tsdbe->diridx != diridx && istarget) // dependencies are not diridx'd
   {
     if (debug)
     {
@@ -4754,7 +4754,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       }
     }
   }
-  else if (!r->is_phony && !r->is_maybe && !r->is_inc && !dry_run)
+  else if (!r->is_phony && !r->is_inc && !dry_run)
   {
     struct stat statbuf;
     int seen_pretend = 0;
@@ -4769,7 +4769,7 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0 && !seen_pretend)
+      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0 && !seen_pretend && !r->is_maybe)
       {
         fprintf(stderr, "stirmake: *** Target %s was not created by rule.\n",
                sttable[e->tgtidx].s);
@@ -4778,7 +4778,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target %s was not created by rule", sttable[e->tgtidx].s);
       }
-      if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0 && !seen_pretend)
+      if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0 && !seen_pretend && !r->is_maybe)
       {
         fprintf(stderr, "stirmake: *** Target %s was not updated by rule.\n",
                sttable[e->tgtidx].s);
