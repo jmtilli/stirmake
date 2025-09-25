@@ -70,7 +70,7 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
-#undef TSDB
+#define TSDB
 
 int silent = 0;
 int touchmode = 0;
