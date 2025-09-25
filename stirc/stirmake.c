@@ -266,8 +266,8 @@ struct tsdbe {
   size_t stringtabidx;
   struct timespec ts;
   struct timespec tsnew;
-  size_t sz; // FIXME 64-bit size on 32-bit system
-  size_t sznew; // FIXME 64-bit size on 32-bit system
+  off_t sz;
+  off_t sznew;
   int seen;
 };
 
@@ -908,7 +908,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
 
 int get_ruleid_by_tgt(size_t tgt);
 
-int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t sz)
+int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, off_t sz)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -941,7 +941,7 @@ int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   tsdbe->seen = 1;
   return 1;
 }
-int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t sz)
+int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, off_t sz)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -973,7 +973,7 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
 
 int ts_cmp(struct timespec ta, struct timespec tb);
 
-int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, size_t sz, int istarget)
+int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, off_t sz, int istarget)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -3537,7 +3537,7 @@ struct stathashentry {
   int ret;
   mode_t st_mode;
   struct timespec st_mtim;
-  size_t st_size;
+  off_t st_size;
 };
 struct abce_rb_tree_nocmp stathash[STATHASH_SIZE];
 struct stathashentry stathashentries[STATHASH_SIZE];

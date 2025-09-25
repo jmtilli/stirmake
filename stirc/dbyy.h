@@ -30,7 +30,7 @@ struct dbyyrule {
 struct tsdbentry {
   char *dir;
   char *tgt;
-  size_t filesz; // FIXME 64-bit size on 32-bit system
+  off_t filesz;
   struct timespec ts;
 };
 
@@ -90,7 +90,7 @@ static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const c
   dbyy->rulesz++;
 }
 
-static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, size_t filesz, time_t sec, long nsec)
+static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, off_t filesz, time_t sec, long nsec)
 {
   size_t newcapacity;
   if (dbyy->tssz >= dbyy->tscapacity)
@@ -100,7 +100,7 @@ static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, size_t 
     dbyy->tscapacity = newcapacity;
   }
   dbyy->tsdb[dbyy->tssz].tgt = strdup(tgt);
-  dbyy->tsdb[dbyy->tssz].filesz = filesz; // FIXME 64-bit size on 32-bit system
+  dbyy->tsdb[dbyy->tssz].filesz = filesz;
   dbyy->tsdb[dbyy->tssz].ts.tv_sec = sec;
   dbyy->tsdb[dbyy->tssz].ts.tv_nsec = nsec;
   dbyy->tssz++;
