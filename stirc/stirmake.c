@@ -5870,11 +5870,11 @@ void merge_db_v2(void)
     fprintf(f, "\"");
     escape_string(f, sttable[tsdbe->stringtabidx].s);
     fprintf(f, "\" = ");
-    fprintf(f, "%zu", tsdbe->sznew); // FIXME populate, 64/32-bit
+    fprintf(f, "%lld", (long long)tsdbe->sznew);
     fprintf(f, " ");
-    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_sec); // FIXME populate
+    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_sec);
     fprintf(f, " ");
-    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec); // FIXME populate
+    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec);
     fprintf(f, "\n");
   }
   fclose(f);
