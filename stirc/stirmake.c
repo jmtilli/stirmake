@@ -70,7 +70,7 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
-#define TSDB
+int usetsdb = 1;
 
 int silent = 0;
 int touchmode = 0;
@@ -1239,7 +1239,7 @@ void errxit(const char *fmt, ...)
   pid = waitpid(-1, &wstatus, WNOHANG);
   if (pid < 0 && errno == ECHILD)
   {
-    merge_db_v2();
+    merge_db();
     exit(2);
   }
   if (pid > 0)
@@ -1327,7 +1327,7 @@ void errxit(const char *fmt, ...)
       if (pid < 0 && errno == ECHILD)
       {
         fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
-        merge_db_v2();
+        merge_db();
         exit(2);
       }
       printf("29.E\n");
@@ -4208,13 +4208,14 @@ int do_exec(int ruleid)
           //break; // can't break, has to compare all commands from DB
           continue;
         }
-#ifdef TSDB
-        if (!tsszequal_db(&tsdb, e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
+        if (usetsdb)
         {
-          has_to_exec = 1;
-          continue;
+          if (!tsszequal_db(&tsdb, e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
+          {
+            has_to_exec = 1;
+            continue;
+          }
         }
-#endif
         if (debug)
         {
           print_indent();
@@ -4265,13 +4266,14 @@ int do_exec(int ruleid)
               {
                 continue;
               }
-#ifdef TSDB
-              if (!tsszequal_db(&tsdb, e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
+              if (usetsdb)
               {
-                has_to_exec = 1;
-                continue;
+                if (!tsszequal_db(&tsdb, e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
+                {
+                  has_to_exec = 1;
+                  continue;
+                }
               }
-#endif
               if (ts_cmp(st_mtimtgt, she->st_mtim) < 0)
               {
                 if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
@@ -4338,13 +4340,14 @@ int do_exec(int ruleid)
           has_to_exec = 1;
           break;
         }
-#ifdef TSDB
-        if (!tsszequal_db(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
+        if (usetsdb)
         {
-          has_to_exec = 1;
-          continue;
+          if (!tsszequal_db(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
+          {
+            has_to_exec = 1;
+            continue;
+          }
         }
-#endif
       }
     }
     if (has_to_exec && (r->cmd.args[0] != NULL && !seen_no_remake) && do_trace)
@@ -5849,7 +5852,17 @@ void merge_db_v2(void)
   f = NULL;
   dbf = NULL;
 }
-
+void merge_db(void)
+{
+  if (usetsdb)
+  {
+    merge_db_v2();
+  }
+  else
+  {
+    merge_db_v1();
+  }
+}
 
 void create_pipe(int jobcnt)
 {
@@ -6580,10 +6593,16 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TR")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReE")) != -1)
   {
     switch (opt)
     {
+    case 'e':
+      usetsdb = 0;
+      break;
+    case 'E':
+      usetsdb = 1;
+      break;
     case 'C':
       if (chdir(optarg) != 0)
       {
@@ -7367,7 +7386,7 @@ int main(int argc, char **argv)
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
-      merge_db_v2();
+      merge_db();
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
@@ -7541,7 +7560,7 @@ int main(int argc, char **argv)
     printf("  rule: %zu\n", rule_cnt);
     printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
-  merge_db_v2();
+  merge_db();
 #if 0
   free(dupargv0);
   stiryy_main_free(&main);
