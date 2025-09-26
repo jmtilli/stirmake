@@ -219,6 +219,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token <d> NUMBER
 %token <s> VARREF_LITERAL
 %token <s> FREEFORM_TOKEN
+%token <s> FUTURE_BUILTIN
 %token MAYBE_CALL
 %token CALL
 %token LT
@@ -567,8 +568,45 @@ custom_stmt:
 }
 ;
 
+maybe_future_arglist:
+| OPEN_PAREN maybe_future_arglist2 CLOSE_PAREN;
+
+maybe_future_arglist2:
+| expr maybe_future_argtail;
+
+maybe_future_argtail:
+| COMMA expr maybe_future_argtail;
+
 custom_expr0:
-  DIRUP
+  FUTURE_BUILTIN maybe_future_arglist
+{
+  // To allow non-emitting locations like if branches to have future builtins
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    fprintf(stderr, "Builtin %s not supported\n", $1);
+    YYABORT;
+  }
+}
+| VERSION OPEN_PAREN STRING_LITERAL CLOSE_PAREN
+{
+  // Checking whether stirmake git commit X is in use, to allow putting future
+  // built-in constructs inside these, with the previous FUTURE_BUILTIN rule.
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    int i;
+    int found = 0;
+    for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
+    {
+      if (strcmp($3.str, gitshas[i]) == 0 && strlen($3.str) == $3.sz)
+      {
+        found = 1;
+      }
+    }
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, found);
+  }
+}
+| DIRUP
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_TOP_DIR);
 }

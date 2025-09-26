@@ -388,6 +388,7 @@ struct CSnippet luaSnippet = {
 }
 <INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
 <INITIAL,STRICT>.            return ERROR_TOK;
+<INITIAL,STRICT>@[A-Za-z0-9]+ { yylval->s = strdup(yytext); return FUTURE_BUILTIN; }
 
 
 %%
