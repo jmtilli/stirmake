@@ -32,7 +32,7 @@ language, and Shake uses a strange Haskell-based input syntax.
 * Dependency on a whole directory hierarchy, using its latest mtime
 * Compatibility with `gcc -M` format dependency files
 * Conditional compilaton
-* Build command database, with dependency on build command
+* Build command, timestamp and file size database, with dependency on build command and file information
 * Automatically deduced cleaning rules
 * Fast bytecode based variable expansion
 * Many sanity checks; some fatal errors, some helpful suggestions
@@ -352,15 +352,17 @@ files to be ignored, so that compiling works in a freshly cloned or cleaned
 directory. Usually all of `@autophony`, `@autotarget` and `@ignore` should be
 used.
 
-## Build command database
+## Build command, timestamp and file size database
 
-Stirmake automatically stores a list of commands used to build targets into the
-file `.stir.db`. Whenever a command fails, it is removed from `.stir.db`;
-whenever a command succeeds, it is added/updated to `.stir.db`.
+Stirmake automatically stores a list of commands used to build targets and
+timestamps and file sizes of sources and targets into the file `.stir.db`.
+Whenever a command fails, it is removed from `.stir.db`; whenever a command
+succeeds, it is added/updated to `.stir.db`.
 
-All rules depend on the exact command used to build the targets. If the command
-has changed, a re-build for the rule is done even though all targets may be
-up-to-date based on mtime.
+All rules depend on the exact command used to build the targets, and the exact
+source and target timestamp and file size information. If the command, size or
+timestamp has changed, a re-build for the rule is done even though all targets
+may be up-to-date based on mtime.
 
 Because of this property, `stirmake` should never require `make clean`, and one
 does not need an explicit dependency on `Stirfile` for all rules.
