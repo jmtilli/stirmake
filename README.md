@@ -369,6 +369,33 @@ does not need an explicit dependency on `Stirfile` for all rules.
 
 ## Examples
 
+Today, the best examples of stirmake are the following projects that use Stirmake:
+
+* https://github.com/Aalto5G/nmsynproxy
+* https://github.com/Aalto5G/ldpairwall
+* https://github.com/Aalto5G/cghcpcli
+* https://github.com/Aalto5G/pptk
+* https://github.com/Aalto5G/yale
+* https://github.com/Aalto5G/stirmake
+* https://github.com/Aalto5G/abce
+* https://github.com/jmtilli/caj
+* https://github.com/jmtilli/streamingatof
+* https://github.com/jmtilli/prettyftoa
+* https://github.com/jmtilli/camftpd
+* https://github.com/jmtilli/rlctrans
+* https://github.com/jmtilli/mploop
+* https://github.com/jmtilli/quictest
+* https://github.com/jmtilli/fastdiv
+* https://github.com/jmtilli/jmalloc
+
+Some of them, like jmalloc, fastdiv, mploop are very simple. There are
+submodules in nmsynproxy, ldpairwall, cghcpcli and stirmake. Also camftpd has
+an external submodule with GNU make based build system that is invoked from
+stirmake, showing the interoperability of stirmake with GNU make.
+
+Of these, nmsynproxy, ldpairwall, cghcpcli and pptk use programmatic creation
+of rules, eliminating a lot of boilerplate explicitly specified rules.
+
 ## LuaJIT integration
 
 ## GNU make jobserver integration
