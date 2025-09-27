@@ -5,10 +5,17 @@ if [ '!' -x "stirmake" ]; then
   exit 1
 fi
 
+RELOGIN=0
+ISLOCAL=0
 PREFIX="$1"
 
 if [ "a$PREFIX" = "a" ]; then
   PREFIX=~/.local
+  ISLOCAL=1
+  if [ '!' -d "$PREFIX" ]; then
+    RELOGIN=1
+  fi
+  mkdir -p "$PREFIX"
 fi
 
 P="$PREFIX"
@@ -62,6 +69,11 @@ instmansym()
 }
 
 # Ensure bin directory is there
+if [ "$ISLOCAL" = "1" ]; then
+  if [ '!' -d "$P"/bin ]; then
+    RELOGIN=1
+  fi
+fi
 mkdir -p "$P/bin" || exit 1
 
 # Install binary
@@ -81,3 +93,6 @@ instmansym smkp 1
 instmansym smkt 1
 
 echo "All done, stirmake has been installed to $P"
+if [ "$RELOGIN" = "1" ]; then
+  echo "As ~/.local/bin did not exist, you may need to re-log-in"
+fi
