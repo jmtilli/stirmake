@@ -100,7 +100,7 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 "socketpair|kill|fileno|select|readdir|malloc|fflush|tan|fseek|fchdir|".\
 "setrlimit|realloc|munmap|setlocale|poll|waitpid|wctomb|sysconf|open|".\
 "access|fopen|perror|getopt|sin|strtoul|execvp|asin|glob|getppid|exit|".\
-"fwrite|getrlimit|sqrt|strdup|getc|fork|exp|stat|lstat|fstat"
+"fwrite|getrlimit|sqrt|strdup|getc|fork|exp|stat|lstat|fstat|strtoll"
 # Suspicious functions not listed above:
 # - setitimer (deprecated)
 # - madvise/getloadavg (non-POSIX)
