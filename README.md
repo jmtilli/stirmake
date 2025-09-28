@@ -388,13 +388,14 @@ Today, the best examples of stirmake are the following projects that use Stirmak
 * https://github.com/jmtilli/fastdiv
 * https://github.com/jmtilli/jmalloc
 
-Some of them, like jmalloc, fastdiv, mploop are very simple. There are
+Some of them, like jmalloc, mploop and rlctrans are very simple. There are
 submodules in nmsynproxy, ldpairwall, cghcpcli, stirmake and caj. Also camftpd
 has an external submodule with GNU make based build system that is invoked from
 stirmake, showing the interoperability of stirmake with GNU make.
 
-Of these, nmsynproxy, ldpairwall, cghcpcli, pptk and yale use programmatic
-creation of rules, eliminating a lot of boilerplate explicitly specified rules.
+Of these, nmsynproxy, ldpairwall, cghcpcli, pptk, yale and fastdiv use
+programmatic creation of rules, eliminating a lot of boilerplate explicitly
+specified rules.
 
 ## LuaJIT integration
 
