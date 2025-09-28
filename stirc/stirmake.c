@@ -5284,7 +5284,7 @@ char *dir_up(char *old)
   return canonized;
 }
 
-void run_loop(void);
+void run_loop(int printnothing);
 
 int deps_remain_calculated = 0;
 
@@ -5400,7 +5400,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     deps_remain_calculated = 1;
   }
 
-  run_loop();
+  run_loop(0);
   for (i = 0; i < rules_size; i++)
   {
     int doit = all;
@@ -6035,7 +6035,7 @@ int loadavg_check(void)
 }
 #endif
 
-void run_loop(void)
+void run_loop(int printnothing)
 {
   struct linked_list_node *node;
 back:
@@ -6061,7 +6061,10 @@ back:
     }
     if (!silent)
     {
-      fprintf(stderr, "stirmake: Nothing to be done.\n");
+      if (printnothing)
+      {
+        fprintf(stderr, "stirmake: Nothing to be done.\n");
+      }
     }
     goto out;
   }
@@ -7571,7 +7574,7 @@ int main(int argc, char **argv)
     }
   }
 
-  run_loop();
+  run_loop(1);
 
   if (debug)
   {
