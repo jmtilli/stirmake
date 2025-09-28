@@ -32,6 +32,14 @@
 #define HAS_UTIMENSAT 1
 #endif
 #endif
+#ifdef __DragonFly__
+#define LOADAVG 1
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#if __DragonFly_version >= 400100
+#define HAS_UTIMENSAT 1
+#endif
+#endif
 #ifdef __linux__
 #define LOADAVG 1
 #include <sys/sysinfo.h>
@@ -599,7 +607,7 @@ void *stir_do_mmap_madvise(size_t bytes)
   #endif
 #endif
 #ifdef MADV_FREE
-  #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+  #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
   if (ptr && ptr != MAP_FAILED)
   {
     madvise(ptr, bytes, MADV_FREE); // *BSD-ism
@@ -6403,8 +6411,20 @@ int my_get_nprocs_impl(void)
   }
   return count;
         #else
+          #ifdef __DragonFly__
+  int count = 1;
+  size_t count_len = sizeof(count);
+  if (sysctlbyname("hw.ncpu", &count, &count_len, NULL, 0) != 0 ||
+      count < 1)
+  {
+    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
+    return 1;
+  }
+  return count;
+	  #else
   fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
   return 1;
+	  #endif
         #endif
       #endif
     #endif
