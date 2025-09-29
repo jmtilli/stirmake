@@ -1565,7 +1565,7 @@ statement:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if ($1 != ABCE_OPCODE_DICTSET_MAINTAIN)
+    if ($1 != ABCE_OPCODE_DICTGET)
     {
       printf("Can remove only from dict\n");
       YYABORT;
