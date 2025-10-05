@@ -237,7 +237,7 @@ As an example, the following are equal:
 
 * `cd project/dir/subproj/subdir; smkt ../all`
 * `cd project/dir/subproj/subdir; smkp all`
-* `cd project/dir/subproj/subdir; smka project/dir/subproj/all`
+* `cd project/dir/subproj/subdir; smka dir/subproj/all`
 
 where it is assumed that all of the Stirfiles include a phony target `all`.
 
