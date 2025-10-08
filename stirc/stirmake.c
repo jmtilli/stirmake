@@ -5864,6 +5864,24 @@ void merge_db_v2(void)
     struct tsdbe *tsdbe = ABCE_CONTAINER_OF(node, struct tsdbe, llnode);
     if (!tsdbe->seen)
     {
+      // dir tgt:
+      if (firstrule)
+      {
+        firstrule = 0;
+      }
+      else
+      {
+        fprintf(f, "\n");
+      }
+      fprintf(f, "\"");
+      escape_string(f, sttable[tsdbe->stringtabidx].s);
+      fprintf(f, "\" = ");
+      fprintf(f, "%lld", (long long)tsdbe->sz);
+      fprintf(f, " ");
+      fprintf(f, "%lld", (long long)tsdbe->ts.tv_sec);
+      fprintf(f, " ");
+      fprintf(f, "%lld", (long long)tsdbe->ts.tv_nsec);
+      fprintf(f, "\n");
       continue;
     }
     // dir tgt:
