@@ -312,6 +312,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 
 
 %token DIRUP DIRDOWN
+%token DIRUPALL DIRDOWNALL
 
 %token IF
 %token ELSE
@@ -613,6 +614,14 @@ custom_expr0:
 | DIRDOWN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_CUR_DIR_FROM_TOP);
+}
+| DIRUPALL
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_TOP_DIR_ALL);
+}
+| DIRDOWNALL
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_CUR_DIR_FROM_TOP_ALL);
 }
 | SUFSUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {

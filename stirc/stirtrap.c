@@ -2026,6 +2026,64 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
       abce_cpop(abce);
       return 0;
+    case STIR_OPCODE_TOP_DIR_ALL:
+      if (abce_scope_get_userdata(&abce->dynscope))
+      {
+        prefix =
+          ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+      }
+      else
+      {
+        prefix = ".";
+      }
+      if (prefix == NULL)
+      {
+        prefix = ".";
+      }
+      backpath = construct_backpath(prefix);
+      mb = abce_mb_cpush_create_string(abce, backpath, strlen(backpath));
+      free(backpath);
+      if (mb == NULL)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, mb) != 0)
+      {
+        abce->err.code = ABCE_E_STACK_OVERFLOW;
+	abce_mb_errreplace_noinline(abce, mb);
+        abce_cpop(abce);
+        return -EOVERFLOW;
+      }
+      abce_cpop(abce);
+      return 0;
+    case STIR_OPCODE_CUR_DIR_FROM_TOP_ALL:
+      if (abce_scope_get_userdata(&abce->dynscope))
+      {
+        prefix =
+          ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+      }
+      else
+      {
+        prefix = ".";
+      }
+      if (prefix == NULL)
+      {
+        prefix = ".";
+      }
+      mb = abce_mb_cpush_create_string(abce, prefix, strlen(prefix));
+      if (mb == NULL)
+      {
+        return -ENOMEM;
+      }
+      if (abce_push_mb(abce, mb) != 0)
+      {
+        abce->err.code = ABCE_E_STACK_OVERFLOW;
+	abce_mb_errreplace_noinline(abce, mb);
+        abce_cpop(abce);
+        return -EOVERFLOW;
+      }
+      abce_cpop(abce);
+      return 0;
     case STIR_OPCODE_SHELL_ESCAPE:
       {
         struct abce_mb *mbarg, *mbnew;

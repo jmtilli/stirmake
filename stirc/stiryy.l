@@ -215,6 +215,8 @@ struct CSnippet luaSnippet = {
 
 <INITIAL,STRICT>@dirup return DIRUP;
 <INITIAL,STRICT>@dirdown return DIRDOWN;
+<INITIAL,STRICT>@dirupall return DIRUPALL;
+<INITIAL,STRICT>@dirdownall return DIRDOWNALL;
 
 <INITIAL,STRICT>@addrule   return ADD_RULE;
 <INITIAL,STRICT>@adddeps   return ADD_DEPS;
