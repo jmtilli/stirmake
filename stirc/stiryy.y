@@ -254,8 +254,10 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token GLOB
 %token JSONIN
 %token SUFSUBONE
+%token PRESUBONE
 %token STRAPPEND
 %token SUFSUBALL
+%token PRESUBALL
 %token PHONYRULE
 %token MAYBERULE
 %token DISTRULE
@@ -627,6 +629,10 @@ custom_expr0:
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBONE);
 }
+| PRESUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PRESUBONE);
+}
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFFILTER);
@@ -638,6 +644,10 @@ custom_expr0:
 | SUFSUBALL OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFSUBALL);
+}
+| PRESUBALL OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PRESUBALL);
 }
 | PATHSUFFIX OPEN_PAREN expr CLOSE_PAREN
 {

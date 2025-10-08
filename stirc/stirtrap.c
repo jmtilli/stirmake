@@ -1582,6 +1582,81 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_cpop(abce);
       return 0;
     }
+    case STIR_OPCODE_PRESUBALL:
+    {
+      struct abce_mb *oldpre;
+      struct abce_mb *newpre;
+      struct abce_mb *bases;
+      struct abce_mb *newstr;
+      struct abce_mb *mods;
+      size_t bcnt, bsz, osz, nsz, i;
+      VERIFYMB(-1, ABCE_T_S); // newprefix
+      VERIFYMB(-2, ABCE_T_S); // oldprefix
+      VERIFYMB(-3, ABCE_T_A); // bases
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
+      {
+        return -ENOMEM;
+      }
+      GETMBPTR(&newpre, -1);
+      GETMBPTR(&oldpre, -2);
+      GETMBPTR(&bases, -3);
+      bcnt = bases->u.area->u.ar.size;
+      osz = oldpre->u.area->u.str.size;
+      nsz = newpre->u.area->u.str.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_cpop(abce);
+          return -EINVAL;
+        }
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        if (   bsz < osz
+            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[0],
+                      oldpre->u.area->u.str.buf, osz) != 0)
+        {
+          fprintf(stderr, "stirmake: %s does not begin with %s\n",
+                  bases->u.area->u.ar.mbs[i].u.area->u.str.buf,
+                  oldpre->u.area->u.str.buf);
+          abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
+          abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_cpop(abce);
+          return -EINVAL;
+        }
+      }
+      for (i = 0; i < bcnt; i++)
+      {
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        newstr = abce_mb_cpush_create_string_to_be_filled(abce, bsz-osz+nsz);
+        if (newstr == NULL)
+        {
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -ENOMEM;
+        }
+        memcpy(newstr->u.area->u.str.buf, newpre->u.area->u.str.buf, nsz);
+        memcpy(newstr->u.area->u.str.buf + nsz, bases->u.area->u.ar.mbs[i].u.area->u.str.buf+osz, bsz - osz);
+        newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+        if (abce_mb_array_append(abce, mods, newstr) != 0)
+        {
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          abce_cpop(abce);
+          return -ENOMEM;
+        }
+        abce_cpop(abce);
+      }
+      abce_npoppush(abce, 3, mods);
+      abce_cpop(abce);
+      return 0;
+    }
     case STIR_OPCODE_PATHSIMPLIFY:
     {
       struct abce_mb *base;
@@ -1766,6 +1841,47 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       memcpy(newstr->u.area->u.str.buf, base->u.area->u.str.buf, bsz-osz);
       memcpy(newstr->u.area->u.str.buf + (bsz - osz),
              newsuf->u.area->u.str.buf, nsz);
+      newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+      abce_npoppush(abce, 3, newstr);
+      abce_cpop(abce);
+      return 0;
+    }
+    case STIR_OPCODE_PRESUBONE:
+    {
+      struct abce_mb *oldpre;
+      struct abce_mb *newpre;
+      struct abce_mb *base;
+      struct abce_mb *newstr;
+      size_t bsz, osz, nsz;
+      VERIFYMB(-1, ABCE_T_S); // newprefix
+      VERIFYMB(-2, ABCE_T_S); // oldprefix
+      VERIFYMB(-3, ABCE_T_S); // base
+      GETMBPTR(&newpre, -1);
+      GETMBPTR(&oldpre, -2);
+      GETMBPTR(&base, -3);
+      bsz = base->u.area->u.str.size;
+      osz = oldpre->u.area->u.str.size;
+      nsz = newpre->u.area->u.str.size;
+      if (   bsz < osz
+          || memcmp(&base->u.area->u.str.buf[0], oldpre->u.area->u.str.buf,
+                    osz) != 0)
+      {
+        fprintf(stderr, "stirmake: %s does not begin with %s\n",
+                base->u.area->u.str.buf, oldpre->u.area->u.str.buf);
+        abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
+        abce_mb_errreplace_noinline(abce, base);
+        return -EINVAL;
+      }
+      newstr = abce_mb_cpush_create_string_to_be_filled(abce, bsz-osz+nsz);
+      if (newstr == NULL)
+      {
+        abce_pop(abce);
+        abce_pop(abce);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      memcpy(newstr->u.area->u.str.buf, newpre->u.area->u.str.buf, nsz);
+      memcpy(newstr->u.area->u.str.buf + nsz, base->u.area->u.str.buf+osz, bsz - osz);
       newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
       abce_npoppush(abce, 3, newstr);
       abce_cpop(abce);
