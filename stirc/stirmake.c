@@ -7057,7 +7057,7 @@ int main(int argc, char **argv)
         {
           char *base = main.rules[i].bases[j].name;
           char *basenodir = main.rules[i].bases[j].namenodir;
-          char *tgt = main.rules[i].targets[0].name;
+          char *tgt = main.rules[i].targets[0].namenodir;
           struct tgt *tgts;
           struct dep *deps;
           char *loc, *locp1;
@@ -7092,7 +7092,7 @@ int main(int argc, char **argv)
           tgts[0].namenodir = basenodir;
           for (k = 1; k < main.rules[i].targetsz; k++)
           {
-            char *tgt = main.rules[i].targets[k].name;
+            char *tgt = main.rules[i].targets[k].namenodir;
             size_t exptgtsz; // expanded target size
             char *exptgt;
             size_t namedirsz;
