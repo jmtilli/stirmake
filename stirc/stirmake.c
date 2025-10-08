@@ -4226,7 +4226,7 @@ int do_exec(int ruleid)
           //break; // can't break, has to compare all commands from DB
           continue;
         }
-        if (usetsdb)
+        if (usetsdb && !S_ISDIR(she->st_mode))
         {
           if (!tsszequal_db(&tsdb, e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
           {
@@ -4366,7 +4366,7 @@ int do_exec(int ruleid)
           has_to_exec = 1;
           break;
         }
-        if (usetsdb)
+        if (usetsdb && !S_ISDIR(statbuf.st_mode))
         {
           if (!tsszequal_db(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
           {
