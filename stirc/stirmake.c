@@ -7146,7 +7146,8 @@ int main(int argc, char **argv)
           }
           for (k = 0; k < main.rules[i].depsz; k++)
           {
-            char *dep = main.rules[i].deps[k].name;
+            char *dep = main.rules[i].deps[k].namenodir;
+            //char *dep = main.rules[i].deps[k].name;
             size_t expdepsz; // expanded target size
             char *expdep;
             size_t namedirsz;
@@ -7159,7 +7160,17 @@ int main(int argc, char **argv)
             loc = strchr(dep, '%');
             if (loc == NULL)
             {
-              deps[k].name = dep;
+              char *prefixdep;
+              size_t prefixdepsz;
+              prefixdepsz = prefixlen+strlen(dep)+2;
+              prefixdep = malloc(prefixdepsz);
+              if (snprintf(prefixdep, prefixdepsz, "%s/%s", prefix, dep) >=
+                  prefixdepsz)
+              {
+                my_abort();
+              }
+              deps[k].name = canon(prefixdep);
+              free(prefixdep);
               deps[k].namenodir = main.rules[i].deps[k].namenodir;
               deps[k].rec = main.rules[i].deps[k].rec;
               deps[k].orderonly = main.rules[i].deps[k].orderonly;

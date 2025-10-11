@@ -379,13 +379,22 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   {
     abort();
   }
-  if (dep[0] == '/' || dep[0] == '%')
+  if (dep[0] == '/')
   {
     if (snprintf(tmp, sz, "%s", dep) >= sz)
     {
       my_abort();
     }
   }
+#if 0
+  else if (dep[0] == '%')
+  {
+    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    {
+      my_abort();
+    }
+  }
+#endif
   else
   {
     if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= sz)
