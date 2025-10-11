@@ -7106,8 +7106,7 @@ int main(int argc, char **argv)
           meat = malloc(meatsz+1);
           memcpy(meat, basenodir+(loc-tgt), meatsz);
           meat[meatsz] = '\0';
-          //tgts[0].name = base;
-          tgts[0].name = basenodir;
+          tgts[0].name = base;
           tgts[0].namenodir = basenodir;
           for (k = 1; k < main.rules[i].targetsz; k++)
           {
