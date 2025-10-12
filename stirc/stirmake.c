@@ -922,7 +922,7 @@ int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
-  const char *tgtsrc = "source";
+  //const char *tgtsrc = "source";
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
   if (get_ruleid_by_tgt(stringtabidx) >= 0)
@@ -955,7 +955,7 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
-  const char *tgtsrc = "target";
+  //const char *tgtsrc = "target";
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
   if (n == NULL)
@@ -2518,6 +2518,7 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
     {
       struct add_dep *add;
       add = add_dep_ensure(entry, stringtab_add(deps[j].name), (size_t)-1);
+      (void)add;
     }
   }
 }
@@ -3220,16 +3221,16 @@ extern FILE *dbf;
 
 pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
-  char ***args;
+  //char ***args;
   pid_t pid;
-  struct cmd cmd = rules[ruleid]->cmd;
+  //struct cmd cmd = rules[ruleid]->cmd;
   const char *dir = sttable[rules[ruleid]->diridx].s;
   int outpipe[2] = {-1,-1};
   int outpiperd = -1, outpipewr = -1;
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
 
-  args = cmd.args;
+  //args = cmd.args;
 
   if (create_fd)
   {
@@ -3810,14 +3811,18 @@ struct timespec rec_mtim(struct rule *r, const char *name)
 int utimensat_both_emul(const char *pathname, struct timespec time, int l,
                         int forwards)
 {
+#ifdef HAS_UTIMENSAT
   struct timespec timespecs[2];
-  struct timeval times[2];
   timespecs[0] = time;
   timespecs[1] = time;
+#else
+  struct timeval times[2];
   times[0].tv_sec = time.tv_sec;
   times[0].tv_usec = (time.tv_nsec+999*(!!forwards))/1000;
   times[1].tv_sec = time.tv_sec;
   times[1].tv_usec = (time.tv_nsec+999*(!!forwards))/1000;
+#endif
+
 #ifdef HAS_UTIMENSAT
   return utimensat(AT_FDCWD, pathname, timespecs, l ? AT_SYMLINK_NOFOLLOW : 0);
 #else
@@ -4596,7 +4601,7 @@ void reconsider(int ruleid, int ruleid_executed)
       }
     }
   }
-  int toexecute2 = 0;
+  //int toexecute2 = 0;
   r->is_under_consideration = 1;
   for (node = &r->waitloc->llnode; node != &r->deplist.node; node = node->next)
   {
@@ -4624,7 +4629,7 @@ void reconsider(int ruleid, int ruleid_executed)
           printf("rule %d not executed, executing rule %d\n", idbytgt, ruleid);
           //std::cout << "rule " << ruleid_by_tgt[it->name] << " not executed, executing rule " << ruleid << std::endl;
         }
-        toexecute2 = 1;
+        //toexecute2 = 1;
         deps_remain_forwait(r, idbytgt);
         r->wait_remain_cnt++;
       }
@@ -4734,8 +4739,11 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+#ifdef HAS_UTIMENSAT
       struct timespec timespecs[2];
+#else
       struct timeval times[2];
+#endif
       int utimeret;
       struct stat statbuf;
       if (stat(sttable[e->tgtidx].s, &statbuf) != 0)
@@ -4751,15 +4759,15 @@ void mark_executed(int ruleid, int was_actually_executed)
         }
         continue;
       }
+#ifdef HAS_UTIMENSAT
       timespecs[0] = r->st_mtim;
       timespecs[1] = r->st_mtim;
+      utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx].s, timespecs, 0);
+#else
       times[0].tv_sec = r->st_mtim.tv_sec;
       times[0].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
       times[1].tv_sec = r->st_mtim.tv_sec;
       times[1].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
-#ifdef HAS_UTIMENSAT
-      utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx].s, timespecs, 0);
-#else
       {
         struct timespec req;
         struct timespec rem;
