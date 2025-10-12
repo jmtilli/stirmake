@@ -22,6 +22,8 @@ static inline void abce_npoppush(struct abce *abce, size_t n, struct abce_mb *mb
         {
                 abort();
         }
+#else
+	(void)ret;
 #endif
         for (size_t i = 1; i < n; i++)
         {
@@ -752,6 +754,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     size_t namsz;
     struct abce_mb *attr1;
     char *nam;
+    mbstr = NULL;
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
       my_abort();
@@ -777,6 +780,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     struct abce_mb *attr1;
     size_t namsz;
     char *nam;
+    mbstr = NULL;
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
       my_abort();
@@ -1466,7 +1470,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb *bases;
       struct abce_mb *newstr;
       struct abce_mb *mods;
-      size_t bcnt, bsz, i;
+      size_t bcnt, i;
+      //size_t bsz;
       VERIFYMB(-1, ABCE_T_A); // bases
       mods = abce_mb_cpush_create_array(abce);
       if (mods == NULL)
@@ -1484,7 +1489,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
           return -EINVAL;
         }
-        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        //bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         can = canon(bases->u.area->u.ar.mbs[i].u.area->u.str.buf);
         newstr = abce_mb_cpush_create_string(abce, can, strlen(can));
         free(can);
