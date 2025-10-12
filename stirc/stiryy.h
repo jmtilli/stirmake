@@ -597,13 +597,22 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
   }
   if (rule->patfrozen)
   {
-    if (tgt[0] == '/' || tgt[0] == '%')
+    if (tgt[0] == '/')
     {
       if (snprintf(tmp, sz, "%s", tgt) >= sz)
       {
         my_abort();
       }
     }
+#if 0
+    else if (tgt[0] == '%')
+    {
+      if (snprintf(tmp, sz, "%s", tgt) >= sz)
+      {
+        my_abort();
+      }
+    }
+#endif
     else
     {
       if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
