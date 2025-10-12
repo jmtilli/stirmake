@@ -16,6 +16,11 @@ make), and standalone alternatives. The standalone alternatives include SCons,
 Rake and Shake of which SCons and Rake are implemented in a slow interpreted
 language, and Shake uses a strange Haskell-based input syntax.
 
+## User's guide
+
+The user's guide of stirmake is available at
+https://jmtilli.github.io/stirmakeguide
+
 ## Feature set
 
 * Fast C implementation, with performance comparable to make
