@@ -1,15 +1,15 @@
 #!/bin/sh
 
-(cd abce; sh bootstrapnomake.sh)
-
-CC=cc
-CFLAGS="-O3 -Wall -g"
-
 die()
 {
   echo "$@"
   exit 1
 }
+
+(cd abce; sh bootstrapnomake.sh) || die "abce"
+
+CC=cc
+CFLAGS="-O3 -Wall -g"
 
 libobjs=""
 
