@@ -20,6 +20,14 @@ $(CFLAGS) ?= @nil
   @endif
 @endif
 
+$(LDFLAGS) ?= @nil
+@if(@type($(LDFLAGS)) == @type(@nil))
+  $(LDFLAGS) ``= ["sh", "-c", "echo $LDFLAGS"]
+  @if($(LDFLAGS)[] == 0)
+    $(LDFLAGS) = []
+  @endif
+@endif
+
 $(FLEX) ?= @nil
 @if(@type($(FLEX)) == @type(@nil))
   $(FLEX) ``= ["sh", "-c", "echo $FLEX"]
@@ -118,7 +126,7 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 	ln -s stirmake $@
 
 @patrule @distrule: $(PROG): '%': '%.o' 'libstirmake.a' 'abce/libabce.a'
-@	[@$(CC), @$(CFLAGS), "-o", $@, $<, 'libstirmake.a', 'abce/libabce.a', @$(LUALIBS), '-lm', '-ldl']
+@	[@$(CC), @$(CFLAGS), @$(LDFLAGS), "-o", $@, $<, 'libstirmake.a', 'abce/libabce.a', @$(LUALIBS), '-lm', '-ldl']
 
 @patrule: $(OBJ): '%.o': '%.c' '%.d'
 @	[@$(CC), @$(CFLAGS), "-c", "-o", $@, $<]
