@@ -141,9 +141,12 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 @deponly: 'stirmake.d': 'git.h'
 
 'git.h': '../.git/logs/HEAD'
-@	["sh", "-c", "echo \"static char *gitshas[] = {\" > git.h"]
+@	["sh", "-c", "echo \"static const char *gitshas[] = {\" > git.h"]
 @	["sh", "-c", "git log --pretty=format:\\\"%h\\\", --abbrev=40 >> git.h"]
 @	["sh", "-c", "echo \"};\" >> git.h"]
+@	["sh", "-c", "echo -n \"static const char *gitversion = \\\"\" >> git.h"]
+@	["sh", "-c", "echo -n `git describe --tags|sed 's/^v//g'` >> git.h"]
+@	["sh", "-c", "echo \"\\\";\" >> git.h"]
 
 @function $ADD_LEXX_YACC_DEPS($lex)
   @locvar $b = @sufsuball($lex, ".l", "")
