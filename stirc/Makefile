@@ -189,4 +189,9 @@ git.h: ../.git/logs/HEAD
 	git log --pretty=format:\"%h\", --abbrev=40 >> git.h
 	echo "};" >> git.h
 
+.PHONY: install
+
+install:
+	./install.sh $(DESTDIR)
+
 -include *.d
