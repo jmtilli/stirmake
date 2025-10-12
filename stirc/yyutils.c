@@ -274,7 +274,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
   int ret;
   FILE *f;
   struct abce_mb oldscope;
-  struct abce_mb *mbs, *mbsc;
+  struct abce_mb *mbs = NULL, *mbsc = NULL;
   size_t oldscopeidx;
   if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, fname) >= psz)
   {
