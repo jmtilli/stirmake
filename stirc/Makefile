@@ -81,7 +81,7 @@ smkp:
 	ln -s stirmake smkp
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
 
 stir: stir.o libstirmake.a Makefile $(LUALIB) abce
 	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
