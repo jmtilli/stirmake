@@ -13,12 +13,15 @@ CFLAGS="-O3 -Wall -g"
 
 libobjs=""
 
-echo "static const char *gitshas[] = {" > git.h
+echo "#ifndef _GIT_H_" > git.h
+echo "#define _GIT_H_" >> git.h
+echo "static const char *gitshas[] = {" >> git.h
 git log --pretty=format:\"%h\", --abbrev=40 >> git.h
 echo "};" >> git.h
 echo -n "static const char *gitversion = \"" >> git.h
 echo -n `git describe --tags|sed 's/^v//g'` >> git.h
 echo "\";" >> git.h
+echo "#endif" >> git.h
 
 for a in *.l; do
   base="`echo "$a"|sed 's/.l$//g'`"
