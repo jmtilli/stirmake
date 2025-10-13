@@ -3826,8 +3826,10 @@ pattargets:
   if (amyplanyy_do_emit(amyplanyy))
   {
     int ret;
+    int has_nil = -1;
     char **strs;
     size_t i, strsz;
+    const char *strs2[3] = {"", "", ""};
 
     if ($2 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
     {
@@ -3837,17 +3839,55 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz, 1);
 
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in targets");
       YYABORT;
     }
-
     for (i = 0; i < strsz; i++)
     {
+      if (strs[i] == NULL)
+      {
+        has_nil = i;
+      }
+    }
+
+    if (strsz == 3 && has_nil == 1)
+    {
+      strs2[0] = strs[0];
+      strs2[1] = NULL;
+      strs2[2] = strs[2];
+      stiryy_set_pattgt2(stiryy, strs2, $2);
+    }
+    else if (strsz == 2 && has_nil == 0)
+    {
+      strs2[0] = "";
+      strs2[1] = NULL;
+      strs2[2] = strs[1];
+      stiryy_set_pattgt2(stiryy, strs2, $2);
+    }
+    else if (strsz == 2 && has_nil == 1)
+    {
+      strs2[0] = strs[0];
+      strs2[1] = NULL;
+      strs2[2] = "";
+      stiryy_set_pattgt2(stiryy, strs2, $2);
+    }
+    else if (strsz == 1 && has_nil == 0)
+    {
+      strs2[0] = "";
+      strs2[1] = NULL;
+      strs2[2] = "";
+      stiryy_set_pattgt2(stiryy, strs2, $2);
+    }
+    else for (i = 0; i < strsz; i++)
+    {
       stiryy_set_pattgt(stiryy, strs[i], $2);
+    }
+    for (i = 0; i < strsz; i++)
+    {
       free(strs[i]);
     }
     free(strs);
