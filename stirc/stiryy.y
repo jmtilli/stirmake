@@ -104,7 +104,7 @@ int handle_tgt_tgtdepref(yyscan_t scanner, struct stiryy *stiryy, size_t bcodeof
 
     stiryy_add_byte(stiryy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(stiryy), bcodeoff, "target", &strs, &strsz);
+    ret = engine_stringlist(get_abce(stiryy), bcodeoff, "target", &strs, &strsz, 0);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in targets");
@@ -761,7 +761,7 @@ ordertoken:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $1, "order spec", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $1, "order spec", &strs, &strsz, 0);
 
     if (ret)
     {
@@ -888,7 +888,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz, 0);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in @fileinclude");
@@ -934,7 +934,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz, 0);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in @dirinclude");
@@ -990,7 +990,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz, 0);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in @cdepincludes");
@@ -3737,8 +3737,10 @@ pattargets:
   if (amyplanyy_do_emit(amyplanyy))
   {
     int ret;
+    int has_nil = -1;
     char **strs;
     size_t i, strsz;
+    const char *strs2[3] = {"", "", ""};
 
     if ($1 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
     {
@@ -3748,7 +3750,7 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz, 1);
 
     if (ret)
     {
@@ -3758,7 +3760,45 @@ pattargets:
 
     for (i = 0; i < strsz; i++)
     {
+      if (strs[i] == NULL)
+      {
+        has_nil = i;
+      }
+    }
+    if (strsz == 3 && has_nil == 1)
+    {
+      strs2[0] = strs[0];
+      strs2[1] = NULL;
+      strs2[2] = strs[2];
+      stiryy_set_pattgt2(stiryy, strs2, $1);
+    }
+    else if (strsz == 2 && has_nil == 0)
+    {
+      strs2[0] = "";
+      strs2[1] = NULL;
+      strs2[2] = strs[1];
+      stiryy_set_pattgt2(stiryy, strs2, $1);
+    }
+    else if (strsz == 2 && has_nil == 1)
+    {
+      strs2[0] = strs[0];
+      strs2[1] = NULL;
+      strs2[2] = "";
+      stiryy_set_pattgt2(stiryy, strs2, $1);
+    }
+    else if (strsz == 1 && has_nil == 0)
+    {
+      strs2[0] = "";
+      strs2[1] = NULL;
+      strs2[2] = "";
+      stiryy_set_pattgt2(stiryy, strs2, $1);
+    }
+    else for (i = 0; i < strsz; i++)
+    {
       stiryy_set_pattgt(stiryy, strs[i], $1);
+    }
+    for (i = 0; i < strsz; i++)
+    {
       free(strs[i]);
     }
     free(strs);
@@ -3797,7 +3837,7 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz, 0);
 
     if (ret)
     {
@@ -3975,11 +4015,13 @@ patdeps:
     size_t strsz;
     size_t i;
     int ret;
+    int has_nil = -1;
     char **strs;
+    const char *strs2[3] = {"", "", ""};
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz, 1);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in dependencies");
@@ -3988,7 +4030,45 @@ patdeps:
 
     for (i = 0; i < strsz; i++)
     {
+      if (strs[i] == NULL)
+      {
+        has_nil = i;
+      }
+    }
+    if (strsz == 3 && has_nil == 1)
+    {
+      strs2[0] = strs[0];
+      strs2[1] = NULL;
+      strs2[2] = strs[2];
+      stiryy_set_patdep2(stiryy, strs2, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+    }
+    else if (strsz == 2 && has_nil == 0)
+    {
+      strs2[0] = "";
+      strs2[1] = NULL;
+      strs2[2] = strs[1];
+      stiryy_set_patdep2(stiryy, strs2, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+    }
+    else if (strsz == 2 && has_nil == 1)
+    {
+      strs2[0] = strs[0];
+      strs2[1] = NULL;
+      strs2[2] = "";
+      stiryy_set_patdep2(stiryy, strs2, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+    }
+    else if (strsz == 1 && has_nil == 0)
+    {
+      strs2[0] = "";
+      strs2[1] = NULL;
+      strs2[2] = "";
+      stiryy_set_patdep2(stiryy, strs2, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+    }
+    else for (i = 0; i < strsz; i++)
+    {
       stiryy_set_patdep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+    }
+    for (i = 0; i < strsz; i++)
+    {
       free(strs[i]);
     }
     free(strs);
@@ -4041,7 +4121,7 @@ deps:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz);
+    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz, 0);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in dependencies");

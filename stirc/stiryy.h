@@ -418,6 +418,48 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   rule->depsz++;
   free(can);
 }
+static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
+{
+  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  size_t newcapacity;
+  size_t sz = strlen(curprefix) + 1 + strlen(dep[0]) + 1 + strlen(dep[2]) + 1;
+  char *can, *tmp = malloc(sz);
+  size_t off = 0;
+  if (!rule->ispat || !rule->patfrozen)
+  {
+    abort();
+  }
+  if (dep[0][0] == '/')
+  {
+    if (snprintf(tmp, sz, "%s%%%s", dep[0], dep[2]) >= sz)
+    {
+      my_abort();
+    }
+  }
+  else
+  {
+    off = strlen(curprefix)+1;
+    if (snprintf(tmp, sz, "%s/%s%%%s", curprefix, dep[0], dep[2]) >= sz)
+    {
+      my_abort();
+    }
+  }
+  can = canon(tmp);
+  if (rule->depsz >= rule->depcapacity)
+  {
+    newcapacity = 2*rule->depcapacity + 1;
+    rule->deps = (struct dep*)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
+    rule->depcapacity = newcapacity;
+  }
+  rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
+  rule->deps[rule->depsz].namenodir = strdup(tmp+off);
+  rule->deps[rule->depsz].rec = rec;
+  rule->deps[rule->depsz].orderonly = orderonly;
+  rule->deps[rule->depsz].wait = wait;
+  rule->depsz++;
+  free(can);
+  free(tmp);
+}
 
 static inline void stiryy_main_set_order(struct stiryy_main *main, const char *curprefix, const char *name)
 {
@@ -490,6 +532,10 @@ static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *cur
 static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait)
 {
   stiryy_main_set_patdep(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait);
+}
+static inline void stiryy_set_patdep2(struct stiryy *stiryy, const char **dep, int rec, int orderonly, int wait)
+{
+  stiryy_main_set_patdep2(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait);
 }
 
 static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait)
@@ -669,6 +715,55 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
     free(can);
   }
 }
+static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char *curprefix, const char **tgt, int is_dist)
+{
+  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  size_t newcapacity;
+  size_t sz = strlen(curprefix) + 1 + strlen(tgt[0]) + 1 + strlen(tgt[2]) + 1;
+  char *can, *tmp = malloc(sz);
+  size_t off = 0;
+  if (!rule->ispat)
+  {
+    printf("rule is not pat\n");
+    abort();
+  }
+  if (rule->patfrozen)
+  {
+    if (tgt[0][0] == '/')
+    {
+      if (snprintf(tmp, sz, "%s%%%s", tgt[0], tgt[2]) >= sz)
+      {
+        my_abort();
+      }
+    }
+    else
+    {
+      off = strlen(curprefix) + 1;
+      if (snprintf(tmp, sz, "%s/%s%%%s", curprefix, tgt[0], tgt[2]) >= sz)
+      {
+        my_abort();
+      }
+    }
+    can = canon(tmp);
+    if (rule->targetsz >= rule->targetcapacity)
+    {
+      newcapacity = 2*rule->targetcapacity + 1;
+      rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
+      rule->targetcapacity = newcapacity;
+    }
+    rule->targets[rule->targetsz].name = strdup(can);
+    rule->targets[rule->targetsz].namenodir = strdup(tmp+off);
+    rule->targets[rule->targetsz].is_dist = !!is_dist;
+    rule->targetsz++;
+    free(can);
+    free(tmp);
+  }
+  else
+  {
+    printf("Pattern rule bases cannot contain @nil lists\n");
+    exit(1);
+  }
+}
 
 static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist)
 {
@@ -708,6 +803,10 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *cur
 static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt, int is_dist)
 {
   stiryy_main_set_pattgt(stiryy->main, stiryy->curprefix, tgt, is_dist);
+}
+static inline void stiryy_set_pattgt2(struct stiryy *stiryy, const char **tgt, int is_dist)
+{
+  stiryy_main_set_pattgt2(stiryy->main, stiryy->curprefix, tgt, is_dist);
 }
 
 static inline void stiryy_set_tgt(struct stiryy *stiryy, const char *tgt, int is_dist)

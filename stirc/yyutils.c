@@ -414,7 +414,8 @@ int
 engine_stringlist(struct abce *abce,
                   size_t ip,
                   const char *directive,
-                  char ***strs, size_t *strsz)
+                  char ***strs, size_t *strsz,
+                  int allow_nil)
 {
   unsigned char tmpbuf[64] = {};
   size_t tmpsiz = 0;
@@ -468,9 +469,10 @@ engine_stringlist(struct abce *abce,
   {
     for (i = 0; i < mb->u.area->u.ar.size; i++)
     {
-      if (mb->u.area->u.ar.mbs[i].typ != ABCE_T_S)
+      if (mb->u.area->u.ar.mbs[i].typ != ABCE_T_S &&
+          ((!allow_nil) || mb->u.area->u.ar.mbs[i].typ != ABCE_T_N))
       {
-        printf("expected string, got type %d for directive %s\n",
+        printf("expected string or @nil, got type %d for directive %s\n",
                mb->u.area->u.ar.mbs[i].typ, directive);
         return -EINVAL;
       }
@@ -479,6 +481,11 @@ engine_stringlist(struct abce *abce,
     *strs = malloc(sizeof(**strs) * (*strsz));
     for (i = 0; i < *strsz; i++)
     {
+      if (mb->u.area->u.ar.mbs[i].typ == ABCE_T_N)
+      {
+        (*strs)[i] = NULL;
+        continue;
+      }
       (*strs)[i] = strdup(mb->u.area->u.ar.mbs[i].u.area->u.str.buf);
     }
   }

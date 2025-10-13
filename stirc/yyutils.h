@@ -13,7 +13,8 @@ int
 engine_stringlist(struct abce *abce,
                   size_t ip,
                   const char *directive,
-                  char ***strs, size_t *strsz);
+                  char ***strs, size_t *strsz,
+                  int allow_nil);
 
 int stiryydoparse(FILE *filein, struct stiryy *stiryy);
 
