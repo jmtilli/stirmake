@@ -7155,61 +7155,98 @@ int main(int argc, char **argv)
           for (k = 0; k < main.rules[i].depsz; k++)
           {
             char *dep = main.rules[i].deps[k].namenodir;
+            char *suffix = main.rules[i].deps[k].suffix;
             //char *dep = main.rules[i].deps[k].name;
             size_t expdepsz; // expanded target size
             char *expdep;
             size_t namedirsz;
             char *namedir;
-            if (strcnt(dep, '%') > 1)
+            if (suffix)
             {
-              errxit("Dep %s must have exactly zero or one %% signs", dep);
-              exit(2);
-            }
-            loc = strchr(dep, '%');
-            if (loc == NULL)
-            {
-              char *prefixdep;
-              size_t prefixdepsz;
-              prefixdepsz = prefixlen+strlen(dep)+2;
-              prefixdep = malloc(prefixdepsz);
-              if (snprintf(prefixdep, prefixdepsz, "%s/%s", prefix, dep) >=
-                  prefixdepsz)
+              size_t strlen_dep = strlen(dep);
+              locp1 = suffix;
+              locp1sz = strlen(locp1);
+              expdepsz = strlen_dep + locp1sz + meatsz;
+              expdep = malloc(expdepsz + 1);
+              memcpy(expdep, dep, strlen_dep);
+              memcpy(&expdep[strlen_dep], meat, meatsz);
+              memcpy(&expdep[strlen_dep+meatsz], locp1, locp1sz);
+              expdep[strlen_dep+meatsz+locp1sz] = '\0';
+              if (strlen_dep+meatsz+locp1sz != expdepsz)
               {
                 my_abort();
               }
-              deps[k].name = canon(prefixdep);
-              free(prefixdep);
-              deps[k].namenodir = main.rules[i].deps[k].namenodir;
+              namedirsz = prefixlen+strlen(expdep)+2;
+              namedir = malloc(namedirsz);
+              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
+                  >= namedirsz)
+              {
+                my_abort();
+              }
+              deps[k].name = canon(namedir);
+              deps[k].namenodir = expdep;
               deps[k].rec = main.rules[i].deps[k].rec;
               deps[k].orderonly = main.rules[i].deps[k].orderonly;
               deps[k].wait = main.rules[i].deps[k].wait;
-              continue;
+              free(namedir);
             }
-            locp1 = loc+1;
-            locp1sz = strlen(locp1);
-            expdepsz = strlen(dep) - 1 + meatsz;
-            expdep = malloc(expdepsz + 1);
-            memcpy(expdep, dep, loc-dep);
-            memcpy(&expdep[loc-dep], meat, meatsz);
-            memcpy(&expdep[loc-dep+meatsz], locp1, locp1sz);
-            expdep[loc-dep+meatsz+locp1sz] = '\0';
-            if (loc-dep+meatsz+locp1sz != expdepsz)
+            else
             {
-              my_abort();
+              loc = NULL;
+              if (main.rules[i].deps[k].percent_special)
+              {
+                if (strcnt(dep, '%') > 1)
+                {
+                  errxit("Dep %s must have exactly zero or one %% signs", dep);
+                  exit(2);
+                }
+                loc = strchr(dep, '%');
+              }
+              if (loc == NULL)
+              {
+                char *prefixdep;
+                size_t prefixdepsz;
+                prefixdepsz = prefixlen+strlen(dep)+2;
+                prefixdep = malloc(prefixdepsz);
+                if (snprintf(prefixdep, prefixdepsz, "%s/%s", prefix, dep) >=
+                    prefixdepsz)
+                {
+                  my_abort();
+                }
+                deps[k].name = canon(prefixdep);
+                free(prefixdep);
+                deps[k].namenodir = main.rules[i].deps[k].namenodir;
+                deps[k].rec = main.rules[i].deps[k].rec;
+                deps[k].orderonly = main.rules[i].deps[k].orderonly;
+                deps[k].wait = main.rules[i].deps[k].wait;
+                continue;
+              }
+              locp1 = loc+1;
+              locp1sz = strlen(locp1);
+              expdepsz = strlen(dep) - 1 + meatsz;
+              expdep = malloc(expdepsz + 1);
+              memcpy(expdep, dep, loc-dep);
+              memcpy(&expdep[loc-dep], meat, meatsz);
+              memcpy(&expdep[loc-dep+meatsz], locp1, locp1sz);
+              expdep[loc-dep+meatsz+locp1sz] = '\0';
+              if (loc-dep+meatsz+locp1sz != expdepsz)
+              {
+                my_abort();
+              }
+              namedirsz = prefixlen+strlen(expdep)+2;
+              namedir = malloc(namedirsz);
+              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
+                  >= namedirsz)
+              {
+                my_abort();
+              }
+              deps[k].name = canon(namedir);
+              deps[k].namenodir = expdep;
+              deps[k].rec = main.rules[i].deps[k].rec;
+              deps[k].orderonly = main.rules[i].deps[k].orderonly;
+              deps[k].wait = main.rules[i].deps[k].wait;
+              free(namedir);
             }
-            namedirsz = prefixlen+strlen(expdep)+2;
-            namedir = malloc(namedirsz);
-            if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
-                >= namedirsz)
-            {
-              my_abort();
-            }
-            deps[k].name = canon(namedir);
-            deps[k].namenodir = expdep;
-            deps[k].rec = main.rules[i].deps[k].rec;
-            deps[k].orderonly = main.rules[i].deps[k].orderonly;
-            deps[k].wait = main.rules[i].deps[k].wait;
-            free(namedir);
           }
           if (   main.rules[i].iscleanhook
               || main.rules[i].isdistcleanhook

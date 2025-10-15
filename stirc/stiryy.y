@@ -167,6 +167,10 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
     uint8_t i:1;
     int prio;
   } tokenopts;
+  struct {
+    double d;
+    unsigned flags;
+  } dflags;
 }
 
 /*
@@ -335,7 +339,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token ERROR_TOK
 
 %type<d> value
-%type<d> tgtdepref
+%type<dflags> tgtdepref
 %type<d> lvalue
 %type<d> fordict
 %type<d> arglist
@@ -761,7 +765,7 @@ ordertoken:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $1, "order spec", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $1.d, "order spec", &strs, &strsz, 0);
 
     if (ret)
     {
@@ -3750,7 +3754,7 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $2, "target", &strs, &strsz, 1);
+    ret = engine_stringlist(get_abce(amyplanyy), $2.d, "target", &strs, &strsz, 1);
 
     if (ret)
     {
@@ -3839,7 +3843,7 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "target", &strs, &strsz, 1);
+    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "target", &strs, &strsz, 1);
 
     if (ret)
     {
@@ -3898,7 +3902,8 @@ pattargets:
 tgtdepref:
   VARREF_LITERAL
 {
-  $$ = get_abce(amyplanyy)->bytecodesz;
+  $$.d = get_abce(amyplanyy)->bytecodesz;
+  $$.flags = 1;
   if (amyplanyy_do_emit(amyplanyy))
   {
     // Outside of function, search for dynamic symbol
@@ -3915,7 +3920,8 @@ tgtdepref:
 }
 | STRING_LITERAL
 {
-  $$ = get_abce(amyplanyy)->bytecodesz;
+  $$.d = get_abce(amyplanyy)->bytecodesz;
+  $$.flags = 1;
   if (amyplanyy_do_emit(amyplanyy))
   {
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
@@ -3927,11 +3933,12 @@ tgtdepref:
 }
 | OPEN_PAREN
 {
-  $$ = get_abce(amyplanyy)->bytecodesz;
+  $$.d = get_abce(amyplanyy)->bytecodesz;
+  $$.flags = 0;
 }
   expr CLOSE_PAREN
 {
-  $$ = $<d>2;
+  $$ = $<dflags>2;
 }
 ;
 
@@ -3959,7 +3966,7 @@ targets:
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
-    if (handle_tgt_tgtdepref(scanner, stiryy, $1, 0))
+    if (handle_tgt_tgtdepref(scanner, stiryy, $1.d, 0))
     {
       YYABORT;
     }
@@ -3969,7 +3976,7 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if (handle_tgt_tgtdepref(scanner, stiryy, $2, 1))
+    if (handle_tgt_tgtdepref(scanner, stiryy, $2.d, 1))
     {
       YYABORT;
     }
@@ -3987,7 +3994,7 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if (handle_tgt_tgtdepref(scanner, stiryy, $3, $2))
+    if (handle_tgt_tgtdepref(scanner, stiryy, $3.d, $2))
     {
       YYABORT;
     }
@@ -4044,7 +4051,7 @@ patdeps:
       stiryy->main->freeform_token_seen=1;
     }
     //printf("dep %s rec? %d\n", $3, (int)$2);
-    stiryy_set_patdep(stiryy, $3, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+    stiryy_set_patdep(stiryy, $3, ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4, 1);
   }
   free($3);
 }
@@ -4061,7 +4068,7 @@ patdeps:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz, 1);
+    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "dependency", &strs, &strsz, 1);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in dependencies");
@@ -4105,7 +4112,7 @@ patdeps:
     }
     else for (i = 0; i < strsz; i++)
     {
-      stiryy_set_patdep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4);
+      stiryy_set_patdep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4, ((int)$3.flags) & 1);
     }
     for (i = 0; i < strsz; i++)
     {
@@ -4161,7 +4168,7 @@ deps:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3, "dependency", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "dependency", &strs, &strsz, 0);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in dependencies");

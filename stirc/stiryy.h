@@ -175,6 +175,10 @@ struct cmdsrc {
 struct dep {
   char *name;
   char *namenodir;
+  // for patrules, it's name or namenodir and wildcard and suffix
+  // if suffix is NULL, then wildcard is not used
+  char *suffix;
+  int percent_special;
   int rec;
   int orderonly;
   int wait;
@@ -369,7 +373,7 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
   stiryy->main->cdepincludesz++;
 }
 
-static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
+static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
@@ -412,6 +416,8 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   }
   rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = strdup(dep);
+  rule->deps[rule->depsz].suffix = NULL;
+  rule->deps[rule->depsz].percent_special = percent_special;
   rule->deps[rule->depsz].rec = rec;
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
@@ -422,8 +428,9 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(curprefix) + 1 + strlen(dep[0]) + 1 + strlen(dep[2]) + 1;
-  char *can, *tmp = malloc(sz);
+  size_t sz1 = strlen(curprefix) + 1 + strlen(dep[0]) + 1;
+  size_t sz2 = strlen(dep[2]) + 1;
+  char *can, *tmp1 = malloc(sz1), *tmp2 = malloc(sz2);
   size_t off = 0;
   if (!rule->ispat || !rule->patfrozen)
   {
@@ -431,7 +438,11 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
   }
   if (dep[0][0] == '/')
   {
-    if (snprintf(tmp, sz, "%s%%%s", dep[0], dep[2]) >= sz)
+    if (snprintf(tmp1, sz1, "%s", dep[0]) >= sz1)
+    {
+      my_abort();
+    }
+    if (snprintf(tmp2, sz2, "%s", dep[2]) >= sz2)
     {
       my_abort();
     }
@@ -439,12 +450,16 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
   else
   {
     off = strlen(curprefix)+1;
-    if (snprintf(tmp, sz, "%s/%s%%%s", curprefix, dep[0], dep[2]) >= sz)
+    if (snprintf(tmp1, sz1, "%s/%s", curprefix, dep[0]) >= sz1)
+    {
+      my_abort();
+    }
+    if (snprintf(tmp2, sz2, "%s", dep[2]) >= sz2)
     {
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon(tmp1);
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
@@ -452,13 +467,16 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
     rule->depcapacity = newcapacity;
   }
   rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
-  rule->deps[rule->depsz].namenodir = strdup(tmp+off);
+  rule->deps[rule->depsz].namenodir = strdup(tmp1+off);
+  rule->deps[rule->depsz].suffix = strdup(tmp2);
+  rule->deps[rule->depsz].percent_special = 0;
   rule->deps[rule->depsz].rec = rec;
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
   free(can);
-  free(tmp);
+  free(tmp1);
+  free(tmp2);
 }
 
 static inline void stiryy_main_set_order(struct stiryy_main *main, const char *curprefix, const char *name)
@@ -522,6 +540,8 @@ static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *cur
   }
   rule->deps[rule->depsz].name = strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = strdup(dep);
+  rule->deps[rule->depsz].suffix = NULL;
+  rule->deps[rule->depsz].percent_special = 0;
   rule->deps[rule->depsz].rec = rec;
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
@@ -529,9 +549,9 @@ static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *cur
   free(can);
 }
 
-static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait)
+static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
-  stiryy_main_set_patdep(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait);
+  stiryy_main_set_patdep(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait, percent_special);
 }
 static inline void stiryy_set_patdep2(struct stiryy *stiryy, const char **dep, int rec, int orderonly, int wait)
 {
