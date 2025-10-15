@@ -186,6 +186,10 @@ struct dep {
 struct tgt {
   char *name;
   char *namenodir;
+  // for patrules, it's name or namenodir and wildcard and suffix
+  // if suffix is NULL, then wildcard is not used
+  char *suffix;
+  int percent_special;
   int is_dist;
 };
 
@@ -628,6 +632,8 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   }
   rule->targets[rule->targetsz].name = strdup(slashes);
   rule->targets[rule->targetsz].namenodir = strdup(slashesnodir);
+  rule->targets[rule->targetsz].suffix = NULL;
+  rule->targets[rule->targetsz].percent_special = 0;
   rule->targetsz++;
   free(slashes);
   free(slashesnodir);
@@ -650,7 +656,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   }
 }
 
-static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist)
+static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist, int percent_special)
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
@@ -697,6 +703,8 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
     rule->targets[rule->targetsz].name = strdup(can);
     rule->targets[rule->targetsz].namenodir = strdup(tgt);
     rule->targets[rule->targetsz].is_dist = !!is_dist;
+    rule->targets[rule->targetsz].suffix = NULL;
+    rule->targets[rule->targetsz].percent_special = percent_special;
     rule->targetsz++;
     free(can);
   }
@@ -739,8 +747,9 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
 {
   struct stiryyrule *rule = &main->rules[main->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(curprefix) + 1 + strlen(tgt[0]) + 1 + strlen(tgt[2]) + 1;
-  char *can, *tmp = malloc(sz);
+  size_t sz1 = strlen(curprefix) + 1 + strlen(tgt[0]) + 1;
+  size_t sz2 = strlen(tgt[2]) + 1;
+  char *can, *tmp1 = malloc(sz1), *tmp2 = malloc(sz2);
   size_t off = 0;
   if (!rule->ispat)
   {
@@ -751,7 +760,11 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
   {
     if (tgt[0][0] == '/')
     {
-      if (snprintf(tmp, sz, "%s%%%s", tgt[0], tgt[2]) >= sz)
+      if (snprintf(tmp1, sz1, "%s", tgt[0]) >= sz1)
+      {
+        my_abort();
+      }
+      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= sz2)
       {
         my_abort();
       }
@@ -759,12 +772,16 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
     else
     {
       off = strlen(curprefix) + 1;
-      if (snprintf(tmp, sz, "%s/%s%%%s", curprefix, tgt[0], tgt[2]) >= sz)
+      if (snprintf(tmp1, sz1, "%s/%s", curprefix, tgt[0]) >= sz1)
+      {
+        my_abort();
+      }
+      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= sz2)
       {
         my_abort();
       }
     }
-    can = canon(tmp);
+    can = canon(tmp1);
     if (rule->targetsz >= rule->targetcapacity)
     {
       newcapacity = 2*rule->targetcapacity + 1;
@@ -772,11 +789,14 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
       rule->targetcapacity = newcapacity;
     }
     rule->targets[rule->targetsz].name = strdup(can);
-    rule->targets[rule->targetsz].namenodir = strdup(tmp+off);
+    rule->targets[rule->targetsz].namenodir = strdup(tmp1+off);
     rule->targets[rule->targetsz].is_dist = !!is_dist;
+    rule->targets[rule->targetsz].suffix = strdup(tmp2);
+    rule->targets[rule->targetsz].percent_special = 0;
     rule->targetsz++;
     free(can);
-    free(tmp);
+    free(tmp1);
+    free(tmp2);
   }
   else
   {
@@ -816,13 +836,15 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *cur
   rule->targets[rule->targetsz].name = strdup(can);
   rule->targets[rule->targetsz].namenodir = strdup(tgt);
   rule->targets[rule->targetsz].is_dist = !!is_dist;
+  rule->targets[rule->targetsz].suffix = NULL;
+  rule->targets[rule->targetsz].percent_special = 0;
   rule->targetsz++;
   free(can);
 }
 
-static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt, int is_dist)
+static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt, int is_dist, int percent_special)
 {
-  stiryy_main_set_pattgt(stiryy->main, stiryy->curprefix, tgt, is_dist);
+  stiryy_main_set_pattgt(stiryy->main, stiryy->curprefix, tgt, is_dist, percent_special);
 }
 static inline void stiryy_set_pattgt2(struct stiryy *stiryy, const char **tgt, int is_dist)
 {

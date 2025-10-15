@@ -7084,6 +7084,7 @@ int main(int argc, char **argv)
           char *base = main.rules[i].bases[j].name;
           char *basenodir = main.rules[i].bases[j].namenodir;
           char *tgt = main.rules[i].targets[0].namenodir;
+          char *suffix = main.rules[i].targets[0].suffix;
           struct tgt *tgts;
           struct dep *deps;
           char *loc, *locp1;
@@ -7092,65 +7093,124 @@ int main(int argc, char **argv)
           size_t locp1sz;
           tgts = malloc(sizeof(*tgts)*main.rules[i].targetsz);
           deps = malloc(sizeof(*deps)*main.rules[i].depsz);
-          if (strcnt(tgt, '%') != 1)
+          if (suffix == NULL && (strcnt(tgt, '%') != 1 || !main.rules[i].targets[0].percent_special))
           {
             errxit("Target %s must have exactly one %% sign", tgt);
             exit(2);
           }
-          loc = strchr(tgt, '%');
-          locp1 = loc+1;
-          locp1sz = strlen(locp1);
-          if (memcmp(basenodir, tgt, loc-tgt) != 0)
+          if (main.rules[i].targets[0].percent_special && strcnt(tgt, '%') == 1)
           {
-            errxit("Target %s didn't match base %s", tgt, basenodir);
+            loc = strchr(tgt, '%');
+            locp1 = loc+1;
+            locp1sz = strlen(locp1);
+            if (memcmp(basenodir, tgt, loc-tgt) != 0)
+            {
+              errxit("Target %s didn't match base %s", tgt, basenodir);
+              exit(2);
+            }
+            if (memcmp(basenodir+strlen(basenodir)-locp1sz, locp1, locp1sz) != 0)
+            {
+              errxit("Target %s didn't match base %s", tgt, basenodir);
+              exit(2);
+            }
+            meatsz = strlen(basenodir)-strlen(tgt)+1;
+            meat = malloc(meatsz+1);
+            memcpy(meat, basenodir+(loc-tgt), meatsz);
+            meat[meatsz] = '\0';
+            tgts[0].name = base;
+            tgts[0].namenodir = basenodir;
+          }
+          else if (suffix)
+          {
+            locp1 = suffix;
+            locp1sz = strlen(locp1);
+            if (memcmp(basenodir, tgt, strlen(tgt)) != 0)
+            {
+              errxit("Target %s%%%s didn't match base %s", tgt, suffix, basenodir);
+              exit(2);
+            }
+            if (memcmp(basenodir+strlen(basenodir)-locp1sz, locp1, locp1sz) != 0)
+            {
+              errxit("Target %s%%%s didn't match base %s", tgt, suffix, basenodir);
+              exit(2);
+            }
+            meatsz = strlen(basenodir)-strlen(tgt)-strlen(suffix);
+            meat = malloc(meatsz+1);
+            memcpy(meat, basenodir+strlen(tgt), meatsz);
+            meat[meatsz] = '\0';
+            tgts[0].name = base;
+            tgts[0].namenodir = basenodir;
+          }
+          else
+          {
+            errxit("Target %s must have exactly one %% sign", tgt);
             exit(2);
           }
-          if (memcmp(basenodir+strlen(basenodir)-locp1sz, locp1, locp1sz) != 0)
-          {
-            errxit("Target %s didn't match base %s", tgt, basenodir);
-            exit(2);
-          }
-          meatsz = strlen(basenodir)-strlen(tgt)+1;
-          meat = malloc(meatsz+1);
-          memcpy(meat, basenodir+(loc-tgt), meatsz);
-          meat[meatsz] = '\0';
-          tgts[0].name = base;
-          tgts[0].namenodir = basenodir;
           for (k = 1; k < main.rules[i].targetsz; k++)
           {
             char *tgt = main.rules[i].targets[k].namenodir;
+            char *suffix = main.rules[i].targets[k].suffix;
             size_t exptgtsz; // expanded target size
             char *exptgt;
             size_t namedirsz;
             char *namedir;
-            if (strcnt(tgt, '%') != 1)
+            if (main.rules[i].targets[k].percent_special && strcnt(tgt, '%') == 1)
+            {
+              loc = strchr(tgt, '%');
+              locp1 = loc+1;
+              locp1sz = strlen(locp1);
+              exptgtsz = strlen(tgt) - 1 + meatsz;
+              exptgt = malloc(exptgtsz + 1);
+              memcpy(exptgt, tgt, loc-tgt);
+              memcpy(&exptgt[loc-tgt], meat, meatsz);
+              memcpy(&exptgt[loc-tgt+meatsz], locp1, locp1sz);
+              exptgt[loc-tgt+meatsz+locp1sz] = '\0';
+              if (loc-tgt+meatsz+locp1sz != exptgtsz)
+              {
+                my_abort();
+              }
+              namedirsz = prefixlen+strlen(exptgt)+2;
+              namedir = malloc(namedirsz);
+              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
+                  >= namedirsz)
+              {
+                my_abort();
+              }
+              tgts[k].name = canon(namedir);
+              tgts[k].namenodir = exptgt;
+              free(namedir);
+            }
+            else if (suffix)
+            {
+              size_t strlen_tgt = strlen(tgt);
+              locp1 = suffix;
+              locp1sz = strlen(locp1);
+              exptgtsz = strlen_tgt + strlen(suffix) + meatsz;
+              exptgt = malloc(exptgtsz + 1);
+              memcpy(exptgt, tgt, strlen_tgt);
+              memcpy(&exptgt[strlen_tgt], meat, meatsz);
+              memcpy(&exptgt[strlen_tgt+meatsz], locp1, locp1sz);
+              exptgt[strlen_tgt+meatsz+locp1sz] = '\0';
+              if (strlen_tgt+meatsz+locp1sz != exptgtsz)
+              {
+                my_abort();
+              }
+              namedirsz = prefixlen+strlen(exptgt)+2;
+              namedir = malloc(namedirsz);
+              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
+                  >= namedirsz)
+              {
+                my_abort();
+              }
+              tgts[k].name = canon(namedir);
+              tgts[k].namenodir = exptgt;
+              free(namedir);
+            }
+            else
             {
               errxit("Target %s must have exactly one %% sign", tgt);
               exit(2);
             }
-            loc = strchr(tgt, '%');
-            locp1 = loc+1;
-            locp1sz = strlen(locp1);
-            exptgtsz = strlen(tgt) - 1 + meatsz;
-            exptgt = malloc(exptgtsz + 1);
-            memcpy(exptgt, tgt, loc-tgt);
-            memcpy(&exptgt[loc-tgt], meat, meatsz);
-            memcpy(&exptgt[loc-tgt+meatsz], locp1, locp1sz);
-            exptgt[loc-tgt+meatsz+locp1sz] = '\0';
-            if (loc-tgt+meatsz+locp1sz != exptgtsz)
-            {
-              my_abort();
-            }
-            namedirsz = prefixlen+strlen(exptgt)+2;
-            namedir = malloc(namedirsz);
-            if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
-                >= namedirsz)
-            {
-              my_abort();
-            }
-            tgts[k].name = canon(namedir);
-            tgts[k].namenodir = exptgt;
-            free(namedir);
           }
           for (k = 0; k < main.rules[i].depsz; k++)
           {

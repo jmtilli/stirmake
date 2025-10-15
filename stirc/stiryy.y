@@ -3733,7 +3733,7 @@ pattargets:
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
-    stiryy_set_pattgt(amyplanyy, $2, $1);
+    stiryy_set_pattgt(amyplanyy, $2, $1, 1);
   }
 }
 | maybe_disttgt tgtdepref
@@ -3799,7 +3799,7 @@ pattargets:
     }
     else for (i = 0; i < strsz; i++)
     {
-      stiryy_set_pattgt(stiryy, strs[i], $1);
+      stiryy_set_pattgt(stiryy, strs[i], $1, ((int)$2.flags) & 1);
     }
     for (i = 0; i < strsz; i++)
     {
@@ -3822,7 +3822,7 @@ pattargets:
       recommend(scanner, stiryy, "Recommend using string literals instead of free-form tokens; recommend also using @strict mode");
       stiryy->main->freeform_token_seen=1;
     }
-    stiryy_set_pattgt(amyplanyy, $3, $2);
+    stiryy_set_pattgt(amyplanyy, $3, $2, 1);
   }
 }
 | pattargets maybe_disttgt tgtdepref
@@ -3888,7 +3888,7 @@ pattargets:
     }
     else for (i = 0; i < strsz; i++)
     {
-      stiryy_set_pattgt(stiryy, strs[i], $2);
+      stiryy_set_pattgt(stiryy, strs[i], $2, ((int)$3.flags) & 1);
     }
     for (i = 0; i < strsz; i++)
     {
