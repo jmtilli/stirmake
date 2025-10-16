@@ -415,7 +415,8 @@ engine_stringlist(struct abce *abce,
                   size_t ip,
                   const char *directive,
                   char ***strs, size_t *strsz,
-                  int allow_nil)
+                  int allow_nil,
+                  int *was_array)
 {
   unsigned char tmpbuf[64] = {};
   size_t tmpsiz = 0;
@@ -424,6 +425,10 @@ engine_stringlist(struct abce *abce,
 
   *strs = NULL;
   *strsz = 0;
+  if (was_array)
+  {
+    *was_array = 0;
+  }
 
   abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_PUSH_DBL);
   abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ip);
@@ -461,12 +466,20 @@ engine_stringlist(struct abce *abce,
   }
   if (mb->typ == ABCE_T_S)
   {
+    if (was_array)
+    {
+      *was_array = 0;
+    }
     *strsz = 1;
     *strs = malloc(sizeof(**strs) * (*strsz));
     (*strs)[0] = strdup(mb->u.area->u.str.buf);
   }
   else if (mb->typ == ABCE_T_A)
   {
+    if (was_array)
+    {
+      *was_array = 1;
+    }
     for (i = 0; i < mb->u.area->u.ar.size; i++)
     {
       if (mb->u.area->u.ar.mbs[i].typ != ABCE_T_S &&

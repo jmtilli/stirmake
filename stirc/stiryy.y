@@ -104,7 +104,7 @@ int handle_tgt_tgtdepref(yyscan_t scanner, struct stiryy *stiryy, size_t bcodeof
 
     stiryy_add_byte(stiryy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(stiryy), bcodeoff, "target", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(stiryy), bcodeoff, "target", &strs, &strsz, 0, NULL);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in targets");
@@ -765,7 +765,7 @@ ordertoken:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $1.d, "order spec", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $1.d, "order spec", &strs, &strsz, 0, NULL);
 
     if (ret)
     {
@@ -892,7 +892,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz, 0, NULL);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in @fileinclude");
@@ -938,7 +938,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz, 0, NULL);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in @dirinclude");
@@ -994,7 +994,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz, 0, NULL);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in @cdepincludes");
@@ -3743,6 +3743,7 @@ pattargets:
     int ret;
     int has_nil = -1;
     char **strs;
+    int was_array = 0;
     size_t i, strsz;
     const char *strs2[3] = {"", "", ""};
 
@@ -3754,7 +3755,7 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $2.d, "target", &strs, &strsz, 1);
+    ret = engine_stringlist(get_abce(amyplanyy), $2.d, "target", &strs, &strsz, 1, &was_array);
 
     if (ret)
     {
@@ -3799,7 +3800,7 @@ pattargets:
     }
     else for (i = 0; i < strsz; i++)
     {
-      stiryy_set_pattgt(stiryy, strs[i], $1, ((int)$2.flags) & 1);
+      stiryy_set_pattgt(stiryy, strs[i], $1, (((int)$2.flags) & 1) || !was_array);
     }
     for (i = 0; i < strsz; i++)
     {
@@ -3831,6 +3832,7 @@ pattargets:
   {
     int ret;
     int has_nil = -1;
+    int was_array = 0;
     char **strs;
     size_t i, strsz;
     const char *strs2[3] = {"", "", ""};
@@ -3843,7 +3845,7 @@ pattargets:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "target", &strs, &strsz, 1);
+    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "target", &strs, &strsz, 1, &was_array);
 
     if (ret)
     {
@@ -3888,7 +3890,7 @@ pattargets:
     }
     else for (i = 0; i < strsz; i++)
     {
-      stiryy_set_pattgt(stiryy, strs[i], $2, ((int)$3.flags) & 1);
+      stiryy_set_pattgt(stiryy, strs[i], $2, (((int)$3.flags) & 1) || !was_array);
     }
     for (i = 0; i < strsz; i++)
     {
@@ -4063,12 +4065,13 @@ patdeps:
     size_t i;
     int ret;
     int has_nil = -1;
+    int was_array = 0;
     char **strs;
     const char *strs2[3] = {"", "", ""};
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "dependency", &strs, &strsz, 1);
+    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "dependency", &strs, &strsz, 1, &was_array);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in dependencies");
@@ -4112,7 +4115,7 @@ patdeps:
     }
     else for (i = 0; i < strsz; i++)
     {
-      stiryy_set_patdep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4, ((int)$3.flags) & 1);
+      stiryy_set_patdep(stiryy, strs[i], ((int)$2) & 1, ((int)$2) & 2, ((int)$2) & 4, (((int)$3.flags) & 1) || !was_array);
     }
     for (i = 0; i < strsz; i++)
     {
@@ -4168,7 +4171,7 @@ deps:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "dependency", &strs, &strsz, 0);
+    ret = engine_stringlist(get_abce(amyplanyy), $3.d, "dependency", &strs, &strsz, 0, NULL);
     if (ret)
     {
       stiryyerror(scanner, stiryy, "error in dependencies");
