@@ -4519,7 +4519,7 @@ int consider(int ruleid)
       }
       if (access(sttable[e->nameidx].s, F_OK) == -1)
       {
-        errxit("No %s and rule not found", sttable[e->nameidx].s);
+        errxit("No %s and rule not found, required by target %s", sttable[e->nameidx].s, sttable[first_tgt->tgtidx].s);
         exit(2);
       }
     }
@@ -4643,7 +4643,7 @@ void reconsider(int ruleid, int ruleid_executed)
       }
       if (access(sttable[e->nameidx].s, F_OK) == -1)
       {
-        errxit("No %s and rule not found", sttable[e->nameidx].s);
+        errxit("No %s and rule not found, required by target %s", sttable[e->nameidx].s, sttable[first_tgt->tgtidx].s);
         exit(2);
       }
     }
