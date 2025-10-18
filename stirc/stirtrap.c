@@ -288,7 +288,6 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   int ret = abce_verifymb(abce, -1, ABCE_T_T);
   int errcod = 0;
   int err = 0;
-  int lineno = -1;
   size_t tgts, deps, attrs, shells, name, rec, orderonly, phony;
   size_t rectgt, detouch, maybe, dist, deponly;
   size_t iscleanhook, isdistcleanhook, isbothcleanhook;
@@ -955,7 +954,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
                   attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
                   attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
                   attrstruct.deponly,
-                  prefix_ugh, abce->dynscope.u.area->u.sc.locidx, lineno) != 0)
+                  prefix_ugh, abce->dynscope.u.area->u.sc.locidx, yy_stored_lineno) != 0)
   {
     errcod = -EINVAL;
   }

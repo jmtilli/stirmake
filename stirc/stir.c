@@ -3,6 +3,9 @@
 #include "yyutils.h"
 #include "stiryy.h"
 
+int yy_stored_lineno = -1;
+const char *yy_stored_prefix = NULL;
+
 void my_abort(void)
 {
   abort();

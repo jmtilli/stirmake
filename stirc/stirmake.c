@@ -1734,6 +1734,8 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         abort();
       }
       abce->dynscope = scope;
+      yy_stored_lineno = -1;
+      yy_stored_prefix = NULL;
       if (abce_engine(abce, tmpbuf, tmpsiz) != 0)
       {
         abce->dynscope = oldscope;
@@ -6538,6 +6540,9 @@ void process_orders(struct stiryy_main *main)
     }
   }
 }
+
+int yy_stored_lineno = -1;
+const char *yy_stored_prefix = NULL;
 
 int main(int argc, char **argv)
 {

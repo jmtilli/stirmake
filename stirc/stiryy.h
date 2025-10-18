@@ -24,6 +24,9 @@ extern "C" {
 
 void my_abort(void);
 
+extern int yy_stored_lineno;
+extern const char *yy_stored_prefix;
+
 struct escaped_string {
   size_t sz;
   char *str;
