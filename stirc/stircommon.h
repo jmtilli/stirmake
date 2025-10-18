@@ -9,7 +9,7 @@ int add_rule_yy(struct stiryy_main *main, struct tgt *tgts, size_t tgtsz,
                 int phony, int rectgt, int detouch, int maybe, int dist,
                 int cleanhook, int distcleanhook, int bothcleanhook,
                 int deponly,
-                char *prefix, size_t scopeidx);
+                char *prefix, size_t scopeidx, int lineno);
 
 int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 char **deps, size_t depsz,
