@@ -206,6 +206,7 @@ struct stiryyrule {
   struct cmdsrc shells;
   size_t scopeidx;
   char *prefix;
+  int lineno;
   unsigned phony:1;
   unsigned rectgt:1;
   unsigned detouch:1;
@@ -954,7 +955,7 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
   cmdsrc->itemsz++;
 }
 
-static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char *curprefix, size_t scopeidx)
+static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char *curprefix, size_t scopeidx, int lineno)
 {
   size_t newcapacity;
   if (main->rulesz >= main->rulecapacity)
@@ -989,11 +990,12 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
   main->rules[main->rulesz].ispat = 0;
   main->rules[main->rulesz].patfrozen = 0;
   main->rules[main->rulesz].scopeidx = scopeidx;
+  main->rules[main->rulesz].lineno = lineno;
   main->rulesz++;
 }
-static inline void stiryy_main_emplace_patrule(struct stiryy_main *main, const char *curprefix, size_t scopeidx)
+static inline void stiryy_main_emplace_patrule(struct stiryy_main *main, const char *curprefix, size_t scopeidx, int lineno)
 {
-  stiryy_main_emplace_rule(main, curprefix, scopeidx);
+  stiryy_main_emplace_rule(main, curprefix, scopeidx, lineno);
   main->rules[main->rulesz-1].ispat = 1;
 }
 static inline void stiryy_main_freeze_patrule(struct stiryy_main *main)
@@ -1005,13 +1007,13 @@ static inline void stiryy_main_freeze_patrule(struct stiryy_main *main)
   main->rules[main->rulesz-1].patfrozen = 1;
 }
 
-static inline void stiryy_emplace_rule(struct stiryy *stiryy, size_t scopeidx)
+static inline void stiryy_emplace_rule(struct stiryy *stiryy, size_t scopeidx, int lineno)
 {
-  stiryy_main_emplace_rule(stiryy->main, stiryy->curprefix, scopeidx);
+  stiryy_main_emplace_rule(stiryy->main, stiryy->curprefix, scopeidx, lineno);
 }
-static inline void stiryy_emplace_patrule(struct stiryy *stiryy, size_t scopeidx)
+static inline void stiryy_emplace_patrule(struct stiryy *stiryy, size_t scopeidx, int lineno)
 {
-  stiryy_main_emplace_patrule(stiryy->main, stiryy->curprefix, scopeidx);
+  stiryy_main_emplace_patrule(stiryy->main, stiryy->curprefix, scopeidx, lineno);
 }
 static inline void stiryy_freeze_patrule(struct stiryy *stiryy)
 {

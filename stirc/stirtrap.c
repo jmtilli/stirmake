@@ -2052,7 +2052,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return 0;
       }
 
-      stiryy_main_emplace_rule(main, prefix, abce->dynscope.u.area->u.sc.locidx);
+      stiryy_main_emplace_rule(main, prefix, abce->dynscope.u.area->u.sc.locidx, -1); // FIXME lineno
       for (i = 0; i < tgtar->u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];

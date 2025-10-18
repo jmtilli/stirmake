@@ -522,13 +522,13 @@ int add_rule_yy(struct stiryy_main *main, struct tgt *tgts, size_t tgtsz,
                 int phony, int rectgt, int detouch, int maybe, int dist,
                 int cleanhook, int distcleanhook, int bothcleanhook,
                 int deponly,
-                char *prefix, size_t scopeidx)
+                char *prefix, size_t scopeidx, int lineno)
 {
   if (main->rule_in_progress)
   {
     return -EINVAL;
   }
-  stiryy_main_emplace_rule(main, prefix, scopeidx);
+  stiryy_main_emplace_rule(main, prefix, scopeidx, lineno);
   main->rules[main->rulesz-1].bases = NULL;
   main->rules[main->rulesz-1].basesz = 0;
   main->rules[main->rulesz-1].basecapacity = 0;

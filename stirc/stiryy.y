@@ -3270,7 +3270,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     //printf("target1 %s\n", $1);
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
     stiryy_set_cleanhooktgt(stiryy, "CLEAN");
   }
 }
@@ -3291,7 +3291,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     //printf("target1 %s\n", $1);
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
     stiryy_set_cleanhooktgt(stiryy, "DISTCLEAN");
   }
 }
@@ -3312,7 +3312,7 @@ stirrule:
   if (amyplanyy_do_emit(amyplanyy))
   {
     //printf("target1 %s\n", $1);
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
     stiryy_set_cleanhooktgt(stiryy, "BOTHCLEAN");
   }
 }
@@ -3420,7 +3420,7 @@ stirrule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    stiryy_emplace_patrule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_patrule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
   }
 }
   pattargetspec COLON
@@ -3949,7 +3949,7 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
     handle_tgt_freeform_token(scanner, stiryy, $1, 0);
   }
   free($1);
@@ -3958,7 +3958,7 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
     handle_tgt_freeform_token(scanner, stiryy, $2, 1);
   }
   free($2);
@@ -3967,7 +3967,7 @@ targets:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx);
+    stiryy_emplace_rule(stiryy, get_abce(stiryy)->dynscope.u.area->u.sc.locidx, stiryyget_lineno(scanner));
     if (handle_tgt_tgtdepref(scanner, stiryy, $1.d, 0))
     {
       YYABORT;
