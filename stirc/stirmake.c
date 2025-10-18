@@ -6982,6 +6982,8 @@ int main(int argc, char **argv)
         stiryy_main_free(&main);
         abce_free(&abce);
         abce_inited = 0;
+        yy_stored_lineno = -1;
+        yy_stored_prefix = NULL;
       }
     }
     if (!silent)
@@ -7020,6 +7022,8 @@ int main(int argc, char **argv)
   }
   main.parsing = 0;
   fclose(f);
+  yy_stored_lineno = -1;
+  yy_stored_prefix = NULL;
 
   stack_conf();
 
