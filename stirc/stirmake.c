@@ -3978,8 +3978,25 @@ void calc_cmd(int ruleid)
   r->cmd.args = cmdsrc_eval(&abce, r);
   if (r->cmd.args == NULL)
   {
-    errxit("evaluating shell commands for %s failed",
-           sttable[first_tgt->tgtidx].s);
+    int i;
+#if 0
+    fprintf(stderr, "Backtrace:\n");
+    for (i = 0; i < abce.btsz; i++)
+    {
+      if (abce.btbase[i].typ == ABCE_T_S)
+      {
+        fprintf(stderr, "%s\n", abce.btbase[i].u.area->u.str.buf);
+      }
+      else
+      {
+        fprintf(stderr, "(-)\n");
+      }
+    }
+#endif
+    fprintf(stderr, "Additional information for error:\n");
+    abce_mb_dump(&abce.err.mb);
+    errxit("evaluating shell commands for %s failed, error: %s",
+           sttable[first_tgt->tgtidx].s, abce_err_to_str(abce.err.code));
   }
 }
 
