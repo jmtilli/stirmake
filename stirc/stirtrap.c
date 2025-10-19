@@ -1366,6 +1366,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMBPTR(&base, -1);
       if (jsonyynameparse(base->u.area->u.str.buf, &jsonyy) != 0)
       {
+        (void)fchdir(fdolddir);
         abce->err.code = STIR_E_BAD_JSON;
         abce->err.mb.typ = ABCE_T_N;
         return -EBADMSG;
