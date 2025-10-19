@@ -259,6 +259,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token PATHNOTDIRALL
 %token GLOB
 %token JSONIN
+%token ABSPATH
 %token SUFSUBONE
 %token PRESUBONE
 %token STRAPPEND
@@ -704,6 +705,10 @@ custom_expr0:
 | JSONIN OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_JSON_IN);
+}
+| ABSPATH OPEN_PAREN expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_ABSPATH);
 }
 ;
 

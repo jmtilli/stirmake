@@ -1,8 +1,5 @@
 - Option to check heap after every engine invocation to reveal refcnt bugs
 
-- Extra opcodes:
-  - path_absolutify
-
 - don't delete targets if the list of cmds is empty? There's no way the target
   is created given an empty list of cmds.
 
@@ -24,10 +21,10 @@
 
 - Custom errors to strings
 
-- @order and @wait to README.md
+- @order and @wait to README.md, DONE: in stirmakedocbook
 
 - setting number of tokens a job requires
 
 - move to starting childs for multi-cmd rules directly from master process
 
-- document shell assignment
+- document shell assignment, DONE: in stirmakedocbook

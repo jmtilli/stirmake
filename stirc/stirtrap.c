@@ -1,6 +1,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <glob.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -2227,6 +2228,52 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 	abce_npoppush(abce, 1, mbnew);
 	abce_cpop(abce);
         free(newstr);
+        return 0;
+      }
+    case STIR_OPCODE_ABSPATH:
+      {
+        struct abce_mb *mbarg;
+        struct abce_mb *mbnew;
+        char realpathbuf[PATH_MAX+1];
+        char *realpathptr;
+        int do_free = 0;
+        GETMBSTRPTR(&mbarg, -1);
+        if (strlen(mbarg->u.area->u.str.buf) != mbarg->u.area->u.str.size)
+        {
+          // string contains '\0'
+          return -EINVAL;
+        }
+        do_free = 1;
+        realpathptr = realpath(mbarg->u.area->u.str.buf, NULL);
+        if (realpathptr == NULL && errno == EINVAL)
+        {
+          realpathptr = realpath(mbarg->u.area->u.str.buf, realpathbuf);
+          do_free = 0;
+        }
+
+        if (realpathptr == NULL)
+        {
+          if (do_free)
+          {
+            free(realpathptr);
+          }
+          return -errno;
+        }
+        mbnew = abce_mb_cpush_create_string(abce, realpathptr, strlen(realpathptr));
+        if (mbnew == NULL)
+        {
+          if (do_free)
+          {
+            free(realpathptr);
+          }
+          return -ENOMEM;
+        }
+        abce_npoppush(abce, 1, mbnew);
+        abce_cpop(abce);
+        if (do_free)
+        {
+          free(realpathptr);
+        }
         return 0;
       }
     default:

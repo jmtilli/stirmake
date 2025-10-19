@@ -69,6 +69,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@pathnotdirall return PATHNOTDIRALL;
 <INITIAL,STRICT>@glob return GLOB;
 <INITIAL,STRICT>@jsonin return JSONIN;
+<INITIAL,STRICT>@abspath return ABSPATH;
 <INITIAL,STRICT>@phonyrule return PHONYRULE;
 <INITIAL,STRICT>@mayberule return MAYBERULE;
 <INITIAL,STRICT>@rectgtrule return RECTGTRULE;
