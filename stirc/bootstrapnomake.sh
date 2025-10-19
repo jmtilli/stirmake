@@ -6,10 +6,11 @@ die()
   exit 1
 }
 
-(cd abce; sh bootstrapnomake.sh) || die "abce"
+export CC="${CC:-cc}"
+export CFLAGS="${CFLAGS:--O3 -Wall -g}"
+export LDFLAGS="${LDFLAGS:-}"
 
-CC=cc
-CFLAGS="-O3 -Wall -g"
+(cd abce; sh bootstrapnomake.sh) || die "abce"
 
 libobjs=""
 
@@ -44,7 +45,7 @@ done
 rm -f libstirmake.a
 ar rvs libstirmake.a $libobjs || die "ar"
 
-$CC $CFLAGS -o stirmake stirmake.o libstirmake.a abce/libabce.a -lm -ldl || die "cclink"
+$CC $CFLAGS $LDFLAGS -o stirmake stirmake.o libstirmake.a abce/libabce.a -lm -ldl || die "cclink"
 
 rm -f smka
 rm -f smkt
