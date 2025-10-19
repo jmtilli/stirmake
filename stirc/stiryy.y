@@ -3577,7 +3577,7 @@ shell_command:
           i++;
           continue;
         }
-        if (i+1 < len && ($1[i+1] == '<' || $1[i+1] == '@'))
+        if (i+1 < len && ($1[i+1] == '<' || $1[i+1] == '@' || $1[i+1] == '*'))
         {
           size_t cidx;
           cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);

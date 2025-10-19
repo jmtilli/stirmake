@@ -1221,6 +1221,7 @@ struct rule {
   unsigned is_traversed:1;
   unsigned is_under_consideration:1;
   size_t diridx;
+  size_t meatidx;
   struct cmdsrc cmdsrc;
   struct cmd cmd; // calculated from cmdsrc
   struct timespec st_mtim;
@@ -1417,7 +1418,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   struct linked_list_node *node;
   struct abce_mb scope = abce->cachebase[rule->scopeidx]; // no refup!
   struct abce_mb oldscope = abce->dynscope; // no refup, it's in cache anyway
-  size_t atidx, plusidx, baridx, hatidx, ltidx;
+  size_t atidx, plusidx, baridx, hatidx, ltidx, staridx;
   int err = 0;
 
   atidx = cmdsrc_cache_add_str_nul(abce, "@", &err);
@@ -1425,6 +1426,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   baridx = cmdsrc_cache_add_str_nul(abce, "|", &err);
   hatidx = cmdsrc_cache_add_str_nul(abce, "^", &err);
   ltidx = cmdsrc_cache_add_str_nul(abce, "<", &err);
+  staridx = cmdsrc_cache_add_str_nul(abce, "*", &err);
 
   if (err)
   {
@@ -1475,6 +1477,25 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       //abce_mb_refdn(abce, &mbkey);
       //abce_mb_refdn(abce, &mbval);
       abce_cpop(abce);
+
+      if (rule->meatidx != (size_t)-1)
+      {
+        mbval = abce_mb_cpush_create_string(abce, sttable[rule->meatidx].s, strlen(sttable[rule->meatidx].s));
+        if (mbval == NULL)
+        {
+          //abce_mb_refdn(abce, &mbkey);
+          return NULL;
+        }
+        if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[staridx], mbval) != 0)
+        {
+          //abce_mb_refdn(abce, &mbkey);
+          abce_cpop(abce);
+          return NULL;
+        }
+        //abce_mb_refdn(abce, &mbkey);
+        //abce_mb_refdn(abce, &mbval);
+        abce_cpop(abce);
+      }
 
 #if 0
       mbkey = abce_mb_create_string(abce, "+", 1);
@@ -1866,6 +1887,13 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[hatidx], &mbnil) != 0)
       {
         return NULL;
+      }
+      if (rule->meatidx != (size_t)-1)
+      {
+        if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[staridx], &mbnil) != 0)
+        {
+          return NULL;
+        }
       }
       //abce_mb_refdn(abce, &mb);
       continue;
@@ -2802,7 +2830,8 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
               struct cmdsrc *shells,
               int phony, int rectgt, int detouch, int maybe, int dist,
               int cleanhook, int distcleanhook, int bothcleanhook,
-              char *prefix, size_t scopeidx, int lineno)
+              char *prefix, size_t scopeidx, int lineno,
+              const char *meat)
 {
   struct rule *rule;
   size_t i;
@@ -2845,6 +2874,14 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   rule->is_distcleanhook = !!distcleanhook;
   rule->is_bothcleanhook = !!bothcleanhook;
   rule->diridx = stringtab_add(prefix);
+  if (meat)
+  {
+    rule->meatidx = stringtab_add(meat);
+  }
+  else
+  {
+    rule->meatidx = (size_t)-1;
+  }
 
   for (i = 0; i < tgtsz; i++)
   {
@@ -7363,7 +7400,8 @@ int main(int argc, char **argv)
                    main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
                    main.rules[i].isbothcleanhook,
                    main.rules[i].prefix, main.rules[i].scopeidx,
-                   main.rules[i].lineno);
+                   main.rules[i].lineno,
+                   meat);
         }
         continue;
       }
@@ -7376,7 +7414,8 @@ int main(int argc, char **argv)
                main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
                main.rules[i].isbothcleanhook,
                main.rules[i].prefix, main.rules[i].scopeidx,
-               main.rules[i].lineno);
+               main.rules[i].lineno,
+               NULL /*meat*/);
       if (   (!ruleid_first_set)
           && (/* strcmp(fwd_path, ".") == 0 || */
               strcmp(fwd_path, main.rules[i].prefix) == 0))
