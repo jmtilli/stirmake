@@ -1868,6 +1868,16 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       {
         abort();
       }
+      abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[atidx]);
+      abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[plusidx]);
+      abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[ltidx]);
+      abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[baridx]);
+      abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[hatidx]);
+      if (rule->meatidx != (size_t)-1)
+      {
+        abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[staridx]);
+      }
+#if 0
       if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[atidx], &mbnil) != 0)
       {
         return NULL;
@@ -1895,6 +1905,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
           return NULL;
         }
       }
+#endif
       //abce_mb_refdn(abce, &mb);
       continue;
     }
