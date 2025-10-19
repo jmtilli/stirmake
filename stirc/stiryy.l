@@ -318,6 +318,11 @@ struct CSnippet luaSnippet = {
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
+<INITIAL,STRICT>[$][{][A-Za-z0-9_]+[}] {
+  yylval->s = strdup(yytext+2);
+  yylval->s[strlen(yylval->s)-1] = '\0';
+  return VARREF_LITERAL;
+}
 <INITIAL,STRICT>[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)? {
   // Original regexp was: [-+]?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?
   // The sign from original regexp was removed to allow $a=$a+1 to work
