@@ -445,7 +445,7 @@ custom_assign:
     abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
 
     get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
-    yy_stored_lineno = stiryyget_lineno(scanner);
+    yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
@@ -855,7 +855,7 @@ custom_rule:
     abce_add_double_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), $<d>2);
     abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_JMP);
 
-    yy_stored_lineno = stiryyget_lineno(scanner);
+    yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
@@ -905,7 +905,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    yy_stored_lineno = stiryyget_lineno(scanner);
+    yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     ret = engine_stringlist(get_abce(amyplanyy), $<d>3, "fileinclude", &strs, &strsz, 0, NULL);
     if (ret)
@@ -953,7 +953,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    yy_stored_lineno = stiryyget_lineno(scanner);
+    yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "dirinclude", &strs, &strsz, 0, NULL);
     if (ret)
@@ -1011,7 +1011,7 @@ custom_rule:
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
 
-    yy_stored_lineno = stiryyget_lineno(scanner);
+    yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     ret = engine_stringlist(get_abce(amyplanyy), $<d>2, "cdepincludes", &strs, &strsz, 0, NULL);
     if (ret)
@@ -1056,7 +1056,7 @@ custom_rule:
     {
       abort();
     }
-    yy_stored_lineno = stiryyget_lineno(scanner);
+    yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
@@ -1163,7 +1163,7 @@ OPEN_PAREN expr CLOSE_PAREN NEWLINE
       {
         abort();
       }
-      yy_stored_lineno = stiryyget_lineno(scanner);
+      yy_stored_lineno = stiryyget_lineno(scanner) - 1;
       yy_stored_prefix = stiryy->curprefix;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
       {
@@ -1418,7 +1418,7 @@ expr NEWLINE
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
 
       get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
-      yy_stored_lineno = stiryyget_lineno(scanner);
+      yy_stored_lineno = stiryyget_lineno(scanner) - 1;
       yy_stored_prefix = stiryy->curprefix;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
       {
@@ -1504,7 +1504,7 @@ expr NEWLINE
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
 
       get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
-      yy_stored_lineno = stiryyget_lineno(scanner);
+      yy_stored_lineno = stiryyget_lineno(scanner) - 1;
       yy_stored_prefix = stiryy->curprefix;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
       {
