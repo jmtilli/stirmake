@@ -14,6 +14,40 @@
 #include "jsonyyutils.h"
 #include "stircommon.h"
 
+const char *stir_err_to_str(enum abce_errcode code)
+{
+  if (code < 0x1000)
+  {
+    return abce_err_to_str(code);
+  }
+  switch ((unsigned)code)
+  {
+    case STIR_E_RULECHANGE_NOT_PERMITTED:
+      return "Changing rules not permitted after parsing done";
+    case STIR_E_SUFFIX_NOT_FOUND:
+      return "Suffix not found";
+    case STIR_E_DIR_NOT_FOUND:
+      return "Directory not found";
+    case STIR_E_GLOB_FAILED:
+      return "Glob failed";
+    case STIR_E_BAD_JSON:
+      return "Bad JSON";
+    case STIR_E_RULE_NOT_FOUND:
+      return "Rule not found";
+    case STIR_E_TARGETS_MISSING:
+      return "Targets missing";
+    case STIR_E_NAME_MISSING:
+      return "Name missing";
+    case STIR_E_NO_SHELLARG:
+      return "No shell argument (fun+arg, cmd, cmds)";
+    case STIR_E_RULE_FROM_WITHIN_MIDRULE:
+      return "Rule from within midrule";
+    case STIR_E_INSANE_RULE:
+      return "Insane rule";
+  }
+  return abce_err_to_str(code);
+}
+
 static inline void abce_npoppush(struct abce *abce, size_t n, struct abce_mb *mb)
 {
         int ret;

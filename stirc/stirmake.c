@@ -1760,7 +1760,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       if (abce_engine(abce, tmpbuf, tmpsiz) != 0)
       {
         abce->dynscope = oldscope;
-        printf("error %s\n", abce_err_to_str(abce->err.code));
+        printf("error %s\n", stir_err_to_str(abce->err.code));
         printf("Backtrace:\n");
         for (i = 0; i < abce->btsz; i++)
         {
@@ -4044,7 +4044,7 @@ void calc_cmd(int ruleid)
     fprintf(stderr, "Additional information for error:\n");
     abce_mb_dump(&abce.err.mb);
     errxit("evaluating shell commands for %s failed, error: %s",
-           sttable[first_tgt->tgtidx].s, abce_err_to_str(abce.err.code));
+           sttable[first_tgt->tgtidx].s, stir_err_to_str(abce.err.code));
   }
 }
 

@@ -21,6 +21,27 @@ size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, 
   abort();
 }
 #endif
+int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
+                                char **deps, size_t depsz,
+                                char *prefix,
+                                int rec, int orderonly, int wait)
+{
+  abort();
+}
+void *my_memrchr(const void *s, int c, size_t n)
+{
+  unsigned const char *ptr = s + n;
+  while (n > 0)
+  {
+    ptr--;
+    if (*ptr == c)
+    {
+      return (void*)ptr;
+    }
+    n--;
+  }
+  return NULL;
+}
 
 int main(int argc, char **argv)
 {

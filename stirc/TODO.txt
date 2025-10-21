@@ -12,14 +12,15 @@
 - fcntl lock for output, gather child-process outputs together
 
 - instead of '%.c' use ''%'.c'
+  - no, use ['', @nil, '.c'], DONE
 
 - automated torture test bench
 
 - @listdict(["a","b"],"n",{"rec":1}) == [{"n":"a","rec":1},{"n":"b","rec":1}]
 
-- @detouchrule to README.md
+- @detouchrule to README.md, DONE: in stirmakedocbook
 
-- Custom errors to strings
+- Custom errors to strings, DONE
 
 - @order and @wait to README.md, DONE: in stirmakedocbook
 
