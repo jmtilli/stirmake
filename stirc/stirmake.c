@@ -1451,7 +1451,9 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       struct abce_mb mbstruct = {};
       struct abce_mb *mb = NULL;
       //struct abce_mb mbkey = {};
+#if 0
       struct abce_mb mbnil = {.typ = ABCE_T_N};
+#endif
       struct abce_mb *mbval = NULL;
       int first = 1;
 
@@ -4026,8 +4028,8 @@ void calc_cmd(int ruleid)
   r->cmd.args = cmdsrc_eval(&abce, r);
   if (r->cmd.args == NULL)
   {
-    int i;
 #if 0
+    int i;
     fprintf(stderr, "Backtrace:\n");
     for (i = 0; i < abce.btsz; i++)
     {
