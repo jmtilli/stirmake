@@ -14,6 +14,7 @@ export LDFLAGS="${LDFLAGS:-}"
 
 libobjs=""
 
+if [ -e ../.git/logs/HEAD ]; then
 echo "#ifndef _GIT_H_" > git.h
 echo "#define _GIT_H_" >> git.h
 echo "static const char *gitshas[] = {" >> git.h
@@ -23,6 +24,7 @@ echo -n "static const char *gitversion = \"" >> git.h
 echo -n `git describe --tags|sed 's/^v//g'` >> git.h
 echo "\";" >> git.h
 echo "#endif" >> git.h
+fi
 
 for a in *.l; do
   base="`echo "$a"|sed 's/.l$//g'`"

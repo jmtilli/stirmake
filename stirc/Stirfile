@@ -148,6 +148,7 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 @deponly: 'stirmake.o': 'git.h'
 @deponly: 'stirmake.d': 'git.h'
 
+@if((@glob("../.git/logs/HEAD"))[] == 1)
 'git.h': '../.git/logs/HEAD'
 @	["sh", "-c", "echo \"#ifndef _GIT_H_\" > git.h"]
 @	["sh", "-c", "echo \"#define _GIT_H_\" >> git.h"]
@@ -158,6 +159,7 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 @	["sh", "-c", "echo -n `git describe --tags|sed 's/^v//g'` >> git.h"]
 @	["sh", "-c", "echo \"\\\";\" >> git.h"]
 @	["sh", "-c", "echo \"#endif\" >> git.h"]
+@endif
 
 @function $ADD_LEXX_YACC_DEPS($lex)
   @locvar $b = @sufsuball($lex, ".l", "")

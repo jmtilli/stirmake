@@ -184,6 +184,7 @@ stiryy.tab.c: git.h
 stirmake.d: git.h
 stirmake.o: git.h
 
+ifneq (,$(wildcard ../.git/logs/HEAD))
 git.h: ../.git/logs/HEAD
 	echo "#ifndef _GIT_H_" > git.h
 	echo "#define _GIT_H_" >> git.h
@@ -194,6 +195,7 @@ git.h: ../.git/logs/HEAD
 	echo -n `git describe --tags|sed 's/^v//g'` >> git.h
 	echo "\";" >> git.h
 	echo "#endif" >> git.h
+endif
 
 .PHONY: install
 
