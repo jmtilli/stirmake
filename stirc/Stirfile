@@ -152,10 +152,10 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 'git.h': '../.git/logs/HEAD'
 @	["sh", "-c", "echo \"#ifndef _GIT_H_\" > git.h"]
 @	["sh", "-c", "echo \"#define _GIT_H_\" >> git.h"]
-@	["sh", "-c", "echo \"static const char *gitshas[] = {\" >> git.h"]
+@	["sh", "-c", "echo \"static const char * const gitshas[] = {\" >> git.h"]
 @	["sh", "-c", "git log --pretty=format:\\\"%h\\\", --abbrev=40 >> git.h"]
 @	["sh", "-c", "echo \"};\" >> git.h"]
-@	["sh", "-c", "echo -n \"static const char *gitversion = \\\"\" >> git.h"]
+@	["sh", "-c", "echo -n \"static const char * const gitversion = \\\"\" >> git.h"]
 @	["sh", "-c", "echo -n `git describe --tags|sed 's/^v//g'` >> git.h"]
 @	["sh", "-c", "echo \"\\\";\" >> git.h"]
 @	["sh", "-c", "echo \"#endif\" >> git.h"]
