@@ -1,0 +1,46 @@
+name: stirmake
+base: core24
+version: git
+confinement: classic
+license: MIT
+contact:
+  - juha-matti.tilli@iki.fi
+  - https://jmtilli.github.io/
+  - https://orcid.org/0000-0001-6033-4377
+  - https://fi.linkedin.com/in/juha-matti-tilli
+website:
+  - https://github.com/Aalto5G/stirmake
+  - https://github.com/jmtilli/stirmake
+  - https://jmtilli.github.io/stirmakeguide/
+source-code:
+  - https://github.com/Aalto5G/stirmake
+  - https://github.com/jmtilli/stirmake
+issues:
+  - https://github.com/Aalto5G/stirmake/issues
+title: stirmake
+summary: stirmake is make done right for projects having multiple directories
+description: |
+  stirmake offers a new build tool that is correct, programmable and supports
+  natively projects having multiple directories.
+apps:
+  stirmake:
+    command: bin/stirmake
+  smkt:
+    command: bin/smkt
+  smkp:
+    command: bin/smkp
+  smka:
+    command: bin/smka
+adopt-info: stirmake
+parts:
+  stirmake:
+    source-type: git
+    build-packages: [flex, byacc]
+    plugin: make
+    source: .
+    override-pull: |
+      snapcraftctl pull
+      snapcraftctl set-version "$(git describe --tags|sed 's/^v//g')"
+    make-parameters:
+      - -C stirc LDFLAGS="-Wl,-dynamic-linker=/snap/core24/current/lib64/ld-linux-x86-64.so.2 -Wl,-rpath=/snap/core24/current/lib/x86_64-linux-gnu"
+    parse-info: [metadata-file]
