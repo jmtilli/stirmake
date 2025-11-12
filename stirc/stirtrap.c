@@ -1120,6 +1120,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce->err.code = ABCE_E_EXPECT_STR;
           abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
           abce_cpop(abce);
+          regfree(&preg);
           return -EINVAL;
         }
 	nomatch1 = !!(strlen(bases->u.area->u.ar.mbs[i].u.area->u.str.buf) != bases->u.area->u.ar.mbs[i].u.area->u.str.size);
@@ -1133,11 +1134,13 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_pop(abce);
           abce_pop(abce);
           abce_cpop(abce);
+          regfree(&preg);
           return -ENOMEM;
         }
       }
       abce_npoppush(abce, 3, mods);
       abce_cpop(abce);
+      regfree(&preg);
       return 0;
     }
     case STIR_OPCODE_EREGFILTER:
@@ -1183,6 +1186,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce->err.code = ABCE_E_EXPECT_STR;
           abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
           abce_cpop(abce);
+          regfree(&preg);
           return -EINVAL;
         }
 	nomatch1 = !!(strlen(bases->u.area->u.ar.mbs[i].u.area->u.str.buf) != bases->u.area->u.ar.mbs[i].u.area->u.str.size);
@@ -1196,11 +1200,13 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_pop(abce);
           abce_pop(abce);
           abce_cpop(abce);
+          regfree(&preg);
           return -ENOMEM;
         }
       }
       abce_npoppush(abce, 3, mods);
       abce_cpop(abce);
+      regfree(&preg);
       return 0;
     }
     case STIR_OPCODE_SUFFILTEROUT:
