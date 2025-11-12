@@ -305,6 +305,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token RULE_ORDINARY
 %token PRINT
 %token PERIOD
+%token REGFILTER EREGFILTER
 
 %token DICTNEXT DICTPREV
 %token ATQM SCOPE TRUE TYPE FALSE NIL STR_FROMCHR STR_LOWER STR_UPPER
@@ -641,6 +642,14 @@ custom_expr0:
 | PRESUBONE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PRESUBONE);
+}
+| REGFILTER OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_REGFILTER);
+}
+| EREGFILTER OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_EREGFILTER);
 }
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
 {

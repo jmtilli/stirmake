@@ -56,6 +56,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@sufsuball return SUFSUBALL;
 <INITIAL,STRICT>@presuball return PRESUBALL;
 <INITIAL,STRICT>@suffilter return SUFFILTER;
+<INITIAL,STRICT>@regfilter return REGFILTER;
+<INITIAL,STRICT>@eregfilter return EREGFILTER;
 <INITIAL,STRICT>@suffilterout return SUFFILTEROUT;
 <INITIAL,STRICT>@pathsuffix return PATHSUFFIX;
 <INITIAL,STRICT>@pathsimplify return PATHSIMPLIFY;
