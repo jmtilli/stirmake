@@ -1077,72 +1077,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_cpop(abce);
       return 0;
     }
-    case STIR_OPCODE_REGFILTER:
-    {
-      struct abce_mb *suf;
-      struct abce_mb *bases;
-      struct abce_mb *regbool;
-      struct abce_mb *mods;
-      regex_t preg;
-      size_t bcnt, bsz, ssz, i;
-      VERIFYMB(-1, ABCE_T_S); // regexp
-      VERIFYMB(-2, ABCE_T_B); // bool
-      VERIFYMB(-3, ABCE_T_A); // bases
-      mods = abce_mb_cpush_create_array(abce);
-      if (mods == NULL)
-      {
-        return -ENOMEM;
-      }
-      GETMBPTR(&suf, -1);
-      GETMBPTR(&regbool, -2);
-      GETMBPTR(&bases, -3);
-      if (strlen(suf->u.area->u.str.buf) != suf->u.area->u.str.size)
-      {
-        abce->err.code = STIR_E_REGEXP_ERROR;
-        abce_mb_errreplace_noinline(abce, suf);
-        abce_cpop(abce);
-        return -EINVAL;
-      }
-      if (regcomp(&preg, suf->u.area->u.str.buf, REG_NOSUB) != 0)
-      {
-        abce->err.code = STIR_E_REGEXP_ERROR;
-        abce_mb_errreplace_noinline(abce, suf);
-        abce_cpop(abce);
-        return -EINVAL;
-      }
-
-      bcnt = bases->u.area->u.ar.size;
-      for (i = 0; i < bcnt; i++)
-      {
-        int nomatch1;
-        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
-        {
-          abce->err.code = ABCE_E_EXPECT_STR;
-          abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
-          abce_cpop(abce);
-          regfree(&preg);
-          return -EINVAL;
-        }
-	nomatch1 = !!(strlen(bases->u.area->u.ar.mbs[i].u.area->u.str.buf) != bases->u.area->u.ar.mbs[i].u.area->u.str.size);
-        if (!!(regexec(&preg, bases->u.area->u.ar.mbs[i].u.area->u.str.buf, 0, NULL, 0) || nomatch1) == !!regbool->u.d)
-        {
-          continue;
-        }
-        if (abce_mb_array_append(abce, mods, &bases->u.area->u.ar.mbs[i]) != 0)
-        {
-          abce_pop(abce);
-          abce_pop(abce);
-          abce_pop(abce);
-          abce_cpop(abce);
-          regfree(&preg);
-          return -ENOMEM;
-        }
-      }
-      abce_npoppush(abce, 3, mods);
-      abce_cpop(abce);
-      regfree(&preg);
-      return 0;
-    }
+    case STIR_OPCODE_REGFILTER: // FALLTHROUGH
     case STIR_OPCODE_EREGFILTER:
     {
       struct abce_mb *suf;
@@ -1169,7 +1104,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce_cpop(abce);
         return -EINVAL;
       }
-      if (regcomp(&preg, suf->u.area->u.str.buf, REG_NOSUB | REG_EXTENDED) != 0)
+      if (regcomp(&preg, suf->u.area->u.str.buf, (ins == STIR_OPCODE_EREGFILTER) ? (REG_NOSUB | REG_EXTENDED) : (REG_NOSUB)) != 0)
       {
         abce->err.code = STIR_E_REGEXP_ERROR;
         abce_mb_errreplace_noinline(abce, suf);
