@@ -1032,6 +1032,104 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   struct stiryy_main *main = *pbaton;
   switch (ins)
   {
+    case STIR_OPCODE_PREFILTER:
+    {
+      struct abce_mb *suf;
+      struct abce_mb *bases;
+      struct abce_mb *mods;
+      size_t bcnt, bsz, ssz, i;
+      VERIFYMB(-1, ABCE_T_S); // suffix
+      VERIFYMB(-2, ABCE_T_A); // bases
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
+      {
+        abce_pop(abce);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      GETMBPTR(&suf, -1);
+      GETMBPTR(&bases, -2);
+      bcnt = bases->u.area->u.ar.size;
+      ssz = suf->u.area->u.str.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -EINVAL;
+        }
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        if (   bsz < ssz
+            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[0],
+                      suf->u.area->u.str.buf, ssz) != 0)
+        {
+          continue;
+        }
+        if (abce_mb_array_append(abce, mods, &bases->u.area->u.ar.mbs[i]) != 0)
+        {
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -ENOMEM;
+        }
+      }
+      abce_npoppush(abce, 2, mods);
+      abce_cpop(abce);
+      return 0;
+    }
+    case STIR_OPCODE_PREFILTEROUT:
+    {
+      struct abce_mb *suf;
+      struct abce_mb *bases;
+      struct abce_mb *mods;
+      size_t bcnt, bsz, ssz, i;
+      VERIFYMB(-1, ABCE_T_S); // suffix
+      VERIFYMB(-2, ABCE_T_A); // bases
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
+      {
+        abce_pop(abce);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      GETMBPTR(&suf, -1);
+      GETMBPTR(&bases, -2);
+      bcnt = bases->u.area->u.ar.size;
+      ssz = suf->u.area->u.str.size;
+      for (i = 0; i < bcnt; i++)
+      {
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -EINVAL;
+        }
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        if (!(   bsz < ssz
+              || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[0],
+                        suf->u.area->u.str.buf, ssz) != 0))
+        {
+          continue;
+        }
+        if (abce_mb_array_append(abce, mods, &bases->u.area->u.ar.mbs[i]) != 0)
+        {
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -ENOMEM;
+        }
+      }
+      abce_npoppush(abce, 2, mods);
+      abce_cpop(abce);
+      return 0;
+    }
     case STIR_OPCODE_SUFFILTER:
     {
       struct abce_mb *suf;

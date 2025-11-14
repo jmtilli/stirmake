@@ -247,6 +247,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DELAYLISTEXPAND
 %token SUFFILTER
 %token SUFFILTEROUT
+%token PREFILTER
+%token PREFILTEROUT
 %token PATHSUFFIX
 %token PATHBASENAME
 %token PATHSIMPLIFY
@@ -658,6 +660,14 @@ custom_expr0:
 | SUFFILTEROUT OPEN_PAREN expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SUFFILTEROUT);
+}
+| PREFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PREFILTER);
+}
+| PREFILTEROUT OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_PREFILTEROUT);
 }
 | SUFSUBALL OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
