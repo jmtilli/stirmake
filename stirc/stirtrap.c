@@ -1043,6 +1043,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       mods = abce_mb_cpush_create_array(abce);
       if (mods == NULL)
       {
+        abce_pop(abce);
+        abce_pop(abce);
         return -ENOMEM;
       }
       GETMBPTR(&suf, -1);
@@ -1055,7 +1057,9 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
 	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
-	  abce_cpop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
           return -EINVAL;
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
@@ -1069,7 +1073,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         {
           abce_pop(abce);
           abce_pop(abce);
-	  abce_cpop(abce);
+          abce_cpop(abce);
           return -ENOMEM;
         }
       }
@@ -1155,6 +1159,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       mods = abce_mb_cpush_create_array(abce);
       if (mods == NULL)
       {
+        abce_pop(abce);
+        abce_pop(abce);
         return -ENOMEM;
       }
       GETMBPTR(&suf, -1);
@@ -1167,7 +1173,9 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
 	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
-	  abce_cpop(abce);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
           return -EINVAL;
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
@@ -1181,8 +1189,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         {
           abce_pop(abce);
           abce_pop(abce);
-          abce_pop(abce);
-	  abce_cpop(abce);
+          abce_cpop(abce);
           return -ENOMEM;
         }
       }
