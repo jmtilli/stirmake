@@ -245,6 +245,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DELAYVAR
 %token DELAYEXPR
 %token DELAYLISTEXPAND
+%token FILTER
+%token FILTEROUT
 %token SUFFILTER
 %token SUFFILTEROUT
 %token PREFILTER
@@ -652,6 +654,14 @@ custom_expr0:
 | EREGFILTER OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_EREGFILTER);
+}
+| FILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_FILTER);
+}
+| FILTEROUT OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_FILTEROUT);
 }
 | SUFFILTER OPEN_PAREN expr COMMA expr CLOSE_PAREN
 {

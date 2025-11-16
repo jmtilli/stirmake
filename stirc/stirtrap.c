@@ -1130,6 +1130,79 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       abce_cpop(abce);
       return 0;
     }
+    case STIR_OPCODE_FILTER:
+    case STIR_OPCODE_FILTEROUT:
+    {
+      struct abce_mb *filters;
+      struct abce_mb *bases;
+      struct abce_mb *mods;
+      size_t bcnt, fcnt, bsz, fsz, i, j;
+      int found;
+      VERIFYMB(-1, ABCE_T_A); // filters
+      VERIFYMB(-2, ABCE_T_A); // bases
+      mods = abce_mb_cpush_create_array(abce);
+      if (mods == NULL)
+      {
+        abce_pop(abce);
+        abce_pop(abce);
+        return -ENOMEM;
+      }
+      GETMBPTR(&filters, -1);
+      GETMBPTR(&bases, -2);
+      bcnt = bases->u.area->u.ar.size;
+      fcnt = filters->u.area->u.ar.size;
+      for (i = 0; i < fcnt; i++)
+      {
+        if (filters->u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce_mb_errreplace_noinline(abce, &filters->u.area->u.ar.mbs[i]);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -EINVAL;
+        }
+      }
+      for (i = 0; i < bcnt; i++)
+      {
+        found = 0;
+        if (bases->u.area->u.ar.mbs[i].typ != ABCE_T_S)
+        {
+          abce->err.code = ABCE_E_EXPECT_STR;
+          abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
+          abce_pop(abce);
+          abce_pop(abce);
+          abce_cpop(abce);
+          return -EINVAL;
+        }
+        bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
+        for (j = 0; j < fcnt; j++)
+        {
+          fsz = filters->u.area->u.ar.mbs[j].u.area->u.str.size;
+          if (fsz == bsz &&
+              memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf,
+                     &filters->u.area->u.ar.mbs[j].u.area->u.str.buf, fsz) == 0)
+          {
+            found = 1;
+            break;
+          }
+        }
+        if (((ins == STIR_OPCODE_FILTER) && found) ||
+            ((ins == STIR_OPCODE_FILTEROUT) && !found))
+        {
+          if (abce_mb_array_append(abce, mods, &bases->u.area->u.ar.mbs[i]) != 0)
+          {
+            abce_pop(abce);
+            abce_pop(abce);
+            abce_cpop(abce);
+            return -ENOMEM;
+          }
+        }
+      }
+      abce_npoppush(abce, 2, mods);
+      abce_cpop(abce);
+      return 0;
+    }
     case STIR_OPCODE_SUFFILTER:
     {
       struct abce_mb *suf;
