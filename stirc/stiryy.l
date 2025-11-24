@@ -171,6 +171,11 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@appendlist   return APPEND_LIST;
 <INITIAL,STRICT>@dynluacall  return DYNLUACALL;
 <INITIAL,STRICT>@lexluacall  return LEXLUACALL;
+<INITIAL,STRICT>@gettime  return GETTIME;
+<INITIAL,STRICT>@localtime  return LOCALTIME;
+<INITIAL,STRICT>@gmtime  return GMTIME;
+<INITIAL,STRICT>@mktime  return MKTIME;
+
 
 <INITIAL,STRICT>@[?] return ATQM;
 <INITIAL,STRICT>@scope return SCOPE;
