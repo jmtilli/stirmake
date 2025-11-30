@@ -166,6 +166,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@continue return CONTINUE;
 <INITIAL,STRICT>@return  return RETURN;
 <INITIAL,STRICT>@append   return APPEND;
+<INITIAL,STRICT>@insert   return INSERT;
 <INITIAL,STRICT>@dictnext return DICTNEXT;
 <INITIAL,STRICT>@dictprev return DICTPREV;
 <INITIAL,STRICT>@appendlist   return APPEND_LIST;

@@ -303,6 +303,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token SC SCO
 %token APPEND
 %token APPEND_LIST
+%token INSERT
 %token RETURN
 %token ADD_RULE
 %token ADD_DEPS
@@ -2042,6 +2043,13 @@ statement:
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_APPEND_MAINTAIN);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_POP);
+  }
+}
+| INSERT OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LISTINS);
   }
 }
 | APPEND_LIST OPEN_PAREN expr COMMA expr CLOSE_PAREN
