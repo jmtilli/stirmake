@@ -36,7 +36,7 @@ https://jmtilli.github.io/stirmakeguide
 * Multiple targets per rules
 * Dependency on a whole directory hierarchy, using its latest mtime
 * Compatibility with `gcc -M` format dependency files
-* Conditional compilaton
+* Conditional compilation
 * Build command, timestamp and file size database, with dependency on build command and file information
 * Automatically deduced cleaning rules
 * Fast bytecode based variable expansion
