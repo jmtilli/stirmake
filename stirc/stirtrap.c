@@ -1261,7 +1261,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       struct abce_mb *regbool;
       struct abce_mb *mods;
       regex_t preg;
-      size_t bcnt, bsz, ssz, i;
+      size_t bcnt, i;
       VERIFYMB(-1, ABCE_T_S); // regexp
       VERIFYMB(-2, ABCE_T_B); // bool
       VERIFYMB(-3, ABCE_T_A); // bases
