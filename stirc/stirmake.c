@@ -300,13 +300,14 @@ int sizecmp(size_t size1, size_t size2)
   return 0;
 }
 
-static inline int tsdbe_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int tsdbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct tsdbe *e = ABCE_CONTAINER_OF(n2, struct tsdbe, node);
   int ret;
   size_t str2;
   str2 = e->stringtabidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -326,13 +327,14 @@ static inline int tsdbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tre
   return 0;
 }
 
-static inline int dbe_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int dbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct dbe *e = ABCE_CONTAINER_OF(n2, struct dbe, node);
   int ret;
   size_t str2;
   str2 = e->tgtidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -365,7 +367,7 @@ void maybe_del_tsdbe(struct tsdb *tsdb, size_t tgtidx)
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, tgtidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &tgtidx);
   if (n == NULL)
   {
     return;
@@ -384,7 +386,7 @@ void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe)
   if (ret != 0)
   {
     struct abce_rb_tree_node *n;
-    n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, tsdbe->stringtabidx);
+    n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &tsdbe->stringtabidx);
     if (n == NULL)
     {
       my_abort();
@@ -413,7 +415,7 @@ void maybe_del_dbe(struct db *db, size_t tgtidx)
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
   head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, tgtidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &tgtidx);
   if (n == NULL)
   {
     return;
@@ -432,7 +434,7 @@ void ins_dbe(struct db *db, struct dbe *dbe)
   if (ret != 0)
   {
     struct abce_rb_tree_node *n;
-    n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, dbe->tgtidx);
+    n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &dbe->tgtidx);
     if (n == NULL)
     {
       my_abort();
@@ -499,8 +501,9 @@ struct string_plus_len {
   size_t len;
 };
 
-static inline int stringtabentry_cmp_asym(const struct string_plus_len *stringlen, struct abce_rb_tree_node *n2, void *ud)
+static inline int stringtabentry_cmp_asym(const void *stringlenv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const struct string_plus_len *stringlen = stringlenv;
   struct stringtabentry *e = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
   int ret;
   const char *str2, *str1;
@@ -882,7 +885,7 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   struct abce_rb_tree_node *n;
   struct dbe *dbe;
   head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, tgtidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &tgtidx);
   if (n == NULL)
   {
     if (debug)
@@ -924,7 +927,7 @@ int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   struct tsdbe *tsdbe;
   //const char *tgtsrc = "source";
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
   if (get_ruleid_by_tgt(stringtabidx) >= 0)
   {
     //return 0; // it's target too
@@ -957,7 +960,7 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   struct tsdbe *tsdbe;
   //const char *tgtsrc = "target";
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
   if (n == NULL)
   {
     tsdbe = my_malloc(sizeof(struct tsdbe));
@@ -989,7 +992,7 @@ int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, siz
   struct tsdbe *tsdbe;
   const char *tgtsrc = istarget ? "target" : "source";
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, stringtabidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
   if (n == NULL)
   {
     if (debug)
@@ -1040,13 +1043,14 @@ struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
 struct linked_list_head ruleid_by_tgt_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
 
-static inline int ruleid_by_tgt_entry_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int ruleid_by_tgt_entry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct ruleid_by_tgt_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
   int ret;
   size_t str2;
   str2 = e->tgtidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -1101,7 +1105,7 @@ int get_ruleid_by_tgt(size_t tgt)
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   head = &ruleid_by_tgt[hash % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_tgt_entry_cmp_asym, NULL, tgt);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_tgt_entry_cmp_asym, NULL, &tgt);
   if (n == NULL)
   {
     return -ENOENT;
@@ -1149,14 +1153,15 @@ struct dep_remain {
   int waitcnt;
 };
 
-static inline int dep_remain_cmp_asym(int ruleid, struct abce_rb_tree_node *n2, void *ud)
+static inline int dep_remain_cmp_asym(const void *ruleidv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const int *ruleid = ruleidv;
   struct dep_remain *e = ABCE_CONTAINER_OF(n2, struct dep_remain, node);
-  if (ruleid > e->ruleid)
+  if (*ruleid > e->ruleid)
   {
     return 1;
   }
-  if (ruleid < e->ruleid)
+  if (*ruleid < e->ruleid)
   {
     return -1;
   }
@@ -1975,14 +1980,15 @@ static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   return 0;
 }
 
-static inline int tgt_cmp_asym(size_t tgtidx, struct abce_rb_tree_node *n2, void *ud)
+static inline int tgt_cmp_asym(const void *tgtidxv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *tgtidx = tgtidxv;
   struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
-  if (tgtidx > e2->tgtidx)
+  if (*tgtidx > e2->tgtidx)
   {
     return 1;
   }
-  if (tgtidx < e2->tgtidx)
+  if (*tgtidx < e2->tgtidx)
   {
     return -1;
   }
@@ -2039,7 +2045,7 @@ struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_nocmp *head;
   head = &rule->tgts[hash % (sizeof(rule->tgts)/sizeof(*rule->tgts))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tgt_cmp_asym, NULL, tgtidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, tgt_cmp_asym, NULL, &tgtidx);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct stirtgt, node);
@@ -2119,7 +2125,7 @@ int deps_remain_has(struct rule *rule, int ruleid)
   size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   return n != NULL;
 }
 
@@ -2130,7 +2136,7 @@ void deps_remain_forwait(struct rule *rule, int ruleid)
   size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n == NULL)
   {
     abort();
@@ -2146,7 +2152,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n == NULL)
   {
     return;
@@ -2168,7 +2174,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, ruleid);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n != NULL)
   {
     return;
@@ -2213,14 +2219,15 @@ struct one_ruleid_by_dep_entry {
   int ruleid;
 };
 
-static inline int one_ruleid_by_dep_entry_cmp_asym(int ruleid, struct abce_rb_tree_node *n2, void *ud)
+static inline int one_ruleid_by_dep_entry_cmp_asym(const void *ruleidv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const int *ruleid = ruleidv;
   struct one_ruleid_by_dep_entry *e = ABCE_CONTAINER_OF(n2, struct one_ruleid_by_dep_entry, node);
-  if (ruleid > e->ruleid)
+  if (*ruleid > e->ruleid)
   {
     return 1;
   }
-  if (ruleid < e->ruleid)
+  if (*ruleid < e->ruleid)
   {
     return -1;
   }
@@ -2250,13 +2257,14 @@ struct ruleid_by_dep_entry {
   struct linked_list_head one_ruleid_by_deplist;
 };
 
-static inline int ruleid_by_dep_entry_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int ruleid_by_dep_entry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct ruleid_by_dep_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_dep_entry, node);
   int ret;
   size_t str2;
   str2 = e->depidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -2288,7 +2296,7 @@ struct ruleid_by_dep_entry *find_ruleids_by_dep(size_t depidx)
   struct abce_rb_tree_node *n;
 
   head = &ruleids_by_dep[hash % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, depidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, &depidx);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct ruleid_by_dep_entry, node);
@@ -2308,7 +2316,7 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
   size_t i;
 
   head = &ruleids_by_dep[hash % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, depidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, &depidx);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct ruleid_by_dep_entry, node);
@@ -2344,7 +2352,7 @@ void ins_ruleid_by_dep(size_t depidx, int ruleid)
   struct abce_rb_tree_node *n;
   int ret;
   head = &e->one_ruleid_by_dep[hash % (sizeof(e->one_ruleid_by_dep)/sizeof(*e->one_ruleid_by_dep))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, one_ruleid_by_dep_entry_cmp_asym, NULL, ruleid);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, one_ruleid_by_dep_entry_cmp_asym, NULL, &ruleid);
   if (n != NULL)
   {
     return;
@@ -2444,13 +2452,14 @@ struct abce_rb_tree_nocmp add_deps[ADD_DEPS_SIZE];
 
 struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
 
-static inline int add_dep_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int add_dep_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct add_dep *e = ABCE_CONTAINER_OF(n2, struct add_dep, node);
   int ret;
   size_t str2;
   str2 = e->depidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -2471,13 +2480,14 @@ static inline int add_dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_t
   return 0;
 }
 
-static inline int add_deps_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int add_deps_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct add_deps *e = ABCE_CONTAINER_OF(n2, struct add_deps, node);
   int ret;
   size_t str2;
   str2 = e->tgtidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -2507,7 +2517,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx, size_t dep
   size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, depidx);
   hashloc = hashval % (sizeof(entry->add_deps)/sizeof(*entry->add_deps));
-  n = ABCE_RB_TREE_NOCMP_FIND(&entry->add_deps[hashloc], add_dep_cmp_asym, NULL, depidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(&entry->add_deps[hashloc], add_dep_cmp_asym, NULL, &depidx);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct add_dep, node);
@@ -2536,7 +2546,7 @@ struct add_deps *add_deps_ensure(size_t tgtidx)
   size_t i;
   hashval = abce_murmur32(HASH_SEED, tgtidx);
   hashloc = hashval % (sizeof(add_deps)/sizeof(*add_deps));
-  n = ABCE_RB_TREE_NOCMP_FIND(&add_deps[hashloc], add_deps_cmp_asym, NULL, tgtidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(&add_deps[hashloc], add_deps_cmp_asym, NULL, &tgtidx);
   if (n != NULL)
   {
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
@@ -2927,18 +2937,19 @@ struct ruleid_by_pid {
   int fd;
 };
 
-static inline int ruleid_by_pid_fd_cmp_asym(int fd, struct abce_rb_tree_node *n2, void *ud)
+static inline int ruleid_by_pid_fd_cmp_asym(const void *fdv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const int *fd = fdv;
   struct ruleid_by_pid *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, fdnode);
-  if (fd < 0 || e->fd < 0)
+  if (*fd < 0 || e->fd < 0)
   {
     my_abort();
   }
-  if (fd > e->fd)
+  if (*fd > e->fd)
   {
     return 1;
   }
-  if (fd < e->fd)
+  if (*fd < e->fd)
   {
     return -1;
   }
@@ -2964,14 +2975,15 @@ static inline int ruleid_by_pid_fd_cmp_sym(struct abce_rb_tree_node *n1, struct 
   return 0;
 }
 
-static inline int ruleid_by_pid_cmp_asym(pid_t pid, struct abce_rb_tree_node *n2, void *ud)
+static inline int ruleid_by_pid_cmp_asym(const void *pidv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const pid_t *pid = pidv;
   struct ruleid_by_pid *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, node);
-  if (pid > e->pid)
+  if (*pid > e->pid)
   {
     return 1;
   }
-  if (pid < e->pid)
+  if (*pid < e->pid)
   {
     return -1;
   }
@@ -3009,7 +3021,7 @@ int ruleid_by_fd(int fd)
   }
   hashvalfd = abce_murmur32(HASH_SEED, fd);
   hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
-  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_asym, NULL, fd);
+  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_asym, NULL, &fd);
   if (n == NULL)
   {
     return -ENOENT;
@@ -3026,7 +3038,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
   int ruleid;
   hashval = abce_murmur32(HASH_SEED, pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
-  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, pid);
+  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
   if (n == NULL)
   {
     return -ENOENT;
@@ -3656,13 +3668,14 @@ static inline void stathashentry_ensure_evict(void)
   }
 }
 
-static inline int stathashentry_cmp_asym(size_t str, struct abce_rb_tree_node *n2, void *ud)
+static inline int stathashentry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
+  const size_t *str = strv;
   struct stathashentry *e = ABCE_CONTAINER_OF(n2, struct stathashentry, node);
   int ret;
   size_t str2;
   str2 = e->nameidx;
-  ret = sizecmp(str, str2);
+  ret = sizecmp(*str, str2);
   if (ret != 0)
   {
     return ret;
@@ -3702,7 +3715,7 @@ void lstat_evict_named(size_t nameidx)
 
   hash = abce_murmur32(HASH_SEED, nameidx);
   head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, nameidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, &nameidx);
   if (n == NULL)
   {
     return;
@@ -3722,7 +3735,7 @@ struct stathashentry *lstat_cached(size_t nameidx)
   struct stat statbuf;
   hash = abce_murmur32(HASH_SEED, nameidx);
   head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, nameidx);
+  n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, &nameidx);
   if (n != NULL)
   {
     e = ABCE_CONTAINER_OF(n, struct stathashentry, node);
