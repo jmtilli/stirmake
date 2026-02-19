@@ -54,6 +54,7 @@ const char *stir_err_to_str(enum abce_errcode code)
 static inline void abce_npoppush(struct abce *abce, size_t n, struct abce_mb *mb)
 {
         int ret;
+        size_t i;
         ret = abce_mb_stackreplace(abce, -(int64_t)n, mb);
 #if POPABORTS
         if (ret != 0)
@@ -63,7 +64,7 @@ static inline void abce_npoppush(struct abce *abce, size_t n, struct abce_mb *mb
 #else
 	(void)ret;
 #endif
-        for (size_t i = 1; i < n; i++)
+        for (i = 1; i < n; i++)
         {
                 ret = abce_pop(abce);
 #if POPABORTS
