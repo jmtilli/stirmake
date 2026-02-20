@@ -2,7 +2,6 @@
 %option prefix="dbyy"
 
 %{
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
