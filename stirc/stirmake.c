@@ -5414,7 +5414,7 @@ int process_jobserver(int fds[2])
         fifostr2[sp-fifostr] = '\0';
         fifostr = fifostr2;
       }
-      fds[0] = open(fifostr, O_RDONLY);
+      fds[0] = open(fifostr, O_RDWR);
       if (fds[0] < 0)
       {
         if (sp)
@@ -5423,7 +5423,7 @@ int process_jobserver(int fds[2])
         }
         return -ENOENT;
       }
-      fds[1] = open(fifostr, O_WRONLY);
+      fds[1] = dup(fds[0]); // Not sure if necessary, to make it distinct
       if (fds[1] < 0)
       {
         if (sp)
