@@ -78,6 +78,8 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
+char *jobserver_fifo = NULL;
+
 int usetsdb = 1;
 
 int silent = 0;
@@ -3190,21 +3192,45 @@ void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, 
     char env[128] = {0};
     if (create_make_fd)
     {
-      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Orecurse",
-               jobserver_fd[0], jobserver_fd[1],
-               jobserver_fd[0], jobserver_fd[1]);
+      if (jobserver_fifo)
+      {
+        snprintf(env, sizeof(env), " --jobserver-auth=fifo:%s -j -Orecurse",
+	         jobserver_fifo);
+      }
+      else
+      {
+        snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Orecurse",
+                 jobserver_fd[0], jobserver_fd[1],
+                 jobserver_fd[0], jobserver_fd[1]);
+      }
     }
     else if (create_fd)
     {
-      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Otarget",
-               jobserver_fd[0], jobserver_fd[1],
-               jobserver_fd[0], jobserver_fd[1]);
+      if (jobserver_fifo)
+      {
+        snprintf(env, sizeof(env), " --jobserver-auth=fifo:%s -j -Otarget",
+	         jobserver_fifo);
+      }
+      else
+      {
+        snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Otarget",
+                 jobserver_fd[0], jobserver_fd[1],
+                 jobserver_fd[0], jobserver_fd[1]);
+      }
     }
     else
     {
-      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j",
-               jobserver_fd[0], jobserver_fd[1],
-               jobserver_fd[0], jobserver_fd[1]);
+      if (jobserver_fifo)
+      {
+        snprintf(env, sizeof(env), " --jobserver-auth=fifo:%s -j",
+	         jobserver_fifo);
+      }
+      else
+      {
+        snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j",
+                 jobserver_fd[0], jobserver_fd[1],
+                 jobserver_fd[0], jobserver_fd[1]);
+      }
     }
     setenv("MAKEFLAGS", env, 1);
     if (create_make_fd)
@@ -5433,10 +5459,13 @@ int process_jobserver(int fds[2])
         close(fds[0]);
         return -ENOENT;
       }
+      jobserver_fifo = fifostr;
+#if 0
       if (sp)
       {
         free(fifostr);
       }
+#endif
       return 0;
     }
     else if (sscanf(authstr, "%d,%d", &fds[0], &fds[1]) == 2)
