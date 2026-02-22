@@ -698,6 +698,9 @@ void *my_strdup(const char *str)
   return result;
 }
 
+char jobserver_chars[1024];
+int jobserver_char_cnt = 0;
+
 int read_jobserver(void)
 {
   char ch;
@@ -755,7 +758,15 @@ int read_jobserver(void)
       printf("222 ret %d, errno %d\n", ret, errno);
       my_abort();
     }
+    if (ret == 1 && jobserver_char_cnt < (int)(sizeof(jobserver_chars)/sizeof(*jobserver_chars)))
+    {
+      jobserver_chars[jobserver_char_cnt++] = ch;
+    }
     return (ret == 1);
+  }
+  if (ret == 1 && jobserver_char_cnt < (int)(sizeof(jobserver_chars)/sizeof(*jobserver_chars)))
+  {
+    jobserver_chars[jobserver_char_cnt++] = ch;
   }
   return (ret == 1);
 }
@@ -1297,7 +1308,14 @@ void errxit(const char *fmt, ...)
     children--;
     if (children != 0)
     {
-      write(jobserver_fd[1], ".", 1);
+      if (jobserver_char_cnt)
+      {
+        write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
+      }
+      else
+      {
+        (void)write(jobserver_fd[1], ".", 1);
+      }
     }
     if (!ignoreerr && wstatus != 0 && pid > 0)
     {
@@ -1382,7 +1400,14 @@ void errxit(const char *fmt, ...)
     children--;
     if (children != 0)
     {
-      write(jobserver_fd[1], ".", 1);
+      if (jobserver_char_cnt)
+      {
+        write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
+      }
+      else
+      {
+        (void)write(jobserver_fd[1], ".", 1);
+      }
     }
   }
 }
@@ -3165,17 +3190,20 @@ void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, 
     char env[128] = {0};
     if (create_make_fd)
     {
-      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j -Orecurse",
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Orecurse",
+               jobserver_fd[0], jobserver_fd[1],
                jobserver_fd[0], jobserver_fd[1]);
     }
     else if (create_fd)
     {
-      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j -Otarget",
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Otarget",
+               jobserver_fd[0], jobserver_fd[1],
                jobserver_fd[0], jobserver_fd[1]);
     }
     else
     {
-      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d -j",
+      snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j",
+               jobserver_fd[0], jobserver_fd[1],
                jobserver_fd[0], jobserver_fd[1]);
     }
     setenv("MAKEFLAGS", env, 1);
@@ -5272,12 +5300,16 @@ void *my_memrchr(const void *s, int c, size_t n)
   return NULL;
 }
 
-void process_mflags(char **fds, char **outputsync)
+void process_mflags(char **fds, char **auth, char **outputsync)
 {
   char *iter = getenv("MAKEFLAGS");
   if (fds)
   {
     *fds = NULL;
+  }
+  if (auth)
+  {
+    *auth = NULL;
   }
   if (outputsync)
   {
@@ -5308,6 +5340,14 @@ void process_mflags(char **fds, char **outputsync)
       if (fds)
       {
         *fds = iter;
+      }
+    }
+    if (strncmp(iter, "--jobserver-auth=", strlen("--jobserver-auth=")) == 0)
+    {
+      iter += strlen("--jobserver-auth=");
+      if (auth)
+      {
+        *auth = iter;
       }
     }
     iter = strchr(iter, ' ');
@@ -5354,22 +5394,71 @@ char *calc_forward_path(char *storcwd, size_t upcnt)
 int process_jobserver(int fds[2])
 {
   char *fdstr;
-  process_mflags(&fdstr, NULL);
-  if (fdstr == NULL)
+  char *authstr;
+  process_mflags(&fdstr, &authstr, NULL);
+  if (fdstr == NULL && authstr != NULL)
   {
-    return -ENOENT;
+    if (strncmp(authstr, "fifo:", strlen("fifo:")) == 0)
+    {
+      char *fifostr = authstr+strlen("fifo:");
+      char *sp = strchr(fifostr, ' ');
+      if (sp)
+      {
+        char *fifostr2;
+        fifostr2 = malloc(sp-fifostr+1);
+        if (fifostr2 == NULL)
+        {
+          return -ENOENT;
+        }
+        memcpy(fifostr2, fifostr, sp-fifostr);
+        fifostr2[sp-fifostr] = '\0';
+        fifostr = fifostr2;
+      }
+      fds[0] = open(fifostr, O_RDONLY);
+      if (fds[0] < 0)
+      {
+        if (sp)
+        {
+          free(fifostr);
+        }
+        return -ENOENT;
+      }
+      fds[1] = open(fifostr, O_WRONLY);
+      if (fds[1] < 0)
+      {
+        if (sp)
+        {
+          free(fifostr);
+        }
+        close(fds[0]);
+        return -ENOENT;
+      }
+      if (sp)
+      {
+        free(fifostr);
+      }
+      return 0;
+    }
+    else if (sscanf(authstr, "%d,%d", &fds[0], &fds[1]) == 2)
+    {
+      fdstr = authstr;
+    }
+    else
+    {
+      return -ENOENT;
+    }
   }
   if (sscanf(fdstr, "%d,%d", &fds[0], &fds[1]) != 2)
   {
     fprintf(stderr, "stirmake: Jobserver unavailable\n");
     return -EINVAL;
   }
-  if (fcntl(jobserver_fd[0], F_GETFD) == -1)
+  if (fcntl(fds[0], F_GETFD) == -1)
   {
     fprintf(stderr, "stirmake: Jobserver unavailable\n");
     return -EBADF;
   }
-  if (fcntl(jobserver_fd[1], F_GETFD) == -1)
+  if (fcntl(fds[1], F_GETFD) == -1)
   {
     fprintf(stderr, "stirmake: Jobserver unavailable\n");
     return -EBADF;
@@ -6419,7 +6508,14 @@ back:
         children--;
         if (children != 0)
         {
-          write(jobserver_fd[1], ".", 1);
+          if (jobserver_char_cnt)
+          {
+            write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
+          }
+          else
+          {
+            (void)write(jobserver_fd[1], ".", 1);
+          }
         }
         forkedchildcnt++;
         if (((forkedchildcnt % 10) == 0) && narration)
@@ -6742,7 +6838,7 @@ int main(int argc, char **argv)
     set_mode(MODE_PROJECT, 1, argv[0]);
   }
 
-  process_mflags(NULL, &outsyncmflag);
+  process_mflags(NULL, NULL, &outsyncmflag);
   if (outsyncmflag)
   {
     if (outsyncmflag[0] == 'n')
