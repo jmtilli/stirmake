@@ -5448,6 +5448,10 @@ int process_jobserver(int fds[2])
       return -ENOENT;
     }
   }
+  if (fdstr == NULL)
+  {
+    return -ENOENT;
+  }
   if (sscanf(fdstr, "%d,%d", &fds[0], &fds[1]) != 2)
   {
     fprintf(stderr, "stirmake: Jobserver unavailable\n");
