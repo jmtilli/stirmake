@@ -5472,7 +5472,9 @@ int process_jobserver(int fds[2])
         }
         return -ENOENT;
       }
-      fds[1] = dup(fds[0]); // Not sure if necessary, to make it distinct
+      fds[1] = open(fifostr, O_RDWR);
+      set_nonblock(fds[1]);
+      //fds[1] = dup(fds[0]); // Not sure if necessary, to make it distinct
       if (fds[1] < 0)
       {
         if (sp)
@@ -6200,7 +6202,7 @@ void create_pipe(int jobcnt)
       fflush(stdout);
       goto fallback;
     }
-    jobserver_fd[1] = dup(jobserver_fd[0]);
+    jobserver_fd[1] = open(jobserver_fifo, O_RDWR);
     if (jobserver_fd[1] < 0)
     {
       close(jobserver_fd[0]);
@@ -6209,6 +6211,7 @@ void create_pipe(int jobcnt)
       fflush(stdout);
       goto fallback;
     }
+    set_nonblock(jobserver_fd[1]);
     for (i = 0; i < jobcnt - 1; i++)
     {
       struct itimerval new_value = {};
