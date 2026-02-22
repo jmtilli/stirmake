@@ -6171,6 +6171,9 @@ void merge_db(void)
   }
 }
 
+const char base62[] =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
 void create_pipe(int jobcnt)
 {
   int err = 0;
@@ -6178,8 +6181,10 @@ void create_pipe(int jobcnt)
   int i;
   if (create_jobserver_fifo)
   {
-    char tmp[] = "/tmp/SMfifoXXXXXX";
-    int fd = mkstemp(tmp);
+    char tmp[] = "/tmp/SMfifoXXXXXX.YYYYYY";
+    int fd;
+    snprintf(tmp, sizeof(tmp), "/tmp/SMfifoXXXXXX");
+    fd = mkstemp(tmp);
     if (fd < 0)
     {
       printf("stirmake: FIFO didn't work, trying something else instead\n");
@@ -6188,6 +6193,13 @@ void create_pipe(int jobcnt)
     }
     close(fd);
     unlink(tmp);
+    // Add more randomness since an attacker may have seen the file name
+    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
     jobserver_fifo = strdup(tmp);
     if (mkfifo(jobserver_fifo, 0600) != 0)
     {
