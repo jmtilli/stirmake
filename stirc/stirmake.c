@@ -79,6 +79,8 @@
 #include "syncbuf.h"
 
 char *jobserver_fifo = NULL;
+int create_jobserver_fifo = 0;
+int created_jobserver_fifo = 0;
 
 int usetsdb = 1;
 
@@ -703,6 +705,30 @@ void *my_strdup(const char *str)
 char jobserver_chars[1024];
 int jobserver_char_cnt = 0;
 
+int write_jobserver(void)
+{
+  struct itimerval new_value = {};
+  int ret;
+  new_value.it_interval.tv_sec = 0;
+  new_value.it_interval.tv_usec = 0;
+  new_value.it_value.tv_sec = 0;
+  new_value.it_value.tv_usec = 10*1000;
+  setitimer(ITIMER_REAL, &new_value, NULL);
+  if (jobserver_char_cnt)
+  {
+    ret = write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
+  }
+  else
+  {
+    ret = write(jobserver_fd[1], ".", 1);
+  }
+  new_value.it_interval.tv_sec = 0;
+  new_value.it_interval.tv_usec = 0;
+  new_value.it_value.tv_sec = 0;
+  new_value.it_value.tv_usec = 0;
+  setitimer(ITIMER_REAL, &new_value, NULL);
+  return ret;
+}
 int read_jobserver(void)
 {
   char ch;
@@ -1264,6 +1290,16 @@ extern fd_set globfds;
 
 void drain_pipe(struct rule *rule, int fdit);
 
+void clean_jobserver(void)
+{
+  if (created_jobserver_fifo && jobserver_fifo)
+  {
+    unlink(jobserver_fifo);
+    jobserver_fifo = NULL;
+    created_jobserver_fifo = 0;
+  }
+}
+
 // FIXME do updates to DB here as well... Now they are not done.
 void errxit(const char *fmt, ...)
 {
@@ -1275,6 +1311,7 @@ void errxit(const char *fmt, ...)
   int wstatus;
   int fd = -1;
   pid_t pid;
+  clean_jobserver();
   snprintf(fmtdup, sz, "%s%s%s", prefix, fmt, suffix);
   va_start(args, fmt);
   vfprintf(stderr, fmtdup, args);
@@ -1310,14 +1347,7 @@ void errxit(const char *fmt, ...)
     children--;
     if (children != 0)
     {
-      if (jobserver_char_cnt)
-      {
-        write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
-      }
-      else
-      {
-        (void)write(jobserver_fd[1], ".", 1);
-      }
+      write_jobserver();
     }
     if (!ignoreerr && wstatus != 0 && pid > 0)
     {
@@ -1402,14 +1432,7 @@ void errxit(const char *fmt, ...)
     children--;
     if (children != 0)
     {
-      if (jobserver_char_cnt)
-      {
-        write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
-      }
-      else
-      {
-        (void)write(jobserver_fd[1], ".", 1);
-      }
+      write_jobserver();
     }
   }
 }
@@ -6150,6 +6173,72 @@ void create_pipe(int jobcnt)
   int err = 0;
   int buf;
   int i;
+  if (create_jobserver_fifo)
+  {
+    char tmp[] = "/tmp/SMfifoXXXXXX";
+    int fd = mkstemp(tmp);
+    if (fd < 0)
+    {
+      printf("stirmake: FIFO didn't work, trying something else instead\n");
+      fflush(stdout);
+      goto fallback;
+    }
+    close(fd);
+    unlink(tmp);
+    jobserver_fifo = strdup(tmp);
+    if (mkfifo(jobserver_fifo, 0600) != 0)
+    {
+      printf("stirmake: FIFO didn't work, trying something else instead\n");
+      fflush(stdout);
+      goto fallback;
+    }
+    jobserver_fd[0] = open(jobserver_fifo, O_RDWR);
+    if (jobserver_fd[0] < 0)
+    {
+      unlink(jobserver_fifo);
+      printf("stirmake: FIFO didn't work, trying something else instead\n");
+      fflush(stdout);
+      goto fallback;
+    }
+    jobserver_fd[1] = dup(jobserver_fd[0]);
+    if (jobserver_fd[1] < 0)
+    {
+      close(jobserver_fd[0]);
+      unlink(jobserver_fifo);
+      printf("stirmake: FIFO didn't work, trying something else instead\n");
+      fflush(stdout);
+      goto fallback;
+    }
+    for (i = 0; i < jobcnt - 1; i++)
+    {
+      struct itimerval new_value = {};
+      int ret;
+      new_value.it_interval.tv_sec = 0;
+      new_value.it_interval.tv_usec = 0;
+      new_value.it_value.tv_sec = 0;
+      new_value.it_value.tv_usec = 10*1000;
+      setitimer(ITIMER_REAL, &new_value, NULL);
+      ret = write(jobserver_fd[1], ".", 1);
+      new_value.it_interval.tv_sec = 0;
+      new_value.it_interval.tv_usec = 0;
+      new_value.it_value.tv_sec = 0;
+      new_value.it_value.tv_usec = 0;
+      setitimer(ITIMER_REAL, &new_value, NULL);
+      if (ret < 0)
+      {
+        close(jobserver_fd[1]);
+        close(jobserver_fd[0]);
+        unlink(jobserver_fifo);
+        printf("stirmake: FIFO didn't work, trying something else instead\n");
+        fflush(stdout);
+        goto fallback;
+      }
+    }
+    created_jobserver_fifo = 1;
+    return;
+  }
+fallback:
+  jobserver_fifo = NULL; // reset it if we tried to create it
   if (socketpair(AF_UNIX, SOCK_STREAM, 0, jobserver_fd) != 0)
   {
     printf("28\n");
@@ -6309,6 +6398,8 @@ back:
   {
     if (test)
     {
+      clean_jobserver();
+      // FIXME should we do this: merge_db()
       exit(0);
     }
     if (!silent)
@@ -6541,14 +6632,7 @@ back:
         children--;
         if (children != 0)
         {
-          if (jobserver_char_cnt)
-          {
-            write(jobserver_fd[1], &jobserver_chars[--jobserver_char_cnt], 1);
-          }
-          else
-          {
-            (void)write(jobserver_fd[1], ".", 1);
-          }
+          write_jobserver();
         }
         forkedchildcnt++;
         if (((forkedchildcnt % 10) == 0) && narration)
@@ -6899,7 +6983,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReE")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEF")) != -1)
   {
     switch (opt)
     {
@@ -7046,6 +7130,9 @@ int main(int argc, char **argv)
     case 'H':
       narration = 1;
       setlocale(LC_CTYPE, "");
+      break;
+    case 'F':
+      create_jobserver_fifo = 1;
       break;
     case 'f': // FIXME what if optarg contains directories?
       filename_set = 1;
@@ -7809,6 +7896,7 @@ int main(int argc, char **argv)
     {
       do_clean(fwd_path, clean, cleanbinaries);
       merge_db();
+      clean_jobserver();
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
@@ -7983,6 +8071,7 @@ int main(int argc, char **argv)
     printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
   }
   merge_db();
+  clean_jobserver();
 #if 0
   free(dupargv0);
   stiryy_main_free(&main);
