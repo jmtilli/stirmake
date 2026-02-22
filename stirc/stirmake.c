@@ -5473,7 +5473,6 @@ int process_jobserver(int fds[2])
         return -ENOENT;
       }
       fds[1] = open(fifostr, O_RDWR);
-      set_nonblock(fds[1]);
       //fds[1] = dup(fds[0]); // Not sure if necessary, to make it distinct
       if (fds[1] < 0)
       {
@@ -5484,6 +5483,8 @@ int process_jobserver(int fds[2])
         close(fds[0]);
         return -ENOENT;
       }
+      set_nonblock(fds[1]);
+      set_nonblock(fds[0]); // We can only do this if we pass FIFO name to child
       jobserver_fifo = fifostr;
 #if 0
       if (sp)
@@ -6212,6 +6213,7 @@ void create_pipe(int jobcnt)
       goto fallback;
     }
     set_nonblock(jobserver_fd[1]);
+    set_nonblock(jobserver_fd[0]);
     for (i = 0; i < jobcnt - 1; i++)
     {
       struct itimerval new_value = {};
