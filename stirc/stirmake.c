@@ -5247,7 +5247,7 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-vGdcbq] [-j jobcnt] [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFP] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
@@ -5255,7 +5255,7 @@ void usage(char *argv0)
   }
   else
   {
-    fprintf(stderr, "%s [-vGdcbq] [-j jobcnt] -f Stirfile | -t | -p | -a [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFP] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] -f Stirfile | -t | -p | -a [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
