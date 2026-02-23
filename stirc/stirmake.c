@@ -19,6 +19,9 @@
 #include <stdarg.h>
 #include "stircommon.h"
 #include "git.h"
+#ifdef __linux__
+#include <sys/random.h>
+#endif
 
 // System provides getloadavg() function
 // Non-POSIX, so we enable only on systems where it is known to work
@@ -5405,6 +5408,7 @@ void process_mflags(char **fds, char **auth, char **outputsync)
       iter++;
     }
   }
+  unsetenv("MAKEFLAGS");
 }
 
 char *calc_forward_path(char *storcwd, size_t upcnt)
@@ -6851,6 +6855,31 @@ void process_orders(struct stiryy_main *main)
   }
 }
 
+void do_srand(void)
+{
+  uint32_t randseed = 0;
+  ssize_t read_ret;
+  int fd;
+  srand(time(NULL) ^ getpid());
+#ifdef __linux__
+  if (getrandom(&randseed, sizeof(randseed), 0) == sizeof(randseed))
+  {
+    srand(randseed);
+  }
+#else
+  fd = open("/dev/urandom", O_RDONLY);
+  if (fd < 0)
+  {
+    return;
+  }
+  while (((read_ret = read(fd, &randseed, sizeof(randseed)) < 0) || read_ret != sizeof(randseed)) && errno == EINTR)
+  {
+    // re-do
+  }
+  srand(randseed);
+  close(fd);
+#endif
+}
 int yy_stored_lineno = -1;
 const char *yy_stored_prefix = NULL;
 
@@ -6941,6 +6970,8 @@ int main(int argc, char **argv)
   sabus.sa_handler = sigbus_handler;
   sigaction(SIGBUS, &sabus, NULL);
 
+  do_srand();
+
   do_setrlimit();
 
   sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
@@ -7000,7 +7031,7 @@ int main(int argc, char **argv)
   }
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEF")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEFP")) != -1)
   {
     switch (opt)
     {
@@ -7150,6 +7181,9 @@ int main(int argc, char **argv)
       break;
     case 'F':
       create_jobserver_fifo = 1;
+      break;
+    case 'P':
+      create_jobserver_fifo = 0; // use a pipe
       break;
     case 'f': // FIXME what if optarg contains directories?
       filename_set = 1;
