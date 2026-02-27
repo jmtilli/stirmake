@@ -81,8 +81,7 @@ cd stirc
 The compiled stirmake executable is fully self-contained. No dynamic libraries
 are required apart from the ones that come with the operating system.
 
-Note there is no make install. One needs to manually copy the stirmake binary
-to some directory and create the symlinks:
+Note there is no make install. One needs to use the install.sh script:
 
 ```
 cd stirc
