@@ -69,6 +69,15 @@ cd stirc
 make
 ```
 
+Or if GNU make is not available, shell can be used to bootstrap it:
+
+```
+git submodule init
+git submodule update
+cd stirc
+./bootstrapnomake.sh
+```
+
 The compiled stirmake executable is fully self-contained. No dynamic libraries
 are required apart from the ones that come with the operating system.
 
