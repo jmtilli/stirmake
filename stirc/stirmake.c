@@ -5885,7 +5885,7 @@ void load_db(void)
     fprintf(stderr, "stirmake: *** Can't open DB. Exiting.\n");
     exit(2);
   }
-  fseek(dbf, 0, SEEK_SET); // Cygwin requires this
+  fseek(dbf, 0, SEEK_SET); // Cygwin/BSD/MacOS requires this
   dbfd = fileno(dbf);
   if (dbfd < 0)
   {
