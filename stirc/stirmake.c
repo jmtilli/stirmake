@@ -4004,6 +4004,7 @@ int utimensat_both_emul(const char *pathname, struct timespec time, int l,
         req = rem;
       }
     }
+    return utimeret;
   }
 #endif
 }
