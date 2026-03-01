@@ -5878,12 +5878,24 @@ void load_db(void)
   int ret;
   linked_list_head_init(&db.ll);
   //dbyynameparse(".stir.db", &dbyy, 0);
+#ifdef __CYGWIN__
+  dbf = fopen(".stir.db", "r+");
+  if (dbf == NULL)
+  {
+    fprintf(stderr, "stirmake: *** Can't open DB. Exiting.\n");
+    exit(2);
+  }
+  ret = dbyydoparse(dbf, &dbyy);
+  fclose(dbf);
+  dbf = fopen(".stir.db", "a+");
+#else
   dbf = fopen(".stir.db", "a+");
   if (dbf == NULL)
   {
     fprintf(stderr, "stirmake: *** Can't open DB. Exiting.\n");
     exit(2);
   }
+#endif
   int dbfd = fileno(dbf);
   if (dbfd < 0)
   {
@@ -5899,7 +5911,10 @@ void load_db(void)
     fprintf(stderr, "stirmake: *** Can't lock DB. Other stirmake running? Exiting.\n");
     exit(2);
   }
+#ifdef __CYGWIN__
+#else
   ret = dbyydoparse(dbf, &dbyy);
+#endif
   if (!test && ftruncate(dbfd, 0) != 0)
   {
     fprintf(stderr, "stirmake: *** Can't truncate DB. Exiting.\n");
