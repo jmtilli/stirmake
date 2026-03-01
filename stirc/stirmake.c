@@ -5929,6 +5929,8 @@ void load_db(void)
     tsdbe->ts = dbyy.tsdb[i].ts;
     ins_tsdbe(&tsdb, tsdbe);
   }
+  fseek(dbf, 0, SEEK_END); // switching from read to write must call positioning function
+  // This is necessitated by standard for a+ mode
 }
 
 void merge_db_v1(void)
