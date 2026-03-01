@@ -3988,6 +3988,7 @@ int utimensat_both_emul(const char *pathname, struct timespec time, int l,
   {
     struct timespec req;
     struct timespec rem;
+    int utimeret;
     utimeret = utimes(pathname, times); // Ugh. Can't change symlink time!
     if (forwards)
     {
