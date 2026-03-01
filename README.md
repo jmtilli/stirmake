@@ -107,7 +107,10 @@ then). If the directory `~/.local/bin` needed to be created, it might be
 necessary to log out of the Linux system and log in again. In graphical logins,
 closing the terminal may not be enough. If this is not done, the `PATH`
 environment value might not contain the needed directories. Most modern Linux
-systems place it into `PATH` if it exists.
+systems place it into `PATH` if it exists. Note also that `~/.local` is a
+modern Linux-ism, so on BSDs, MacOS or Cygwin it might not do what you want,
+and the same is true for older versions of Linux as well. Generally, in these
+cases, installing to /usr/local should work.
 
 ## Data model
 
