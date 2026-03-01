@@ -19,6 +19,7 @@ extern int jsonyylex_destroy(yyscan_t yyscanner);
 int jsonyydoparse(FILE *filein, struct jsonyy *jsonyy)
 {
   yyscan_t scanner;
+#if 0
   int fd;
   struct stat statbuf;
 
@@ -31,6 +32,7 @@ int jsonyydoparse(FILE *filein, struct jsonyy *jsonyy)
   {
     return -EBADF;
   }
+#endif
 
   jsonyylex_init(&scanner);
   jsonyyset_in(filein, scanner);
