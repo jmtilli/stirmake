@@ -60,6 +60,10 @@ Or:
 yum install flex byacc
 ```
 
+If you use cygwin, install flex and byacc but also install m4, because flex
+requires it and selecting flex does not automatically select m4. Also gcc and
+binutils are required.
+
 Stirmake is built in the following way using GNU make to bootstrap it:
 
 ```
