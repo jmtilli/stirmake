@@ -118,6 +118,8 @@ dbrulev1: STRING_LITERAL STRING_LITERAL COLON
     YYABORT;
   }
   dbyy_emplace_rule(dbyy, $1.str, $2.str);
+  free($1.str);
+  free($2.str);
 }
   NEWLINE
   commands
@@ -136,6 +138,8 @@ dbrulev2: STRING_LITERAL STRING_LITERAL COLON
     YYABORT;
   }
   dbyy_emplace_rule(dbyy, $1.str, $2.str);
+  free($1.str);
+  free($2.str);
 }
   NEWLINE
   commands
@@ -147,6 +151,7 @@ dbrulev2: STRING_LITERAL STRING_LITERAL COLON
     YYABORT;
   }
   dbyy_emplace_tsdb(dbyy, $1.str, $3, $4, $5);
+  free($1.str);
 }
 ;
 
@@ -159,6 +164,7 @@ cmdline:
     YYABORT;
   }
   dbyy_add_arg(dbyy, $2.str);
+  free($2.str);
 }
 ;
 
