@@ -7838,6 +7838,8 @@ int main(int argc, char **argv)
     incyy_free(&incyy);
   }
   stiryy_free(&stiryy);
+  free(main.rules);
+  main.rules = NULL;
 
   //add_dep(v_l3e, v_l1g, 0); // offending rule
 
