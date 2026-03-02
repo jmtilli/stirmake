@@ -7708,6 +7708,8 @@ int main(int argc, char **argv)
                    main.rules[i].prefix, main.rules[i].scopeidx,
                    main.rules[i].lineno,
                    meat);
+          free(tgts);
+          free(deps);
           free(meat);
         }
         continue;
