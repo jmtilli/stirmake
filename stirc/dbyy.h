@@ -14,6 +14,9 @@
 extern "C" {
 #endif
 
+void *my_strdup(const char *str);
+void *my_malloc(size_t sz);
+
 struct dbyycmd {
   char **args;
   size_t argssz;
@@ -71,7 +74,7 @@ static inline void dbyy_add_arg(struct dbyy *dbyy, const char *arg)
     cmd->args = (char**)realloc(cmd->args, sizeof(*cmd->args)*newcapacity);
     cmd->argscapacity = newcapacity;
   }
-  cmd->args[cmd->argssz++] = strdup(arg);
+  cmd->args[cmd->argssz++] = my_strdup(arg);
 }
 
 static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const char *tgt)
@@ -83,11 +86,19 @@ static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const c
     dbyy->rules = (struct dbyyrule*)realloc(dbyy->rules, sizeof(*dbyy->rules)*newcapacity);
     dbyy->rulecapacity = newcapacity;
   }
+  if (dbyy->rulesz > 0)
+  {
+    void *cmds2;
+    cmds2 = my_malloc(sizeof(*dbyy->rules[dbyy->rulesz-1].cmds)*dbyy->rules[dbyy->rulesz-1].cmdssz);
+    memcpy(cmds2, dbyy->rules[dbyy->rulesz-1].cmds, sizeof(*dbyy->rules[dbyy->rulesz-1].cmds)*dbyy->rules[dbyy->rulesz-1].cmdssz);
+    free(dbyy->rules[dbyy->rulesz-1].cmds);
+    dbyy->rules[dbyy->rulesz-1].cmds = cmds2;
+  }
   dbyy->rules[dbyy->rulesz].cmdssz = 0;
   dbyy->rules[dbyy->rulesz].cmdscapacity = 0;
   dbyy->rules[dbyy->rulesz].cmds = NULL;
-  dbyy->rules[dbyy->rulesz].dir = strdup(dir);
-  dbyy->rules[dbyy->rulesz].tgt = strdup(tgt);
+  dbyy->rules[dbyy->rulesz].dir = my_strdup(dir);
+  dbyy->rules[dbyy->rulesz].tgt = my_strdup(tgt);
   dbyy->rulesz++;
 }
 
@@ -100,13 +111,14 @@ static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, off_t f
     dbyy->tsdb = (struct tsdbentry*)realloc(dbyy->tsdb, sizeof(*dbyy->tsdb)*newcapacity);
     dbyy->tscapacity = newcapacity;
   }
-  dbyy->tsdb[dbyy->tssz].tgt = strdup(tgt);
+  dbyy->tsdb[dbyy->tssz].tgt = my_strdup(tgt);
   dbyy->tsdb[dbyy->tssz].filesz = filesz;
   dbyy->tsdb[dbyy->tssz].ts.tv_sec = sec;
   dbyy->tsdb[dbyy->tssz].ts.tv_nsec = nsec;
   dbyy->tssz++;
 }
 
+#if 0 // No longer valid due to the use of custom non-free-supporting allocator
 static inline void dbyy_free(struct dbyy *dbyy)
 {
   size_t i;
@@ -135,6 +147,7 @@ static inline void dbyy_free(struct dbyy *dbyy)
   free(dbyy->tsdb);
   memset(dbyy, 0, sizeof(*dbyy));
 }
+#endif
 
 #ifdef __cplusplus
 };
