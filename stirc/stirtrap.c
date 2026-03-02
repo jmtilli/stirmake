@@ -793,6 +793,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     size_t namsz;
     struct abce_mb *attr1;
     char *nam;
+    char *can;
     mbstr = NULL;
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
@@ -804,9 +805,11 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     {
       my_abort();
     }
-    yytgts[i].name = canon(nam);
+    can = canon(nam);
+    yytgts[i].name = my_strdup(can);
     free(nam);
-    yytgts[i].namenodir = strdup(mbstr->u.area->u.str.buf);
+    free(can);
+    yytgts[i].namenodir = my_strdup(mbstr->u.area->u.str.buf);
     yytgts[i].is_dist = 0;
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
     {
