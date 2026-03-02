@@ -174,4 +174,7 @@ commands:
   dbyy_add_cmd(dbyy);
 }
   cmdline NEWLINE
+{
+  dbyy_post_cmd(dbyy);
+}
 ;

@@ -62,6 +62,18 @@ static inline void dbyy_add_cmd(struct dbyy *dbyy)
   rule->cmds[rule->cmdssz].argscapacity = 0;
   rule->cmdssz++;
 }
+static inline void dbyy_post_cmd(struct dbyy *dbyy)
+{
+  struct dbyyrule *rule = &dbyy->rules[dbyy->rulesz - 1];
+  if (rule->cmdssz > 0)
+  {
+    void *tmpptr;
+    tmpptr = my_malloc(sizeof(rule->cmds[rule->cmdssz-1].args[0])*rule->cmds[rule->cmdssz-1].argssz);
+    memcpy(tmpptr, rule->cmds[rule->cmdssz-1].args, sizeof(rule->cmds[rule->cmdssz-1].args[0])*rule->cmds[rule->cmdssz-1].argssz);
+    free(rule->cmds[rule->cmdssz-1].args);
+    rule->cmds[rule->cmdssz-1].args = tmpptr;
+  }
+}
 
 static inline void dbyy_add_arg(struct dbyy *dbyy, const char *arg)
 {
