@@ -505,6 +505,7 @@ custom_assign:
     }
     argv[get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size] = NULL;
     char *res = eval_cmd(argv);
+    free(argv);
     if (res == NULL)
     {
       amyplanyyerror(scanner, amyplanyy, "shell-assign failed");
