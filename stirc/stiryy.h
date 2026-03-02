@@ -23,6 +23,7 @@ extern "C" {
 #endif
 
 void my_abort(void);
+void *my_malloc(size_t sz);
 
 extern int yy_stored_lineno;
 extern const char *yy_stored_prefix;
@@ -966,6 +967,29 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char
     newcapacity = 2*main->rulecapacity + 1;
     main->rules = (struct stiryyrule*)realloc(main->rules, sizeof(*main->rules)*newcapacity);
     main->rulecapacity = newcapacity;
+  }
+  if (main->rulesz > 0)
+  {
+    void *tmpptr;
+    tmpptr = my_malloc(sizeof(main->rules[main->rulesz-1].bases[0])*main->rules[main->rulesz-1].basesz);
+    memcpy(tmpptr, main->rules[main->rulesz-1].bases, sizeof(main->rules[main->rulesz-1].bases[0])*main->rules[main->rulesz-1].basesz);
+    free(main->rules[main->rulesz-1].bases);
+    main->rules[main->rulesz-1].bases = tmpptr;
+
+    tmpptr = my_malloc(sizeof(main->rules[main->rulesz-1].deps[0])*main->rules[main->rulesz-1].depsz);
+    memcpy(tmpptr, main->rules[main->rulesz-1].deps, sizeof(main->rules[main->rulesz-1].deps[0])*main->rules[main->rulesz-1].depsz);
+    free(main->rules[main->rulesz-1].deps);
+    main->rules[main->rulesz-1].deps = tmpptr;
+
+    tmpptr = my_malloc(sizeof(main->rules[main->rulesz-1].targets[0])*main->rules[main->rulesz-1].targetsz);
+    memcpy(tmpptr, main->rules[main->rulesz-1].targets, sizeof(main->rules[main->rulesz-1].targets[0])*main->rules[main->rulesz-1].targetsz);
+    free(main->rules[main->rulesz-1].targets);
+    main->rules[main->rulesz-1].targets = tmpptr;
+
+    tmpptr = my_malloc(sizeof(main->rules[main->rulesz-1].shells.items[0])*main->rules[main->rulesz-1].shells.itemsz);
+    memcpy(tmpptr, main->rules[main->rulesz-1].shells.items, sizeof(main->rules[main->rulesz-1].shells.items[0])*main->rules[main->rulesz-1].shells.itemsz);
+    free(main->rules[main->rulesz-1].shells.items);
+    main->rules[main->rulesz-1].shells.items = tmpptr;
   }
   main->rule_in_progress = 1;
   main->rules[main->rulesz].basesz = 0;
