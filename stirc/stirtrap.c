@@ -949,10 +949,10 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       yyshells[i].sz = attr1->u.area->u.ar.size;
       yyshells[i].capacity = attr1->u.area->u.ar.size+1;
       yyshells[i].u.args =
-        malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
+        my_malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
-        yyshells[i].u.args[j] = strdup(
+        yyshells[i].u.args[j] = my_strdup(
           attr1->u.area->u.ar.mbs[j].u.area->u.str.buf);
       }
       yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
