@@ -5009,12 +5009,13 @@ void mark_executed(int ruleid, int was_actually_executed)
   LINKED_LIST_FOR_EACH(node, &r->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
-    struct stat statbuf;
-    if (lstat(sttable[e->nameidx].s, &statbuf) != 0)
+    struct stathashentry *she;
+    she = lstat_cached(e->nameidx);
+    if (she->ret != 0)
     {
       continue;
     }
-    tsszstoresource(&tsdb, e->nameidx, statbuf.st_mtim, statbuf.st_size);
+    tsszstoresource(&tsdb, e->nameidx, she->st_mtim, she->st_size);
   }
   /* FIXME we need to handle:
    * a: b
