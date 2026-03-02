@@ -1468,6 +1468,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   size_t i, j, k;
   struct cmdsrc *cmdsrc = &rule->cmdsrc;
   char ***result = NULL;
+  char ***result2 = NULL;
   size_t resultsz = 0;
   size_t resultcap = 16;
   struct stirtgt *first_tgt =
@@ -1995,7 +1996,12 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
     result = realloc(result, resultcap * sizeof(*result));
   }
   result[resultsz++] = NULL;
-  return result;
+  // Replace it with allocation by my_malloc since that is MAP_SHARED
+  // Previously we used malloc() since we needed realloc()
+  result2 = my_malloc(resultsz*sizeof(*result));
+  memcpy(result2, result, resultsz*sizeof(*result));
+  free(result);
+  return result2;
 }
 
 struct linked_list_head rules_remain_list =
