@@ -565,6 +565,7 @@ custom_assign:
     }
 
     abce_pop(get_abce(amyplanyy));
+    free(res);
   }
 
   free($1);
