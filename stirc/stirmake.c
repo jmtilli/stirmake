@@ -5876,6 +5876,7 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
 }
 
 FILE *dbf = NULL;
+int dbf_did_exist = 0;
 
 void load_db(void)
 {
@@ -5885,6 +5886,10 @@ void load_db(void)
   int ret;
   int dbfd;
   linked_list_head_init(&db.ll);
+  if (access(".stir.db", F_OK) == 0)
+  {
+    dbf_did_exist = 1;
+  }
   //dbyynameparse(".stir.db", &dbyy, 0);
   dbf = fopen(".stir.db", "a+");
   if (dbf == NULL)
@@ -5982,6 +5987,14 @@ void merge_db_v1(void)
       ins_dbe(&db, dbe);
     }
   }
+  if (linked_list_is_empty(&db.ll) && !dbf_did_exist)
+  {
+    fclose(dbf);
+    f = NULL;
+    dbf = NULL;
+    unlink(".stir.db");
+    return;
+  }
   /*
   f = fopen(".stir.db", "w");
   if (f == NULL)
@@ -6077,6 +6090,15 @@ void merge_db_v2(void)
       dbe->cmds = rule->cmd;
       ins_dbe(&db, dbe);
     }
+  }
+  if (linked_list_is_empty(&db.ll) && linked_list_is_empty(&tsdb.ll) &&
+      !dbf_did_exist)
+  {
+    fclose(dbf);
+    f = NULL;
+    dbf = NULL;
+    unlink(".stir.db");
+    return;
   }
   /*
   f = fopen(".stir.db", "w");
