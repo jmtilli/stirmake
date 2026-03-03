@@ -15,6 +15,9 @@
 #include "jsonyyutils.h"
 #include "stircommon.h"
 
+void *my_malloc(size_t sz);
+void *my_strdup(const char *str);
+
 const char *stir_err_to_str(enum abce_errcode code)
 {
   if (code < 0x1000)
