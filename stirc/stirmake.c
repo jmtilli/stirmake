@@ -197,7 +197,9 @@ int isspecprog = 0;
 enum {
   RULEID_BY_TGT_SIZE = 8192,
   RULEIDS_BY_DEP_SIZE = 8192,
-  STATHASH_SIZE = 256,
+  STATHASH_SIZE_RB = 8192,
+  STATHASH_SIZE = 256*1024,
+  STATHASH_SIZE_INIT = 256,
   TGTS_SIZE = 64,
   DEPS_SIZE = 64,
   DEPS_REMAIN_SIZE = 64,
@@ -3712,8 +3714,9 @@ struct stathashentry {
   struct timespec st_mtim;
   off_t st_size;
 };
-struct abce_rb_tree_nocmp stathash[STATHASH_SIZE];
+struct abce_rb_tree_nocmp stathash[STATHASH_SIZE_RB];
 struct stathashentry stathashentries[STATHASH_SIZE];
+size_t stathashentriescnt;
 struct linked_list_head statlrulist =
   STIR_LINKED_LIST_HEAD_INITER(statlrulist);
 struct linked_list_head statfreelist =
@@ -3722,7 +3725,30 @@ struct linked_list_head statfreelist =
 void statcache_init(void)
 {
   size_t i;
-  for (i = 0; i < sizeof(stathashentries)/sizeof(*stathashentries); i++)
+  if (stathashentriescnt == 0)
+  {
+    stathashentriescnt = STATHASH_SIZE_INIT;
+    if (stathashentriescnt > STATHASH_SIZE)
+    {
+      stathashentriescnt = STATHASH_SIZE;
+    }
+  }
+  for (i = 0; i < stathashentriescnt; i++)
+  {
+    linked_list_add_tail(&stathashentries[i].llnode, &statfreelist);
+  }
+}
+
+void statcache_grow(void)
+{
+  size_t oldstathashentriescnt = stathashentriescnt;
+  size_t i;
+  stathashentriescnt = 2*stathashentriescnt;
+  if (stathashentriescnt > STATHASH_SIZE)
+  {
+    stathashentriescnt = STATHASH_SIZE;
+  }
+  for (i = oldstathashentriescnt; i < stathashentriescnt; i++)
   {
     linked_list_add_tail(&stathashentries[i].llnode, &statfreelist);
   }
@@ -3743,6 +3769,11 @@ static inline void stathashentry_evict(void)
 
 static inline void stathashentry_ensure_evict(void)
 {
+  if (!linked_list_is_empty(&statfreelist))
+  {
+    return;
+  }
+  statcache_grow();
   if (!linked_list_is_empty(&statfreelist))
   {
     return;
