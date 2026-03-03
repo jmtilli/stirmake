@@ -1112,6 +1112,10 @@ static inline void stiryy_main_free(struct stiryy_main *main)
       {
         // nop
       }
+      else if (main->rules[i].shells.items[j].iscode)
+      {
+        // nop
+      }
       else if (!main->rules[i].shells.items[j].merge)
       {
         int k;
@@ -1119,6 +1123,7 @@ static inline void stiryy_main_free(struct stiryy_main *main)
         {
           free(main->rules[i].shells.items[j].u.args[k]);
         }
+        free(main->rules[i].shells.items[j].u.args);
       }
       else
       {
@@ -1132,6 +1137,7 @@ static inline void stiryy_main_free(struct stiryy_main *main)
 	  }
 	  free(main->rules[i].shells.items[j].u.cmds[k]);
         }
+        free(main->rules[i].shells.items[j].u.cmds);
       }
     }
     free(main->rules[i].shells.items);
