@@ -809,10 +809,11 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       my_abort();
     }
     can = canon(nam);
-    yytgts[i].name = my_strdup(can);
+    yytgts[i].name = strdup(can);
     free(nam);
     free(can);
-    yytgts[i].namenodir = my_strdup(mbstr->u.area->u.str.buf);
+    yytgts[i].namenodir = strdup(mbstr->u.area->u.str.buf);
+    yytgts[i].suffix = NULL; // FIXME what should be given?
     yytgts[i].is_dist = 0;
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
     {
@@ -838,10 +839,11 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       my_abort();
     }
     can = canon(nam);
-    yydeps[i].name = my_strdup(can);
+    yydeps[i].name = strdup(can);
     free(can);
     free(nam);
-    yydeps[i].namenodir = my_strdup(mbstr->u.area->u.str.buf);
+    yydeps[i].namenodir = strdup(mbstr->u.area->u.str.buf);
+    yydeps[i].suffix = NULL; // FIXME what should be given?
     yydeps[i].rec = 0;
     yydeps[i].orderonly = 0;
     yydeps[i].wait = 0;
@@ -958,10 +960,10 @@ int stir_trap_ruleadd(struct stiryy_main *main,
       yyshells[i].sz = attr1->u.area->u.ar.size;
       yyshells[i].capacity = attr1->u.area->u.ar.size+1;
       yyshells[i].u.args =
-        my_malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
+        malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
-        yyshells[i].u.args[j] = my_strdup(
+        yyshells[i].u.args[j] = strdup(
           attr1->u.area->u.ar.mbs[j].u.area->u.str.buf);
       }
       yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
