@@ -1089,17 +1089,60 @@ static inline void stiryy_main_free(struct stiryy_main *main)
     {
       free(main->rules[i].deps[j].name);
       free(main->rules[i].deps[j].namenodir);
+      free(main->rules[i].deps[j].suffix);
     }
     for (j = 0; j < main->rules[i].targetsz; j++)
     {
       free(main->rules[i].targets[j].name);
       free(main->rules[i].targets[j].namenodir);
+      free(main->rules[i].targets[j].suffix);
     }
+    for (j = 0; j < main->rules[i].basesz; j++)
+    {
+      free(main->rules[i].bases[j].name);
+      free(main->rules[i].bases[j].namenodir);
+    }
+    free(main->rules[i].bases);
     free(main->rules[i].deps);
     free(main->rules[i].targets);
     free(main->rules[i].prefix);
+    for (j = 0; j < main->rules[i].shells.itemsz; j++)
+    {
+      if (main->rules[i].shells.items[j].isfun)
+      {
+        // nop
+      }
+      else if (!main->rules[i].shells.items[j].merge)
+      {
+        int k;
+        for (k = 0; k < main->rules[i].shells.items[j].sz; k++)
+        {
+          free(main->rules[i].shells.items[j].u.args[k]);
+        }
+      }
+      else
+      {
+        int k, l;
+        for (k = 0; k < main->rules[i].shells.items[j].sz; k++)
+        //for (k = 0; main->rules[i].shells.items[j].u.cmds[k] != NULL; k++)
+        {
+	  for (l = 0; main->rules[i].shells.items[j].u.cmds[k][l] != NULL; l++)
+	  {
+            free(main->rules[i].shells.items[j].u.cmds[k][l]);
+	  }
+	  free(main->rules[i].shells.items[j].u.cmds[k]);
+        }
+      }
+    }
+    free(main->rules[i].shells.items);
   }
   free(main->rules);
+  for (i = 0; i < main->ordersz; i++)
+  {
+    free(main->orders[i].rules[0]);
+    free(main->orders[i].rules[1]);
+  }
+  free(main->orders);
 
   for (i = 0; i < main->cdepincludesz; i++)
   {
