@@ -74,6 +74,15 @@ static inline void dbyy_post_cmd(struct dbyy *dbyy)
     rule->cmds[rule->cmdssz-1].args = tmpptr;
   }
 }
+static inline void dbyy_post_cmds(struct dbyy *dbyy)
+{
+  struct dbyyrule *rule = &dbyy->rules[dbyy->rulesz - 1];
+  void *tmpptr;
+  tmpptr = my_malloc(sizeof(rule->cmds[0])*rule->cmdssz);
+  memcpy(tmpptr, rule->cmds, sizeof(rule->cmds[0])*rule->cmdssz);
+  free(rule->cmds);
+  rule->cmds = tmpptr;
+}
 
 static inline void dbyy_add_arg(struct dbyy *dbyy, const char *arg)
 {
@@ -97,14 +106,6 @@ static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const c
     newcapacity = 2*dbyy->rulecapacity + 1;
     dbyy->rules = (struct dbyyrule*)realloc(dbyy->rules, sizeof(*dbyy->rules)*newcapacity);
     dbyy->rulecapacity = newcapacity;
-  }
-  if (dbyy->rulesz > 0)
-  {
-    void *cmds2;
-    cmds2 = my_malloc(sizeof(*dbyy->rules[dbyy->rulesz-1].cmds)*dbyy->rules[dbyy->rulesz-1].cmdssz);
-    memcpy(cmds2, dbyy->rules[dbyy->rulesz-1].cmds, sizeof(*dbyy->rules[dbyy->rulesz-1].cmds)*dbyy->rules[dbyy->rulesz-1].cmdssz);
-    free(dbyy->rules[dbyy->rulesz-1].cmds);
-    dbyy->rules[dbyy->rulesz-1].cmds = cmds2;
   }
   dbyy->rules[dbyy->rulesz].cmdssz = 0;
   dbyy->rules[dbyy->rulesz].cmdscapacity = 0;

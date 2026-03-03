@@ -123,6 +123,9 @@ dbrulev1: STRING_LITERAL STRING_LITERAL COLON
 }
   NEWLINE
   commands
+{
+  dbyy_post_cmds(dbyy);
+}
 ;
 
 dbrulev2: STRING_LITERAL STRING_LITERAL COLON
@@ -143,6 +146,9 @@ dbrulev2: STRING_LITERAL STRING_LITERAL COLON
 }
   NEWLINE
   commands
+{
+  dbyy_post_cmds(dbyy);
+}
 | STRING_LITERAL EQUALS INT_LITERAL INT_LITERAL INT_LITERAL NEWLINE
 {
   if (strlen($1.str) != $1.sz)
