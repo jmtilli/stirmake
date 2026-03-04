@@ -44,14 +44,14 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
 
   if (dep[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
     {
       my_abort();
     }
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, dep) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, dep) >= (int)sz)
     {
       my_abort();
     }
@@ -81,14 +81,14 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
 
   if (tgt[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", tgt) >= sz)
+    if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
     {
       my_abort();
     }
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, tgt) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, tgt) >= (int)sz)
     {
       my_abort();
     }

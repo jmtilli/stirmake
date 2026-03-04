@@ -320,15 +320,15 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
   struct abce_mb oldscope;
   struct abce_mb *mbs = NULL, *mbsc = NULL;
   size_t oldscopeidx;
-  if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, fname) >= psz)
+  if (snprintf(prefix, psz, "%s/%s", stiryy->curprefix, fname) >= (int)psz)
   {
     my_abort();
   }
-  if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, fname) >= ppsz)
+  if (snprintf(projprefix, ppsz, "%s/%s", stiryy->curprojprefix, fname) >= (int)ppsz)
   {
     my_abort();
   }
-  if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, fname, "Stirfile") >= fsz)
+  if (snprintf(filename, fsz, "%s/%s/%s", stiryy->curprefix, fname, "Stirfile") >= (int)fsz)
   {
     my_abort();
   }

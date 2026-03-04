@@ -804,7 +804,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     }
     namsz = strlen(mbstr->u.area->u.str.buf) + strlen(prefix) + 2;
     nam = malloc(namsz); // FIXME leaks
-    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= namsz)
+    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= (int)namsz)
     {
       my_abort();
     }
@@ -834,7 +834,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     }
     namsz = strlen(mbstr->u.area->u.str.buf) + strlen(prefix) + 2;
     nam = malloc(namsz); // FIXME leaks
-    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= namsz)
+    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= (int)namsz)
     {
       my_abort();
     }

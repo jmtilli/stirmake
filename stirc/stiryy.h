@@ -290,7 +290,7 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
   {
     my_abort();
   }
-  if (snprintf(buf3, sizeof(buf3), "%s/Stirfile", buf2) >= sizeof(buf3))
+  if (snprintf(buf3, sizeof(buf3), "%s/Stirfile", buf2) >= (int)sizeof(buf3))
   {
     my_abort();
   }
@@ -395,7 +395,7 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   }
   if (dep[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
     {
       my_abort();
     }
@@ -403,7 +403,7 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
 #if 0
   else if (dep[0] == '%')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
     {
       my_abort();
     }
@@ -411,7 +411,7 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
 #endif
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= (int)sz)
     {
       my_abort();
     }
@@ -448,11 +448,11 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
   }
   if (dep[0][0] == '/')
   {
-    if (snprintf(tmp1, sz1, "%s", dep[0]) >= sz1)
+    if (snprintf(tmp1, sz1, "%s", dep[0]) >= (int)sz1)
     {
       my_abort();
     }
-    if (snprintf(tmp2, sz2, "%s", dep[2]) >= sz2)
+    if (snprintf(tmp2, sz2, "%s", dep[2]) >= (int)sz2)
     {
       my_abort();
     }
@@ -460,11 +460,11 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
   else
   {
     off = strlen(curprefix)+1;
-    if (snprintf(tmp1, sz1, "%s/%s", curprefix, dep[0]) >= sz1)
+    if (snprintf(tmp1, sz1, "%s/%s", curprefix, dep[0]) >= (int)sz1)
     {
       my_abort();
     }
-    if (snprintf(tmp2, sz2, "%s", dep[2]) >= sz2)
+    if (snprintf(tmp2, sz2, "%s", dep[2]) >= (int)sz2)
     {
       my_abort();
     }
@@ -496,14 +496,14 @@ static inline void stiryy_main_set_order(struct stiryy_main *main, const char *c
   char *can, *tmp = malloc(sz);
   if (name[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", name) >= sz)
+    if (snprintf(tmp, sz, "%s", name) >= (int)sz)
     {
       my_abort();
     }
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, name) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", curprefix, name) >= (int)sz)
     {
       my_abort();
     }
@@ -528,14 +528,14 @@ static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *cur
   char *can, *tmp = malloc(sz);
   if (dep[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= sz)
+    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
     {
       my_abort();
     }
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= (int)sz)
     {
       my_abort();
     }
@@ -609,7 +609,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   size_t slashessz;
   char *slashesnodir;
   size_t slashesnodirsz;
-  if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
+  if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
   {
     my_abort();
   }
@@ -617,14 +617,14 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   free(tmp);
   slashessz = strlen(can) + 4;
   slashes = malloc(slashessz);
-  if (snprintf(slashes, slashessz, "%s///", can) >= slashessz)
+  if (snprintf(slashes, slashessz, "%s///", can) >= (int)slashessz)
   {
     my_abort();
   }
 
   slashesnodirsz = strlen(tgt) + 4;
   slashesnodir = malloc(slashesnodirsz);
-  if (snprintf(slashesnodir, slashesnodirsz, "%s///", can) >= slashesnodirsz)
+  if (snprintf(slashesnodir, slashesnodirsz, "%s///", can) >= (int)slashesnodirsz)
   {
     my_abort();
   }
@@ -677,7 +677,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
   {
     if (tgt[0] == '/')
     {
-      if (snprintf(tmp, sz, "%s", tgt) >= sz)
+      if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
       {
         my_abort();
       }
@@ -685,7 +685,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
 #if 0
     else if (tgt[0] == '%')
     {
-      if (snprintf(tmp, sz, "%s", tgt) >= sz)
+      if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
       {
         my_abort();
       }
@@ -693,7 +693,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
 #endif
     else
     {
-      if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
+      if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
       {
         my_abort();
       }
@@ -723,14 +723,14 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
     }
     if (tgt[0] == '/')
     {
-      if (snprintf(tmp, sz, "%s", tgt) >= sz)
+      if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
       {
         my_abort();
       }
     }
     else
     {
-      if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
+      if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
       {
         my_abort();
       }
@@ -766,11 +766,11 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
   {
     if (tgt[0][0] == '/')
     {
-      if (snprintf(tmp1, sz1, "%s", tgt[0]) >= sz1)
+      if (snprintf(tmp1, sz1, "%s", tgt[0]) >= (int)sz1)
       {
         my_abort();
       }
-      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= sz2)
+      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= (int)sz2)
       {
         my_abort();
       }
@@ -778,11 +778,11 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
     else
     {
       off = strlen(curprefix) + 1;
-      if (snprintf(tmp1, sz1, "%s/%s", curprefix, tgt[0]) >= sz1)
+      if (snprintf(tmp1, sz1, "%s/%s", curprefix, tgt[0]) >= (int)sz1)
       {
         my_abort();
       }
-      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= sz2)
+      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= (int)sz2)
       {
         my_abort();
       }
@@ -819,14 +819,14 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *cur
   char *can, *tmp = malloc(sz);
   if (tgt[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", tgt) >= sz)
+    if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
     {
       my_abort();
     }
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= sz)
+    if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
     {
       my_abort();
     }
@@ -1120,7 +1120,7 @@ static inline void stiryy_main_free(struct stiryy_main *main)
       }
       else if (!main->rules[i].shells.items[j].merge)
       {
-        int k;
+        size_t k;
         for (k = 0; k < main->rules[i].shells.items[j].sz; k++)
         {
           free(main->rules[i].shells.items[j].u.args[k]);
@@ -1129,7 +1129,7 @@ static inline void stiryy_main_free(struct stiryy_main *main)
       }
       else
       {
-        int k, l;
+        size_t k, l;
         for (k = 0; k < main->rules[i].shells.items[j].sz; k++)
         //for (k = 0; main->rules[i].shells.items[j].u.cmds[k] != NULL; k++)
         {

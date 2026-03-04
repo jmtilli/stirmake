@@ -249,7 +249,7 @@ char *neighpath(const char *path, const char *file)
         free(filecanon);
         return NULL;
       }
-      if (snprintf(buf, bufsiz, "%s/%s", bp, file) >= bufsiz)
+      if (snprintf(buf, bufsiz, "%s/%s", bp, file) >= (int)bufsiz)
       {
         abort();
       }

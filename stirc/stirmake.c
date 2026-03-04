@@ -2742,7 +2742,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     int ruleid;
     struct rule *rule;
     fulltgt = malloc(fulltgtsz);
-    if (snprintf(fulltgt, fulltgtsz, "%s/%s", prefix, tgts[i]) >= fulltgtsz)
+    if (snprintf(fulltgt, fulltgtsz, "%s/%s", prefix, tgts[i]) >= (int)fulltgtsz)
     {
       my_abort();
     }
@@ -2778,7 +2778,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
       int otherid;
 
       fulldep = malloc(fulldepsz);
-      if (snprintf(fulldep, fulldepsz, "%s/%s", prefix, deps[j]) >= fulldepsz)
+      if (snprintf(fulldep, fulldepsz, "%s/%s", prefix, deps[j]) >= (int)fulldepsz)
       {
         my_abort();
       };
@@ -3937,7 +3937,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     struct timespec cur;
     char nam2[PATH_MAX + 1] = {0}; // RFE avoid large static recursive allocs?
     //std::string nam2(name);
-    if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
+    if (snprintf(nam2, sizeof(nam2), "%s", name) >= (int)sizeof(nam2))
     {
       errxit("Pathname too long");
       my_abort();
@@ -3952,7 +3952,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     }
     size_t oldlen = strlen(nam2);
     if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
-                 "/%s", de->d_name) >= sizeof(nam2)-oldlen)
+                 "/%s", de->d_name) >= (int)(sizeof(nam2)-oldlen))
     {
       errxit("Pathname too long");
       my_abort();
@@ -4068,7 +4068,7 @@ void reccap_mtim(const char *name, struct timespec cap)
     struct dirent *de = readdir(dir);
     char nam2[PATH_MAX + 1] = {0}; // RFE avoid large static recursive allocs?
     //std::string nam2(name);
-    if (snprintf(nam2, sizeof(nam2), "%s", name) >= sizeof(nam2))
+    if (snprintf(nam2, sizeof(nam2), "%s", name) >= (int)sizeof(nam2))
     {
       errxit("Pathname too long");
       my_abort();
@@ -4083,7 +4083,7 @@ void reccap_mtim(const char *name, struct timespec cap)
     }
     size_t oldlen = strlen(nam2);
     if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
-                 "/%s", de->d_name) >= sizeof(nam2)-oldlen)
+                 "/%s", de->d_name) >= (int)(sizeof(nam2)-oldlen))
     {
       errxit("Pathname too long");
       my_abort();
@@ -4202,7 +4202,7 @@ void trace_add_vprintf(char **buf, size_t *cap, size_t *sz, const char *fmt, ...
   }
   va_end(ap);
   need++;
-  if (*cap - *sz < need)
+  if (*cap - *sz < (size_t)need)
   {
     size_t cap2;
     char *buf2;
@@ -5586,7 +5586,7 @@ char *dir_up(char *old)
   char *uncanonized = malloc(uncanonized_capacity);
   char *canonized;
   if (snprintf(uncanonized, uncanonized_capacity, "%s/..", old) >=
-      uncanonized_capacity)
+      (int)uncanonized_capacity)
   {
     my_abort();
   }
@@ -5669,11 +5669,11 @@ void do_clean(char *fwd_path, int objs, int bins)
     char *parent = malloc(parentsz);
     size_t cleanslashsz = strlen(cleanstr) + 4;
     char *cleanslash = malloc(cleanslashsz);
-    if (snprintf(cleanslash, cleanslashsz, "%s///", cleanstr) >= cleanslashsz)
+    if (snprintf(cleanslash, cleanslashsz, "%s///", cleanstr) >= (int)cleanslashsz)
     {
       my_abort();
     }
-    if (snprintf(parent, parentsz, "%s/../%s", prefix, cleanstr) >= parentsz)
+    if (snprintf(parent, parentsz, "%s/../%s", prefix, cleanstr) >= (int)parentsz)
     {
       my_abort();
     }
@@ -5681,7 +5681,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     free(parent);
     parentsz = strlen(cparent) + 4;
     parent = malloc(parentsz);
-    if (snprintf(parent, parentsz, "%s///", cparent) >= parentsz)
+    if (snprintf(parent, parentsz, "%s///", cparent) >= (int)parentsz)
     {
       my_abort();
     }
@@ -6933,8 +6933,10 @@ void process_orders(struct stiryy_main *main)
 void do_srand(void)
 {
   uint32_t randseed = 0;
+#ifndef __linux__
   ssize_t read_ret;
   int fd;
+#endif
   srand(time(NULL) ^ getpid());
 #ifdef __linux__
   if (getrandom(&randseed, sizeof(randseed), 0) == sizeof(randseed))
@@ -7384,7 +7386,7 @@ int main(int argc, char **argv)
         if (ret == 0 && main.subdirseen)
         {
           upcnt = curupcnt;
-          if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= sizeof(cwd))
+          if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= (int)sizeof(cwd))
           {
             printf("can't snprintf\n");
             my_abort();
@@ -7394,7 +7396,7 @@ int main(int argc, char **argv)
         {
           upcnt_sameproj = curupcnt;
           if (snprintf(cwd_sameproj, sizeof(cwd_sameproj), "%s", curcwd)
-              >= sizeof(cwd_sameproj))
+              >= (int)sizeof(cwd_sameproj))
           {
             printf("can't snprintf\n");
             my_abort();
@@ -7484,7 +7486,7 @@ int main(int argc, char **argv)
     {
       if (iter->relative)
       {
-        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= sizeof(pathbuf))
+        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= (int)sizeof(pathbuf))
         {
           errxit("too long pathname to pretend: %s", iter->fname);
         }
@@ -7493,7 +7495,7 @@ int main(int argc, char **argv)
       }
       else
       {
-        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", fwd_path, iter->fname) >= sizeof(pathbuf))
+        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", fwd_path, iter->fname) >= (int)sizeof(pathbuf))
         {
           errxit("too long pathname to pretend: %s", iter->fname);
         }
@@ -7617,7 +7619,7 @@ int main(int argc, char **argv)
               namedirsz = prefixlen+strlen(exptgt)+2;
               namedir = malloc(namedirsz);
               if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
-                  >= namedirsz)
+                  >= (int)namedirsz)
               {
                 my_abort();
               }
@@ -7643,7 +7645,7 @@ int main(int argc, char **argv)
               namedirsz = prefixlen+strlen(exptgt)+2;
               namedir = malloc(namedirsz);
               if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
-                  >= namedirsz)
+                  >= (int)namedirsz)
               {
                 my_abort();
               }
@@ -7684,7 +7686,7 @@ int main(int argc, char **argv)
               namedirsz = prefixlen+strlen(expdep)+2;
               namedir = malloc(namedirsz);
               if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
-                  >= namedirsz)
+                  >= (int)namedirsz)
               {
                 my_abort();
               }
@@ -7714,7 +7716,7 @@ int main(int argc, char **argv)
                 prefixdepsz = prefixlen+strlen(dep)+2;
                 prefixdep = malloc(prefixdepsz);
                 if (snprintf(prefixdep, prefixdepsz, "%s/%s", prefix, dep) >=
-                    prefixdepsz)
+                    (int)prefixdepsz)
                 {
                   my_abort();
                 }
@@ -7741,7 +7743,7 @@ int main(int argc, char **argv)
               namedirsz = prefixlen+strlen(expdep)+2;
               namedir = malloc(namedirsz);
               if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
-                  >= namedirsz)
+                  >= (int)namedirsz)
               {
                 my_abort();
               }
@@ -7845,7 +7847,7 @@ int main(int argc, char **argv)
     size_t fnamesz =
       strlen(incyy.prefix) + strlen(stiryy.main->cdepincludes[i].name) + 2;
     char *fname = malloc(fnamesz);
-    if (snprintf(fname, fnamesz, "%s/%s", incyy.prefix, stiryy.main->cdepincludes[i].name) >= fnamesz)
+    if (snprintf(fname, fnamesz, "%s/%s", incyy.prefix, stiryy.main->cdepincludes[i].name) >= (int)fnamesz)
     {
       printf("24.5\n");
       my_abort();
@@ -8034,6 +8036,7 @@ int main(int argc, char **argv)
   }
   else if (mode == MODE_ALL || mode == MODE_NONE)
   {
+    int i;
     for (i = optind; i < argc; i++)
     {
       mysize_t stidx = stringtab_add(argv[i]);
@@ -8063,6 +8066,7 @@ int main(int argc, char **argv)
   }
   else if (mode == MODE_THIS)
   {
+    int i;
     for (i = optind; i < argc; i++)
     {
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
@@ -8110,6 +8114,7 @@ int main(int argc, char **argv)
   }
   else
   {
+    int i;
     for (i = optind; i < argc; i++)
     {
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
