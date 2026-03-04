@@ -232,8 +232,8 @@ int jobserver_fd[2];
 struct stringtabentry {
   struct abce_rb_tree_node node;
   char *string;
-  size_t len;
-  size_t idx;
+  mysize_t len;
+  mysize_t idx;
 };
 
 int children = 0;
@@ -280,7 +280,7 @@ int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
 struct tsdbe {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t stringtabidx;
+  mysize_t stringtabidx;
   struct timespec ts;
   struct timespec tsnew;
   off_t sz;
@@ -291,8 +291,8 @@ struct tsdbe {
 struct dbe {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t tgtidx; // key
-  size_t diridx; // non-key
+  mysize_t tgtidx; // key
+  mysize_t diridx; // non-key
   struct cmd cmds; // non-key
 };
 
@@ -311,7 +311,7 @@ int sizecmp(size_t size1, size_t size2)
 
 static inline int tsdbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct tsdbe *e = ABCE_CONTAINER_OF(n2, struct tsdbe, node);
   int ret;
   size_t str2;
@@ -338,7 +338,7 @@ static inline int tsdbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tre
 
 static inline int dbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct dbe *e = ABCE_CONTAINER_OF(n2, struct dbe, node);
   int ret;
   size_t str2;
@@ -370,7 +370,7 @@ struct tsdb {
 
 struct tsdb tsdb = {};
 
-void maybe_del_tsdbe(struct tsdb *tsdb, size_t tgtidx)
+void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_node *n;
@@ -418,7 +418,7 @@ struct db {
 
 struct db db = {};
 
-void maybe_del_dbe(struct db *db, size_t tgtidx)
+void maybe_del_dbe(struct db *db, mysize_t tgtidx)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_node *n;
@@ -507,7 +507,7 @@ void update_recursive_pid(int parent)
 
 struct string_plus_len {
   const char *str;
-  size_t len;
+  mysize_t len;
 };
 
 static inline int stringtabentry_cmp_asym(const void *stringlenv, struct abce_rb_tree_node *n2, void *ud)
@@ -818,12 +818,12 @@ struct sttable_entry *sttable = NULL;
  * settings st_cap to 256*1024 would on non-overcommit 64-bit systems
  * allocate 4 megabytes of memory immediately.
  */
-size_t st_cap = 64*1024;
-size_t st_cnt;
+mysize_t st_cap = 64*1024;
+mysize_t st_cnt;
 
 void st_grow(void)
 {
-  size_t st_newcap = st_cap * 2;
+  mysize_t st_newcap = st_cap * 2;
   struct sttable_entry *sttable_new;
   if (st_cnt < st_cap)
   {
@@ -859,9 +859,9 @@ void st_compact(void)
   // don't report errors
 }
 
-size_t stringtab_cnt = 0;
+mysize_t stringtab_cnt = 0;
 
-size_t stringtab_get(const char *symbol)
+mysize_t stringtab_get(const char *symbol)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -875,14 +875,14 @@ NULL, &stringlen);
   {
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
   }
-  return (size_t)-1;
+  return (mysize_t)-1;
 }
 
-size_t stringtab_add(const char *symbol)
+mysize_t stringtab_add(const char *symbol)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
-  size_t hashloc;
+  mysize_t hashloc;
   struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
   hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
   hashloc = hashval % (sizeof(st)/sizeof(*st));
@@ -912,7 +912,7 @@ size_t stringtab_add(const char *symbol)
   return stringtabentry->idx;
 }
 
-size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
+mysize_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
   if (strlen(symbol) != symlen)
   {
@@ -922,7 +922,7 @@ size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
   return stringtab_add(symbol);
 }
 
-int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
+int cmdequal_db(struct db *db, mysize_t tgtidx, struct cmd *cmd, mysize_t diridx)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct abce_rb_tree_nocmp *head;
@@ -961,9 +961,9 @@ int cmdequal_db(struct db *db, size_t tgtidx, struct cmd *cmd, size_t diridx)
   return 1;
 }
 
-int get_ruleid_by_tgt(size_t tgt);
+int get_ruleid_by_tgt(mysize_t tgt);
 
-int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, off_t sz)
+int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -996,7 +996,7 @@ int tsszstoresource(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
   tsdbe->seen = 1;
   return 1;
 }
-int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, off_t sz)
+int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -1028,7 +1028,7 @@ int tsszstoretarget(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, 
 
 int ts_cmp(struct timespec ta, struct timespec tb);
 
-int tsszequal_db(struct tsdb *tsdb, size_t stringtabidx, struct timespec ts, size_t diridx, off_t sz, int istarget)
+int tsszequal_db(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, mysize_t diridx, off_t sz, int istarget)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
   struct abce_rb_tree_nocmp *head;
@@ -1080,7 +1080,7 @@ struct ruleid_by_tgt_entry {
   struct linked_list_node llnode;
   int ruleid;
   //char *tgt;
-  size_t tgtidx;
+  mysize_t tgtidx;
 };
 
 struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
@@ -1089,7 +1089,7 @@ struct linked_list_head ruleid_by_tgt_list =
 
 static inline int ruleid_by_tgt_entry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct ruleid_by_tgt_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
   int ret;
   size_t str2;
@@ -1114,9 +1114,9 @@ static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
   return 0;
 }
 
-size_t ruleid_by_tgt_entry_cnt;
+mysize_t ruleid_by_tgt_entry_cnt;
 
-void ins_ruleid_by_tgt(size_t tgtidx, int ruleid, const char *prefix, int lineno)
+void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int lineno)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct ruleid_by_tgt_entry *e;
@@ -1143,7 +1143,7 @@ void ins_ruleid_by_tgt(size_t tgtidx, int ruleid, const char *prefix, int lineno
   linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
 }
 
-int get_ruleid_by_tgt(size_t tgt)
+int get_ruleid_by_tgt(mysize_t tgt)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgt);
   struct abce_rb_tree_nocmp *head;
@@ -1183,8 +1183,8 @@ struct stirdep {
   struct linked_list_node llnode;
   struct linked_list_node primaryllnode;
   struct linked_list_node dupellnode;
-  size_t nameidx;
-  size_t nameidxnodir;
+  mysize_t nameidx;
+  mysize_t nameidxnodir;
   unsigned is_recursive:1;
   unsigned is_orderonly:1;
   unsigned is_wait:1;
@@ -1230,8 +1230,8 @@ static inline int dep_remain_cmp_sym(struct abce_rb_tree_node *n1, struct abce_r
 struct stirtgt {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t tgtidx;
-  size_t tgtidxnodir;
+  mysize_t tgtidx;
+  mysize_t tgtidxnodir;
   unsigned is_dist:1;
 };
 
@@ -1269,8 +1269,8 @@ struct rule {
   unsigned is_forked:1;
   unsigned is_traversed:1;
   unsigned is_under_consideration:1;
-  size_t diridx;
-  size_t meatidx;
+  mysize_t diridx;
+  mysize_t meatidx;
   struct cmdsrc cmdsrc;
   struct cmd cmd; // calculated from cmdsrc
   struct timespec st_mtim;
@@ -1283,9 +1283,9 @@ struct rule {
   struct linked_list_head primarydeplist;
   struct linked_list_head dupedeplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
-  size_t deps_remain_cnt;
-  size_t wait_remain_cnt;
-  size_t scopeidx;
+  mysize_t deps_remain_cnt;
+  mysize_t wait_remain_cnt;
+  mysize_t scopeidx; // abce scope index, but let's use mysize_t here too
   struct syncbuf output;
   struct stirdep *waitloc;
 };
@@ -1445,12 +1445,12 @@ void errxit(const char *fmt, ...)
 
 char **argdup(int ignore, int noecho, int ismake, char **cmdargs);
 
-static size_t
+static mysize_t
 cmdsrc_cache_add_str_nul(struct abce *abce, const char *str, int *err)
 {
-  size_t ret;
+  mysize_t ret;
   ret = abce_cache_add_str_nul(abce, str);
-  if (ret == (size_t)-1)
+  if (ret == (mysize_t)-1)
   {
     *err = 1;
   }
@@ -1494,7 +1494,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
     my_abort();
   }
 
-  if (first_tgt->tgtidxnodir != (size_t)-1)
+  if (first_tgt->tgtidxnodir != (mysize_t)-1)
   {
     tgt = sttable[first_tgt->tgtidxnodir].s;
   }
@@ -1541,7 +1541,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       //abce_mb_refdn(abce, &mbval);
       abce_cpop(abce);
 
-      if (rule->meatidx != (size_t)-1)
+      if (rule->meatidx != (mysize_t)-1)
       {
         mbval = abce_mb_cpush_create_string(abce, sttable[rule->meatidx].s, strlen(sttable[rule->meatidx].s));
         if (mbval == NULL)
@@ -1590,7 +1590,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         {
           continue;
         }
-        if (dep->nameidxnodir != (size_t)-1)
+        if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
@@ -1652,7 +1652,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         {
           continue;
         }
-        if (dep->nameidxnodir != (size_t)-1)
+        if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
@@ -1714,7 +1714,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         {
           continue;
         }
-        if (dep->nameidxnodir != (size_t)-1)
+        if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
           mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
@@ -1936,7 +1936,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[ltidx]);
       abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[baridx]);
       abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[hatidx]);
-      if (rule->meatidx != (size_t)-1)
+      if (rule->meatidx != (mysize_t)-1)
       {
         abce_sc_remove_val_mb(abce, &scope, &abce->cachebase[staridx]);
       }
@@ -1961,7 +1961,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
       {
         return NULL;
       }
-      if (rule->meatidx != (size_t)-1)
+      if (rule->meatidx != (mysize_t)-1)
       {
         if (abce_sc_replace_val_mb(abce, &scope, &abce->cachebase[staridx], &mbnil) != 0)
         {
@@ -2043,7 +2043,7 @@ static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
 
 static inline int tgt_cmp_asym(const void *tgtidxv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *tgtidx = tgtidxv;
+  const mysize_t *tgtidx = tgtidxv;
   struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
   if (*tgtidx > e2->tgtidx)
   {
@@ -2069,10 +2069,10 @@ static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   return 0;
 }
 
-size_t tgt_cnt;
+mysize_t tgt_cnt;
 
 
-void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir, int is_dist, const char *prefix, int lineno)
+void ins_tgt(struct rule *rule, mysize_t tgtidx, mysize_t tgtidxnodir, int is_dist, const char *prefix, int lineno)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
   struct stirtgt *e;
@@ -2100,7 +2100,7 @@ void ins_tgt(struct rule *rule, size_t tgtidx, size_t tgtidxnodir, int is_dist, 
   linked_list_add_tail(&e->llnode, &rule->tgtlist);
 }
 
-struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
+struct stirtgt *rule_get_tgt(struct rule *rule, mysize_t tgtidx)
 {
   struct abce_rb_tree_node *n;
   uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
@@ -2114,10 +2114,10 @@ struct stirtgt *rule_get_tgt(struct rule *rule, size_t tgtidx)
   return NULL;
 }
 
-size_t stirdep_cnt;
+mysize_t stirdep_cnt;
 
 int ins_dep(struct rule *rule,
-            size_t depidx, size_t diridx, size_t depidxnodir,
+            mysize_t depidx, mysize_t diridx, mysize_t depidxnodir,
             int is_recursive, int orderonly, int wait, int primary)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
@@ -2226,7 +2226,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   my_free(dep_remain);
 }
 
-size_t dep_remain_cnt;
+mysize_t dep_remain_cnt;
 
 void deps_remain_insert(struct rule *rule, int ruleid)
 {
@@ -2259,7 +2259,7 @@ void calc_deps_remain(struct rule *rule)
   LINKED_LIST_FOR_EACH(node, &rule->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
-    size_t depnameidx = e->nameidx;
+    mysize_t depnameidx = e->nameidx;
     int ruleid = get_ruleid_by_tgt(depnameidx);
     if (ruleid >= 0)
     {
@@ -2271,8 +2271,8 @@ void calc_deps_remain(struct rule *rule)
 //const int limit = 2;
 
 struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
-size_t rules_capacity;
-size_t rules_size;
+mysize_t rules_capacity;
+mysize_t rules_size;
 
 struct one_ruleid_by_dep_entry {
   struct abce_rb_tree_node node;
@@ -2313,17 +2313,17 @@ static inline int one_ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, 
 struct ruleid_by_dep_entry {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t depidx;
+  mysize_t depidx;
   struct abce_rb_tree_nocmp one_ruleid_by_dep[ONE_RULEID_BY_DEP_SIZE];
   struct linked_list_head one_ruleid_by_deplist;
 };
 
 static inline int ruleid_by_dep_entry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct ruleid_by_dep_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_dep_entry, node);
   int ret;
-  size_t str2;
+  mysize_t str2;
   str2 = e->depidx;
   ret = sizecmp(*str, str2);
   if (ret != 0)
@@ -2350,7 +2350,7 @@ struct abce_rb_tree_nocmp ruleids_by_dep[RULEIDS_BY_DEP_SIZE];
 struct linked_list_head ruleids_by_dep_list =
   STIR_LINKED_LIST_HEAD_INITER(ruleids_by_dep_list);
 
-struct ruleid_by_dep_entry *find_ruleids_by_dep(size_t depidx)
+struct ruleid_by_dep_entry *find_ruleids_by_dep(mysize_t depidx)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct abce_rb_tree_nocmp *head;
@@ -2365,9 +2365,9 @@ struct ruleid_by_dep_entry *find_ruleids_by_dep(size_t depidx)
   return NULL;
 }
 
-size_t ruleid_by_dep_entry_cnt;
+mysize_t ruleid_by_dep_entry_cnt;
 
-struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
+struct ruleid_by_dep_entry *ensure_ruleid_by_dep(mysize_t depidx)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct ruleid_by_dep_entry *e;
@@ -2402,9 +2402,9 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(size_t depidx)
   return e;
 }
 
-size_t one_ruleid_by_dep_entry_cnt;
+mysize_t one_ruleid_by_dep_entry_cnt;
 
-void ins_ruleid_by_dep(size_t depidx, int ruleid)
+void ins_ruleid_by_dep(mysize_t depidx, int ruleid)
 {
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(depidx);
   uint32_t hash = abce_murmur32(HASH_SEED, ruleid);
@@ -2495,15 +2495,15 @@ unsigned char *better_cycle_detect(int cur, int mark_traversed)
 struct add_dep {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t depidx;
-  size_t depidxnodir;
+  mysize_t depidx;
+  mysize_t depidxnodir;
   unsigned auto_phony:1;
 };
 
 struct add_deps {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t tgtidx;
+  mysize_t tgtidx;
   struct abce_rb_tree_nocmp add_deps[ADD_DEP_SIZE];
   struct linked_list_head add_deplist;
   unsigned phony:1;
@@ -2515,10 +2515,10 @@ struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
 
 static inline int add_dep_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct add_dep *e = ABCE_CONTAINER_OF(n2, struct add_dep, node);
   int ret;
-  size_t str2;
+  mysize_t str2;
   str2 = e->depidx;
   ret = sizecmp(*str, str2);
   if (ret != 0)
@@ -2543,10 +2543,10 @@ static inline int add_dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_t
 
 static inline int add_deps_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct add_deps *e = ABCE_CONTAINER_OF(n2, struct add_deps, node);
   int ret;
-  size_t str2;
+  mysize_t str2;
   str2 = e->tgtidx;
   ret = sizecmp(*str, str2);
   if (ret != 0)
@@ -2569,9 +2569,9 @@ static inline int add_deps_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_
   return 0;
 }
 
-size_t add_dep_cnt;
+mysize_t add_dep_cnt;
 
-struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx, size_t depidxnodir)
+struct add_dep *add_dep_ensure(struct add_deps *entry, mysize_t depidx, mysize_t depidxnodir)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -2597,9 +2597,9 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, size_t depidx, size_t dep
   return entry2;
 }
 
-size_t add_deps_cnt;
+mysize_t add_deps_cnt;
 
-struct add_deps *add_deps_ensure(size_t tgtidx)
+struct add_deps *add_deps_ensure(mysize_t tgtidx)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -2645,7 +2645,7 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
     for (j = 0; j < depsz; j++)
     {
       struct add_dep *add;
-      add = add_dep_ensure(entry, stringtab_add(deps[j].name), (size_t)-1);
+      add = add_dep_ensure(entry, stringtab_add(deps[j].name), (mysize_t)-1);
       (void)add;
     }
   }
@@ -2666,7 +2666,7 @@ void add_dep(char **tgts, size_t tgts_sz,
     for (j = 0; j < deps_sz; j++)
     {
       struct add_dep *add;
-      add = add_dep_ensure(entry, stringtab_add(deps[j]), (size_t)-1);
+      add = add_dep_ensure(entry, stringtab_add(deps[j]), (mysize_t)-1);
       if (auto_phony)
       {
         add->auto_phony = 1;
@@ -2724,7 +2724,7 @@ char ***argsdupcnt(char ***cmdargs, size_t cnt)
   return result;
 }
 
-size_t rule_cnt;
+mysize_t rule_cnt;
 
 int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 char **deps, size_t depsz,
@@ -2774,7 +2774,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     {
       size_t fulldepsz = strlen(deps[j]) + prefixlen + 2;
       char *fulldep;
-      size_t depidx;
+      mysize_t depidx;
       int otherid;
 
       fulldep = malloc(fulldepsz);
@@ -2794,7 +2794,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                 deps[j]);
         return -ENOENT;
       }
-      ins_dep(rule, depidx, rule->diridx, (size_t)-1, rec, orderonly, wait, 0);
+      ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0);
       deps_remain_insert(rule, otherid);
       ins_ruleid_by_dep(depidx, ruleid);
     }
@@ -2802,7 +2802,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
   return 0;
 }
 
-void process_additional_deps(size_t global_scopeidx)
+void process_additional_deps(mysize_t global_scopeidx)
 {
   struct linked_list_node *node, *node2;
   LINKED_LIST_FOR_EACH(node, &add_deplist)
@@ -2831,11 +2831,11 @@ void process_additional_deps(size_t global_scopeidx)
       rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(entry->tgtidx, rule->ruleid, NULL, -1);
-      ins_tgt(rule, entry->tgtidx, (size_t)-1, 0, NULL, -1);
+      ins_tgt(rule, entry->tgtidx, (mysize_t)-1, 0, NULL, -1);
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-        ins_dep(rule, dep->depidx, rule->diridx, (size_t)-1, 0, 0, 0, 0);
+        ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
@@ -2856,7 +2856,7 @@ void process_additional_deps(size_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      ins_dep(rule, dep->depidx, rule->diridx, (size_t)-1, 0, 0, 0, 0);
+      ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
     }
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
@@ -2900,7 +2900,7 @@ void process_additional_deps(size_t global_scopeidx)
       rule->scopeidx = global_scopeidx;
       rule->ruleid = rules_size++;
       ins_ruleid_by_tgt(dep->depidx, rule->ruleid, NULL, -1);
-      ins_tgt(rule, dep->depidx, (size_t)-1, 0, NULL, -1);
+      ins_tgt(rule, dep->depidx, (mysize_t)-1, 0, NULL, -1);
       rule->is_phony = 0; // is_inc is enough
       rule->is_rectgt = 0;
       rule->is_detouch = 0;
@@ -2914,7 +2914,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
               struct cmdsrc *shells,
               int phony, int rectgt, int detouch, int maybe, int dist,
               int cleanhook, int distcleanhook, int bothcleanhook,
-              char *prefix, size_t scopeidx, int lineno,
+              char *prefix, mysize_t scopeidx, int lineno,
               const char *meat)
 {
   struct rule *rule;
@@ -2964,20 +2964,20 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   }
   else
   {
-    rule->meatidx = (size_t)-1;
+    rule->meatidx = (mysize_t)-1;
   }
 
   for (i = 0; i < tgtsz; i++)
   {
-    size_t tgtidx = stringtab_add(tgts[i].name);
-    size_t tgtidxnodir = stringtab_add(tgts[i].namenodir);
+    mysize_t tgtidx = stringtab_add(tgts[i].name);
+    mysize_t tgtidxnodir = stringtab_add(tgts[i].namenodir);
     ins_tgt(rule, tgtidx, tgtidxnodir, !!dist, prefix, lineno);
     ins_ruleid_by_tgt(tgtidx, rule->ruleid, prefix, lineno);
   }
   for (i = 0; i < depsz; i++)
   {
-    size_t nameidx = stringtab_add(deps[i].name);
-    size_t nameidxnodir = stringtab_add(deps[i].namenodir);
+    mysize_t nameidx = stringtab_add(deps[i].name);
+    mysize_t nameidxnodir = stringtab_add(deps[i].namenodir);
     if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1) == 0)
     {
       ins_ruleid_by_dep(nameidx, rule->ruleid);
@@ -2986,8 +2986,8 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
 }
 
 int *ruleids_to_run;
-size_t ruleids_to_run_size;
-size_t ruleids_to_run_capacity;
+mysize_t ruleids_to_run_size;
+mysize_t ruleids_to_run_capacity;
 
 struct ruleid_by_pid {
   struct abce_rb_tree_node node;
@@ -3124,7 +3124,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
 
 //std::unordered_map<pid_t, int> ruleid_by_pid;
 
-size_t ruleid_by_pid_cnt;
+mysize_t ruleid_by_pid_cnt;
 
 void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
 {
@@ -3204,7 +3204,7 @@ const char *makecmds[] = {
   "/bin/make",
   "/bin/gmake",
 };
-size_t makecmds_size = sizeof(makecmds)/sizeof(*makecmds);
+mysize_t makecmds_size = sizeof(makecmds)/sizeof(*makecmds);
 
 int is_makecmd(const char *cmd)
 {
@@ -3708,7 +3708,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 struct stathashentry {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  size_t nameidx;
+  mysize_t nameidx;
   int ret;
   mode_t st_mode;
   struct timespec st_mtim;
@@ -3717,7 +3717,7 @@ struct stathashentry {
 struct abce_rb_tree_nocmp stathash[STATHASH_SIZE_RB];
 //struct stathashentry stathashentries[STATHASH_SIZE];
 struct stathashentry *stathashentries = NULL;
-size_t stathashentriescnt;
+mysize_t stathashentriescnt;
 struct linked_list_head statlrulist =
   STIR_LINKED_LIST_HEAD_INITER(statlrulist);
 struct linked_list_head statfreelist =
@@ -3794,10 +3794,10 @@ static inline void stathashentry_ensure_evict(void)
 
 static inline int stathashentry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
-  const size_t *str = strv;
+  const mysize_t *str = strv;
   struct stathashentry *e = ABCE_CONTAINER_OF(n2, struct stathashentry, node);
   int ret;
-  size_t str2;
+  mysize_t str2;
   str2 = e->nameidx;
   ret = sizecmp(*str, str2);
   if (ret != 0)
@@ -3830,7 +3830,7 @@ void stathashentry_evict_all(void)
   }
   statcache_init();
 }
-void lstat_evict_named(size_t nameidx)
+void lstat_evict_named(mysize_t nameidx)
 {
   struct stathashentry *e;
   uint32_t hash;
@@ -3849,7 +3849,7 @@ void lstat_evict_named(size_t nameidx)
   abce_rb_tree_nocmp_delete(head, &e->node);
   linked_list_add_head(&e->llnode, &statfreelist);
 }
-struct stathashentry *lstat_cached(size_t nameidx)
+struct stathashentry *lstat_cached(mysize_t nameidx)
 {
   struct abce_rb_tree_node *n;
   struct stathashentry *e;
@@ -3983,8 +3983,8 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     int found_rectgt = 0;
     if (r->is_rectgt)
     {
-      size_t stidx = stringtab_get(nam2);
-      if (stidx != (size_t)-1)
+      mysize_t stidx = stringtab_get(nam2);
+      if (stidx != (mysize_t)-1)
       {
         if (rule_get_tgt(r, stidx) != NULL)
         {
@@ -4118,8 +4118,8 @@ void reccap_mtim(const char *name, struct timespec cap)
     int found_rectgt = 0;
     if (r->is_rectgt)
     {
-      size_t stidx = stringtab_get(nam2);
-      if (stidx != (size_t)-1)
+      mysize_t stidx = stringtab_get(nam2);
+      if (stidx != (mysize_t)-1)
       {
         if (rule_get_tgt(r, stidx) != NULL)
         {
@@ -4811,7 +4811,7 @@ void reconsider(int ruleid, int ruleid_executed)
     if (debug)
     {
       print_indent();
-      printf("deps remain: %zu\n", r->deps_remain_cnt);
+      printf("deps remain: %zu\n", (size_t)r->deps_remain_cnt);
       LINKED_LIST_FOR_EACH(node, &r->depremainlist)
       {
         struct dep_remain *rem =
@@ -5689,7 +5689,7 @@ void do_clean(char *fwd_path, int objs, int bins)
 
     if (strncmp(parent, "../", 3) != 0)
     {
-      size_t tgtidx = ABCE_CONTAINER_OF(rules[i]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
+      mysize_t tgtidx = ABCE_CONTAINER_OF(rules[i]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
       // FIXME!!! The path to child is incorrect!
       add_dep(&parent, 1, &sttable[tgtidx].s, 1, /*&cleanslash,*/ 0, 0);
     }
@@ -5744,7 +5744,7 @@ void do_clean(char *fwd_path, int objs, int bins)
       struct stirtgt *tgt = ABCE_CONTAINER_OF(node2, struct stirtgt, llnode);
       char *oldname = strdup(sttable[tgt->tgtidx].s);
       char *name;
-      size_t stidx;
+      mysize_t stidx;
       int ruleid;
       struct linked_list_head tmplist; // extra list for reversing
       int prefixok;
@@ -5771,7 +5771,7 @@ void do_clean(char *fwd_path, int objs, int bins)
         free(oldname);
         oldname = name;
         stidx = stringtab_get(name);
-        if (stidx == (size_t)-1)
+        if (stidx == (mysize_t)-1)
         {
           break;
         }
@@ -6894,13 +6894,13 @@ void process_orders(struct stiryy_main *main)
     {
       my_abort();
     }
-    size_t first = stringtab_get(main->orders[i].rules[0]);
-    size_t second = stringtab_get(main->orders[i].rules[1]);
-    if (first == (size_t)-1)
+    mysize_t first = stringtab_get(main->orders[i].rules[0]);
+    mysize_t second = stringtab_get(main->orders[i].rules[1]);
+    if (first == (mysize_t)-1)
     {
       errxit("@order rule '%s' not found", main->orders[i].rules[0]);
     }
-    if (second == (size_t)-1)
+    if (second == (mysize_t)-1)
     {
       errxit("@order rule '%s' not found", main->orders[i].rules[1]);
     }
@@ -6919,7 +6919,7 @@ void process_orders(struct stiryy_main *main)
       continue;
     }
     rule = rules[secondrule];
-    ins_dep(rule, first, rule->diridx, (size_t)-1, 0, 0, 0, 0);
+    ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
     deps_remain_insert(rule, firstrule);
     ins_ruleid_by_dep(first, secondrule);
     if (debug)
@@ -8036,7 +8036,7 @@ int main(int argc, char **argv)
   {
     for (i = optind; i < argc; i++)
     {
-      size_t stidx = stringtab_add(argv[i]);
+      mysize_t stidx = stringtab_add(argv[i]);
       int ruleid = get_ruleid_by_tgt(stidx);
       if (ruleid < 0)
       {
@@ -8051,7 +8051,7 @@ int main(int argc, char **argv)
     }
     for (i = optind; i < argc; i++)
     {
-      size_t stidx = stringtab_add(argv[i]);
+      mysize_t stidx = stringtab_add(argv[i]);
       int ruleid = get_ruleid_by_tgt(stidx);
       if (ruleid < 0)
       {
@@ -8068,7 +8068,7 @@ int main(int argc, char **argv)
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
       char *buf = malloc(bufsz);
       char *can;
-      size_t stidx;
+      mysize_t stidx;
       int ruleid;
       snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
       can = canon(buf);
@@ -8092,7 +8092,7 @@ int main(int argc, char **argv)
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
       char *buf = malloc(bufsz);
       char *can;
-      size_t stidx;
+      mysize_t stidx;
       int ruleid;
       snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
       can = canon(buf);
@@ -8115,7 +8115,7 @@ int main(int argc, char **argv)
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
       char *buf = malloc(bufsz);
       char *can;
-      size_t stidx;
+      mysize_t stidx;
       int ruleid;
       snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
       can = canon(buf);
@@ -8139,7 +8139,7 @@ int main(int argc, char **argv)
       size_t bufsz = strlen(fwd_path) + strlen(argv[i]) + 2;
       char *buf = malloc(bufsz);
       char *can;
-      size_t stidx;
+      mysize_t stidx;
       int ruleid;
       snprintf(buf, bufsz, "%s/%s", fwd_path, argv[i]);
       can = canon(buf);
@@ -8189,17 +8189,17 @@ int main(int argc, char **argv)
   {
     printf("\n");
     printf("Memory use statistics:\n");
-    printf("  stringtab: %zu\n", stringtab_cnt);
-    printf("  ruleid_by_tgt_entry: %zu\n", ruleid_by_tgt_entry_cnt);
-    printf("  tgt: %zu\n", tgt_cnt);
-    printf("  stirdep: %zu\n", stirdep_cnt);
-    printf("  dep_remain: %zu\n", dep_remain_cnt);
-    printf("  ruleid_by_dep_entry: %zu\n", ruleid_by_dep_entry_cnt);
-    printf("  one_ruleid_by_dep_entry: %zu\n", one_ruleid_by_dep_entry_cnt);
-    printf("  add_dep: %zu\n", add_dep_cnt);
-    printf("  add_deps: %zu\n", add_deps_cnt);
-    printf("  rule: %zu\n", rule_cnt);
-    printf("  ruleid_by_pid: %zu\n", ruleid_by_pid_cnt);
+    printf("  stringtab: %zu %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)));
+    printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
+    printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));
+    printf("  stirdep: %zu %zu\n", (size_t)stirdep_cnt, (size_t)(stirdep_cnt*sizeof(struct stirdep)));
+    printf("  dep_remain: %zu %zu\n", (size_t)dep_remain_cnt, (size_t)(dep_remain_cnt*sizeof(struct dep_remain)));
+    printf("  ruleid_by_dep_entry: %zu %zu\n", (size_t)ruleid_by_dep_entry_cnt, (size_t)(ruleid_by_dep_entry_cnt*sizeof(struct ruleid_by_dep_entry)));
+    printf("  one_ruleid_by_dep_entry: %zu %zu\n", (size_t)one_ruleid_by_dep_entry_cnt, (size_t)(one_ruleid_by_dep_entry_cnt*sizeof(struct one_ruleid_by_dep_entry)));
+    printf("  add_dep: %zu %zu\n", (size_t)add_dep_cnt, (size_t)(add_dep_cnt*sizeof(struct add_dep)));
+    printf("  add_deps: %zu %zu\n", (size_t)add_deps_cnt, (size_t)(add_deps_cnt*sizeof(struct add_deps)));
+    printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)(rule_cnt*sizeof(struct rule)));
+    printf("  ruleid_by_pid: %zu %zu\n", (size_t)ruleid_by_pid_cnt, (size_t)(ruleid_by_pid_cnt*sizeof(struct ruleid_by_pid)));
   }
   merge_db();
   clean_jobserver();

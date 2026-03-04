@@ -19,7 +19,7 @@ void *my_malloc(size_t sz)
   abort();
 }
 
-size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
+mysize_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
   abort();
 }

@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+typedef uint32_t mysize_t;
+
 void my_abort(void);
 
 extern int yy_stored_lineno;
@@ -362,7 +364,7 @@ static inline void stiryy_set_double(struct stiryy *stiryy, size_t i, double dbl
   abce_set_double(stiryy->main->abce, i, dbl);
 }
 
-size_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
+mysize_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
 
 static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd, int auto_phony, int auto_target, int ignore)
 {
