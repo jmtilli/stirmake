@@ -3715,7 +3715,8 @@ struct stathashentry {
   off_t st_size;
 };
 struct abce_rb_tree_nocmp stathash[STATHASH_SIZE_RB];
-struct stathashentry stathashentries[STATHASH_SIZE];
+//struct stathashentry stathashentries[STATHASH_SIZE];
+struct stathashentry *stathashentries = NULL;
 size_t stathashentriescnt;
 struct linked_list_head statlrulist =
   STIR_LINKED_LIST_HEAD_INITER(statlrulist);
@@ -3733,6 +3734,7 @@ void statcache_init(void)
       stathashentriescnt = STATHASH_SIZE;
     }
   }
+  stathashentries = stir_do_mmap_madvise(stathashentriescnt*sizeof(*stathashentries));
   for (i = 0; i < stathashentriescnt; i++)
   {
     linked_list_add_tail(&stathashentries[i].llnode, &statfreelist);
@@ -3748,7 +3750,12 @@ void statcache_grow(void)
   {
     stathashentriescnt = STATHASH_SIZE;
   }
-  for (i = oldstathashentriescnt; i < stathashentriescnt; i++)
+  if (stathashentriescnt == oldstathashentriescnt)
+  {
+    return;
+  }
+  stathashentries = stir_do_mmap_madvise((stathashentriescnt-oldstathashentriescnt)*sizeof(*stathashentries));
+  for (i = 0; i < stathashentriescnt - oldstathashentriescnt; i++)
   {
     linked_list_add_tail(&stathashentries[i].llnode, &statfreelist);
   }
