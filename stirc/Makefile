@@ -62,7 +62,7 @@ WITH_LUA:=no
 #CC=gcc
 #CC=clang
 CC?=cc
-CFLAGS?=-O3 -Wall -g
+CFLAGS?=-O3 -Wall -Wextra -Wno-unused-parameter -g
 
 ifeq ($(WITH_LUA),yes)
   CFLAGS += -I$(LUAINC) -DWITH_LUA

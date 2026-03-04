@@ -7,7 +7,7 @@ die()
 }
 
 export CC="${CC:-cc}"
-export CFLAGS="${CFLAGS:--O3 -Wall -g}"
+export CFLAGS="${CFLAGS:--O3 -Wall -Wextra -Wno-unused-parameter -g}"
 export LDFLAGS="${LDFLAGS:-}"
 
 (cd abce; sh bootstrapnomake.sh) || die "abce"
