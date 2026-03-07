@@ -22,6 +22,7 @@
 #include "const.h"
 #include "bypid.h"
 #include "mymalloc.h"
+#include "stringtab.h"
 #ifdef __linux__
 #include <sys/random.h>
 #endif
@@ -201,13 +202,6 @@ int dry_run = 0;
 int self_pipe_fd[2];
 
 int jobserver_fd[2];
-
-struct stringtabentry {
-  struct abce_rb_tree_node node;
-  char *string;
-  mysize_t len;
-  mysize_t idx;
-};
 
 int children = 0;
 
@@ -477,62 +471,6 @@ void update_recursive_pid(int parent)
   setenv("STIRMAKEPID", buf, 1);
 }
 
-struct string_plus_len {
-  const char *str;
-  mysize_t len;
-};
-
-static inline int stringtabentry_cmp_asym(const void *stringlenv, struct abce_rb_tree_node *n2, void *ud)
-{
-  const struct string_plus_len *stringlen = stringlenv;
-  struct stringtabentry *e = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
-  int ret;
-  const char *str2, *str1;
-  size_t len2, len1;
-  size_t minlen;
-  str1 = stringlen->str;
-  len1 = stringlen->len;
-  str2 = e->string;
-  len2 = e->len;
-  minlen = (len1 < len2) ? len1 : len2;
-  ret = memcmp(str1, str2, minlen);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  if (len1 < len2)
-  {
-    return -1;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  return 0;
-}
-static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
-{
-  struct stringtabentry *e1 = ABCE_CONTAINER_OF(n1, struct stringtabentry, node);
-  struct stringtabentry *e2 = ABCE_CONTAINER_OF(n2, struct stringtabentry, node);
-  int ret;
-  size_t len1 = e1->len;
-  size_t len2 = e2->len;
-  size_t minlen = (len1 < len2) ? len1 : len2;
-  ret = memcmp(e1->string, e2->string, minlen);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  if (len1 < len2)
-  {
-    return -1;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  return 0;
-}
 
 
 
@@ -631,124 +569,6 @@ int read_jobserver(void)
     jobserver_chars[jobserver_char_cnt++] = ch;
   }
   return (ret == 1);
-}
-
-struct sttable_entry {
-  char *s;
-  int is_remade;
-};
-
-struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
-struct sttable_entry *sttable = NULL;
-/*
- * Linux kernel 22.9.2025, 26084 headers, 35778 c files, 6000 directories
- * This gives a bit more than 128*1024 strings (each .c has .o and .d),
- * so even 128*1024 would not be enough. However, on the other hand,
- * settings st_cap to 256*1024 would on non-overcommit 64-bit systems
- * allocate 4 megabytes of memory immediately.
- */
-mysize_t st_cap = 64*1024;
-mysize_t st_cnt;
-
-void st_grow(void)
-{
-  mysize_t st_newcap = st_cap * 2;
-  struct sttable_entry *sttable_new;
-  if (st_cnt < st_cap)
-  {
-    return;
-  }
-  if (st_newcap < 1024)
-  {
-    st_newcap = 1024;
-  }
-  sttable_new = stir_do_mmap_madvise(st_newcap*sizeof(*sttable_new));
-  if (sttable_new == NULL)
-  {
-    return;
-  }
-  memcpy(sttable_new, sttable, st_cnt*sizeof(*sttable_new));
-  stir_do_munmap(sttable, st_cap*sizeof(*sttable));
-  sttable = sttable_new;
-  st_cap = st_newcap;
-}
-
-void st_compact(void)
-{
-  char *ptr2;
-  int errno_save;
-  size_t bytes_total, bytes_in_use;
-  bytes_total = stir_topages(st_cap * sizeof(*sttable));
-  bytes_in_use = stir_topages(st_cnt * sizeof(*sttable));
-  ptr2 = (void*)sttable;
-  ptr2 += bytes_in_use;
-  errno_save = errno;
-  munmap(ptr2, bytes_total - bytes_in_use);
-  errno = errno_save;
-  // don't report errors
-}
-
-mysize_t stringtab_cnt = 0;
-
-mysize_t stringtab_get(const char *symbol)
-{
-  struct abce_rb_tree_node *n;
-  uint32_t hashval;
-  size_t hashloc;
-  struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
-  hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
-  hashloc = hashval % (sizeof(st)/sizeof(*st));
-  n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym,
-NULL, &stringlen);
-  if (n != NULL)
-  {
-    return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
-  }
-  return (mysize_t)-1;
-}
-
-mysize_t stringtab_add(const char *symbol)
-{
-  struct abce_rb_tree_node *n;
-  uint32_t hashval;
-  mysize_t hashloc;
-  struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
-  hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
-  hashloc = hashval % (sizeof(st)/sizeof(*st));
-  n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, NULL, &stringlen);
-  if (n != NULL)
-  {
-    return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
-  }
-  stringtab_cnt++;
-  struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
-  stringtabentry->string = my_strdup_len(symbol, stringlen.len);
-  stringtabentry->len = stringlen.len;
-  st_grow();
-  if (st_cnt >= st_cap)
-  {
-    errxit("stringtab full");
-    exit(2);
-  }
-  sttable[st_cnt].s = stringtabentry->string;
-  sttable[st_cnt].is_remade = 0;
-  stringtabentry->idx = st_cnt++;
-  if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
-  {
-    printf("23\n");
-    my_abort();
-  }
-  return stringtabentry->idx;
-}
-
-mysize_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
-{
-  if (strlen(symbol) != symlen)
-  {
-    printf("22\n");
-    my_abort(); // RFE what to do?
-  }
-  return stringtab_add(symbol);
 }
 
 int cmdequal_db(struct db *db, mysize_t tgtidx, struct cmd *cmd, mysize_t diridx)
