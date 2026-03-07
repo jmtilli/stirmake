@@ -19,6 +19,9 @@
 #include <stdarg.h>
 #include "stircommon.h"
 #include "git.h"
+#include "const.h"
+#include "bypid.h"
+#include "mymalloc.h"
 #ifdef __linux__
 #include <sys/random.h>
 #endif
@@ -187,36 +190,6 @@ enum mode {
 enum mode mode = MODE_NONE;
 int isspecprog = 0;
 
-#define STIR_LINKED_LIST_HEAD_INITER(x) { \
-  .node = { \
-    .prev = &(x).node, \
-    .next = &(x).node, \
-  }, \
-}
-
-enum {
-  RULEID_BY_TGT_SIZE = 8192,
-  RULEIDS_BY_DEP_SIZE = 8192,
-  STATHASH_SIZE_RB = 8192,
-  STATHASH_SIZE = 256*1024,
-  STATHASH_SIZE_INIT = 256,
-  TGTS_SIZE = 4,
-  DEPS_SIZE = 8,
-  DEPS_REMAIN_SIZE = 8,
-  ONE_RULEID_BY_DEP_SIZE = 8,
-  ADD_DEP_SIZE = 8,
-  ADD_DEPS_SIZE = 8192,
-  RULEID_BY_PID_SIZE = 64,
-  RULES_REMAIN_SIZE = 64,
-  DB_SIZE = 8192,
-  STRINGTAB_SIZE = 8192,
-  MAX_JOBCNT = 1000,
-};
-
-enum {
-  HASH_SEED = 0x12345678U,
-};
-
 
 int debug = 0;
 int ignoreerr = 0;
@@ -241,7 +214,6 @@ int children = 0;
 void merge_db(void);
 void merge_db_v1(void);
 void merge_db_v2(void);
-int ruleid_by_pid_erase(pid_t pid, int *fd);
 void errxit(const char *fmt, ...);
 
 struct cmd {
@@ -562,150 +534,7 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
   return 0;
 }
 
-static inline size_t stir_topages(size_t limit)
-{
-  long pagesz = sysconf(_SC_PAGE_SIZE);
-  size_t pages, actlimit;
-  if (pagesz <= 0)
-  {
-    abort();
-  }
-  pages = (limit + (pagesz-1)) / pagesz;
-  actlimit = pages * pagesz;
-  return actlimit;
-}
 
-void *stir_do_mmap_madvise(size_t bytes)
-{
-  void *ptr;
-  bytes = stir_topages(bytes);
-  // Ugh. I wish all systems had simple and compatible interface.
-#ifdef MAP_ANON
-  #ifdef MAP_NORESERVE
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANON|MAP_NORESERVE, -1, 0);
-  #else
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANON, -1, 0);
-  #endif
-#else
-  #ifdef MAP_ANONYMOUS
-    #ifdef MAP_NORESERVE
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
-    #else
-  ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-    #endif
-  #else
-  {
-    int fd;
-    fd = open("/dev/zero", O_RDWR);
-    if (fd < 0)
-    {
-      abort();
-    }
-    #ifdef MAP_FILE
-    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FILE, fd, 0);
-    #else
-    ptr = mmap(NULL, bytes, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-    #endif
-    close(fd);
-  }
-  #endif
-#endif
-#ifdef MADV_DONTNEED
-  #ifdef __linux__
-  if (ptr && ptr != MAP_FAILED)
-  {
-    madvise(ptr, bytes, MADV_DONTNEED); // Linux-ism
-  }
-  #endif
-#endif
-#ifdef MADV_FREE
-  #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-  if (ptr && ptr != MAP_FAILED)
-  {
-    madvise(ptr, bytes, MADV_FREE); // *BSD-ism
-    // on Linux, MADV_FREE works only on private anonymous pages
-    // TODO: not sure about FreeBSD
-  }
-  #endif
-#endif
-  if (ptr == MAP_FAILED)
-  {
-    return NULL;
-  }
-  return ptr;
-}
-
-void stir_do_munmap(void *ptr, size_t bytes)
-{
-  munmap(ptr, stir_topages(bytes));
-}
-
-
-char *my_arena;
-char *my_arena_ptr;
-size_t sizeof_my_arena;
-
-void *my_malloc(size_t sz)
-{
-  void *result = my_arena_ptr;
-  if (sz > sizeof_my_arena)
-  {
-    if (debug)
-    {
-      print_indent();
-      printf("allocating outside of arena, big allocation, %zu bytes\n", sz);
-    }
-    result = stir_do_mmap_madvise(sz);
-    if (result == NULL)
-    {
-      fprintf(stderr, "too large alloc, out of memory: %zu bytes\n", sz);
-      my_abort();
-    }
-    return result;
-  }
-  my_arena_ptr += (sz+7)/8*8;
-  if (my_arena_ptr > my_arena + sizeof_my_arena)
-  {
-    if (debug)
-    {
-      print_indent();
-      printf("allocating new arena\n");
-    }
-    my_arena = stir_do_mmap_madvise(sizeof_my_arena);
-    if (my_arena == NULL)
-    {
-      errxit("Can't mmap new arena");
-      exit(2);
-    }
-    my_arena_ptr = my_arena;
-    result = my_arena_ptr;
-    my_arena_ptr += (sz+7)/8*8;
-    if (my_arena_ptr > my_arena + sizeof_my_arena)
-    {
-      fprintf(stderr, "out of memory\n");
-      my_abort();
-    }
-  }
-  return result;
-}
-void my_free(void *ptr)
-{
-  // nop
-}
-void *my_strdup_len(const char *str, size_t sz)
-{
-  char *result = my_malloc(sz + 1);
-  memcpy(result, str, sz);
-  result[sz] = '\0';
-  return result;
-}
-void *my_strdup(const char *str)
-{
-  size_t sz = strlen(str);
-  void *result = my_malloc(sz + 1);
-  memcpy(result, str, sz + 1);
-  return result;
-}
 
 char jobserver_chars[1024];
 int jobserver_char_cnt = 0;
@@ -2989,142 +2818,7 @@ int *ruleids_to_run;
 mysize_t ruleids_to_run_size;
 mysize_t ruleids_to_run_capacity;
 
-struct ruleid_by_pid {
-  struct abce_rb_tree_node node;
-  struct abce_rb_tree_node fdnode;
-  struct linked_list_node llnode;
-  pid_t pid;
-  int ruleid;
-  int fd;
-};
-
-static inline int ruleid_by_pid_fd_cmp_asym(const void *fdv, struct abce_rb_tree_node *n2, void *ud)
-{
-  const int *fd = fdv;
-  struct ruleid_by_pid *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, fdnode);
-  if (*fd < 0 || e->fd < 0)
-  {
-    my_abort();
-  }
-  if (*fd > e->fd)
-  {
-    return 1;
-  }
-  if (*fd < e->fd)
-  {
-    return -1;
-  }
-  return 0;
-}
-
-static inline int ruleid_by_pid_fd_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
-{
-  struct ruleid_by_pid *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_pid, fdnode);
-  struct ruleid_by_pid *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, fdnode);
-  if (e1->fd < 0 || e2->fd < 0)
-  {
-    my_abort();
-  }
-  if (e1->fd > e2->fd)
-  {
-    return 1;
-  }
-  if (e1->fd < e2->fd)
-  {
-    return -1;
-  }
-  return 0;
-}
-
-static inline int ruleid_by_pid_cmp_asym(const void *pidv, struct abce_rb_tree_node *n2, void *ud)
-{
-  const pid_t *pid = pidv;
-  struct ruleid_by_pid *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, node);
-  if (*pid > e->pid)
-  {
-    return 1;
-  }
-  if (*pid < e->pid)
-  {
-    return -1;
-  }
-  return 0;
-}
-
-static inline int ruleid_by_pid_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
-{
-  struct ruleid_by_pid *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_pid, node);
-  struct ruleid_by_pid *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_pid, node);
-  if (e1->pid > e2->pid)
-  {
-    return 1;
-  }
-  if (e1->pid < e2->pid)
-  {
-    return -1;
-  }
-  return 0;
-}
-
-struct abce_rb_tree_nocmp ruleid_by_pid[RULEID_BY_PID_SIZE];
-struct abce_rb_tree_nocmp ruleid_by_pid_fd[RULEID_BY_PID_SIZE];
-struct linked_list_head ruleid_by_pid_list =
-  STIR_LINKED_LIST_HEAD_INITER(ruleid_by_pid_list);
-
-int ruleid_by_fd(int fd)
-{
-  struct abce_rb_tree_node *n;
-  uint32_t hashvalfd;
-  size_t hashlocfd;
-  if (fd < 0)
-  {
-    abort();
-  }
-  hashvalfd = abce_murmur32(HASH_SEED, fd);
-  hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
-  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_asym, NULL, &fd);
-  if (n == NULL)
-  {
-    return -ENOENT;
-  }
-  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, fdnode);
-  return bypid->ruleid;
-}
-
-int ruleid_by_pid_erase(pid_t pid, int *fd)
-{
-  struct abce_rb_tree_node *n;
-  uint32_t hashval, hashvalfd;
-  size_t hashloc, hashlocfd;
-  int ruleid;
-  hashval = abce_murmur32(HASH_SEED, pid);
-  hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
-  n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
-  if (n == NULL)
-  {
-    return -ENOENT;
-  }
-  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
-  abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
-  if (bypid->fd >= 0)
-  {
-    hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
-    hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
-    abce_rb_tree_nocmp_delete(&ruleid_by_pid_fd[hashlocfd], &bypid->fdnode);
-  }
-  ruleid = bypid->ruleid;
-  linked_list_delete(&bypid->llnode);
-  if (fd)
-  {
-    *fd = bypid->fd;
-  }
-  my_free(bypid);
-  return ruleid;
-}
-
 //std::unordered_map<pid_t, int> ruleid_by_pid;
-
-mysize_t ruleid_by_pid_cnt;
 
 void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
 {
@@ -3473,42 +3167,16 @@ pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout
   }
   else
   {
-    ruleid_by_pid_cnt++;
-    struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
-    uint32_t hashval;
-    size_t hashloc;
-    uint32_t hashvalfd;
-    size_t hashlocfd;
-    bypid->pid = pid;
-    bypid->ruleid = ruleid;
-    bypid->fd = outpiperd;
     children++;
     if (create_fd)
     {
       close(outpipewr);
     }
-    hashval = abce_murmur32(HASH_SEED, pid);
-    hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
-    if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
-    {
-      printf("12\n");
-      my_abort();
-    }
-    if (bypid->fd >= 0)
-    {
-      hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
-      hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
-      if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_sym, NULL, &bypid->fdnode) != 0)
-      {
-        printf("12.5\n");
-        my_abort();
-      }
-    }
-    linked_list_add_tail(&bypid->llnode, &ruleid_by_pid_list);
+    ruleid_by_pid_insert(ruleid, pid, outpiperd);
     rules[ruleid]->is_forked = 1;
     if (fdout)
     {
-      *fdout = bypid->fd;
+      *fdout = outpiperd;
     }
     return pid;
   }
@@ -3664,42 +3332,16 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   else
   {
-    ruleid_by_pid_cnt++;
-    struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
-    uint32_t hashval;
-    size_t hashloc;
-    uint32_t hashvalfd;
-    size_t hashlocfd;
-    bypid->pid = pid;
-    bypid->ruleid = ruleid;
-    bypid->fd = outpiperd;
     children++;
     if (create_fd)
     {
       close(outpipewr);
     }
-    hashval = abce_murmur32(HASH_SEED, pid);
-    hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
-    if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
-    {
-      printf("12\n");
-      my_abort();
-    }
-    if (bypid->fd >= 0)
-    {
-      hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
-      hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
-      if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_sym, NULL, &bypid->fdnode) != 0)
-      {
-        printf("12.5\n");
-        my_abort();
-      }
-    }
-    linked_list_add_tail(&bypid->llnode, &ruleid_by_pid_list);
+    ruleid_by_pid_insert(ruleid, pid, outpiperd);
     rules[ruleid]->is_forked = 1;
     if (fdout)
     {
-      *fdout = bypid->fd;
+      *fdout = outpiperd;
     }
     return pid;
   }
@@ -6415,13 +6057,7 @@ void do_setrlimit(void)
 
 void handle_signal(int signum)
 {
-  struct linked_list_node *node;
-  LINKED_LIST_FOR_EACH(node, &ruleid_by_pid_list)
-  {
-    struct ruleid_by_pid *bypid =
-      ABCE_CONTAINER_OF(node, struct ruleid_by_pid, llnode);
-    kill(bypid->pid, signum);
-  }
+  kill_all_children(signum);
 }
 
 uint32_t forkedchildcnt = 0;
@@ -7058,14 +6694,11 @@ int main(int argc, char **argv)
     exit(2);
   }
 
-  sizeof_my_arena = 128*1024;
-  my_arena = stir_do_mmap_madvise(sizeof_my_arena);
-  if (my_arena == NULL)
+  if (my_malloc_init())
   {
     errxit("Can't mmap arena");
     exit(2);
   }
-  my_arena_ptr = my_arena;
 
   if (strcmp(basenm, "smka") == 0)
   {
