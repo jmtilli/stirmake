@@ -23,6 +23,7 @@
 #include "bypid.h"
 #include "mymalloc.h"
 #include "stringtab.h"
+#include "db.h"
 #ifdef __linux__
 #include <sys/random.h>
 #endif
@@ -88,8 +89,6 @@
 char *jobserver_fifo = NULL;
 int create_jobserver_fifo = 0;
 int created_jobserver_fifo = 0;
-
-int usetsdb = 1;
 
 int silent = 0;
 int touchmode = 0;
@@ -210,10 +209,6 @@ void merge_db_v1(void);
 void merge_db_v2(void);
 void errxit(const char *fmt, ...);
 
-struct cmd {
-  char ***args;
-};
-
 int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
 {
   size_t cnt1, cnt2, i;
@@ -241,188 +236,6 @@ int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
     }
   }
   return 1;
-}
-
-struct tsdbe {
-  struct abce_rb_tree_node node;
-  struct linked_list_node llnode;
-  mysize_t stringtabidx;
-  struct timespec ts;
-  struct timespec tsnew;
-  off_t sz;
-  off_t sznew;
-  int seen;
-};
-
-struct dbe {
-  struct abce_rb_tree_node node;
-  struct linked_list_node llnode;
-  mysize_t tgtidx; // key
-  mysize_t diridx; // non-key
-  struct cmd cmds; // non-key
-};
-
-int sizecmp(size_t size1, size_t size2)
-{
-  if (size1 > size2)
-  {
-    return 1;
-  }
-  if (size1 < size2)
-  {
-    return -1;
-  }
-  return 0;
-}
-
-static inline int tsdbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
-{
-  const mysize_t *str = strv;
-  struct tsdbe *e = ABCE_CONTAINER_OF(n2, struct tsdbe, node);
-  int ret;
-  size_t str2;
-  str2 = e->stringtabidx;
-  ret = sizecmp(*str, str2);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
-}
-static inline int tsdbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
-{
-  struct tsdbe *e1 = ABCE_CONTAINER_OF(n1, struct tsdbe, node);
-  struct tsdbe *e2 = ABCE_CONTAINER_OF(n2, struct tsdbe, node);
-  int ret;
-  ret = sizecmp(e1->stringtabidx, e2->stringtabidx);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
-}
-
-static inline int dbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
-{
-  const mysize_t *str = strv;
-  struct dbe *e = ABCE_CONTAINER_OF(n2, struct dbe, node);
-  int ret;
-  size_t str2;
-  str2 = e->tgtidx;
-  ret = sizecmp(*str, str2);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
-}
-static inline int dbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
-{
-  struct dbe *e1 = ABCE_CONTAINER_OF(n1, struct dbe, node);
-  struct dbe *e2 = ABCE_CONTAINER_OF(n2, struct dbe, node);
-  int ret;
-  ret = sizecmp(e1->tgtidx, e2->tgtidx);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
-}
-
-struct tsdb {
-  struct abce_rb_tree_nocmp byname[DB_SIZE];
-  struct linked_list_head ll;
-};
-
-struct tsdb tsdb = {};
-
-void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx)
-{
-  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
-  struct abce_rb_tree_node *n;
-  struct abce_rb_tree_nocmp *head;
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &tgtidx);
-  if (n == NULL)
-  {
-    return;
-  }
-  abce_rb_tree_nocmp_delete(head, n);
-  linked_list_delete(&ABCE_CONTAINER_OF(n, struct tsdbe, node)->llnode);
-}
-
-void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe)
-{
-  uint32_t hash = abce_murmur32(HASH_SEED, tsdbe->stringtabidx);
-  struct abce_rb_tree_nocmp *head;
-  int ret;
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  ret = abce_rb_tree_nocmp_insert_nonexist(head, tsdbe_cmp_sym, NULL, &tsdbe->node);
-  if (ret != 0)
-  {
-    struct abce_rb_tree_node *n;
-    n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &tsdbe->stringtabidx);
-    if (n == NULL)
-    {
-      my_abort();
-    }
-    abce_rb_tree_nocmp_delete(head, n);
-    linked_list_delete(&ABCE_CONTAINER_OF(n, struct tsdbe, node)->llnode);
-    ret = abce_rb_tree_nocmp_insert_nonexist(head, tsdbe_cmp_sym, NULL, &tsdbe->node);
-    if (ret != 0)
-    {
-      my_abort();
-    }
-  }
-  linked_list_add_tail(&tsdbe->llnode, &tsdb->ll);
-}
-
-struct db {
-  struct abce_rb_tree_nocmp byname[DB_SIZE];
-  struct linked_list_head ll;
-};
-
-struct db db = {};
-
-void maybe_del_dbe(struct db *db, mysize_t tgtidx)
-{
-  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
-  struct abce_rb_tree_node *n;
-  struct abce_rb_tree_nocmp *head;
-  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &tgtidx);
-  if (n == NULL)
-  {
-    return;
-  }
-  abce_rb_tree_nocmp_delete(head, n);
-  linked_list_delete(&ABCE_CONTAINER_OF(n, struct dbe, node)->llnode);
-}
-
-void ins_dbe(struct db *db, struct dbe *dbe)
-{
-  uint32_t hash = abce_murmur32(HASH_SEED, dbe->tgtidx);
-  struct abce_rb_tree_nocmp *head;
-  int ret;
-  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
-  ret = abce_rb_tree_nocmp_insert_nonexist(head, dbe_cmp_sym, NULL, &dbe->node);
-  if (ret != 0)
-  {
-    struct abce_rb_tree_node *n;
-    n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &dbe->tgtidx);
-    if (n == NULL)
-    {
-      my_abort();
-    }
-    abce_rb_tree_nocmp_delete(head, n);
-    linked_list_delete(&ABCE_CONTAINER_OF(n, struct dbe, node)->llnode);
-    ret = abce_rb_tree_nocmp_insert_nonexist(head, dbe_cmp_sym, NULL, &dbe->node);
-    if (ret != 0)
-    {
-      my_abort();
-    }
-  }
-  linked_list_add_tail(&dbe->llnode, &db->ll);
 }
 
 void escape_string(FILE *f, const char *str)
@@ -571,15 +384,11 @@ int read_jobserver(void)
   return (ret == 1);
 }
 
-int cmdequal_db(struct db *db, mysize_t tgtidx, struct cmd *cmd, mysize_t diridx)
+int cmdequal_db(mysize_t tgtidx, struct cmd *cmd, mysize_t diridx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
-  struct abce_rb_tree_nocmp *head;
-  struct abce_rb_tree_node *n;
   struct dbe *dbe;
-  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &tgtidx);
-  if (n == NULL)
+  dbe = get_dbe(tgtidx);
+  if (dbe == NULL)
   {
     if (debug)
     {
@@ -588,7 +397,6 @@ int cmdequal_db(struct db *db, mysize_t tgtidx, struct cmd *cmd, mysize_t diridx
     }
     return 0;
   }
-  dbe = ABCE_CONTAINER_OF(n, struct dbe, node);
   if (dbe->diridx != diridx)
   {
     if (debug)
@@ -612,81 +420,14 @@ int cmdequal_db(struct db *db, mysize_t tgtidx, struct cmd *cmd, mysize_t diridx
 
 int get_ruleid_by_tgt(mysize_t tgt);
 
-int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz)
-{
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
-  struct abce_rb_tree_nocmp *head;
-  struct abce_rb_tree_node *n;
-  struct tsdbe *tsdbe;
-  //const char *tgtsrc = "source";
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
-  if (get_ruleid_by_tgt(stringtabidx) >= 0)
-  {
-    //return 0; // it's target too
-  }
-  if (n == NULL)
-  {
-    tsdbe = my_malloc(sizeof(struct tsdbe));
-    tsdbe->stringtabidx = stringtabidx;
-    tsdbe->tsnew = ts;
-    tsdbe->ts = ts;
-    tsdbe->sznew = sz;
-    tsdbe->sz = sz;
-    tsdbe->seen = 1;
-    ins_tsdbe(tsdb, tsdbe);
-    return 0;
-  }
-  tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
-  tsdbe->tsnew = ts;
-  tsdbe->ts = ts;
-  tsdbe->sznew = sz;
-  tsdbe->sz = sz;
-  tsdbe->seen = 1;
-  return 1;
-}
-int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz)
-{
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
-  struct abce_rb_tree_nocmp *head;
-  struct abce_rb_tree_node *n;
-  struct tsdbe *tsdbe;
-  //const char *tgtsrc = "target";
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
-  if (n == NULL)
-  {
-    tsdbe = my_malloc(sizeof(struct tsdbe));
-    tsdbe->stringtabidx = stringtabidx;
-    tsdbe->tsnew = ts;
-    tsdbe->ts = ts;
-    tsdbe->sznew = sz;
-    tsdbe->sz = sz;
-    tsdbe->seen = 1;
-    ins_tsdbe(tsdb, tsdbe);
-    return 0;
-  }
-  tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
-  tsdbe->tsnew = ts;
-  tsdbe->ts = ts;
-  tsdbe->sznew = sz;
-  tsdbe->sz = sz;
-  tsdbe->seen = 1;
-  return 1;
-}
-
 int ts_cmp(struct timespec ta, struct timespec tb);
 
-int tsszequal_db(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, mysize_t diridx, off_t sz, int istarget)
+int tsszequal_db(mysize_t stringtabidx, struct timespec ts, mysize_t diridx, off_t sz, int istarget)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
-  struct abce_rb_tree_nocmp *head;
-  struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
   const char *tgtsrc = istarget ? "target" : "source";
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
-  n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
-  if (n == NULL)
+  tsdbe = get_tsdbe(stringtabidx);
+  if (tsdbe == NULL)
   {
     if (debug)
     {
@@ -695,7 +436,6 @@ int tsszequal_db(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, m
     }
     return 0;
   }
-  tsdbe = ABCE_CONTAINER_OF(n, struct tsdbe, node);
   if (!istarget)
   {
     tsdbe->tsnew = ts;
@@ -3882,7 +3622,7 @@ int do_exec(int ruleid)
         {
           seen_no_remake = 1;
         }
-        if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
+        if (!cmdequal_db(e->tgtidx, &r->cmd, r->diridx))
         {
           if (r->cmd.args[0] != NULL)
           {
@@ -3917,7 +3657,7 @@ int do_exec(int ruleid)
         }
         if (usetsdb && !S_ISDIR(she->st_mode))
         {
-          if (!tsszequal_db(&tsdb, e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
+          if (!tsszequal_db(e->tgtidx, she->st_mtim, r->diridx, she->st_size, 1))
           {
             if (do_trace)
             {
@@ -3979,7 +3719,7 @@ int do_exec(int ruleid)
               }
               if (usetsdb)
               {
-                if (!tsszequal_db(&tsdb, e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
+                if (!tsszequal_db(e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
                 {
                   if (do_trace)
                   {
@@ -4043,7 +3783,7 @@ int do_exec(int ruleid)
           has_to_exec = 1;
           break;
         }
-        if (!cmdequal_db(&db, e->tgtidx, &r->cmd, r->diridx))
+        if (!cmdequal_db(e->tgtidx, &r->cmd, r->diridx))
         {
           if (r->cmd.args[0] != NULL)
           {
@@ -4057,7 +3797,7 @@ int do_exec(int ruleid)
         }
         if (usetsdb && !S_ISDIR(statbuf.st_mode))
         {
-          if (!tsszequal_db(&tsdb, e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
+          if (!tsszequal_db(e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
           {
             if (do_trace)
             {
