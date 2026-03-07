@@ -597,3 +597,41 @@ int add_rule_yy(struct stiryy_main *main, struct tgt *tgts, size_t tgtsz,
   main->rule_in_progress = 0;
   return 0;
 }
+
+void file_escape_string(FILE *f, const char *str)
+{
+  const char *ptr;
+  for (ptr = str; *ptr; ptr++)
+  {
+    unsigned char uch = *ptr;
+    switch (uch)
+    {
+      case '\\':
+        fprintf(f, "\\\\");
+        break;
+      case '\'':
+        fprintf(f, "\\'");
+        break;
+      case '"':
+        fprintf(f, "\\\"");
+        break;
+      case '\t':
+        fprintf(f, "\\t");
+        break;
+      case '\r':
+        fprintf(f, "\\r");
+        break;
+      case '\n':
+        fprintf(f, "\\n");
+        break;
+      default:
+        if (uch < 0x20 || uch >= 0x7F)
+        {
+          fprintf(f, "\\x%.2X", uch);
+          break;
+        }
+        putc((char)uch, f);
+        break;
+    }
+  }
+}

@@ -30,6 +30,8 @@ struct escaped_string yy_escape_string(char *orig);
 
 struct escaped_string yy_escape_string_single(char *orig);
 
+void file_escape_string(FILE *f, const char *str);
+
 #ifdef __cplusplus
 };
 #endif

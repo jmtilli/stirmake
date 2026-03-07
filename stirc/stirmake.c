@@ -217,44 +217,6 @@ int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
   return 1;
 }
 
-void escape_string(FILE *f, const char *str)
-{
-  const char *ptr;
-  for (ptr = str; *ptr; ptr++)
-  {
-    unsigned char uch = *ptr;
-    switch (uch)
-    {
-      case '\\':
-        fprintf(f, "\\\\");
-        break;
-      case '\'':
-        fprintf(f, "\\'");
-        break;
-      case '"':
-        fprintf(f, "\\\"");
-        break;
-      case '\t':
-        fprintf(f, "\\t");
-        break;
-      case '\r':
-        fprintf(f, "\\r");
-        break;
-      case '\n':
-        fprintf(f, "\\n");
-        break;
-      default:
-        if (uch < 0x20 || uch >= 0x7F)
-        {
-          fprintf(f, "\\x%.2X", uch);
-          break;
-        }
-        putc((char)uch, f);
-        break;
-    }
-  }
-}
-
 void update_recursive_pid(int parent)
 {
   pid_t pid = parent ? getppid() : getpid();
@@ -5096,9 +5058,9 @@ void merge_db_v1(void)
       fprintf(f, "\n");
     }
     fprintf(f, "\"");
-    escape_string(f, sttable[dbe->diridx].s);
+    file_escape_string(f, sttable[dbe->diridx].s);
     fprintf(f, "\" \"");
-    escape_string(f, sttable[dbe->tgtidx].s);
+    file_escape_string(f, sttable[dbe->tgtidx].s);
     fprintf(f, "\":\n");
     while (*argiter)
     {
@@ -5116,7 +5078,7 @@ void merge_db_v1(void)
           fprintf(f, " ");
         }
         fprintf(f, "\"");
-        escape_string(f, *oneargiter);
+        file_escape_string(f, *oneargiter);
         fprintf(f, "\"");
         oneargiter++;
       }
@@ -5201,9 +5163,9 @@ void merge_db_v2(void)
       fprintf(f, "\n");
     }
     fprintf(f, "\"");
-    escape_string(f, sttable[dbe->diridx].s);
+    file_escape_string(f, sttable[dbe->diridx].s);
     fprintf(f, "\" \"");
-    escape_string(f, sttable[dbe->tgtidx].s);
+    file_escape_string(f, sttable[dbe->tgtidx].s);
     fprintf(f, "\":\n");
     while (*argiter)
     {
@@ -5221,7 +5183,7 @@ void merge_db_v2(void)
           fprintf(f, " ");
         }
         fprintf(f, "\"");
-        escape_string(f, *oneargiter);
+        file_escape_string(f, *oneargiter);
         fprintf(f, "\"");
         oneargiter++;
       }
@@ -5243,7 +5205,7 @@ void merge_db_v2(void)
         fprintf(f, "\n");
       }
       fprintf(f, "\"");
-      escape_string(f, sttable[tsdbe->stringtabidx].s);
+      file_escape_string(f, sttable[tsdbe->stringtabidx].s);
       fprintf(f, "\" = ");
       fprintf(f, "%lld", (long long)tsdbe->sz);
       fprintf(f, " ");
@@ -5263,7 +5225,7 @@ void merge_db_v2(void)
       fprintf(f, "\n");
     }
     fprintf(f, "\"");
-    escape_string(f, sttable[tsdbe->stringtabidx].s);
+    file_escape_string(f, sttable[tsdbe->stringtabidx].s);
     fprintf(f, "\" = ");
     fprintf(f, "%lld", (long long)tsdbe->sznew);
     fprintf(f, " ");
