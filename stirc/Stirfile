@@ -52,7 +52,7 @@ $(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a"]
 $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
               "stirtrap.c", "jsonyyutils.c", "syncbuf.c", "bypid.c", \
               "mymalloc.c", "stringtab.c", "db.c", "stirutils.c", \
-              "statcache.c"]
+              "statcache.c", "bytgt.c"]
 $(SRC_PROG) = ["stir.c", "inc.c", "stirmake.c", "jsonyytest.c"]
 $(SYM) = ["smka", "smkt", "smkp"]
 $(LEX_LIB) = ["stiryy.l", "incyy.l", "dbyy.l", "jsonyy.l"]
