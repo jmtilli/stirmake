@@ -35,43 +35,21 @@
 
 #ifdef __FreeBSD__
 #define LOADAVG 1
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#if __FreeBSD_version >= 1003000
-#define HAS_UTIMENSAT 1
-#endif
 #endif
 #ifdef __DragonFly__
 #define LOADAVG 1
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#if __DragonFly_version >= 400100
-#define HAS_UTIMENSAT 1
-#endif
 #endif
 #ifdef __linux__
 #define LOADAVG 1
-#include <sys/sysinfo.h>
-#define HAS_UTIMENSAT 1
 #endif
 #ifdef __APPLE__
 #define LOADAVG 1
-#include <sys/sysctl.h>
-// Don't know how to detect MacOS version, so HAS_UTIMENSAT not set
 #endif
 #ifdef __NetBSD__
 #define LOADAVG 1
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#if __NetBSD_Version__ >= 600000000
-#define HAS_UTIMENSAT 1
-#endif
 #endif
 #ifdef __OpenBSD__
 #define LOADAVG 1
-#include <sys/param.h>
-#include <sys/sysctl.h>
-// Don't know how to detect OpenBSD version, so HAS_UTIMENSAT not set
 #endif
 
 #include <sys/select.h>
@@ -3214,48 +3192,6 @@ struct timespec rec_mtim(struct rule *r, const char *name)
   return max;
 }
 
-int utimensat_both_emul(const char *pathname, struct timespec time, int l,
-                        int forwards)
-{
-#ifdef HAS_UTIMENSAT
-  struct timespec timespecs[2];
-  timespecs[0] = time;
-  timespecs[1] = time;
-#else
-  struct timeval times[2];
-  times[0].tv_sec = time.tv_sec;
-  times[0].tv_usec = (time.tv_nsec+999*(!!forwards))/1000;
-  times[1].tv_sec = time.tv_sec;
-  times[1].tv_usec = (time.tv_nsec+999*(!!forwards))/1000;
-#endif
-
-#ifdef HAS_UTIMENSAT
-  return utimensat(AT_FDCWD, pathname, timespecs, l ? AT_SYMLINK_NOFOLLOW : 0);
-#else
-  {
-    struct timespec req;
-    struct timespec rem;
-    int utimeret;
-    utimeret = utimes(pathname, times); // Ugh. Can't change symlink time!
-    if (forwards)
-    {
-      req.tv_sec = 0;
-      req.tv_nsec = 2000; // let's sleep for 2 us to be rather safe than sorry
-      for (;;)
-      {
-        int ret = nanosleep(&req, &rem);
-        if (ret == 0 || (ret != 0 && errno != EINTR))
-        {
-          break;
-        }
-        req = rem;
-      }
-    }
-    return utimeret;
-  }
-#endif
-}
-
 void reccap_mtim(const char *name, struct timespec cap)
 {
   struct stat statbuf;
@@ -4164,11 +4100,6 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-#ifdef HAS_UTIMENSAT
-      struct timespec timespecs[2];
-#else
-      struct timeval times[2];
-#endif
       int utimeret;
       struct stat statbuf;
       if (stat(sttable[e->tgtidx].s, &statbuf) != 0)
@@ -4184,32 +4115,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         }
         continue;
       }
-#ifdef HAS_UTIMENSAT
-      timespecs[0] = r->st_mtim;
-      timespecs[1] = r->st_mtim;
-      utimeret = utimensat(AT_FDCWD, sttable[e->tgtidx].s, timespecs, 0);
-#else
-      times[0].tv_sec = r->st_mtim.tv_sec;
-      times[0].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
-      times[1].tv_sec = r->st_mtim.tv_sec;
-      times[1].tv_usec = (r->st_mtim.tv_nsec+999)/1000;
-      {
-        struct timespec req;
-        struct timespec rem;
-        utimeret = utimes(sttable[e->tgtidx].s, times);
-        req.tv_sec = 0;
-        req.tv_nsec = 2000; // let's sleep for 2 us to be rather safe than sorry
-        for (;;)
-        {
-          int ret = nanosleep(&req, &rem);
-          if (ret == 0 || (ret != 0 && errno != EINTR))
-          {
-            break;
-          }
-          req = rem;
-        }
-      }
-#endif
+      utimeret = utimensat_both_emul(sttable[e->tgtidx].s, r->st_mtim, 0, 1);
       if (debug)
       {
         print_indent();
@@ -5925,83 +5831,6 @@ out:
     my_abort();
   }
 
-}
-
-int my_get_nprocs_impl(void)
-{
-#ifdef _SC_NPROCESSORS_ONLN
-  return sysconf(_SC_NPROCESSORS_ONLN);
-#else
-  #ifdef __linux__
-  return get_nprocs();
-  #else
-    #ifdef __APPLE__
-  int count = 1;
-  size_t count_len = sizeof(count);
-  if (sysctlbyname("hw.logicalcpu", &count, &count_len, NULL, 0) != 0 ||
-      count < 1)
-  {
-    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
-    return 1;
-  }
-  return count;
-    #else
-      #ifdef __FreeBSD__
-  int count = 1;
-  size_t count_len = sizeof(count);
-  if (sysctlbyname("hw.ncpu", &count, &count_len, NULL, 0) != 0 ||
-      count < 1)
-  {
-    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
-    return 1;
-  }
-  return count;
-      #else
-        #ifdef __NetBSD__
-  int count = 1;
-  size_t count_len = sizeof(count);
-  if (sysctlbyname("hw.ncpuonline", &count, &count_len, NULL, 0) != 0 ||
-      count < 1)
-  {
-    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
-    return 1;
-  }
-  return count;
-        #else
-          #ifdef __DragonFly__
-  int count = 1;
-  size_t count_len = sizeof(count);
-  if (sysctlbyname("hw.ncpu", &count, &count_len, NULL, 0) != 0 ||
-      count < 1)
-  {
-    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
-    return 1;
-  }
-  return count;
-	  #else
-  fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
-  return 1;
-	  #endif
-        #endif
-      #endif
-    #endif
-  #endif
-#endif
-}
-int my_get_nprocs(void)
-{
-  int ret = my_get_nprocs_impl();
-  if (ret < 1)
-  {
-    fprintf(stderr, "stirmake: can't detect CPU count, assuming 1.\n");
-    return 1;
-  }
-  if (ret > 384)
-  {
-    fprintf(stderr, "stirmake: capping CPU count at 384.\n");
-    return 384; // To avoid hitting select() file descriptor count
-  }
-  return ret;
 }
 
 void process_orders(struct stiryy_main *main)
