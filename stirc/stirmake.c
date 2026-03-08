@@ -99,6 +99,7 @@
 #endif
 
 #undef USE_VFORK // At least on Linux it's slower
+// Also highly platform dependent whether close() or dup2() after vfork() is allowed
 
 #ifdef HAVE_POSIX_SPAWN
 #include <spawn.h>
