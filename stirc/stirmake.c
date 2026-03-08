@@ -61,13 +61,8 @@
 #ifdef __linux__
   #define LOADAVG 1
   #ifdef __GLIBC__
-    #if __GLIBC__  > 2
+    #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 2)
       #define HAVE_POSIX_SPAWN
-    #endif
-    #if __GLIBC__  == 2
-      #if __GLIBC_MINOR__  >= 2
-        #define HAVE_POSIX_SPAWN
-      #endif
     #endif
   #endif
 #endif
