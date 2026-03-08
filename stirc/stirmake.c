@@ -45,14 +45,18 @@
   #define HAVE_POSIX_SPAWN
 #endif
 #ifdef __FreeBSD__
+  #include <sys/param.h>
   #define LOADAVG 1
   #if __FreeBSD_version >= 800000
     #define HAVE_POSIX_SPAWN
   #endif
 #endif
 #ifdef __DragonFly__
+  #include <sys/param.h>
   #define LOADAVG 1
-  #undef HAVE_POSIX_SPAWN // Don't know in which version it appeared
+  #if __DragonFly_version >= 200202 // this means 2.3.1 according to some strange logic
+    #define HAVE_POSIX_SPAWN
+  #endif
 #endif
 #ifdef __linux__
   #define LOADAVG 1
@@ -73,14 +77,18 @@
   // Also don't know how to detect MacOS version
 #endif
 #ifdef __NetBSD__
+  #include <sys/param.h>
   #define LOADAVG 1
   #if __NetBSD_Version__ >= 600000000
     #define HAVE_POSIX_SPAWN
   #endif
 #endif
 #ifdef __OpenBSD__
+  #include <sys/param.h>
   #define LOADAVG 1
-  #undef HAVE_POSIX_SPAWN // Don't know how to detect OpenBSD version
+  #if OpenBSD >= 201211 // This means OpenBSD 5.2 according to some strange logic
+    #define HAVE_POSIX_SPAWN
+  #endif
 #endif
 
 #ifdef HAVE_POSIX_SPAWN
