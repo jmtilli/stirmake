@@ -5439,6 +5439,7 @@ int main(int argc, char **argv)
     int is_mint = 0;
     int is_rhel_or_almalinux = 0;
     int is_arch = 0;
+    int is_sles = 0;
     for (;;)
     {
       if (getline(&line, &n, f) <= 0)
@@ -5446,6 +5447,12 @@ int main(int argc, char **argv)
         break;
       }
       chomp(line);
+      if (strcmp(line, "ID=sles") == 0 ||
+          strcmp(line, "ID=\"sles\"") == 0 ||
+          strcmp(line, "ID='sles'") == 0)
+      {
+        is_sles = 1;
+      }
       if (strcmp(line, "ID=ubuntu") == 0 ||
           strcmp(line, "ID=\"ubuntu\"") == 0 ||
           strcmp(line, "ID='ubuntu'") == 0)
@@ -5542,6 +5549,13 @@ int main(int argc, char **argv)
             create_jobserver_fifo = 1;
           }
         }
+        if (is_sles)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "16") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
       }
       else if (strncmp(line, "VERSION_ID=",
                        strlen("VERSION_ID=")) == 0)
@@ -5577,6 +5591,13 @@ int main(int argc, char **argv)
         if (is_fedora)
         {
           if (strcmp(line+strlen("VERSION_ID="), "39") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_sles)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "16") >= 0)
           {
             create_jobserver_fifo = 1;
           }
