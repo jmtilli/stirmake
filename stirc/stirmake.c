@@ -3653,7 +3653,7 @@ void usage(char *argv0)
   }
   else
   {
-    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFP] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] -f Stirfile | -t | -p | -a [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFP] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] -f Stirfile | -t | -p | -a [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
