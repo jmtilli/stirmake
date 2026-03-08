@@ -34,27 +34,57 @@
 #include <sys/random.h>
 #endif
 
+#undef HAVE_POSIX_SPAWN
+
 // System provides getloadavg() function
 // Non-POSIX, so we enable only on systems where it is known to work
 #undef LOADAVG
 
+#ifdef __CYGWIN__
+  // This is mandatory for high performance
+  #define HAVE_POSIX_SPAWN
+#endif
 #ifdef __FreeBSD__
-#define LOADAVG 1
+  #define LOADAVG 1
+  #if __FreeBSD_version >= 800000
+    #define HAVE_POSIX_SPAWN
+  #endif
 #endif
 #ifdef __DragonFly__
-#define LOADAVG 1
+  #define LOADAVG 1
+  #undef HAVE_POSIX_SPAWN // Don't know in which version it appeared
 #endif
 #ifdef __linux__
-#define LOADAVG 1
+  #define LOADAVG 1
+  #ifdef GLIB_MAJOR_VERSION
+    #if GLIB_MAJOR_VERSION > 2
+      #define HAVE_POSIX_SPAWN
+    #endif
+    #if GLIB_MAJOR_VERSION == 2
+      #if GLIB_MINOR_VERSION >= 2
+        #define HAVE_POSIX_SPAWN
+      #endif
+    #endif
+  #endif
 #endif
 #ifdef __APPLE__
-#define LOADAVG 1
+  #define LOADAVG 1
+  #undef HAVE_POSIX_SPAWN // don't know in which version it appeared
+  // Also don't know how to detect MacOS version
 #endif
 #ifdef __NetBSD__
-#define LOADAVG 1
+  #define LOADAVG 1
+  #if __NetBSD_Version__ >= 600000000
+    #define HAVE_POSIX_SPAWN
+  #endif
 #endif
 #ifdef __OpenBSD__
-#define LOADAVG 1
+  #define LOADAVG 1
+  #undef HAVE_POSIX_SPAWN // Don't know how to detect OpenBSD version
+#endif
+
+#ifdef HAVE_POSIX_SPAWN
+#include <spawn.h>
 #endif
 
 #include <sys/select.h>
@@ -70,6 +100,7 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
+extern char **environ;
 char *jobserver_fifo = NULL;
 int create_jobserver_fifo = 0;
 int created_jobserver_fifo = 0;
@@ -1564,7 +1595,7 @@ mysize_t ruleids_to_run_capacity;
 
 //std::unordered_map<pid_t, int> ruleid_by_pid;
 
-void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
+char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, int ret)
 {
   size_t argcnt = 0;
   char **argiter = argiter_orig;
@@ -1619,11 +1650,24 @@ void print_cmd(const char *tgtname, const char *prefix, char **argiter_orig)
    * least on Linux. And, writev requires us to allocate memory for the iovec
    * list too.
    */
+  if (ret)
+  {
+    if (silent)
+    {
+      free(tbuf);
+      return NULL;
+    }
+    else
+    {
+      return tbuf;
+    }
+  }
   if (!silent)
   {
     write(1, tbuf, toff);
   }
   free(tbuf); // We could let it leak, too...
+  return NULL;
 }
 
 const char *makecmds[] = {
@@ -1657,7 +1701,7 @@ int is_makecmd(const char *cmd)
   return 0;
 }
 
-void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr)
+void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, int outpipewr, int just_setenv)
 {
   if (ismake || is_makecmd(cmd))
   {
@@ -1705,6 +1749,10 @@ void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, 
       }
     }
     setenv("MAKEFLAGS", env, 1);
+    if (just_setenv)
+    {
+      return;
+    }
     if (create_make_fd)
     {
       if (dup2(outpipewr, 1) < 0)
@@ -1726,6 +1774,10 @@ void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, 
   }
   else
   {
+    if (just_setenv)
+    {
+      return;
+    }
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
     if (create_fd)
@@ -1759,10 +1811,10 @@ void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, 
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
 #endif
-    do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr);
+    do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr, 0);
     if (!noecho || dry_run)
     {
-      print_cmd(tgtname, prefix, args);
+      print_cmd(tgtname, prefix, args, 0);
     }
     if (dry_run)
     {
@@ -1822,6 +1874,272 @@ void child_execvp_wait(int ignore, int noecho, int ismake, const char *tgtname, 
 void set_nonblock(int fd);
 
 extern FILE *dbf;
+
+int ready_touch(int ruleid)
+{
+  return (rules[ruleid]->curtgt_touch == NULL);
+}
+int ready(int ruleid)
+{
+  return (rules[ruleid]->cmd.args[rules[ruleid]->cmdidx] == NULL);
+}
+
+#ifdef HAVE_POSIX_SPAWN
+pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
+{
+  pid_t pid;
+  const char *dir = sttable[rules[ruleid]->diridx].s;
+  int outpipe[2] = {-1,-1};
+  int outpiperd = -1, outpipewr = -1;
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
+  int fdcurdir;
+  int ret;
+  int was_first = 0;
+  char *cmdprint = NULL;
+  char *args[3] = {"touch", NULL, NULL};
+
+  posix_spawn_file_actions_t file_actions;
+  posix_spawn_file_actions_t *file_actionsp;
+  file_actionsp = NULL;
+
+  if (rules[ruleid]->curtgt_touch == NULL)
+  {
+    rules[ruleid]->curtgt_touch = first_tgt;
+    was_first = 1;
+  }
+  if (1)
+  {
+    char *tgtname = neighpath(sttable[rules[ruleid]->diridx].s, sttable[rules[ruleid]->curtgt_touch->tgtidx].s);
+    args[1] = tgtname;
+  }
+  if (1)
+  {
+    struct linked_list_node *node = rules[ruleid]->curtgt_touch->llnode.next;
+    if (node == &rules[ruleid]->tgtlist.node)
+    {
+      rules[ruleid]->curtgt_touch = NULL;
+    }
+    else
+    {
+      rules[ruleid]->curtgt_touch = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+    }
+  }
+
+  //args = cmd.args;
+
+  if (create_fd)
+  {
+    if (pipe(outpipe) != 0)
+    {
+      errxit("can't pipe output of command");
+      my_abort();
+    }
+    outpiperd = outpipe[0];
+    outpipewr = outpipe[1];
+    set_nonblock(outpiperd); // not for outpipewr
+    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
+  }
+
+  fdcurdir = open(".", O_RDONLY|O_CLOEXEC);
+  if (fdcurdir < 0)
+  {
+    errxit("can't open current directory");
+    exit(2);
+  }
+
+  ret = posix_spawn_file_actions_init(&file_actions);
+  if (ret != 0)
+  {
+    errxit("can't init file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, fileno(dbf));
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, self_pipe_fd[0]);
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, self_pipe_fd[1]);
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, jobserver_fd[0]);
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, jobserver_fd[1]);
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  if (create_fd)
+  {
+    ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 1);
+    if (ret != 0)
+    {
+      errxit("can't add file actions");
+      exit(2);
+    }
+    ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 2);
+    if (ret != 0)
+    {
+      errxit("can't add file actions");
+      exit(2);
+    }
+    ret = posix_spawn_file_actions_addclose(&file_actions, outpipewr);
+    if (ret != 0)
+    {
+      errxit("can't add file actions");
+      exit(2);
+    }
+    ret = posix_spawn_file_actions_addclose(&file_actions, outpiperd);
+    if (ret != 0)
+    {
+      errxit("can't add file actions");
+      exit(2);
+    }
+  }
+  file_actionsp = &file_actions;
+
+  if (chdir(dir) != 0)
+  {
+    write(1, "CHDIRERR\n", 9);
+    _exit(1);
+  }
+
+  do_makecmd(0, "touch", create_fd, create_make_fd, outpipewr, 1);
+  cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, args, 1);
+  if (cmdprint != NULL && create_fd)
+  {
+    syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
+  }
+  else
+  {
+    write(1, cmdprint, strlen(cmdprint));
+  }
+  free(cmdprint);
+
+  if (posix_spawnp(&pid, "touch", file_actionsp, NULL, args, environ) != 0)
+  {
+    errxit("Unable to fork child");
+    my_abort(); // FIXME maybe rm?
+    exit(2);
+  }
+
+  if (fchdir(fdcurdir) != 0)
+  {
+    errxit("can't chdir back");
+    exit(2);
+  }
+  unsetenv("MAKEFLAGS");
+  close(fdcurdir);
+
+
+  if (was_first)
+  {
+    children++;
+  }
+  if (create_fd)
+  {
+    close(outpipewr);
+  }
+  ruleid_by_pid_insert(ruleid, pid, outpiperd);
+  rules[ruleid]->is_forked = 1;
+  if (fdout)
+  {
+    *fdout = outpiperd;
+  }
+  return pid;
+
+  pid = fork();
+  if (pid < 0)
+  {
+    errxit("Unable to fork child");
+    my_abort();
+    exit(2);
+  }
+  else if (pid == 0)
+  {
+    struct sigaction sa, saint, saterm, sahup;
+    struct linked_list_node *node;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
+    sigaction(SIGCHLD, &sa, NULL);
+    sigemptyset(&saint.sa_mask);
+    saint.sa_flags = 0;
+    saint.sa_handler = subproc_sigint_handler;
+    sigaction(SIGINT, &saint, NULL);
+    sigemptyset(&saterm.sa_mask);
+    saterm.sa_flags = 0;
+    saterm.sa_handler = subproc_sigterm_handler;
+    sigaction(SIGTERM, &saterm, NULL);
+    sigemptyset(&sahup.sa_mask);
+    sahup.sa_flags = 0;
+    sahup.sa_handler = subproc_sighup_handler;
+    sigaction(SIGHUP, &sahup, NULL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGSYS, SIG_DFL);
+    signal(SIGXCPU, SIG_DFL);
+    signal(SIGXFSZ, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGALRM, SIG_DFL);
+    if (chdir(dir) != 0)
+    {
+      write(1, "CHDIRERR\n", 9);
+      _exit(1);
+    }
+    close(fileno(dbf));
+    close(self_pipe_fd[0]);
+    close(self_pipe_fd[1]);
+    if (create_fd)
+    {
+      close(outpiperd);
+    }
+    update_recursive_pid(0);
+
+    LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
+    {
+      struct stirtgt *tgt = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+      char *tgtname = neighpath(sttable[rules[ruleid]->diridx].s, sttable[tgt->tgtidx].s);
+      char *args[3] = {"touch", tgtname, NULL};
+      child_execvp_wait(0, 0, 0, sttable[first_tgt->tgtidx].s, dir, "touch", args, create_fd, create_make_fd, outpipewr);
+    }
+    _exit(0);
+  }
+  else
+  {
+    children++;
+    if (create_fd)
+    {
+      close(outpipewr);
+    }
+    ruleid_by_pid_insert(ruleid, pid, outpiperd);
+    rules[ruleid]->is_forked = 1;
+    if (fdout)
+    {
+      *fdout = outpiperd;
+    }
+    return pid;
+  }
+}
+#endif
 
 pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
@@ -2060,10 +2378,10 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     else
     {
       update_recursive_pid(1);
-      do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr);
+      do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, 0);
       if (strcmp((*argiter)[1], st_noecho) != 0 || dry_run)
       {
-        print_cmd(sttable[first_tgt->tgtidx].s, dir, &(*argiter)[3]);
+        print_cmd(sttable[first_tgt->tgtidx].s, dir, &(*argiter)[3], 0);
       }
       if (dry_run)
       {
@@ -4574,7 +4892,11 @@ back:
     int pipefd = -1;
     if (touchmode)
     {
+#ifdef HAVE_POSIX_SPAWN
+      spawn_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#else
       fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#endif
     }
     else
     {
@@ -4762,12 +5084,30 @@ back:
           close(fd);
           FD_CLR(fd, &globfds);
         }
-        //ruleremain_rm(rules[ruleid]);
-        mark_executed(ruleid, 1);
-        children--;
-        if (children != 0)
+#ifdef HAVE_POSIX_SPAWN
+        if (touchmode && !ready_touch(ruleid))
         {
-          write_jobserver();
+          int pipefd = -1;
+          spawn_child_touch(ruleid, out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+          if (pipefd >= 0)
+          {
+            FD_SET(pipefd, &globfds);
+            if (pipefd > globmaxfd)
+            {
+              globmaxfd = pipefd;
+            }
+          }
+        }
+        else
+#endif
+        {
+          //ruleremain_rm(rules[ruleid]);
+          mark_executed(ruleid, 1);
+          children--;
+          if (children != 0)
+          {
+            write_jobserver();
+          }
         }
         forkedchildcnt++;
         if (((forkedchildcnt % 10) == 0) && narration)
@@ -4800,7 +5140,11 @@ back:
       int pipefd = -1;
       if (touchmode)
       {
+#ifdef HAVE_POSIX_SPAWN
+        spawn_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#else
         fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#endif
       }
       else
       {

@@ -225,6 +225,8 @@ void zero_rule(struct rule *rule)
   syncbuf_init(&rule->output);
   rule->deps_remain_cnt = 0;
   rule->wait_remain_cnt = 0;
+  rule->cmdidx = 0;
+  rule->curtgt_touch = NULL;
   linked_list_head_init(&rule->depremainlist);
 }
 

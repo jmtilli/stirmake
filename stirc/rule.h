@@ -88,7 +88,9 @@ struct rule {
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   mysize_t deps_remain_cnt;
   mysize_t wait_remain_cnt;
+  mysize_t cmdidx;
   mysize_t scopeidx; // abce scope index, but let's use mysize_t here too
+  struct stirtgt *curtgt_touch;
   struct syncbuf output;
   struct stirdep *waitloc;
 };
