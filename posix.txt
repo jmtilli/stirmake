@@ -4,6 +4,16 @@ stirmake requires certain non-POSIX operations:
 - potential benefit from MADV_DONTNEED / MADV_FREE and madvise()
 - massive benefit from overcommitting memory and lazy demand paging
 
+on systems that have it, posix_spawn is used; as a fallback, fork+exec is
+used
+- only some operating systems (OpenBSD, NetBSD, FreeBSD, DragonFlyBSD, Cygwin,
+  Linux with glibc) enable posix_spawn
+- on Apple, it needs to be manually defined (requires editing sources) or else
+  fork+exec is used
+- on unknown POSIX systems, it needs to be manually defined or else fork+exec is
+  used
+- generally, posix_spawn performs 2-8% better at least on Linux
+
 stirmake uses obsolete setitimer() as opposed to the newer POSIX timer API
 - OpenBSD would probably not support the newer POSIX timer API
 
@@ -21,3 +31,4 @@ stirmake benefits from availability of MSG_DONTWAIT for sockets
 
 stirmake benefits from availability of recent POSIX utimensat()
 - if utimensat() is not supported, older utimes() works acceptably
+- operating system version check is used to estimate whether there's utimensat()
