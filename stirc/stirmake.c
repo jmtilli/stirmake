@@ -2025,7 +2025,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   {
     syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
   }
-  else
+  else if (cmdprint != NULL)
   {
     write(1, cmdprint, strlen(cmdprint));
   }
