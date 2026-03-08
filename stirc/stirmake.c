@@ -2267,7 +2267,10 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
 
   do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr, 1);
-  cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, &args[3], 1);
+  if (strcmp(args[1], st_noecho) != 0 || dry_run)
+  {
+    cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, &args[3], 1);
+  }
   if (cmdprint != NULL && fd_in_use)
   {
     syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
