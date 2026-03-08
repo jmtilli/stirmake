@@ -2063,6 +2063,252 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   }
   return pid;
 }
+
+pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
+{
+  pid_t pid;
+  const char *dir = sttable[rules[ruleid]->diridx].s;
+  char **oneargiter;
+  size_t argcnt = 0;
+  int outpipe[2] = {-1,-1};
+  int outpiperd = -1, outpipewr = -1;
+  int fdcurdir = -1;
+  int ret;
+  char *cmdprint = NULL;
+  int was_first = 0;
+  char **args;
+  char *cmd;
+  int ismake;
+  int fd_in_use = 0;
+  struct stirtgt *first_tgt =
+    ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
+  posix_spawn_file_actions_t file_actions;
+  posix_spawn_file_actions_t *file_actionsp;
+
+  file_actionsp = NULL;
+
+  if (rules[ruleid]->cmdidx == 0)
+  {
+    was_first = 1;
+  }
+  args = rules[ruleid]->cmd.args[rules[ruleid]->cmdidx];
+  rules[ruleid]->cmdidx++;
+
+  if (create_fd)
+  {
+    if (pipe(outpipe) != 0)
+    {
+      errxit("can't pipe output of command");
+      my_abort();
+    }
+    outpiperd = outpipe[0];
+    outpipewr = outpipe[1];
+    set_nonblock(outpiperd); // not for outpipewr
+    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
+  }
+
+  if (args == NULL)
+  {
+    printf("no arguments\n");
+    my_abort();
+  }
+
+  if (debug)
+  {
+    print_indent();
+    printf("start args:\n");
+  }
+  if (1)
+  {
+    oneargiter = args;
+    if (debug)
+    {
+      print_indent();
+      printf(" ");
+    }
+    while (*oneargiter)
+    {
+      if (debug)
+      {
+        printf(" %s", *oneargiter);
+      }
+      oneargiter++;
+    }
+    if (debug)
+    {
+      printf("\n");
+    }
+    argcnt++;
+  }
+  if (debug)
+  {
+    print_indent();
+    printf("end args\n");
+  }
+
+  ismake = (strcmp(args[2], st_make) == 0);
+  cmd = args[3];
+
+  fdcurdir = open(".", O_RDONLY|O_CLOEXEC);
+  if (fdcurdir < 0)
+  {
+    errxit("can't open current directory");
+    exit(2);
+  }
+
+  ret = posix_spawn_file_actions_init(&file_actions);
+  if (ret != 0)
+  {
+    errxit("can't init file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, fileno(dbf));
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, self_pipe_fd[0]);
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  ret = posix_spawn_file_actions_addclose(&file_actions, self_pipe_fd[1]);
+  if (ret != 0)
+  {
+    errxit("can't add file actions");
+    exit(2);
+  }
+  if (!ismake && !is_makecmd(cmd))
+  {
+    ret = posix_spawn_file_actions_addclose(&file_actions, jobserver_fd[0]);
+    if (ret != 0)
+    {
+      errxit("can't add file actions");
+      exit(2);
+    }
+    ret = posix_spawn_file_actions_addclose(&file_actions, jobserver_fd[1]);
+    if (ret != 0)
+    {
+      errxit("can't add file actions");
+      exit(2);
+    }
+    if (create_fd) // !ismake
+    {
+      ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 1);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 2);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      ret = posix_spawn_file_actions_addclose(&file_actions, outpipewr);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      ret = posix_spawn_file_actions_addclose(&file_actions, outpiperd);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      fd_in_use = 1;
+    }
+  }
+  else // ismake
+  {
+    if (create_make_fd)
+    {
+      close(outpipewr);
+      ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 1);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 2);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      ret = posix_spawn_file_actions_addclose(&file_actions, outpipewr);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      fd_in_use = 1;
+    }
+    else if (create_fd)
+    {
+      ret = posix_spawn_file_actions_addclose(&file_actions, outpipewr);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+    }
+  }
+  file_actionsp = &file_actions;
+
+  if (chdir(dir) != 0)
+  {
+    write(1, "CHDIRERR\n", 9);
+    _exit(1);
+  }
+
+  do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr, 1);
+  cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, &args[3], 1);
+  if (cmdprint != NULL && fd_in_use)
+  {
+    syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
+  }
+  else if (cmdprint != NULL)
+  {
+    write(1, cmdprint, strlen(cmdprint));
+  }
+  free(cmdprint);
+
+  if (posix_spawnp(&pid, cmd, file_actionsp, NULL, &args[3], environ) != 0)
+  {
+    errxit("Unable to fork child");
+    my_abort(); // FIXME maybe rm?
+    exit(2);
+  }
+
+  if (fchdir(fdcurdir) != 0)
+  {
+    errxit("can't chdir back");
+    exit(2);
+  }
+  unsetenv("MAKEFLAGS");
+  close(fdcurdir);
+
+  if (was_first)
+  {
+    children++;
+  }
+  if (outpipewr >= 0)
+  {
+    close(outpipewr);
+  }
+  ruleid_by_pid_insert(ruleid, pid, outpiperd);
+  rules[ruleid]->is_forked = 1;
+  if (fdout)
+  {
+    *fdout = outpiperd;
+  }
+  return pid;
+}
 #endif
 
 pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
@@ -4824,7 +5070,11 @@ back:
     }
     else
     {
+#ifdef HAVE_POSIX_SPAWN
+      spawn_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#else
       fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#endif
     }
     if (pipefd >= 0)
     {
@@ -5022,6 +5272,19 @@ back:
             }
           }
         }
+        else if (!touchmode && !ready(ruleid))
+        {
+          int pipefd = -1;
+          spawn_child(ruleid, out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+          if (pipefd >= 0)
+          {
+            FD_SET(pipefd, &globfds);
+            if (pipefd > globmaxfd)
+            {
+              globmaxfd = pipefd;
+            }
+          }
+        }
         else
 #endif
         {
@@ -5072,7 +5335,11 @@ back:
       }
       else
       {
+#ifdef HAVE_POSIX_SPAWN
+        spawn_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#else
         fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
+#endif
       }
       if (pipefd >= 0)
       {
