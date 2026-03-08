@@ -75,9 +75,10 @@
 #endif
 #ifdef __APPLE__
   #define LOADAVG 1
-  #undef HAVE_POSIX_SPAWN // don't know in which version it appeared
+  #ifdef _POSIX_SPAWN // Don't know how to detect MacOS version, or which version contains it
+    #define HAVE_POSIX_SPAWN
+  #endif
   #undef USE_VFORK // don't know if available
-  // Also don't know how to detect MacOS version
 #endif
 #ifdef __NetBSD__
   #include <sys/param.h>
@@ -96,6 +97,12 @@
     #define HAVE_POSIX_SPAWN
   #endif
   #undef USE_VFORK // probably normal fork() + block parent here, inefficient
+#endif
+
+#ifdef _POSIX_SPAWN // For other systems
+#ifndef HAVE_POSIX_SPAWN
+#define HAVE_POSIX_SPAWN
+#endif
 #endif
 
 #undef USE_VFORK // At least on Linux it's slower
