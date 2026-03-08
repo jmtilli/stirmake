@@ -3640,7 +3640,7 @@ void stack_conf(void)
 void version(char *argv0)
 {
   fprintf(stderr, "Stirmake %s, %s\n", gitversion, gitshas[0]);
-  fprintf(stderr, "Copyright (C) 2017-19 Aalto University, 2018, 2020-2025 Juha-Matti Tilli\n");
+  fprintf(stderr, "Copyright (C) 2017-19 Aalto University, 2018, 2020-2026 Juha-Matti Tilli\n");
   fprintf(stderr, "Logo (C) 2019 Juha-Matti Tilli, All right reserved, license not applicable\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Authors:\n");
