@@ -2230,7 +2230,6 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     if (create_make_fd)
     {
-      close(outpipewr);
       ret = posix_spawn_file_actions_adddup2(&file_actions, outpipewr, 1);
       if (ret != 0)
       {
@@ -2249,11 +2248,23 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
         errxit("can't add file actions");
         exit(2);
       }
+      ret = posix_spawn_file_actions_addclose(&file_actions, outpiperd);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
       fd_in_use = 1;
     }
     else if (create_fd)
     {
       ret = posix_spawn_file_actions_addclose(&file_actions, outpipewr);
+      if (ret != 0)
+      {
+        errxit("can't add file actions");
+        exit(2);
+      }
+      ret = posix_spawn_file_actions_addclose(&file_actions, outpiperd);
       if (ret != 0)
       {
         errxit("can't add file actions");
