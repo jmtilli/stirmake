@@ -56,12 +56,12 @@
 #endif
 #ifdef __linux__
   #define LOADAVG 1
-  #ifdef GLIB_MAJOR_VERSION
-    #if GLIB_MAJOR_VERSION > 2
+  #ifdef __GLIBC__
+    #if __GLIBC__  > 2
       #define HAVE_POSIX_SPAWN
     #endif
-    #if GLIB_MAJOR_VERSION == 2
-      #if GLIB_MINOR_VERSION >= 2
+    #if __GLIBC__  == 2
+      #if __GLIBC_MINOR__  >= 2
         #define HAVE_POSIX_SPAWN
       #endif
     #endif
