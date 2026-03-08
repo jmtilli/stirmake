@@ -9,8 +9,9 @@
 #include "const.h"
 
 int ruleid_by_pid_erase(pid_t pid, int *fd);
+int ignore_by_pid(pid_t pid);
 int ruleid_by_fd(int fd);
-void ruleid_by_pid_insert(int ruleid, pid_t pid, int outpiperd);
+void ruleid_by_pid_insert(int ruleid, pid_t pid, int outpiperd, int ignore);
 void kill_all_children(int signum);
 
 struct ruleid_by_pid {
@@ -20,6 +21,7 @@ struct ruleid_by_pid {
   pid_t pid;
   int ruleid;
   int fd;
+  int ignore;
 };
 
 static inline int ruleid_by_pid_fd_cmp_asym(const void *fdv, struct abce_rb_tree_node *n2, void *ud)

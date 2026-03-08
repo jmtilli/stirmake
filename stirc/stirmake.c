@@ -2055,7 +2055,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   {
     close(outpipewr);
   }
-  ruleid_by_pid_insert(ruleid, pid, outpiperd);
+  ruleid_by_pid_insert(ruleid, pid, outpiperd, 0);
   rules[ruleid]->is_forked = 1;
   if (fdout)
   {
@@ -2304,7 +2304,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     close(outpipewr);
   }
-  ruleid_by_pid_insert(ruleid, pid, outpiperd);
+  ruleid_by_pid_insert(ruleid, pid, outpiperd, strcmp(args[0], st_ignore) == 0);
   rules[ruleid]->is_forked = 1;
   if (fdout)
   {
@@ -2407,7 +2407,7 @@ pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout
     {
       close(outpipewr);
     }
-    ruleid_by_pid_insert(ruleid, pid, outpiperd);
+    ruleid_by_pid_insert(ruleid, pid, outpiperd, 0);
     rules[ruleid]->is_forked = 1;
     if (fdout)
     {
@@ -2572,7 +2572,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     {
       close(outpipewr);
     }
-    ruleid_by_pid_insert(ruleid, pid, outpiperd);
+    ruleid_by_pid_insert(ruleid, pid, outpiperd, 0);
     rules[ruleid]->is_forked = 1;
     if (fdout)
     {
@@ -5168,7 +5168,7 @@ back:
         {
           break;
         }
-        if (!ignoreerr && wstatus != 0 && pid > 0)
+        if (!ignoreerr && wstatus != 0 && pid > 0 && ignore_by_pid(pid) <= 0)
         {
           if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0)
           {
