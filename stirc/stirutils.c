@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <errno.h>
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
