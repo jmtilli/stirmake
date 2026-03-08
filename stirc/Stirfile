@@ -99,7 +99,7 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @endscope
 
 @phonyrule: 'wc':
-@	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@suffilterout(@suffilterout(@glob("*.h"),".lex.h"),".tab.h")]
+@	["wc", "-l", @$(LEX_LIB), @$(YACC_LIB), @$(SRC), @@suffilterout(@suffilterout(@suffilterout(@glob("*.h"),".lex.h"),".tab.h"),"git.h")]
 
 $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 "strncmp|fmemopen|_exit|puts|ferror|isatty|sigaction|fread|strtod|".\
