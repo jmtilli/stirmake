@@ -5237,6 +5237,14 @@ void do_srand(void)
 int yy_stored_lineno = -1;
 const char *yy_stored_prefix = NULL;
 
+void chomp(char *x)
+{
+  if (x && *x && x[strlen(x)-1] == '\n')
+  {
+    x[strlen(x)-1] = '\0';
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -5380,6 +5388,74 @@ int main(int argc, char **argv)
       out_sync = OUT_SYNC_NONE;
     }
   }
+
+#ifdef __linux__
+#ifdef __GLIBC__
+  f = popen("lsb_release -s -i", "r");
+  if (f)
+  {
+    char *lineptr = NULL;
+    char *osid = NULL;
+    char *osrel = NULL;
+    size_t n = 0;
+    int cnt = 0;
+    int ubuntu = 0;
+    int debian = 0;
+    for (;;)
+    {
+      if (getline(&lineptr, &n, f) <= 0)
+      {
+        break;
+      }
+      free(osid);
+      osid = strdup(lineptr);
+      chomp(osid);
+      cnt++;
+    }
+    pclose(f);
+    if (cnt == 1 && strcasecmp(osid, "Ubuntu") == 0)
+    {
+      ubuntu = 1;
+    }
+    else if (cnt == 1 && (strcasecmp(osid, "Debian") == 0 || strcasecmp(osid, "Raspbian") == 0))
+    {
+      debian = 1;
+    }
+    // RHEL 9: not yet
+    cnt = 0;
+    if (debian || ubuntu)
+    {
+      f = popen("lsb_release -s -r", "r");
+      if (f)
+      {
+        for (;;)
+        {
+	  if (getline(&lineptr, &n, f) <= 0)
+	  {
+	    break;
+	  }
+          free(osrel);
+          osrel = strdup(lineptr);
+          chomp(osrel);
+        }
+        pclose(f);
+	if (ubuntu && strcmp(osrel, "26.04") >= 0)
+	{
+	  create_jobserver_fifo = 1;
+	}
+	else if (debian && strcmp(osrel, "13") >= 0)
+	{
+	  create_jobserver_fifo = 1;
+	}
+      }
+    }
+    free(lineptr);
+    free(osid);
+    free(osrel);
+  }
+  f = NULL;
+#endif
+#endif
 
   debug = 0;
   while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEFP")) != -1)
