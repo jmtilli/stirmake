@@ -41,7 +41,9 @@
 #ifdef __OpenBSD__
 #include <sys/param.h>
 #include <sys/sysctl.h>
-// Don't know how to detect OpenBSD version, so HAS_UTIMENSAT not set
+#if OpenBSD >= 201111 // This means OpenBSD 5.0 according to some strange logic
+#define HAS_UTIMENSAT 1
+#endif
 #endif
 
 void *my_memrchr(const void *s, int c, size_t n)
