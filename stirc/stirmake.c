@@ -35,6 +35,7 @@
 #endif
 
 #undef HAVE_POSIX_SPAWN
+#undef USE_VFORK
 
 // System provides getloadavg() function
 // Non-POSIX, so we enable only on systems where it is known to work
@@ -43,6 +44,7 @@
 #ifdef __CYGWIN__
   // This is mandatory for high performance
   #define HAVE_POSIX_SPAWN
+  #undef USE_VFORK // not on Windows
 #endif
 #ifdef __FreeBSD__
   #include <sys/param.h>
@@ -50,6 +52,7 @@
   #if __FreeBSD_version >= 800000
     #define HAVE_POSIX_SPAWN
   #endif
+  #define USE_VFORK // from 3BSD or 2.9BSD, apparently all the time in FreeBSD
 #endif
 #ifdef __DragonFly__
   #include <sys/param.h>
@@ -57,6 +60,7 @@
   #if __DragonFly_version >= 200202 // this means 2.3.1 according to some strange logic
     #define HAVE_POSIX_SPAWN
   #endif
+  #define USE_VFORK // from 3BSD or 2.9BSD, apparently all the time in FreeBSD and also in DragonFly
 #endif
 #ifdef __linux__
   #define LOADAVG 1
@@ -64,11 +68,15 @@
     #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 2)
       #define HAVE_POSIX_SPAWN
     #endif
+    #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 1) // actually 2.0.112
+      #define USE_VFORK
+    #endif
   #endif
 #endif
 #ifdef __APPLE__
   #define LOADAVG 1
   #undef HAVE_POSIX_SPAWN // don't know in which version it appeared
+  #undef USE_VFORK // don't know if available
   // Also don't know how to detect MacOS version
 #endif
 #ifdef __NetBSD__
@@ -77,6 +85,9 @@
   #if __NetBSD_Version__ >= 600000000
     #define HAVE_POSIX_SPAWN
   #endif
+  #if __NetBSD_Version__ >= 103000000 // NetBSD 1.3
+    #define USE_VFORK
+  #endif
 #endif
 #ifdef __OpenBSD__
   #include <sys/param.h>
@@ -84,7 +95,10 @@
   #if OpenBSD >= 201211 // This means OpenBSD 5.2 according to some strange logic
     #define HAVE_POSIX_SPAWN
   #endif
+  #undef USE_VFORK // probably normal fork() + block parent here, inefficient
 #endif
+
+#undef USE_VFORK // At least on Linux it's slower
 
 #ifdef HAVE_POSIX_SPAWN
 #include <spawn.h>
@@ -1971,7 +1985,11 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     exit(2);
   }
 #else
+#ifdef USE_VFORK
+  pid = vfork();
+#else
   pid = fork();
+#endif
   if (pid < 0)
   {
     errxit("Unable to fork child");
@@ -2278,7 +2296,11 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     exit(2);
   }
 #else
+#ifdef USE_VFORK
+  pid = vfork();
+#else
   pid = fork();
+#endif
   if (pid < 0)
   {
     errxit("Unable to fork child");
