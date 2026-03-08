@@ -1887,7 +1887,6 @@ int ready(int ruleid)
   return (rules[ruleid]->cmd.args[rules[ruleid]->cmdidx] == NULL);
 }
 
-#ifdef HAVE_POSIX_SPAWN
 pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
   pid_t pid;
@@ -1902,9 +1901,11 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   char *cmdprint = NULL;
   char *args[3] = {"touch", NULL, NULL};
 
+#ifdef HAVE_POSIX_SPAWN
   posix_spawn_file_actions_t file_actions;
   posix_spawn_file_actions_t *file_actionsp;
   file_actionsp = NULL;
+#endif
 
   if (rules[ruleid]->curtgt_touch == NULL)
   {
@@ -1951,6 +1952,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     exit(2);
   }
 
+#ifdef HAVE_POSIX_SPAWN
   ret = posix_spawn_file_actions_init(&file_actions);
   if (ret != 0)
   {
@@ -2015,6 +2017,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     }
   }
   file_actionsp = &file_actions;
+#endif
 
   if (chdir(dir) != 0)
   {
@@ -2034,12 +2037,39 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   }
   free(cmdprint);
 
+#ifdef HAVE_POSIX_SPAWN
   if (posix_spawnp(&pid, "touch", file_actionsp, NULL, args, environ) != 0)
   {
     errxit("Unable to fork child");
     my_abort(); // FIXME maybe rm?
     exit(2);
   }
+#else
+  pid = fork();
+  if (pid < 0)
+  {
+    errxit("Unable to fork child");
+    my_abort(); // FIXME maybe rm?
+    exit(2);
+  }
+  else if (pid == 0)
+  {
+    close(fileno(dbf));
+    close(self_pipe_fd[0]);
+    close(self_pipe_fd[1]);
+    close(jobserver_fd[0]);
+    close(jobserver_fd[1]);
+    if (create_fd)
+    {
+      dup2(outpipewr, 1);
+      dup2(outpipewr, 2);
+      close(outpipewr);
+      close(outpiperd);
+    }
+    execvp("touch", args);
+    _exit(1);
+  }
+#endif
 
   if (fchdir(fdcurdir) != 0)
   {
@@ -2085,10 +2115,12 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   int fd_in_use = 0;
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
+#ifdef HAVE_POSIX_SPAWN
   posix_spawn_file_actions_t file_actions;
   posix_spawn_file_actions_t *file_actionsp;
 
   file_actionsp = NULL;
+#endif
 
   if (rules[ruleid]->cmdidx == 0)
   {
@@ -2159,6 +2191,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     exit(2);
   }
 
+#ifdef HAVE_POSIX_SPAWN
   ret = posix_spawn_file_actions_init(&file_actions);
   if (ret != 0)
   {
@@ -2223,7 +2256,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
         errxit("can't add file actions");
         exit(2);
       }
-      fd_in_use = 1;
+      //fd_in_use = 1;
     }
   }
   else // ismake
@@ -2254,7 +2287,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
         errxit("can't add file actions");
         exit(2);
       }
-      fd_in_use = 1;
+      //fd_in_use = 1;
     }
     else if (create_fd)
     {
@@ -2273,6 +2306,22 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     }
   }
   file_actionsp = &file_actions;
+#endif
+
+  if (!ismake && !is_makecmd(cmd))
+  {
+    if (create_fd) // !ismake
+    {
+      fd_in_use = 1;
+    }
+  }
+  else
+  {
+    if (create_make_fd) // ismake
+    {
+      fd_in_use = 1;
+    }
+  }
 
   if (chdir(dir) != 0)
   {
@@ -2295,12 +2344,57 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   free(cmdprint);
 
+#ifdef HAVE_POSIX_SPAWN
   if (posix_spawnp(&pid, cmd, file_actionsp, NULL, &args[3], environ) != 0)
   {
     errxit("Unable to fork child");
     my_abort(); // FIXME maybe rm?
     exit(2);
   }
+#else
+  pid = fork();
+  if (pid < 0)
+  {
+    errxit("Unable to fork child");
+    my_abort(); // FIXME maybe rm?
+    exit(2);
+  }
+  else if (pid == 0)
+  {
+    close(fileno(dbf));
+    close(self_pipe_fd[0]);
+    close(self_pipe_fd[1]);
+    if (!ismake && !is_makecmd(cmd))
+    {
+      close(jobserver_fd[0]);
+      close(jobserver_fd[1]);
+      if (create_fd) // !ismake
+      {
+        dup2(outpipewr, 1);
+        dup2(outpipewr, 2);
+        close(outpipewr);
+        close(outpiperd);
+      }
+    }
+    else // ismake
+    {
+      if (create_make_fd)
+      {
+        dup2(outpipewr, 1);
+        dup2(outpipewr, 2);
+        close(outpipewr);
+        close(outpiperd);
+      }
+      else if (create_fd)
+      {
+        close(outpipewr);
+        close(outpiperd);
+      }
+    }
+    execvp(args[3], &args[3]);
+    _exit(1);
+  }
+#endif
 
   if (fchdir(fdcurdir) != 0)
   {
@@ -2326,8 +2420,8 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   return pid;
 }
-#endif
 
+#if 0
 pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
 {
   //char ***args;
@@ -2595,6 +2689,7 @@ pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     return pid;
   }
 }
+#endif
 
 void mark_executed(int ruleid, int was_actually_executed);
 
@@ -5079,17 +5174,19 @@ back:
     int pipefd = -1;
     if (touchmode)
     {
-#ifdef HAVE_POSIX_SPAWN
+//#ifdef HAVE_POSIX_SPAWN
       spawn_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#else
+//#else
+#if 0
       fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
 #endif
     }
     else
     {
-#ifdef HAVE_POSIX_SPAWN
+//#ifdef HAVE_POSIX_SPAWN
       spawn_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#else
+//#else
+#if 0
       fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
 #endif
     }
@@ -5275,7 +5372,8 @@ back:
           close(fd);
           FD_CLR(fd, &globfds);
         }
-#ifdef HAVE_POSIX_SPAWN
+//#ifdef HAVE_POSIX_SPAWN
+#if 1
         if (touchmode && !ready_touch(ruleid))
         {
           int pipefd = -1;
@@ -5344,17 +5442,19 @@ back:
       int pipefd = -1;
       if (touchmode)
       {
-#ifdef HAVE_POSIX_SPAWN
+//#ifdef HAVE_POSIX_SPAWN
         spawn_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#else
+//#else
+#if 0
         fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
 #endif
       }
       else
       {
-#ifdef HAVE_POSIX_SPAWN
+//#ifdef HAVE_POSIX_SPAWN
         spawn_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#else
+//#else
+#if 0
         fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
 #endif
       }
