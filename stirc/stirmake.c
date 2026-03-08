@@ -125,9 +125,47 @@
 #include "stirtrap.h"
 #include "syncbuf.h"
 
+#define DEFAULT_CREATE_JOBSERVER_FIFO 0
+#ifdef __FreeBSD__
+  #undef DEFAULT_CREATE_JOBSERVER_FIFO
+  #define DEFAULT_CREATE_JOBSERVER_FIFO 1 // let's assume recent ports user
+#endif
+#ifdef __NetBSD__
+  #undef DEFAULT_CREATE_JOBSERVER_FIFO
+  #define DEFAULT_CREATE_JOBSERVER_FIFO 1 // let's assume recent pkgsrc user
+#endif
+#ifdef __DragonFly__
+  #undef DEFAULT_CREATE_JOBSERVER_FIFO
+  #define DEFAULT_CREATE_JOBSERVER_FIFO 1 // let's assume recent DPorts user
+#endif
+// OpenBSD encourages precompiled packages, 7.4 contains gmake-4.4.1
+#ifdef __OpenBSD__
+  #include <sys/param.h>
+  #if OpenBSD >= 202310 // This means OpenBSD 7.4 according to some strange logic
+    #undef DEFAULT_CREATE_JOBSERVER_FIFO
+    #define DEFAULT_CREATE_JOBSERVER_FIFO 1
+  #endif
+#endif
+#ifdef __APPLE__
+  #undef DEFAULT_CREATE_JOBSERVER_FIFO
+  #define DEFAULT_CREATE_JOBSERVER_FIFO 1 // let's assume recent homebrew user
+#endif
+#ifdef __linux__
+  #ifdef __GLIBC__
+    #undef DEFAULT_CREATE_JOBSERVER_FIFO
+    #define DEFAULT_CREATE_JOBSERVER_FIFO 2 // autodetect OS
+  #endif
+#endif
+
 extern char **environ;
 char *jobserver_fifo = NULL;
+#if DEFAULT_CREATE_JOBSERVER_FIFO == 0
 int create_jobserver_fifo = 0;
+#elif DEFAULT_CREATE_JOBSERVER_FIFO == 1
+int create_jobserver_fifo = 1;
+#else
+int create_jobserver_fifo = 0; // OS detection
+#endif
 int created_jobserver_fifo = 0;
 
 int silent = 0;
@@ -5237,6 +5275,14 @@ void do_srand(void)
 int yy_stored_lineno = -1;
 const char *yy_stored_prefix = NULL;
 
+void chomp(char *x)
+{
+  if (x && *x && x[strlen(x)-1] == '\n')
+  {
+    x[strlen(x)-1] = '\0';
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -5380,6 +5426,167 @@ int main(int argc, char **argv)
       out_sync = OUT_SYNC_NONE;
     }
   }
+
+#if DEFAULT_CREATE_JOBSERVER_FIFO == 2
+  f = fopen("/etc/os-release", "r");
+  if (f)
+  {
+    char *line = NULL;
+    size_t n = 0;
+    int is_ubuntu = 0;
+    int is_debian = 0;
+    int is_fedora = 0;
+    int is_mint = 0;
+    int is_rhel_or_almalinux = 0;
+    int is_arch = 0;
+    for (;;)
+    {
+      if (getline(&line, &n, f) <= 0)
+      {
+        break;
+      }
+      chomp(line);
+      if (strcmp(line, "ID=ubuntu") == 0 ||
+          strcmp(line, "ID=\"ubuntu\"") == 0 ||
+          strcmp(line, "ID='ubuntu'") == 0)
+      {
+        is_ubuntu = 1;
+      }
+      if (strcmp(line, "ID=linuxmint") == 0 ||
+          strcmp(line, "ID=\"linuxmint\"") == 0 ||
+          strcmp(line, "ID='linuxmint'") == 0)
+      {
+        is_mint = 1;
+      }
+      if (strcmp(line, "ID=fedora") == 0 ||
+          strcmp(line, "ID=\"fedora\"") == 0 ||
+          strcmp(line, "ID='fedora'") == 0)
+      {
+        is_fedora = 1;
+      }
+      if (strcmp(line, "ID=arch") == 0 ||
+          strcmp(line, "ID=\"arch\"") == 0 ||
+          strcmp(line, "ID='arch'") == 0)
+      {
+        // rolling release, assume up-to-date
+        is_arch = 1;
+        create_jobserver_fifo = 1;
+      }
+      if (strcmp(line, "ID=debian") == 0 ||
+          strcmp(line, "ID=\"debian\"") == 0 ||
+          strcmp(line, "ID='debian'") == 0 ||
+          strcmp(line, "ID=raspbian") == 0 ||
+          strcmp(line, "ID=\"raspbian\"") == 0 ||
+          strcmp(line, "ID='raspbian'") == 0)
+      {
+        is_debian = 1;
+      }
+      if (strcmp(line, "ID=rhel") == 0 ||
+          strcmp(line, "ID=\"rhel\"") == 0 ||
+          strcmp(line, "ID='rhel'") == 0 ||
+          strcmp(line, "ID=almalinux") == 0 ||
+          strcmp(line, "ID=\"almalinux\"") == 0 ||
+          strcmp(line, "ID='almalinux'") == 0 ||
+          strcmp(line, "ID=rocky") == 0 ||
+          strcmp(line, "ID=\"rocky\"") == 0 ||
+          strcmp(line, "ID='rocky'") == 0)
+      {
+        is_rhel_or_almalinux = 1;
+      }
+    }
+    rewind(f);
+    for (;;)
+    {
+      if (getline(&line, &n, f) <= 0)
+      {
+        break;
+      }
+      chomp(line);
+      if (strncmp(line, "VERSION_ID=\"",
+                  strlen("VERSION_ID=\"")) == 0 ||
+          strncmp(line, "VERSION_ID='",
+                  strlen("VERSION_ID='")) == 0)
+      {
+        if (is_ubuntu)
+        {
+          if (strcmp(line+strlen("VERSION_ID=\""), "25.04") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_mint)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "23") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_debian)
+        {
+          if (strcmp(line+strlen("VERSION_ID=\""), "13") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_rhel_or_almalinux)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "10") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_fedora)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "39") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+      }
+      else if (strncmp(line, "VERSION_ID=",
+                       strlen("VERSION_ID=")) == 0)
+      {
+        if (is_ubuntu)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "25.04") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_mint)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "23") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_debian)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "13") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_rhel_or_almalinux)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "10") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+        if (is_fedora)
+        {
+          if (strcmp(line+strlen("VERSION_ID="), "39") >= 0)
+          {
+            create_jobserver_fifo = 1;
+          }
+        }
+      }
+    }
+    fclose(f);
+    free(line);
+  }
+#endif
 
   debug = 0;
   while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEFP")) != -1)
