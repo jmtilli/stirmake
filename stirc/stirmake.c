@@ -2421,276 +2421,6 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   return pid;
 }
 
-#if 0
-pid_t fork_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdout)
-{
-  //char ***args;
-  pid_t pid;
-  //struct cmd cmd = rules[ruleid]->cmd;
-  const char *dir = sttable[rules[ruleid]->diridx].s;
-  int outpipe[2] = {-1,-1};
-  int outpiperd = -1, outpipewr = -1;
-  struct stirtgt *first_tgt =
-    ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
-
-  //args = cmd.args;
-
-  if (create_fd)
-  {
-    if (pipe(outpipe) != 0)
-    {
-      errxit("can't pipe output of command");
-      my_abort();
-    }
-    outpiperd = outpipe[0];
-    outpipewr = outpipe[1];
-    set_nonblock(outpiperd); // not for outpipewr
-    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
-  }
-
-  pid = fork();
-  if (pid < 0)
-  {
-    errxit("Unable to fork child");
-    my_abort();
-    exit(2);
-  }
-  else if (pid == 0)
-  {
-    struct sigaction sa, saint, saterm, sahup;
-    struct linked_list_node *node;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
-    sigaction(SIGCHLD, &sa, NULL);
-    sigemptyset(&saint.sa_mask);
-    saint.sa_flags = 0;
-    saint.sa_handler = subproc_sigint_handler;
-    sigaction(SIGINT, &saint, NULL);
-    sigemptyset(&saterm.sa_mask);
-    saterm.sa_flags = 0;
-    saterm.sa_handler = subproc_sigterm_handler;
-    sigaction(SIGTERM, &saterm, NULL);
-    sigemptyset(&sahup.sa_mask);
-    sahup.sa_flags = 0;
-    sahup.sa_handler = subproc_sighup_handler;
-    sigaction(SIGHUP, &sahup, NULL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGQUIT, SIG_DFL);
-    signal(SIGSYS, SIG_DFL);
-    signal(SIGXCPU, SIG_DFL);
-    signal(SIGXFSZ, SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGALRM, SIG_DFL);
-    if (chdir(dir) != 0)
-    {
-      write(1, "CHDIRERR\n", 9);
-      _exit(1);
-    }
-    close(fileno(dbf));
-    close(self_pipe_fd[0]);
-    close(self_pipe_fd[1]);
-    if (create_fd)
-    {
-      close(outpiperd);
-    }
-    update_recursive_pid(0);
-
-    LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
-    {
-      struct stirtgt *tgt = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      char *tgtname = neighpath(sttable[rules[ruleid]->diridx].s, sttable[tgt->tgtidx].s);
-      char *args[3] = {"touch", tgtname, NULL};
-      child_execvp_wait(0, 0, 0, sttable[first_tgt->tgtidx].s, dir, "touch", args, create_fd, create_make_fd, outpipewr);
-    }
-    _exit(0);
-  }
-  else
-  {
-    children++;
-    if (create_fd)
-    {
-      close(outpipewr);
-    }
-    ruleid_by_pid_insert(ruleid, pid, outpiperd, 0);
-    rules[ruleid]->is_forked = 1;
-    if (fdout)
-    {
-      *fdout = outpiperd;
-    }
-    return pid;
-  }
-}
-
-pid_t fork_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
-{
-  char ***args;
-  pid_t pid;
-  struct cmd cmd = rules[ruleid]->cmd;
-  const char *dir = sttable[rules[ruleid]->diridx].s;
-  char ***argiter;
-  char **oneargiter;
-  size_t argcnt = 0;
-  int outpipe[2] = {-1,-1};
-  int outpiperd = -1, outpipewr = -1;
-  struct stirtgt *first_tgt =
-    ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
-
-  args = cmd.args;
-  argiter = args;
-
-  if (create_fd)
-  {
-    if (pipe(outpipe) != 0)
-    {
-      errxit("can't pipe output of command");
-      my_abort();
-    }
-    outpiperd = outpipe[0];
-    outpipewr = outpipe[1];
-    set_nonblock(outpiperd); // not for outpipewr
-    fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
-  }
-
-  if (debug)
-  {
-    print_indent();
-    printf("start args:\n");
-  }
-  while (*argiter)
-  {
-    oneargiter = *argiter++;
-    if (debug)
-    {
-      print_indent();
-      printf(" ");
-    }
-    while (*oneargiter)
-    {
-      if (debug)
-      {
-        printf(" %s", *oneargiter);
-      }
-      oneargiter++;
-    }
-    if (debug)
-    {
-      printf("\n");
-    }
-    argcnt++;
-  }
-  if (debug)
-  {
-    print_indent();
-    printf("end args\n");
-  }
-
-  argiter = args;
-
-  if (argcnt == 0)
-  {
-    printf("no arguments\n");
-    my_abort();
-  }
-
-  pid = fork();
-  if (pid < 0)
-  {
-    errxit("Unable to fork child");
-    my_abort();
-    exit(2);
-  }
-  else if (pid == 0)
-  {
-    struct sigaction sa, saint, saterm, sahup;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sa.sa_handler = SIG_DFL; // SIG_IGN does not allow waitpid()
-    sigaction(SIGCHLD, &sa, NULL);
-    sigemptyset(&saint.sa_mask);
-    saint.sa_flags = 0;
-    saint.sa_handler = subproc_sigint_handler;
-    sigaction(SIGINT, &saint, NULL);
-    sigemptyset(&saterm.sa_mask);
-    saterm.sa_flags = 0;
-    saterm.sa_handler = subproc_sigterm_handler;
-    sigaction(SIGTERM, &saterm, NULL);
-    sigemptyset(&sahup.sa_mask);
-    sahup.sa_flags = 0;
-    sahup.sa_handler = subproc_sighup_handler;
-    sigaction(SIGHUP, &sahup, NULL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGQUIT, SIG_DFL);
-    signal(SIGSYS, SIG_DFL);
-    signal(SIGXCPU, SIG_DFL);
-    signal(SIGXFSZ, SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGALRM, SIG_DFL);
-    if (chdir(dir) != 0)
-    {
-      write(1, "CHDIRERR\n", 9);
-      _exit(1);
-    }
-    close(fileno(dbf));
-    close(self_pipe_fd[0]);
-    close(self_pipe_fd[1]);
-    if (create_fd)
-    {
-      close(outpiperd);
-    }
-    update_recursive_pid(0);
-    while (argcnt > 1)
-    {
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx].s, dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
-      argiter++;
-      argcnt--;
-    }
-    if (strcmp((*argiter)[0], st_ignore) == 0)
-    {
-      child_execvp_wait(strcmp((*argiter)[0], st_ignore) == 0, strcmp((*argiter)[1], st_noecho) == 0, strcmp((*argiter)[2], st_make) == 0, sttable[first_tgt->tgtidx].s, dir, (*argiter)[3], &(*argiter)[3], create_fd, create_make_fd, outpipewr);
-      _exit(0);
-    }
-    else
-    {
-      update_recursive_pid(1);
-      do_makecmd(strcmp((*argiter)[2], st_make) == 0, (*argiter)[3], create_fd, create_make_fd, outpipewr, 0);
-      if (strcmp((*argiter)[1], st_noecho) != 0 || dry_run)
-      {
-        print_cmd(sttable[first_tgt->tgtidx].s, dir, &(*argiter)[3], 0);
-      }
-      if (dry_run)
-      {
-        _exit(0);
-      }
-      execvp((*argiter)[3], &(*argiter)[3]);
-      //write(1, "Err\n", 4);
-      _exit(1);
-    }
-  }
-  else
-  {
-    children++;
-    if (create_fd)
-    {
-      close(outpipewr);
-    }
-    ruleid_by_pid_insert(ruleid, pid, outpiperd, 0);
-    rules[ruleid]->is_forked = 1;
-    if (fdout)
-    {
-      *fdout = outpiperd;
-    }
-    return pid;
-  }
-}
-#endif
-
 void mark_executed(int ruleid, int was_actually_executed);
 
 struct timespec rec_mtim(struct rule *r, const char *name)
@@ -5174,21 +4904,11 @@ back:
     int pipefd = -1;
     if (touchmode)
     {
-//#ifdef HAVE_POSIX_SPAWN
       spawn_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-//#else
-#if 0
-      fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#endif
     }
     else
     {
-//#ifdef HAVE_POSIX_SPAWN
       spawn_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-//#else
-#if 0
-      fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#endif
     }
     if (pipefd >= 0)
     {
@@ -5372,8 +5092,6 @@ back:
           close(fd);
           FD_CLR(fd, &globfds);
         }
-//#ifdef HAVE_POSIX_SPAWN
-#if 1
         if (touchmode && !ready_touch(ruleid))
         {
           int pipefd = -1;
@@ -5401,7 +5119,6 @@ back:
           }
         }
         else
-#endif
         {
           //ruleremain_rm(rules[ruleid]);
           mark_executed(ruleid, 1);
@@ -5442,21 +5159,11 @@ back:
       int pipefd = -1;
       if (touchmode)
       {
-//#ifdef HAVE_POSIX_SPAWN
         spawn_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-//#else
-#if 0
-        fork_child_touch(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#endif
       }
       else
       {
-//#ifdef HAVE_POSIX_SPAWN
         spawn_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-//#else
-#if 0
-        fork_child(ruleids_to_run[ruleids_to_run_size-1], out_sync != OUT_SYNC_NONE, out_sync == OUT_SYNC_RECURSE, &pipefd);
-#endif
       }
       if (pipefd >= 0)
       {
