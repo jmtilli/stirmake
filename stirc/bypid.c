@@ -60,9 +60,8 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
 int ignore_by_pid(pid_t pid)
 {
   struct abce_rb_tree_node *n;
-  uint32_t hashval, hashvalfd;
-  size_t hashloc, hashlocfd;
-  int ruleid;
+  uint32_t hashval;
+  size_t hashloc;
   hashval = abce_murmur32(HASH_SEED, pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
