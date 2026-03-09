@@ -81,16 +81,16 @@ smkp:
 	ln -s stirmake smkp
 
 stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm
 
 stir: stir.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm
 
 jsonyytest: jsonyytest.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm -ldl
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm
 
 inc: inc.o libstirmake.a Makefile $(LUALIB)
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm -ldl
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm
 
 libstirmake.a: $(OBJ_LIB) $(OBJGEN_LIB) Makefile
 	rm -f $@
