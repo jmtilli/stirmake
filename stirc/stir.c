@@ -55,10 +55,10 @@ int main(int argc, char **argv)
 {
   FILE *f = fopen("Stirfile", "r");
   struct abce abce;
-  struct stiryy_main main = {.abce = &abce};
+  struct stiryy_main stirmain = {.abce = &abce};
   struct stiryy stiryy = {};
   abce_init(&abce);
-  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, NULL, "Stirfile", 1);
+  stiryy_init(&stiryy, &stirmain, ".", ".", abce.dynscope, NULL, "Stirfile", 1);
   if (!f)
   {
     abort();

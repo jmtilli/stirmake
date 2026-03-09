@@ -281,11 +281,11 @@ struct stiryy {
   int do_emit;
 };
 
-static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
+static inline void init_main_for_realpath(struct stiryy_main *stirmain, char *cwd)
 {
   char buf2[PATH_MAX+16];
   char buf3[PATH_MAX+16];
-  memset(main, 0, sizeof(*main));
+  memset(stirmain, 0, sizeof(*stirmain));
   if (realpath(cwd, buf2) == NULL)
   {
     my_abort();
@@ -294,18 +294,18 @@ static inline void init_main_for_realpath(struct stiryy_main *main, char *cwd)
   {
     my_abort();
   }
-  main->realpathname = canon(buf3);
-  main->subdirseen = 0;
-  main->rule_in_progress = 0;
+  stirmain->realpathname = canon(buf3);
+  stirmain->subdirseen = 0;
+  stirmain->rule_in_progress = 0;
 }
 
-static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *main,
+static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *stirmain,
                                char *prefix, char *projprefix,
                                struct abce_mb curscope,
                                const char *dirname, const char *filename,
                                int expect_toplevel)
 {
-  yy->main = main;
+  yy->main = stirmain;
   yy->sameproject = 1;
   //abce_init(&yy->abce);
   yy->ctx = NULL;
@@ -383,9 +383,9 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
   stiryy->main->cdepincludesz++;
 }
 
-static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
+static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(dep) + 2;
   char *can, *tmp = malloc(sz);
@@ -434,9 +434,9 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *main, const char *
   rule->depsz++;
   free(can);
 }
-static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
+static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz1 = strlen(curprefix) + 1 + strlen(dep[0]) + 1;
   size_t sz2 = strlen(dep[2]) + 1;
@@ -489,9 +489,9 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *main, const char 
   free(tmp2);
 }
 
-static inline void stiryy_main_set_order(struct stiryy_main *main, const char *curprefix, const char *name)
+static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const char *curprefix, const char *name)
 {
-  struct stiryyorder *order = &main->orders[main->ordersz - 1];
+  struct stiryyorder *order = &stirmain->orders[stirmain->ordersz - 1];
   size_t sz = strlen(curprefix) + strlen(name) + 2;
   char *can, *tmp = malloc(sz);
   if (name[0] == '/')
@@ -520,9 +520,9 @@ static inline void stiryy_main_set_order(struct stiryy_main *main, const char *c
   free(can);
 }
 
-static inline void stiryy_main_set_dep(struct stiryy_main *main, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
+static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(dep) + 2;
   char *can, *tmp = malloc(sz);
@@ -573,19 +573,19 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
   stiryy_main_set_dep(stiryy->main, stiryy->curprefix, dep, rec, orderonly, wait);
 }
 
-static inline void stiryy_main_add_order(struct stiryy_main *main)
+static inline void stiryy_main_add_order(struct stiryy_main *stirmain)
 {
   size_t newcapacity;
-  if (main->ordersz >= main->ordercapacity)
+  if (stirmain->ordersz >= stirmain->ordercapacity)
   {
-    newcapacity = 2*main->ordercapacity + 1;
-    main->orders = (struct stiryyorder*)realloc(main->orders, sizeof(*main->orders)*newcapacity);
-    main->ordercapacity = newcapacity;
+    newcapacity = 2*stirmain->ordercapacity + 1;
+    stirmain->orders = (struct stiryyorder*)realloc(stirmain->orders, sizeof(*stirmain->orders)*newcapacity);
+    stirmain->ordercapacity = newcapacity;
   }
-  main->orders[main->ordersz].rulecnt = 0;
-  main->orders[main->ordersz].rules[0] = NULL;
-  main->orders[main->ordersz].rules[1] = NULL;
-  main->ordersz++;
+  stirmain->orders[stirmain->ordersz].rulecnt = 0;
+  stirmain->orders[stirmain->ordersz].rules[0] = NULL;
+  stirmain->orders[stirmain->ordersz].rules[1] = NULL;
+  stirmain->ordersz++;
 }
 
 
@@ -599,9 +599,9 @@ static inline void stiryy_set_order(struct stiryy *stiryy, const char *name)
   stiryy_main_set_order(stiryy->main, stiryy->curprefix, name);
 }
 
-static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const char *curprefix, const char *tgt)
+static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(tgt) + 2;
   char *can, *tmp = malloc(sz);
@@ -662,9 +662,9 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *main, const 
   }
 }
 
-static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist, int percent_special)
+static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist, int percent_special)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(tgt) + 2;
   char *can, *tmp = malloc(sz);
@@ -749,9 +749,9 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *main, const char *
     free(can);
   }
 }
-static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char *curprefix, const char **tgt, int is_dist)
+static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const char *curprefix, const char **tgt, int is_dist)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz1 = strlen(curprefix) + 1 + strlen(tgt[0]) + 1;
   size_t sz2 = strlen(tgt[2]) + 1;
@@ -811,9 +811,9 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *main, const char 
   }
 }
 
-static inline void stiryy_main_set_tgt(struct stiryy_main *main, const char *curprefix, const char *tgt, int is_dist)
+static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist)
 {
-  struct stiryyrule *rule = &main->rules[main->rulesz - 1];
+  struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(tgt) + 2;
   char *can, *tmp = malloc(sz);
@@ -960,56 +960,56 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
   cmdsrc->itemsz++;
 }
 
-static inline void stiryy_main_emplace_rule(struct stiryy_main *main, const char *curprefix, size_t scopeidx, int lineno)
+static inline void stiryy_main_emplace_rule(struct stiryy_main *stirmain, const char *curprefix, size_t scopeidx, int lineno)
 {
   size_t newcapacity;
-  if (main->rulesz >= main->rulecapacity)
+  if (stirmain->rulesz >= stirmain->rulecapacity)
   {
-    newcapacity = 2*main->rulecapacity + 1;
-    main->rules = (struct stiryyrule*)realloc(main->rules, sizeof(*main->rules)*newcapacity);
-    main->rulecapacity = newcapacity;
+    newcapacity = 2*stirmain->rulecapacity + 1;
+    stirmain->rules = (struct stiryyrule*)realloc(stirmain->rules, sizeof(*stirmain->rules)*newcapacity);
+    stirmain->rulecapacity = newcapacity;
   }
-  main->rule_in_progress = 1;
-  main->rules[main->rulesz].basesz = 0;
-  main->rules[main->rulesz].basecapacity = 0;
-  main->rules[main->rulesz].bases = NULL;
-  main->rules[main->rulesz].depsz = 0;
-  main->rules[main->rulesz].depcapacity = 0;
-  main->rules[main->rulesz].deps = NULL;
-  main->rules[main->rulesz].targetsz = 0;
-  main->rules[main->rulesz].targetcapacity = 0;
-  main->rules[main->rulesz].targets = NULL;
-  main->rules[main->rulesz].shells.items = NULL;
-  main->rules[main->rulesz].shells.itemsz = 0;
-  main->rules[main->rulesz].shells.itemcapacity = 0;
-  main->rules[main->rulesz].prefix = strdup(curprefix);
-  main->rules[main->rulesz].phony = 0;
-  main->rules[main->rulesz].rectgt = 0;
-  main->rules[main->rulesz].detouch = 0;
-  main->rules[main->rulesz].maybe = 0;
-  main->rules[main->rulesz].dist = 0;
-  main->rules[main->rulesz].deponly = 0;
-  main->rules[main->rulesz].iscleanhook = 0;
-  main->rules[main->rulesz].isdistcleanhook = 0;
-  main->rules[main->rulesz].isbothcleanhook = 0;
-  main->rules[main->rulesz].ispat = 0;
-  main->rules[main->rulesz].patfrozen = 0;
-  main->rules[main->rulesz].scopeidx = scopeidx;
-  main->rules[main->rulesz].lineno = lineno;
-  main->rulesz++;
+  stirmain->rule_in_progress = 1;
+  stirmain->rules[stirmain->rulesz].basesz = 0;
+  stirmain->rules[stirmain->rulesz].basecapacity = 0;
+  stirmain->rules[stirmain->rulesz].bases = NULL;
+  stirmain->rules[stirmain->rulesz].depsz = 0;
+  stirmain->rules[stirmain->rulesz].depcapacity = 0;
+  stirmain->rules[stirmain->rulesz].deps = NULL;
+  stirmain->rules[stirmain->rulesz].targetsz = 0;
+  stirmain->rules[stirmain->rulesz].targetcapacity = 0;
+  stirmain->rules[stirmain->rulesz].targets = NULL;
+  stirmain->rules[stirmain->rulesz].shells.items = NULL;
+  stirmain->rules[stirmain->rulesz].shells.itemsz = 0;
+  stirmain->rules[stirmain->rulesz].shells.itemcapacity = 0;
+  stirmain->rules[stirmain->rulesz].prefix = strdup(curprefix);
+  stirmain->rules[stirmain->rulesz].phony = 0;
+  stirmain->rules[stirmain->rulesz].rectgt = 0;
+  stirmain->rules[stirmain->rulesz].detouch = 0;
+  stirmain->rules[stirmain->rulesz].maybe = 0;
+  stirmain->rules[stirmain->rulesz].dist = 0;
+  stirmain->rules[stirmain->rulesz].deponly = 0;
+  stirmain->rules[stirmain->rulesz].iscleanhook = 0;
+  stirmain->rules[stirmain->rulesz].isdistcleanhook = 0;
+  stirmain->rules[stirmain->rulesz].isbothcleanhook = 0;
+  stirmain->rules[stirmain->rulesz].ispat = 0;
+  stirmain->rules[stirmain->rulesz].patfrozen = 0;
+  stirmain->rules[stirmain->rulesz].scopeidx = scopeidx;
+  stirmain->rules[stirmain->rulesz].lineno = lineno;
+  stirmain->rulesz++;
 }
-static inline void stiryy_main_emplace_patrule(struct stiryy_main *main, const char *curprefix, size_t scopeidx, int lineno)
+static inline void stiryy_main_emplace_patrule(struct stiryy_main *stirmain, const char *curprefix, size_t scopeidx, int lineno)
 {
-  stiryy_main_emplace_rule(main, curprefix, scopeidx, lineno);
-  main->rules[main->rulesz-1].ispat = 1;
+  stiryy_main_emplace_rule(stirmain, curprefix, scopeidx, lineno);
+  stirmain->rules[stirmain->rulesz-1].ispat = 1;
 }
-static inline void stiryy_main_freeze_patrule(struct stiryy_main *main)
+static inline void stiryy_main_freeze_patrule(struct stiryy_main *stirmain)
 {
-  if (main->rulesz == 0 || !main->rules[main->rulesz-1].ispat)
+  if (stirmain->rulesz == 0 || !stirmain->rules[stirmain->rulesz-1].ispat)
   {
     abort();
   }
-  main->rules[main->rulesz-1].patfrozen = 1;
+  stirmain->rules[stirmain->rulesz-1].patfrozen = 1;
 }
 
 static inline void stiryy_emplace_rule(struct stiryy *stiryy, size_t scopeidx, int lineno)
@@ -1072,94 +1072,94 @@ static inline int stiryy_check_rule(struct stiryy *stiryy)
   }
   return 0;
 }
-static inline void stiryy_main_mark_deponly(struct stiryy_main *main)
+static inline void stiryy_main_mark_deponly(struct stiryy_main *stirmain)
 {
-  main->rules[main->rulesz-1].deponly = 1;
+  stirmain->rules[stirmain->rulesz-1].deponly = 1;
 }
 static inline void stiryy_mark_deponly(struct stiryy *stiryy)
 {
   stiryy_main_mark_deponly(stiryy->main);
 }
 
-static inline void stiryy_main_free(struct stiryy_main *main)
+static inline void stiryy_main_free(struct stiryy_main *stirmain)
 {
   size_t i;
   size_t j;
-  for (i = 0; i < main->rulesz; i++)
+  for (i = 0; i < stirmain->rulesz; i++)
   {
-    for (j = 0; j < main->rules[i].depsz; j++)
+    for (j = 0; j < stirmain->rules[i].depsz; j++)
     {
-      free(main->rules[i].deps[j].name);
-      free(main->rules[i].deps[j].namenodir);
-      free(main->rules[i].deps[j].suffix);
+      free(stirmain->rules[i].deps[j].name);
+      free(stirmain->rules[i].deps[j].namenodir);
+      free(stirmain->rules[i].deps[j].suffix);
     }
-    for (j = 0; j < main->rules[i].targetsz; j++)
+    for (j = 0; j < stirmain->rules[i].targetsz; j++)
     {
-      free(main->rules[i].targets[j].name);
-      free(main->rules[i].targets[j].namenodir);
-      free(main->rules[i].targets[j].suffix);
+      free(stirmain->rules[i].targets[j].name);
+      free(stirmain->rules[i].targets[j].namenodir);
+      free(stirmain->rules[i].targets[j].suffix);
     }
-    for (j = 0; j < main->rules[i].basesz; j++)
+    for (j = 0; j < stirmain->rules[i].basesz; j++)
     {
-      free(main->rules[i].bases[j].name);
-      free(main->rules[i].bases[j].namenodir);
+      free(stirmain->rules[i].bases[j].name);
+      free(stirmain->rules[i].bases[j].namenodir);
     }
-    free(main->rules[i].bases);
-    free(main->rules[i].deps);
-    free(main->rules[i].targets);
-    free(main->rules[i].prefix);
-    for (j = 0; j < main->rules[i].shells.itemsz; j++)
+    free(stirmain->rules[i].bases);
+    free(stirmain->rules[i].deps);
+    free(stirmain->rules[i].targets);
+    free(stirmain->rules[i].prefix);
+    for (j = 0; j < stirmain->rules[i].shells.itemsz; j++)
     {
-      if (main->rules[i].shells.items[j].isfun)
+      if (stirmain->rules[i].shells.items[j].isfun)
       {
         // nop
       }
-      else if (main->rules[i].shells.items[j].iscode)
+      else if (stirmain->rules[i].shells.items[j].iscode)
       {
         // nop
       }
-      else if (!main->rules[i].shells.items[j].merge)
+      else if (!stirmain->rules[i].shells.items[j].merge)
       {
         size_t k;
-        for (k = 0; k < main->rules[i].shells.items[j].sz; k++)
+        for (k = 0; k < stirmain->rules[i].shells.items[j].sz; k++)
         {
-          free(main->rules[i].shells.items[j].u.args[k]);
+          free(stirmain->rules[i].shells.items[j].u.args[k]);
         }
-        free(main->rules[i].shells.items[j].u.args);
+        free(stirmain->rules[i].shells.items[j].u.args);
       }
       else
       {
         size_t k, l;
-        for (k = 0; k < main->rules[i].shells.items[j].sz; k++)
-        //for (k = 0; main->rules[i].shells.items[j].u.cmds[k] != NULL; k++)
+        for (k = 0; k < stirmain->rules[i].shells.items[j].sz; k++)
+        //for (k = 0; stirmain->rules[i].shells.items[j].u.cmds[k] != NULL; k++)
         {
-	  for (l = 0; main->rules[i].shells.items[j].u.cmds[k][l] != NULL; l++)
+	  for (l = 0; stirmain->rules[i].shells.items[j].u.cmds[k][l] != NULL; l++)
 	  {
-            free(main->rules[i].shells.items[j].u.cmds[k][l]);
+            free(stirmain->rules[i].shells.items[j].u.cmds[k][l]);
 	  }
-	  free(main->rules[i].shells.items[j].u.cmds[k]);
+	  free(stirmain->rules[i].shells.items[j].u.cmds[k]);
         }
-        free(main->rules[i].shells.items[j].u.cmds);
+        free(stirmain->rules[i].shells.items[j].u.cmds);
       }
     }
-    free(main->rules[i].shells.items);
+    free(stirmain->rules[i].shells.items);
   }
-  free(main->rules);
-  for (i = 0; i < main->ordersz; i++)
+  free(stirmain->rules);
+  for (i = 0; i < stirmain->ordersz; i++)
   {
-    free(main->orders[i].rules[0]);
-    free(main->orders[i].rules[1]);
+    free(stirmain->orders[i].rules[0]);
+    free(stirmain->orders[i].rules[1]);
   }
-  free(main->orders);
+  free(stirmain->orders);
 
-  for (i = 0; i < main->cdepincludesz; i++)
+  for (i = 0; i < stirmain->cdepincludesz; i++)
   {
-    free(main->cdepincludes[i].name);
-    free(main->cdepincludes[i].prefix);
+    free(stirmain->cdepincludes[i].name);
+    free(stirmain->cdepincludes[i].prefix);
   }
-  free(main->cdepincludes);
-  free(main->realpathname);
-  main->realpathname = NULL;
+  free(stirmain->cdepincludes);
+  free(stirmain->realpathname);
+  stirmain->realpathname = NULL;
 }
 
 static inline void stiryy_free(struct stiryy *stiryy)

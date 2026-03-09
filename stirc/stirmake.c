@@ -5198,7 +5198,7 @@ out:
 
 }
 
-void process_orders(struct stiryy_main *main)
+void process_orders(struct stiryy_main *stirmain)
 {
   size_t i;
 
@@ -5207,32 +5207,32 @@ void process_orders(struct stiryy_main *main)
     abort();
   }
 
-  for (i = 0; i < main->ordersz; i++)
+  for (i = 0; i < stirmain->ordersz; i++)
   {
     struct rule *rule;
-    if (main->orders[i].rulecnt != 2)
+    if (stirmain->orders[i].rulecnt != 2)
     {
       my_abort();
     }
-    mysize_t first = stringtab_get(main->orders[i].rules[0]);
-    mysize_t second = stringtab_get(main->orders[i].rules[1]);
+    mysize_t first = stringtab_get(stirmain->orders[i].rules[0]);
+    mysize_t second = stringtab_get(stirmain->orders[i].rules[1]);
     if (first == (mysize_t)-1)
     {
-      errxit("@order rule '%s' not found", main->orders[i].rules[0]);
+      errxit("@order rule '%s' not found", stirmain->orders[i].rules[0]);
     }
     if (second == (mysize_t)-1)
     {
-      errxit("@order rule '%s' not found", main->orders[i].rules[1]);
+      errxit("@order rule '%s' not found", stirmain->orders[i].rules[1]);
     }
     int firstrule = get_ruleid_by_tgt(first);
     int secondrule = get_ruleid_by_tgt(second);
     if (firstrule < 0)
     {
-      errxit("@order rule '%s' not found", main->orders[i].rules[0]);
+      errxit("@order rule '%s' not found", stirmain->orders[i].rules[0]);
     }
     if (secondrule < 0)
     {
-      errxit("@order rule '%s' not found", main->orders[i].rules[1]);
+      errxit("@order rule '%s' not found", stirmain->orders[i].rules[1]);
     }
     if (!rules[firstrule]->is_traversed || !rules[secondrule]->is_traversed)
     {
@@ -5245,7 +5245,7 @@ void process_orders(struct stiryy_main *main)
     if (debug)
     {
       print_indent();
-      printf("added order %s %s\n", main->orders[i].rules[0], main->orders[i].rules[1]);
+      printf("added order %s %s\n", stirmain->orders[i].rules[0], stirmain->orders[i].rules[1]);
     }
   }
 }
@@ -5294,7 +5294,7 @@ int main(int argc, char **argv)
   pathological_test();
 #endif
   FILE *f;
-  struct stiryy_main main = {.abce = &abce};
+  struct stiryy_main stirmain = {.abce = &abce};
   struct stiryy stiryy = {};
   size_t i;
   int opt;
@@ -5881,16 +5881,16 @@ int main(int argc, char **argv)
         abce_init_opts(&abce, 1);
         abce_inited = 1;
         abce.trap = stir_trap;
-        abce.trap_baton = &main;
-        init_main_for_realpath(&main, storcwd);
-        main.abce = &abce;
-        main.parsing = 1;
-        main.trial = 1;
-        main.freeform_token_seen = 1;
-        stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, curcwd, "Stirfile", 1);
+        abce.trap_baton = &stirmain;
+        init_main_for_realpath(&stirmain, storcwd);
+        stirmain.abce = &abce;
+        stirmain.parsing = 1;
+        stirmain.trial = 1;
+        stirmain.freeform_token_seen = 1;
+        stiryy_init(&stiryy, &stirmain, ".", ".", abce.dynscope, curcwd, "Stirfile", 1);
         ret = stiryydoparse(f, &stiryy);
         fclose(f);
-        if (ret == 0 && main.subdirseen)
+        if (ret == 0 && stirmain.subdirseen)
         {
           upcnt = curupcnt;
           if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= (int)sizeof(cwd))
@@ -5899,7 +5899,7 @@ int main(int argc, char **argv)
             my_abort();
           }
         }
-        if (ret == 0 && main.subdirseen_sameproject)
+        if (ret == 0 && stirmain.subdirseen_sameproject)
         {
           upcnt_sameproj = curupcnt;
           if (snprintf(cwd_sameproj, sizeof(cwd_sameproj), "%s", curcwd)
@@ -5910,7 +5910,7 @@ int main(int argc, char **argv)
           }
         }
         stiryy_free(&stiryy);
-        stiryy_main_free(&main);
+        stiryy_main_free(&stirmain);
         abce_free(&abce);
         abce_inited = 0;
         yy_stored_lineno = -1;
@@ -5933,13 +5933,13 @@ int main(int argc, char **argv)
   abce_init_opts(&abce, 1);
   abce_inited = 1;
   abce.trap = stir_trap;
-  abce.trap_baton = &main;
-  init_main_for_realpath(&main, ".");
-  main.abce = &abce;
-  main.parsing = 1;
-  main.trial = 0;
-  main.freeform_token_seen = 0;
-  stiryy_init(&stiryy, &main, ".", ".", abce.dynscope, NULL, filename, 1);
+  abce.trap_baton = &stirmain;
+  init_main_for_realpath(&stirmain, ".");
+  stirmain.abce = &abce;
+  stirmain.parsing = 1;
+  stirmain.trial = 0;
+  stirmain.freeform_token_seen = 0;
+  stiryy_init(&stiryy, &stirmain, ".", ".", abce.dynscope, NULL, filename, 1);
 
   f = fopen(filename, "r");
   if (!f)
@@ -5951,7 +5951,7 @@ int main(int argc, char **argv)
   {
     errxit("Parsing failed");
   }
-  main.parsing = 0;
+  stirmain.parsing = 0;
   fclose(f);
   yy_stored_lineno = -1;
   yy_stored_prefix = NULL;
@@ -6011,11 +6011,11 @@ int main(int argc, char **argv)
       iter = iter->next;
     }
   }
-  for (i = 0; i < main.rulesz; i++)
+  for (i = 0; i < stirmain.rulesz; i++)
   {
-    if (main.rules[i].targetsz > 0) // FIXME chg to if (1)
+    if (stirmain.rules[i].targetsz > 0) // FIXME chg to if (1)
     {
-      if (main.rules[i].deponly)
+      if (stirmain.rules[i].deponly)
       {
         continue;
       }
@@ -6024,35 +6024,35 @@ int main(int argc, char **argv)
         print_indent();
         printf("ADDING RULE\n");
       }
-      if (main.rules[i].ispat)
+      if (stirmain.rules[i].ispat)
       {
-        char *prefix = main.rules[i].prefix;
+        char *prefix = stirmain.rules[i].prefix;
         size_t prefixlen = strlen(prefix);
         size_t j, k;
-        if (main.rules[i].targetsz < 1)
+        if (stirmain.rules[i].targetsz < 1)
         {
           my_abort();
         }
-        for (j = 0; j < main.rules[i].basesz; j++)
+        for (j = 0; j < stirmain.rules[i].basesz; j++)
         {
-          char *base = main.rules[i].bases[j].name;
-          char *basenodir = main.rules[i].bases[j].namenodir;
-          char *tgt = main.rules[i].targets[0].namenodir;
-          char *suffix = main.rules[i].targets[0].suffix;
+          char *base = stirmain.rules[i].bases[j].name;
+          char *basenodir = stirmain.rules[i].bases[j].namenodir;
+          char *tgt = stirmain.rules[i].targets[0].namenodir;
+          char *suffix = stirmain.rules[i].targets[0].suffix;
           struct tgt *tgts;
           struct dep *deps;
           char *loc, *locp1;
           size_t meatsz;
           char *meat;
           size_t locp1sz;
-          tgts = malloc(sizeof(*tgts)*main.rules[i].targetsz);
-          deps = malloc(sizeof(*deps)*main.rules[i].depsz);
-          if (suffix == NULL && (strcnt(tgt, '%') != 1 || !main.rules[i].targets[0].percent_special))
+          tgts = malloc(sizeof(*tgts)*stirmain.rules[i].targetsz);
+          deps = malloc(sizeof(*deps)*stirmain.rules[i].depsz);
+          if (suffix == NULL && (strcnt(tgt, '%') != 1 || !stirmain.rules[i].targets[0].percent_special))
           {
             errxit("Target %s must have exactly one %% sign", tgt);
             exit(2);
           }
-          if (main.rules[i].targets[0].percent_special && strcnt(tgt, '%') == 1)
+          if (stirmain.rules[i].targets[0].percent_special && strcnt(tgt, '%') == 1)
           {
             loc = strchr(tgt, '%');
             locp1 = loc+1;
@@ -6100,15 +6100,15 @@ int main(int argc, char **argv)
             errxit("Target %s must have exactly one %% sign", tgt);
             exit(2);
           }
-          for (k = 1; k < main.rules[i].targetsz; k++)
+          for (k = 1; k < stirmain.rules[i].targetsz; k++)
           {
-            char *tgt = main.rules[i].targets[k].namenodir;
-            char *suffix = main.rules[i].targets[k].suffix;
+            char *tgt = stirmain.rules[i].targets[k].namenodir;
+            char *suffix = stirmain.rules[i].targets[k].suffix;
             size_t exptgtsz; // expanded target size
             char *exptgt;
             size_t namedirsz;
             char *namedir;
-            if (main.rules[i].targets[k].percent_special && strcnt(tgt, '%') == 1)
+            if (stirmain.rules[i].targets[k].percent_special && strcnt(tgt, '%') == 1)
             {
               loc = strchr(tgt, '%');
               locp1 = loc+1;
@@ -6166,11 +6166,11 @@ int main(int argc, char **argv)
               exit(2);
             }
           }
-          for (k = 0; k < main.rules[i].depsz; k++)
+          for (k = 0; k < stirmain.rules[i].depsz; k++)
           {
-            char *dep = main.rules[i].deps[k].namenodir;
-            char *suffix = main.rules[i].deps[k].suffix;
-            //char *dep = main.rules[i].deps[k].name;
+            char *dep = stirmain.rules[i].deps[k].namenodir;
+            char *suffix = stirmain.rules[i].deps[k].suffix;
+            //char *dep = stirmain.rules[i].deps[k].name;
             size_t expdepsz; // expanded target size
             char *expdep;
             size_t namedirsz;
@@ -6199,15 +6199,15 @@ int main(int argc, char **argv)
               }
               deps[k].name = canon(namedir);
               deps[k].namenodir = expdep;
-              deps[k].rec = main.rules[i].deps[k].rec;
-              deps[k].orderonly = main.rules[i].deps[k].orderonly;
-              deps[k].wait = main.rules[i].deps[k].wait;
+              deps[k].rec = stirmain.rules[i].deps[k].rec;
+              deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
+              deps[k].wait = stirmain.rules[i].deps[k].wait;
               free(namedir);
             }
             else
             {
               loc = NULL;
-              if (main.rules[i].deps[k].percent_special)
+              if (stirmain.rules[i].deps[k].percent_special)
               {
                 if (strcnt(dep, '%') > 1)
                 {
@@ -6229,10 +6229,10 @@ int main(int argc, char **argv)
                 }
                 deps[k].name = canon(prefixdep);
                 free(prefixdep);
-                deps[k].namenodir = main.rules[i].deps[k].namenodir;
-                deps[k].rec = main.rules[i].deps[k].rec;
-                deps[k].orderonly = main.rules[i].deps[k].orderonly;
-                deps[k].wait = main.rules[i].deps[k].wait;
+                deps[k].namenodir = stirmain.rules[i].deps[k].namenodir;
+                deps[k].rec = stirmain.rules[i].deps[k].rec;
+                deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
+                deps[k].wait = stirmain.rules[i].deps[k].wait;
                 continue;
               }
               locp1 = loc+1;
@@ -6256,28 +6256,28 @@ int main(int argc, char **argv)
               }
               deps[k].name = canon(namedir);
               deps[k].namenodir = expdep;
-              deps[k].rec = main.rules[i].deps[k].rec;
-              deps[k].orderonly = main.rules[i].deps[k].orderonly;
-              deps[k].wait = main.rules[i].deps[k].wait;
+              deps[k].rec = stirmain.rules[i].deps[k].rec;
+              deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
+              deps[k].wait = stirmain.rules[i].deps[k].wait;
               free(namedir);
             }
           }
-          if (   main.rules[i].iscleanhook
-              || main.rules[i].isdistcleanhook
-              || main.rules[i].isbothcleanhook)
+          if (   stirmain.rules[i].iscleanhook
+              || stirmain.rules[i].isdistcleanhook
+              || stirmain.rules[i].isbothcleanhook)
           {
             my_abort();
           }
-          add_rule(tgts, main.rules[i].targetsz,
-                   deps, main.rules[i].depsz,
-                   &main.rules[i].shells, //main.rules[i].shellsz,
-                   main.rules[i].phony, main.rules[i].rectgt,
-                   main.rules[i].detouch, main.rules[i].maybe,
-                   main.rules[i].dist,
-                   main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
-                   main.rules[i].isbothcleanhook,
-                   main.rules[i].prefix, main.rules[i].scopeidx,
-                   main.rules[i].lineno,
+          add_rule(tgts, stirmain.rules[i].targetsz,
+                   deps, stirmain.rules[i].depsz,
+                   &stirmain.rules[i].shells, //stirmain.rules[i].shellsz,
+                   stirmain.rules[i].phony, stirmain.rules[i].rectgt,
+                   stirmain.rules[i].detouch, stirmain.rules[i].maybe,
+                   stirmain.rules[i].dist,
+                   stirmain.rules[i].iscleanhook, stirmain.rules[i].isdistcleanhook,
+                   stirmain.rules[i].isbothcleanhook,
+                   stirmain.rules[i].prefix, stirmain.rules[i].scopeidx,
+                   stirmain.rules[i].lineno,
                    meat);
           free(tgts);
           free(deps);
@@ -6285,34 +6285,34 @@ int main(int argc, char **argv)
         }
         continue;
       }
-      add_rule(main.rules[i].targets, main.rules[i].targetsz,
-               main.rules[i].deps, main.rules[i].depsz,
-               &main.rules[i].shells, //main.rules[i].shellsz,
-               main.rules[i].phony, main.rules[i].rectgt,
-               main.rules[i].detouch, main.rules[i].maybe,
-               main.rules[i].dist,
-               main.rules[i].iscleanhook, main.rules[i].isdistcleanhook,
-               main.rules[i].isbothcleanhook,
-               main.rules[i].prefix, main.rules[i].scopeidx,
-               main.rules[i].lineno,
+      add_rule(stirmain.rules[i].targets, stirmain.rules[i].targetsz,
+               stirmain.rules[i].deps, stirmain.rules[i].depsz,
+               &stirmain.rules[i].shells, //stirmain.rules[i].shellsz,
+               stirmain.rules[i].phony, stirmain.rules[i].rectgt,
+               stirmain.rules[i].detouch, stirmain.rules[i].maybe,
+               stirmain.rules[i].dist,
+               stirmain.rules[i].iscleanhook, stirmain.rules[i].isdistcleanhook,
+               stirmain.rules[i].isbothcleanhook,
+               stirmain.rules[i].prefix, stirmain.rules[i].scopeidx,
+               stirmain.rules[i].lineno,
                NULL /*meat*/);
       if (   (!ruleid_first_set)
           && (/* strcmp(fwd_path, ".") == 0 || */
-              strcmp(fwd_path, main.rules[i].prefix) == 0))
+              strcmp(fwd_path, stirmain.rules[i].prefix) == 0))
       {
         if (rules_size == 0)
         {
           my_abort();
         }
-        if (main.rules[i].iscleanhook)
+        if (stirmain.rules[i].iscleanhook)
         {
           continue;
         }
-        if (main.rules[i].isdistcleanhook)
+        if (stirmain.rules[i].isdistcleanhook)
         {
           continue;
         }
-        if (main.rules[i].isbothcleanhook)
+        if (stirmain.rules[i].isbothcleanhook)
         {
           continue;
         }
@@ -6321,11 +6321,11 @@ int main(int argc, char **argv)
       }
     }
   }
-  for (i = 0; i < main.rulesz; i++)
+  for (i = 0; i < stirmain.rulesz; i++)
   {
-    if (main.rules[i].targetsz > 0) // FIXME chg to if (1)
+    if (stirmain.rules[i].targetsz > 0) // FIXME chg to if (1)
     {
-      if (!main.rules[i].deponly)
+      if (!stirmain.rules[i].deponly)
       {
         continue;
       }
@@ -6334,8 +6334,8 @@ int main(int argc, char **argv)
         print_indent();
         printf("ADDING DEP\n");
       }
-      add_dep_from_rules(main.rules[i].targets, main.rules[i].targetsz,
-                         main.rules[i].deps, main.rules[i].depsz, 0);
+      add_dep_from_rules(stirmain.rules[i].targets, stirmain.rules[i].targetsz,
+                         stirmain.rules[i].deps, stirmain.rules[i].depsz, 0);
     }
   }
   if (!ruleid_first_set && optind == argc)
@@ -6407,8 +6407,8 @@ int main(int argc, char **argv)
     incyy_free(&incyy);
   }
   stiryy_free(&stiryy);
-  free(main.rules);
-  main.rules = NULL;
+  free(stirmain.rules);
+  stirmain.rules = NULL;
 
   //add_dep(v_l3e, v_l1g, 0); // offending rule
 
@@ -6684,9 +6684,9 @@ int main(int argc, char **argv)
     free(better_cycle_detect(ruleid, 1));
   }
 
-  process_orders(&main);
+  process_orders(&stirmain);
 
-  if (main.ordersz > 0)
+  if (stirmain.ordersz > 0)
   {
     LINKED_LIST_FOR_EACH(node, &rules_remain_list)
     {
@@ -6717,7 +6717,7 @@ int main(int argc, char **argv)
   clean_jobserver();
 #if 0
   free(dupargv0);
-  stiryy_main_free(&main);
+  stiryy_main_free(&stirmain);
   abce_free(&abce);
   free(rules);
   rules = NULL;

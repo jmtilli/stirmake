@@ -560,7 +560,7 @@ engine_stringlist(struct abce *abce,
   return 0;
 }
 
-int add_rule_yy(struct stiryy_main *main, struct tgt *tgts, size_t tgtsz,
+int add_rule_yy(struct stiryy_main *stirmain, struct tgt *tgts, size_t tgtsz,
                 struct dep *deps, size_t depsz,
                 struct cmdsrc *shells,
                 int phony, int rectgt, int detouch, int maybe, int dist,
@@ -568,33 +568,33 @@ int add_rule_yy(struct stiryy_main *main, struct tgt *tgts, size_t tgtsz,
                 int deponly,
                 char *prefix, size_t scopeidx, int lineno)
 {
-  if (main->rule_in_progress)
+  if (stirmain->rule_in_progress)
   {
     return -EINVAL;
   }
-  stiryy_main_emplace_rule(main, prefix, scopeidx, lineno);
-  main->rules[main->rulesz-1].bases = NULL;
-  main->rules[main->rulesz-1].basesz = 0;
-  main->rules[main->rulesz-1].basecapacity = 0;
-  main->rules[main->rulesz-1].deps = deps;
-  main->rules[main->rulesz-1].depsz = depsz;
-  main->rules[main->rulesz-1].depcapacity = depsz;
-  main->rules[main->rulesz-1].targets = tgts;
-  main->rules[main->rulesz-1].targetsz = tgtsz;
-  main->rules[main->rulesz-1].targetcapacity = tgtsz;
-  main->rules[main->rulesz-1].shells = *shells;
-  //main->rules[main->rulesz-1].scopeidx = scopeidx;
-  //main->rules[main->rulesz-1].prefix = prefix;
-  main->rules[main->rulesz-1].phony = !!phony;
-  main->rules[main->rulesz-1].rectgt = !!rectgt;
-  main->rules[main->rulesz-1].detouch = !!detouch;
-  main->rules[main->rulesz-1].maybe = !!maybe;
-  main->rules[main->rulesz-1].dist = !!dist;
-  main->rules[main->rulesz-1].iscleanhook = !!cleanhook;
-  main->rules[main->rulesz-1].isdistcleanhook = !!distcleanhook;
-  main->rules[main->rulesz-1].isbothcleanhook = !!bothcleanhook;
-  main->rules[main->rulesz-1].deponly = !!deponly;
-  main->rule_in_progress = 0;
+  stiryy_main_emplace_rule(stirmain, prefix, scopeidx, lineno);
+  stirmain->rules[stirmain->rulesz-1].bases = NULL;
+  stirmain->rules[stirmain->rulesz-1].basesz = 0;
+  stirmain->rules[stirmain->rulesz-1].basecapacity = 0;
+  stirmain->rules[stirmain->rulesz-1].deps = deps;
+  stirmain->rules[stirmain->rulesz-1].depsz = depsz;
+  stirmain->rules[stirmain->rulesz-1].depcapacity = depsz;
+  stirmain->rules[stirmain->rulesz-1].targets = tgts;
+  stirmain->rules[stirmain->rulesz-1].targetsz = tgtsz;
+  stirmain->rules[stirmain->rulesz-1].targetcapacity = tgtsz;
+  stirmain->rules[stirmain->rulesz-1].shells = *shells;
+  //stirmain->rules[stirmain->rulesz-1].scopeidx = scopeidx;
+  //stirmain->rules[stirmain->rulesz-1].prefix = prefix;
+  stirmain->rules[stirmain->rulesz-1].phony = !!phony;
+  stirmain->rules[stirmain->rulesz-1].rectgt = !!rectgt;
+  stirmain->rules[stirmain->rulesz-1].detouch = !!detouch;
+  stirmain->rules[stirmain->rulesz-1].maybe = !!maybe;
+  stirmain->rules[stirmain->rulesz-1].dist = !!dist;
+  stirmain->rules[stirmain->rulesz-1].iscleanhook = !!cleanhook;
+  stirmain->rules[stirmain->rulesz-1].isdistcleanhook = !!distcleanhook;
+  stirmain->rules[stirmain->rulesz-1].isbothcleanhook = !!bothcleanhook;
+  stirmain->rules[stirmain->rulesz-1].deponly = !!deponly;
+  stirmain->rule_in_progress = 0;
   return 0;
 }
 
