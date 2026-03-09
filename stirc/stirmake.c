@@ -5443,7 +5443,7 @@ int main(int argc, char **argv)
     int is_fedora = 0;
     int is_mint = 0;
     int is_rhel_or_almalinux = 0;
-    int is_arch = 0;
+    //int is_arch = 0;
     int is_sles = 0;
     for (;;)
     {
@@ -5481,7 +5481,7 @@ int main(int argc, char **argv)
           strcmp(line, "ID='arch'") == 0)
       {
         // rolling release, assume up-to-date
-        is_arch = 1;
+        //is_arch = 1;
         create_jobserver_fifo = 1;
       }
       if (strcmp(line, "ID=debian") == 0 ||
