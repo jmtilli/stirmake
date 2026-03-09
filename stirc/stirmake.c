@@ -31,7 +31,12 @@
 #include "statcache.h"
 #include "db.h"
 #ifdef __linux__
-#include <sys/random.h>
+  #ifdef __GLIBC__
+    #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 25)
+      #define HAVE_GETRANDOM
+      #include <sys/random.h>
+    #endif
+  #endif
 #endif
 
 #undef HAVE_POSIX_SPAWN
@@ -5248,12 +5253,12 @@ void process_orders(struct stiryy_main *main)
 void do_srand(void)
 {
   uint32_t randseed = 0;
-#ifndef __linux__
+#ifndef HAVE_GETRANDOM
   ssize_t read_ret;
   int fd;
 #endif
   srand(time(NULL) ^ getpid());
-#ifdef __linux__
+#ifdef HAVE_GETRANDOM
   if (getrandom(&randseed, sizeof(randseed), 0) == sizeof(randseed))
   {
     srand(randseed);
