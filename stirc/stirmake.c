@@ -2097,7 +2097,6 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   pid_t pid;
   const char *dir = sttable[rules[ruleid]->diridx].s;
   char **oneargiter;
-  size_t argcnt = 0;
   int outpipe[2] = {-1,-1};
   int outpiperd = -1, outpipewr = -1;
   int fdcurdir = -1;
@@ -2168,7 +2167,6 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     {
       printf("\n");
     }
-    argcnt++;
   }
   if (debug)
   {
