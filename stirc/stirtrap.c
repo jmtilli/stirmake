@@ -323,7 +323,7 @@ char *stir_shellescape(const char *old, size_t oldsz, size_t *newszptr)
   return newbuf;
 }
 
-int stir_trap_ruleadd(struct stiryy_main *main,
+int stir_trap_ruleadd(struct stiryy_main *stirmain,
                       struct abce *abce, const char *prefix)
 {
   struct abce_mb *tree;
@@ -999,7 +999,7 @@ int stir_trap_ruleadd(struct stiryy_main *main,
     }
   }
   if (errcod == 0 &&
-      add_rule_yy(main, yytgts, tgtsz, yydeps, depsz, &shellsrc,
+      add_rule_yy(stirmain, yytgts, tgtsz, yydeps, depsz, &shellsrc,
                   attrstruct.phony, attrstruct.rectgt, attrstruct.detouch,
                   attrstruct.maybe, attrstruct.dist, attrstruct.iscleanhook,
                   attrstruct.isdistcleanhook, attrstruct.isbothcleanhook,
@@ -1010,15 +1010,15 @@ int stir_trap_ruleadd(struct stiryy_main *main,
   }
   if (errcod == 0 && attrstruct.iscleanhook)
   {
-    stiryy_main_set_cleanhooktgt(main, prefix_ugh, "CLEAN");
+    stiryy_main_set_cleanhooktgt(stirmain, prefix_ugh, "CLEAN");
   }
   if (errcod == 0 && attrstruct.isdistcleanhook)
   {
-    stiryy_main_set_cleanhooktgt(main, prefix_ugh, "DISTCLEAN");
+    stiryy_main_set_cleanhooktgt(stirmain, prefix_ugh, "DISTCLEAN");
   }
   if (errcod == 0 && attrstruct.isbothcleanhook)
   {
-    stiryy_main_set_cleanhooktgt(main, prefix_ugh, "BOTHCLEAN");
+    stiryy_main_set_cleanhooktgt(stirmain, prefix_ugh, "BOTHCLEAN");
   }
 
   free(prefix_ugh);
@@ -1041,7 +1041,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   char *prefix, *backpath;
   struct abce *abce = ABCE_CONTAINER_OF(pbaton, struct abce, trap_baton);
   struct abce_mb *mb;
-  struct stiryy_main *main = *pbaton;
+  struct stiryy_main *stirmain = *pbaton;
   switch (ins)
   {
     case STIR_OPCODE_PREFILTER:
@@ -2316,7 +2316,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return -EINVAL;
       }
 
-      if (!main->parsing)
+      if (!stirmain->parsing)
       {
         char **tgts = malloc(sizeof(*tgts) * tgtar->u.area->u.ar.size);
         char **deps = malloc(sizeof(*deps) * depar->u.area->u.ar.size);
@@ -2348,18 +2348,18 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return 0;
       }
 
-      stiryy_main_emplace_rule(main, prefix, abce->dynscope.u.area->u.sc.locidx, -1); // FIXME lineno
+      stiryy_main_emplace_rule(stirmain, prefix, abce->dynscope.u.area->u.sc.locidx, -1); // FIXME lineno
       for (i = 0; i < tgtar->u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
-        stiryy_main_set_tgt(main, prefix, mb->u.area->u.str.buf, 0);
+        stiryy_main_set_tgt(stirmain, prefix, mb->u.area->u.str.buf, 0);
       }
       for (i = 0; i < depar->u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
-        stiryy_main_set_dep(main, prefix, mb->u.area->u.str.buf, recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
+        stiryy_main_set_dep(stirmain, prefix, mb->u.area->u.str.buf, recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
       }
-      stiryy_main_mark_deponly(main);
+      stiryy_main_mark_deponly(stirmain);
 
       //abce_mb_refdn(abce, &recres);
       //abce_mb_refdn(abce, &orderonlyres);
@@ -2369,7 +2369,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       return 0;
     }
     case STIR_OPCODE_RULE_ADD:
-      if (!main->parsing)
+      if (!stirmain->parsing)
       {
         abce->err.code = STIR_E_RULECHANGE_NOT_PERMITTED;
         abce->err.mb.typ = ABCE_T_N;
@@ -2384,7 +2384,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         prefix = ".";
       }
-      return stir_trap_ruleadd(main, abce, prefix);
+      return stir_trap_ruleadd(stirmain, abce, prefix);
     case STIR_OPCODE_TOP_DIR:
       if (abce_scope_get_userdata(&abce->dynscope))
       {
