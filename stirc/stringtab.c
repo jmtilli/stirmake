@@ -78,6 +78,7 @@ mysize_t stringtab_add(const char *symbol)
   uint32_t hashval;
   mysize_t hashloc;
   struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
+  struct stringtabentry *stringtabentry;
   hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
   hashloc = hashval % (sizeof(st)/sizeof(*st));
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, NULL, &stringlen);
@@ -86,7 +87,7 @@ mysize_t stringtab_add(const char *symbol)
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
   }
   stringtab_cnt++;
-  struct stringtabentry *stringtabentry = my_malloc(sizeof(struct stringtabentry));
+  stringtabentry = my_malloc(sizeof(struct stringtabentry));
   stringtabentry->string = my_strdup_len(symbol, stringlen.len);
   stringtabentry->len = stringlen.len;
   st_grow();
