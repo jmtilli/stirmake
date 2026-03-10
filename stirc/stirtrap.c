@@ -255,8 +255,9 @@ static inline void emit(char **buf, size_t *sz, size_t *cap, char ch)
 {
   if ((*sz) + 2 >= *cap)
   {
+    char *newbuf;
     *cap = 2*(*cap) + 2;
-    char *newbuf = realloc(*buf, *cap);
+    newbuf = realloc(*buf, *cap);
     if (newbuf == NULL)
     {
       free(*buf);
@@ -516,6 +517,8 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   {
     struct abce_mb *mb = &shellsres->u.area->u.ar.mbs[i];
     struct abce_mb *attr1;
+    int boolembed = 0;
+    int boolisfun = 0;
     if (mb->typ != ABCE_T_T)
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
@@ -523,8 +526,6 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       abce_pop(abce);
       return -EINVAL;
     }
-    int boolembed = 0;
-    int boolisfun = 0;
 
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[embed]) == 0)
     {
@@ -886,6 +887,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (boolisfun)
     {
+      int64_t argidx;
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[fun]) != 0)
       {
         my_abort();
@@ -903,7 +905,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       {
         my_abort();
       }
-      int64_t argidx = abce_cache_add(abce, attr1);
+      argidx = abce_cache_add(abce, attr1);
       yyshells[i].u.funarg.argidx = argidx;
       if (argidx < 0)
       {
