@@ -381,9 +381,9 @@ struct CSnippet luaSnippet = {
   }
 }
 <SHELL>[^\n]+(\\\n[^\n]*)* {
+  size_t len, idx;
   yylval->s = strdup(yytext);
-  size_t len = strlen(yylval->s);
-  size_t idx;
+  len = strlen(yylval->s);
   yycolumn = 2;
   for (idx = 0; idx < len; idx++)
   {
