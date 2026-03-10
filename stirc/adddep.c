@@ -69,6 +69,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, mysize_t depidx, mysize_t
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
+  struct add_dep *entry2;
   hashval = abce_murmur32(HASH_SEED, depidx);
   hashloc = hashval % (sizeof(entry->add_deps)/sizeof(*entry->add_deps));
   n = ABCE_RB_TREE_NOCMP_FIND(&entry->add_deps[hashloc], add_dep_cmp_asym, NULL, &depidx);
@@ -77,7 +78,7 @@ struct add_dep *add_dep_ensure(struct add_deps *entry, mysize_t depidx, mysize_t
     return ABCE_CONTAINER_OF(n, struct add_dep, node);
   }
   add_dep_cnt++;
-  struct add_dep *entry2 = my_malloc(sizeof(struct add_dep));
+  entry2 = my_malloc(sizeof(struct add_dep));
   entry2->depidx = depidx;
   entry2->depidxnodir = depidxnodir;
   entry2->auto_phony = 0;
@@ -98,6 +99,7 @@ struct add_deps *add_deps_ensure(mysize_t tgtidx)
   uint32_t hashval;
   size_t hashloc;
   size_t i;
+  struct add_deps *entry;
   hashval = abce_murmur32(HASH_SEED, tgtidx);
   hashloc = hashval % (sizeof(add_deps)/sizeof(*add_deps));
   n = ABCE_RB_TREE_NOCMP_FIND(&add_deps[hashloc], add_deps_cmp_asym, NULL, &tgtidx);
@@ -106,7 +108,7 @@ struct add_deps *add_deps_ensure(mysize_t tgtidx)
     return ABCE_CONTAINER_OF(n, struct add_deps, node);
   }
   add_deps_cnt++;
-  struct add_deps *entry = my_malloc(sizeof(struct add_deps));
+  entry = my_malloc(sizeof(struct add_deps));
   entry->tgtidx = tgtidx;
   entry->phony = 0;
   for (i = 0; i < sizeof(entry->add_deps)/sizeof(*entry->add_deps); i++)
