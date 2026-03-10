@@ -1687,6 +1687,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       glob_t globbuf;
       size_t i;
       int fdolddir;
+      int ret;
       VERIFYMB(-1, ABCE_T_S); // base
       mods = abce_mb_cpush_create_array(abce);
       if (mods == NULL)
@@ -1719,7 +1720,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return -ENOTDIR;
       }
       GETMBPTR(&base, -1);
-      int ret = glob(base->u.area->u.str.buf, 0, NULL, &globbuf);
+      ret = glob(base->u.area->u.str.buf, 0, NULL, &globbuf);
       if (ret != 0 && ret != GLOB_NOMATCH)
       {
         abce->err.code = STIR_E_GLOB_FAILED;
