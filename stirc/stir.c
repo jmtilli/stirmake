@@ -38,7 +38,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
 }
 void *my_memrchr(const void *s, int c, size_t n)
 {
-  unsigned const char *ptr = s + n;
+  unsigned const char *ptr = ((const unsigned char*)s) + n;
   while (n > 0)
   {
     ptr--;

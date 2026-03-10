@@ -41,14 +41,14 @@
 #ifdef __OpenBSD__
 #include <sys/param.h>
 #include <sys/sysctl.h>
-#if OpenBSD >= 201111 // This means OpenBSD 5.0 according to some strange logic
+#if OpenBSD >= 201111 /* This means OpenBSD 5.0 according to some strange logic */
 #define HAS_UTIMENSAT 1
 #endif
 #endif
 
 void *my_memrchr(const void *s, int c, size_t n)
 {
-  unsigned const char *ptr = s + n;
+  unsigned const char *ptr = ((unsigned const char*)s) + n;
   while (n > 0)
   {
     ptr--;
