@@ -65,4 +65,5 @@ int main(int argc, char **argv)
   }
   stiryydoparse(f, &stiryy);
   fclose(f);
+  return 0;
 }
