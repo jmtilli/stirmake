@@ -143,6 +143,7 @@ void deps_remain_forwait(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
+  struct dep_remain *dep_remain;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
@@ -150,7 +151,7 @@ void deps_remain_forwait(struct rule *rule, int ruleid)
   {
     abort();
   }
-  struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
+  dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
   dep_remain->waitcnt++;
 }
 
@@ -159,6 +160,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
+  struct dep_remain *dep_remain;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
@@ -166,7 +168,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   {
     return;
   }
-  struct dep_remain *dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
+  dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
   linked_list_delete(&dep_remain->llnode);
   rule->deps_remain_cnt--;
@@ -180,6 +182,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
+  struct dep_remain *dep_remain;
   hashval = abce_murmur32(HASH_SEED, ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
@@ -188,7 +191,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
     return;
   }
   dep_remain_cnt++;
-  struct dep_remain *dep_remain = my_malloc(sizeof(struct dep_remain));
+  dep_remain = my_malloc(sizeof(struct dep_remain));
   dep_remain->ruleid = ruleid;
   dep_remain->waitcnt = 0;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
