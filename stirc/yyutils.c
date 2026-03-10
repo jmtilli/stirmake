@@ -435,17 +435,18 @@ int do_fileinclude(struct stiryy *stiryy, const char *fname, int ignore)
   f = fopen(fname, "r");
   if (!f)
   {
+    int errno_save = errno;
     if (errno == EMFILE || errno == ENFILE)
     {
       fprintf(stderr, "Out of file descriptors, probably infinite recursion when opening file %s\n", fname);
-      return -errno;
+      return -errno_save;
     }
     if (ignore && (errno == ENOENT || errno == ENOTDIR))
     {
       return 0;
     }
     fprintf(stderr, "stirmake: Can't open substirfile %s.\n", fname);
-    return -errno;
+    return -errno_save;
   }
   ret = stiryydoparse(f, &stiryy2);
   fclose(f);
