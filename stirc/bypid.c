@@ -11,6 +11,7 @@ int ruleid_by_fd(int fd)
   struct abce_rb_tree_node *n;
   uint32_t hashvalfd;
   size_t hashlocfd;
+  struct ruleid_by_pid *bypid;
   if (fd < 0)
   {
     abort();
@@ -22,7 +23,7 @@ int ruleid_by_fd(int fd)
   {
     return -ENOENT;
   }
-  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, fdnode);
+  bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, fdnode);
   return bypid->ruleid;
 }
 
@@ -32,6 +33,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
   uint32_t hashval, hashvalfd;
   size_t hashloc, hashlocfd;
   int ruleid;
+  struct ruleid_by_pid *bypid;
   hashval = abce_murmur32(HASH_SEED, pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
@@ -39,7 +41,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
   {
     return -ENOENT;
   }
-  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
+  bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
   abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
   if (bypid->fd >= 0)
   {
@@ -62,6 +64,7 @@ int ignore_by_pid(pid_t pid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
+  struct ruleid_by_pid *bypid;
   hashval = abce_murmur32(HASH_SEED, pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
@@ -69,7 +72,7 @@ int ignore_by_pid(pid_t pid)
   {
     return -ENOENT;
   }
-  struct ruleid_by_pid *bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
+  bypid = ABCE_CONTAINER_OF(n, struct ruleid_by_pid, node);
   return !!bypid->ignore;
 }
 
@@ -77,12 +80,12 @@ mysize_t ruleid_by_pid_cnt;
 
 void ruleid_by_pid_insert(int ruleid, pid_t pid, int outpiperd, int ignore)
 {
-  ruleid_by_pid_cnt++;
   struct ruleid_by_pid *bypid = my_malloc(sizeof(*bypid)); // RFE use malloc() instead?
   uint32_t hashval;
   size_t hashloc;
   uint32_t hashvalfd;
   size_t hashlocfd;
+  ruleid_by_pid_cnt++;
   bypid->pid = pid;
   bypid->ruleid = ruleid;
   bypid->fd = outpiperd;
