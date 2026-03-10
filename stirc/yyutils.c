@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <libgen.h>
+#include <errno.h>
 #include "stiryy.h"
 #include "yyutils.h"
 
@@ -434,12 +435,17 @@ int do_fileinclude(struct stiryy *stiryy, const char *fname, int ignore)
   f = fopen(fname, "r");
   if (!f)
   {
-    if (ignore)
+    if (errno == EMFILE || errno == ENFILE)
+    {
+      fprintf(stderr, "Out of file descriptors, probably infinite recursion when opening file %s\n", fname);
+      return -errno;
+    }
+    if (ignore && (errno == ENOENT || errno == ENOTDIR))
     {
       return 0;
     }
     fprintf(stderr, "stirmake: Can't open substirfile %s.\n", fname);
-    return -ENOENT;
+    return -errno;
   }
   ret = stiryydoparse(f, &stiryy2);
   fclose(f);
