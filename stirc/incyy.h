@@ -32,6 +32,7 @@ struct incyy {
   int auto_target;
   char *fnamenodir;
 };
+#define INCYY_EMPTY {.rules = NULL}
 
 void my_abort(void);
 

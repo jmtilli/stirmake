@@ -234,7 +234,7 @@ void subproc_sighup_handler(int x)
   subproc_sighup_atomic = 1;
 }
 
-struct abce abce = {};
+struct abce abce;
 int abce_inited = 0;
 
 int test = 0;
@@ -324,7 +324,7 @@ int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
 void update_recursive_pid(int parent)
 {
   pid_t pid = parent ? getppid() : getpid();
-  char buf[64] = {};
+  char buf[64] = {0};
   snprintf(buf, sizeof(buf), "%d", (int)pid);
   setenv("STIRMAKEPID", buf, 1);
 }
@@ -337,7 +337,7 @@ int jobserver_char_cnt = 0;
 
 int write_jobserver(void)
 {
-  struct itimerval new_value = {};
+  struct itimerval new_value = {.it_interval.tv_sec = 0};
   int ret;
   new_value.it_interval.tv_sec = 0;
   new_value.it_interval.tv_usec = 0;
@@ -362,7 +362,7 @@ int write_jobserver(void)
 int read_jobserver(void)
 {
   char ch;
-  struct pollfd pfd = {};
+  struct pollfd pfd = {.fd = 0};
   int ret;
   pfd.fd = jobserver_fd[0];
   pfd.events = POLLIN;
@@ -397,7 +397,7 @@ int read_jobserver(void)
     // Ugh. GNU make expects the jobserver to be blocking, which doesn't
     // really suit our architecture. Set an interval timer in case of a race
     // that GNU make won.
-    struct itimerval new_value = {};
+    struct itimerval new_value = {.it_interval.tv_sec = 0};
     new_value.it_interval.tv_sec = 0;
     new_value.it_interval.tv_usec = 0;
     new_value.it_value.tv_sec = 0;
@@ -747,11 +747,11 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   {
     if (cmdsrc->items[i].iscode || cmdsrc->items[i].isfun)
     {
-      unsigned char tmpbuf[64] = {};
+      unsigned char tmpbuf[64] = {0};
       size_t tmpsiz = 0;
-      struct abce_mb mbstruct = {};
+      struct abce_mb mbstruct = ABCE_MB_EMPTY;
       struct abce_mb *mb = NULL;
-      //struct abce_mb mbkey = {};
+      //struct abce_mb mbkey = ABCE_MB_EMPTY;
 #if 0
       struct abce_mb mbnil = {.typ = ABCE_T_N};
 #endif
@@ -2733,7 +2733,7 @@ int do_exec(int ruleid)
     {
       int seen_nonphony = 0;
       int seen_tgt = 0;
-      struct timespec st_mtim = {}, st_mtimtgt = {};
+      struct timespec st_mtim = {.tv_sec=0}, st_mtimtgt = {.tv_sec=0};
       struct linked_list_node *node;
       LINKED_LIST_FOR_EACH(node, &r->deplist)
       {
@@ -4268,7 +4268,7 @@ void do_clean(char *fwd_path, int objs, int bins)
 
 struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
 {
-  struct cmd ret = {};
+  struct cmd ret = CMD_EMPTY;
   size_t i, j;
   char ***result = my_malloc((cmdssz+1) * sizeof(*result));
   for (i = 0; i < cmdssz; i++)
@@ -4290,9 +4290,9 @@ int dbf_did_exist = 0;
 
 void load_db(void)
 {
-  struct dbyy dbyy = {};
+  struct dbyy dbyy = DBYY_EMPTY;
   size_t i;
-  struct flock fl = {};
+  struct flock fl = {.l_type=0};
   int ret;
   int dbfd;
   linked_list_head_init(&db.ll);
@@ -4679,7 +4679,7 @@ void create_pipe(int jobcnt)
     set_nonblock(jobserver_fd[0]);
     for (i = 0; i < jobcnt - 1; i++)
     {
-      struct itimerval new_value = {};
+      struct itimerval new_value = {.it_interval.tv_sec=0};
       int ret;
       new_value.it_interval.tv_sec = 0;
       new_value.it_interval.tv_usec = 0;
@@ -5293,7 +5293,7 @@ int main(int argc, char **argv)
 #endif
   FILE *f;
   struct stiryy_main stirmain = {.abce = &abce};
-  struct stiryy stiryy = {};
+  struct stiryy stiryy = STIRYY_EMPTY;
   size_t i;
   int opt;
   int filename_set = 0;

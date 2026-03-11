@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   FILE *f = fopen("Stirfile", "r");
   struct abce abce;
   struct stiryy_main stirmain = {.abce = &abce};
-  struct stiryy stiryy = {};
+  struct stiryy stiryy = STIRYY_EMPTY;
   abce_init(&abce);
   stiryy_init(&stiryy, &stirmain, ".", ".", abce.dynscope, NULL, "Stirfile", 1);
   if (!f)

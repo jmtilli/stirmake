@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv)
 {
-  struct abce abce = {};
+  struct abce abce = ABCE_EMPTY;
   struct jsonyy jsonyy = {.abce = &abce};
   char *json =
 "{"

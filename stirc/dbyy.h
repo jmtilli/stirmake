@@ -46,6 +46,7 @@ struct dbyy {
   size_t tssz;
   size_t tscapacity;
 };
+#define DBYY_EMPTY {.rules = NULL}
 
 static inline void dbyy_add_cmd(struct dbyy *dbyy)
 {

@@ -307,7 +307,7 @@ int stiryydirparse(
 
 int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const char *scopevarname)
 {
-  struct stiryy stiryy2 = {};
+  struct stiryy stiryy2 = STIRYY_EMPTY;
   size_t fsz = strlen(stiryy->curprefix) + strlen(fname) + 8 + 3;
   size_t psz = strlen(stiryy->curprefix) + strlen(fname) + 2;
   size_t ppsz = strlen(stiryy->curprojprefix) + strlen(fname) + 2;
@@ -425,7 +425,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
 
 int do_fileinclude(struct stiryy *stiryy, const char *fname, int ignore)
 {
-  struct stiryy stiryy2 = {};
+  struct stiryy stiryy2 = STIRYY_EMPTY;
   int ret;
   FILE *f;
 
@@ -469,7 +469,7 @@ engine_stringlist(struct abce *abce,
                   int allow_nil,
                   int *was_array)
 {
-  unsigned char tmpbuf[64] = {};
+  unsigned char tmpbuf[64] = {0};
   size_t tmpsiz = 0;
   size_t i;
   struct abce_mb *mb;

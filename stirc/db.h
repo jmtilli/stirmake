@@ -13,6 +13,8 @@ struct cmd {
   char ***args;
 };
 
+#define CMD_EMPTY {.args = NULL}
+
 struct tsdbe {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;

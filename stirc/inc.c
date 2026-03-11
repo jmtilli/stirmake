@@ -10,7 +10,7 @@ void my_abort(void)
 int main(int argc, char **argv)
 {
   FILE *f = fopen("depfile.dep", "r");
-  struct incyy incyy = {};
+  struct incyy incyy = INCYY_EMPTY;
   if (!f)
   {
     abort();

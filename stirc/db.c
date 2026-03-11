@@ -60,8 +60,8 @@ static inline int dbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   return 0;
 }
 
-struct tsdb tsdb = {};
-struct db db = {};
+struct tsdb tsdb;
+struct db db;
 
 void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx)
 {

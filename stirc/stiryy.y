@@ -436,7 +436,7 @@ custom_assign:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[256] = {};
+    unsigned char tmpbuf[256] = {0};
     size_t tmpsiz = 0;
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
@@ -880,7 +880,7 @@ custom_rule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[256] = {};
+    unsigned char tmpbuf[256] = {0};
     size_t tmpsiz = 0;
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
@@ -1077,7 +1077,7 @@ custom_rule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[64] = {};
+    unsigned char tmpbuf[64] = {0};
     size_t tmpsiz = 0;
 
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
@@ -1184,7 +1184,7 @@ OPEN_PAREN expr CLOSE_PAREN NEWLINE
     }
     else
     {
-      unsigned char tmpbuf[64] = {};
+      unsigned char tmpbuf[64] = {0};
       size_t tmpsiz = 0;
 
       amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_EXIT);
@@ -1428,7 +1428,7 @@ expr NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[256] = {};
+    unsigned char tmpbuf[256] = {0};
     size_t tmpsiz = 0;
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
@@ -1514,7 +1514,7 @@ expr NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    unsigned char tmpbuf[256] = {};
+    unsigned char tmpbuf[256] = {0};
     size_t tmpsiz = 0;
     size_t symidx;
     // FIXME what if it's not a list?

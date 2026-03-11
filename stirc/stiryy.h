@@ -281,6 +281,8 @@ struct stiryy {
   int do_emit;
 };
 
+#define STIRYY_EMPTY {.baton = NULL}
+
 static inline void init_main_for_realpath(struct stiryy_main *stirmain, char *cwd)
 {
   char buf2[PATH_MAX+16];
