@@ -46,7 +46,7 @@ $(BYACC) ?= @nil
 
 $(WITH_LUA) ?= @false
 $(LUAINCS) ?= ["-I/usr/include/luajit-2.1"]
-$(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a"]
+$(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a", "-ldl"]
 
 # You can modify these during development
 $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
