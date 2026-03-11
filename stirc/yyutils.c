@@ -432,6 +432,7 @@ int do_fileinclude(struct stiryy *stiryy, const char *fname, int ignore)
   stiryy_init(&stiryy2, stiryy->main, stiryy->curprefix, stiryy->curprojprefix, stiryy->main->abce->dynscope, stiryy->dirname, fname, 0);
   stiryy2.sameproject = stiryy->sameproject;
 
+  errno = ENOENT;
   f = fopen(fname, "r");
   if (!f)
   {
