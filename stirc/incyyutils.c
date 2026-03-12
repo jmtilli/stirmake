@@ -12,6 +12,8 @@ extern int incyylex_init(yyscan_t *scanner);
 extern void incyyset_in(FILE *in_str, yyscan_t yyscanner);
 extern int incyylex_destroy(yyscan_t yyscanner);
 
+void errxit(const char *fmt, ...);
+
 void incyydoparse(FILE *filein, struct incyy *incyy)
 {
   yyscan_t scanner;
@@ -19,13 +21,27 @@ void incyydoparse(FILE *filein, struct incyy *incyy)
   incyyset_in(filein, scanner);
   if (incyyparse(scanner, incyy) != 0)
   {
-    fprintf(stderr, "parsing failed\n");
+    if (strcmp(incyy->prefix, ".") == 0)
+    {
+      errxit("parsing failed %s", incyy->fnamenodir);
+    }
+    else
+    {
+      errxit("parsing failed %s/%s", incyy->prefix, incyy->fnamenodir);
+    }
     exit(1);
   }
   incyylex_destroy(scanner);
   if (!feof(filein))
   {
-    fprintf(stderr, "error: additional data at end of incyy data\n");
+    if (strcmp(incyy->prefix, ".") == 0)
+    {
+      errxit("error: additional data at end of incyy data %s", incyy->fnamenodir);
+    }
+    else
+    {
+      errxit("error: additional data at end of incyy data %s/%s", incyy->prefix, incyy->fnamenodir);
+    }
     exit(1);
   }
 }

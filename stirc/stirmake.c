@@ -3518,6 +3518,40 @@ void mark_executed(int ruleid, int was_actually_executed)
     {
       sttable[e->tgtidx].is_remade = 1;
     }
+    if (!dry_run && !touchmode && was_actually_executed && sttable[e->tgtidx].is_cdepwatch)
+    {
+      size_t j, k;
+      char *tgt = (e->tgtidxnodir != (mysize_t)-1) ? sttable[e->tgtidxnodir].s : neighpath(sttable[r->diridx].s, sttable[e->tgtidx].s); // RFE is only the second condition after ':' enough?
+      FILE *f;
+      struct incyy incyy = {
+        .prefix = sttable[r->diridx].s,
+        .auto_target = 0,
+        .fnamenodir = tgt,
+      };
+      //printf("Re-read %s\n", sttable[e->tgtidx].s);
+      f = fopen(sttable[e->tgtidx].s, "r");
+      if (f)
+      {
+        incyydoparse(f, &incyy);
+        for (j = 0; j < incyy.rulesz; j++)
+        {
+          for (k = 0; k < incyy.rules[j].depsz; k++)
+          {
+            mysize_t stidx = stringtab_add(incyy.rules[j].deps[k]);
+            struct stathashentry *she;
+            she = lstat_cached(stidx);
+            if (she->ret != 0)
+            {
+              continue;
+            }
+            tsszstoresource(&tsdb, stidx, she->st_mtim, she->st_size);
+            //printf("Re-read dep: %s size %zu\n", incyy.rules[j].deps[k], (size_t)she->st_size);
+          }
+        }
+        fclose(f);
+        incyy_free(&incyy);
+      }
+    }
   }
   LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
@@ -6352,6 +6386,8 @@ int main(int argc, char **argv)
     size_t fnamesz =
       strlen(incyy.prefix) + strlen(stiryy.main->cdepincludes[i].name) + 2;
     char *fname = malloc(fnamesz);
+    char *fnamecanon;
+    mysize_t stidx;
     if (snprintf(fname, fnamesz, "%s/%s", incyy.prefix, stiryy.main->cdepincludes[i].name) >= (int)fnamesz)
     {
       printf("24.5\n");
@@ -6362,6 +6398,11 @@ int main(int argc, char **argv)
       print_indent();
       printf("reading cdepincludes from %s\n", fname);
     }
+    fnamecanon = canon(fname);
+    stidx = stringtab_add(fnamecanon);
+    free(fnamecanon);
+    sttable[stidx].is_cdepwatch = 1;
+    //printf("Is_cdepwatch %s\n", sttable[stidx].s);
     f = fopen(fname, "r");
     if (!f)
     {

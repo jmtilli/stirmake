@@ -7,6 +7,10 @@ void my_abort(void)
   abort();
 }
 
+void errxit(const char *fmt, ...)
+{
+}
+
 int main(int argc, char **argv)
 {
   FILE *f = fopen("depfile.dep", "r");

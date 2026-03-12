@@ -98,6 +98,7 @@ mysize_t stringtab_add(const char *symbol)
   }
   sttable[st_cnt].s = stringtabentry->string;
   sttable[st_cnt].is_remade = 0;
+  sttable[st_cnt].is_cdepwatch = 0;
   stringtabentry->idx = st_cnt++;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
   {
