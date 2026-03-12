@@ -196,6 +196,8 @@ struct attrstruct {
   unsigned isbothcleanhook:1;
 };
 
+#define ATTRSTRUCT_EMPTY {.phony = 0}
+
 int attr_sanity(const struct attrstruct *as)
 {
   int clean = 0;
@@ -344,7 +346,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   struct cmdsrcitem *yyshells;
   size_t shellsz;
   size_t i;
-  struct attrstruct attrstruct = {};
+  struct attrstruct attrstruct = ATTRSTRUCT_EMPTY;
 
   if (ret != 0)
   {
