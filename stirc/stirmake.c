@@ -5898,7 +5898,7 @@ int main(int argc, char **argv)
       }
       if (chdir("..") != 0)
       {
-        my_abort();
+        break;
       }
       if (getcwd(curcwd, sizeof(curcwd)) == NULL)
       {
