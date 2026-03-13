@@ -45,11 +45,15 @@ $(BYACC) ?= @nil
 @endif
 
 $(WITH_LUA) ?= @false
-#$(LUAINCS) ?= ["-I/usr/include/luajit-2.1"]
-#$(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a", "-ldl"]
+$(LUAINCS) ?= @nil
+$(LUALIBS) ?= @nil
 @if($(WITH_LUA))
-  $(LUAINCS) ``= ["pkg-config", "--cflags", "luajit"]
-  $(LUALIBS) ``= ["pkg-config", "--libs", "luajit"]
+  @if(@type($(LUAINCS)) == @type(@nil))
+    $(LUAINCS) ``= ["pkg-config", "--cflags", "luajit"]
+  @endif
+  @if(@type($(LUALIBS)) == @type(@nil))
+    $(LUALIBS) ``= ["pkg-config", "--libs", "luajit"]
+  @endif
 @endif
 
 # You can modify these during development
