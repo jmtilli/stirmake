@@ -45,8 +45,12 @@ $(BYACC) ?= @nil
 @endif
 
 $(WITH_LUA) ?= @false
-$(LUAINCS) ?= ["-I/usr/include/luajit-2.1"]
-$(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a", "-ldl"]
+#$(LUAINCS) ?= ["-I/usr/include/luajit-2.1"]
+#$(LUALIBS) ?= ["/usr/lib/x86_64-linux-gnu/libluajit-5.1.a", "-ldl"]
+@if($(WITH_LUA))
+  $(LUAINCS) ``= ["pkg-config", "--cflags", "luajit"]
+  $(LUALIBS) ``= ["pkg-config", "--libs", "luajit"]
+@endif
 
 # You can modify these during development
 $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
