@@ -499,7 +499,7 @@ engine_stringlist(struct abce *abce,
     {
       if (abce->btbase[i].typ == ABCE_T_S)
       {
-        printf("%s\n", abce->btbase[i].u.area->u.str.buf);
+        printf("%s\n", abce_mba_str(abce->btbase[i].u.area));
       }
       else
       {
@@ -524,7 +524,7 @@ engine_stringlist(struct abce *abce,
     }
     *strsz = 1;
     *strs = malloc(sizeof(**strs) * (*strsz));
-    (*strs)[0] = strdup(mb->u.area->u.str.buf);
+    (*strs)[0] = strdup(abce_mba_str(mb->u.area));
   }
   else if (mb->typ == ABCE_T_A)
   {
@@ -551,7 +551,7 @@ engine_stringlist(struct abce *abce,
         (*strs)[i] = NULL;
         continue;
       }
-      (*strs)[i] = strdup(mb->u.area->u.ar.mbs[i].u.area->u.str.buf);
+      (*strs)[i] = strdup(abce_mba_str(mb->u.area->u.ar.mbs[i].u.area));
     }
   }
   else

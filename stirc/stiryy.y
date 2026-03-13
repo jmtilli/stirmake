@@ -465,7 +465,7 @@ custom_assign:
       {
         if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
         {
-          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+          printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
         }
         else
         {
@@ -501,7 +501,7 @@ custom_assign:
         amyplanyyerror(scanner, amyplanyy, "shell-assign supported only from non-empty array of strings");
         YYABORT;
       }
-      argv[idx] = get_abce(amyplanyy)->stackbase[0].u.area->u.ar.mbs[idx].u.area->u.str.buf;
+      argv[idx] = abce_mba_str(get_abce(amyplanyy)->stackbase[0].u.area->u.ar.mbs[idx].u.area);
     }
     argv[get_abce(amyplanyy)->stackbase[0].u.area->u.ar.size] = NULL;
     char *res = eval_cmd(argv);
@@ -901,7 +901,7 @@ custom_rule:
       {
         if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
         {
-          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+          printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
         }
         else
         {
@@ -1102,7 +1102,7 @@ custom_rule:
       {
         if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
         {
-          printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+          printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
         }
         else
         {
@@ -1209,7 +1209,7 @@ OPEN_PAREN expr CLOSE_PAREN NEWLINE
         {
           if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
           {
-            printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+            printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
           }
           else
           {
@@ -1464,7 +1464,7 @@ expr NEWLINE
         {
           if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
           {
-            printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+            printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
           }
           else
           {
@@ -1550,7 +1550,7 @@ expr NEWLINE
         {
           if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
           {
-            printf("%s\n", get_abce(amyplanyy)->btbase[i].u.area->u.str.buf);
+            printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
           }
           else
           {

@@ -1069,7 +1069,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         {
           if (abce->btbase[i].typ == ABCE_T_S)
           {
-            printf("%s\n", abce->btbase[i].u.area->u.str.buf);
+            printf("%s\n", abce_mba_str(abce->btbase[i].u.area));
           }
           else
           {
@@ -1129,7 +1129,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
             }
             cmd[3+k] =
               my_strdup(
-                mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
+                abce_mba_str(mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area));
           }
           cmd[3+mb->u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
           if (resultsz >= resultcap)
@@ -1156,7 +1156,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
 	    abce_pop(abce);
             return NULL;
           }
-          cmd[3+j] = my_strdup(mb->u.area->u.ar.mbs[j].u.area->u.str.buf);
+          cmd[3+j] = my_strdup(abce_mba_str(mb->u.area->u.ar.mbs[j].u.area));
         }
         cmd[3+mb->u.area->u.ar.size] = NULL;
         if (resultsz >= resultcap)
@@ -2647,7 +2647,7 @@ void calc_cmd(int ruleid)
     {
       if (abce.btbase[i].typ == ABCE_T_S)
       {
-        fprintf(stderr, "%s\n", abce.btbase[i].u.area->u.str.buf);
+        fprintf(stderr, "%s\n", abce_mba_str(abce.btbase[i].u.area));
       }
       else
       {

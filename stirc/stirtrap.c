@@ -805,9 +805,9 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     {
       my_abort();
     }
-    namsz = strlen(mbstr->u.area->u.str.buf) + strlen(prefix) + 2;
+    namsz = strlen(abce_mba_str(mbstr->u.area)) + strlen(prefix) + 2;
     nam = malloc(namsz); // FIXME leaks
-    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= (int)namsz)
+    if (snprintf(nam, namsz, "%s/%s", prefix, abce_mba_str(mbstr->u.area)) >= (int)namsz)
     {
       my_abort();
     }
@@ -815,7 +815,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     yytgts[i].name = strdup(can);
     free(nam);
     free(can);
-    yytgts[i].namenodir = strdup(mbstr->u.area->u.str.buf);
+    yytgts[i].namenodir = strdup(abce_mba_str(mbstr->u.area));
     yytgts[i].suffix = NULL; // FIXME what should be given?
     yytgts[i].is_dist = 0;
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
@@ -835,9 +835,9 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     {
       my_abort();
     }
-    namsz = strlen(mbstr->u.area->u.str.buf) + strlen(prefix) + 2;
+    namsz = strlen(abce_mba_str(mbstr->u.area)) + strlen(prefix) + 2;
     nam = malloc(namsz); // FIXME leaks
-    if (snprintf(nam, namsz, "%s/%s", prefix, mbstr->u.area->u.str.buf) >= (int)namsz)
+    if (snprintf(nam, namsz, "%s/%s", prefix, abce_mba_str(mbstr->u.area)) >= (int)namsz)
     {
       my_abort();
     }
@@ -845,7 +845,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     yydeps[i].name = strdup(can);
     free(can);
     free(nam);
-    yydeps[i].namenodir = strdup(mbstr->u.area->u.str.buf);
+    yydeps[i].namenodir = strdup(abce_mba_str(mbstr->u.area));
     yydeps[i].suffix = NULL; // FIXME what should be given?
     yydeps[i].rec = 0;
     yydeps[i].orderonly = 0;
@@ -941,7 +941,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
         for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
         {
           yyshells[i].u.cmds[j][k] = strdup(
-            attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.buf);
+            abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area));
         }
         yyshells[i].u.cmds[j][attr1->u.area->u.ar.mbs[j].u.area->u.ar.size] =
           NULL;
@@ -968,7 +968,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
         yyshells[i].u.args[j] = strdup(
-          attr1->u.area->u.ar.mbs[j].u.area->u.str.buf);
+          abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area));
       }
       yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
     }
@@ -1080,8 +1080,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (   bsz < ssz
-            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[0],
-                      suf->u.area->u.str.buf, ssz) != 0)
+            || memcmp(&abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)[0],
+                      abce_mba_str(suf->u.area), ssz) != 0)
         {
           continue;
         }
@@ -1129,8 +1129,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (!(   bsz < ssz
-              || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[0],
-                        suf->u.area->u.str.buf, ssz) != 0))
+              || memcmp(&abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)[0],
+                        abce_mba_str(suf->u.area), ssz) != 0))
         {
           continue;
         }
@@ -1196,8 +1196,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         {
           fsz = filters->u.area->u.ar.mbs[j].u.area->u.str.size;
           if (fsz == bsz &&
-              memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf,
-                     &filters->u.area->u.ar.mbs[j].u.area->u.str.buf, fsz) == 0)
+              memcmp(abce_mba_str(bases->u.area->u.ar.mbs[i].u.area),
+                     abce_mba_str(filters->u.area->u.ar.mbs[j].u.area), fsz) == 0)
           {
             found = 1;
             break;
@@ -1251,8 +1251,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (   bsz < ssz
-            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
-                      suf->u.area->u.str.buf, ssz) != 0)
+            || memcmp(&abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)[bsz-ssz],
+                      abce_mba_str(suf->u.area), ssz) != 0)
         {
           continue;
         }
@@ -1288,14 +1288,14 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMBPTR(&suf, -1);
       GETMBPTR(&regbool, -2);
       GETMBPTR(&bases, -3);
-      if (strlen(suf->u.area->u.str.buf) != suf->u.area->u.str.size)
+      if (strlen(abce_mba_str(suf->u.area)) != suf->u.area->u.str.size)
       {
         abce->err.code = STIR_E_REGEXP_ERROR;
         abce_mb_errreplace_noinline(abce, suf);
         abce_cpop(abce);
         return -EINVAL;
       }
-      if (regcomp(&preg, suf->u.area->u.str.buf, (ins == STIR_OPCODE_EREGFILTER) ? (REG_NOSUB | REG_EXTENDED) : (REG_NOSUB)) != 0)
+      if (regcomp(&preg, abce_mba_str(suf->u.area), (ins == STIR_OPCODE_EREGFILTER) ? (REG_NOSUB | REG_EXTENDED) : (REG_NOSUB)) != 0)
       {
         abce->err.code = STIR_E_REGEXP_ERROR;
         abce_mb_errreplace_noinline(abce, suf);
@@ -1315,8 +1315,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           regfree(&preg);
           return -EINVAL;
         }
-	nomatch1 = !!(strlen(bases->u.area->u.ar.mbs[i].u.area->u.str.buf) != bases->u.area->u.ar.mbs[i].u.area->u.str.size);
-        if (!!(regexec(&preg, bases->u.area->u.ar.mbs[i].u.area->u.str.buf, 0, NULL, 0) || nomatch1) == !!regbool->u.d)
+	nomatch1 = !!(strlen(abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)) != bases->u.area->u.ar.mbs[i].u.area->u.str.size);
+        if (!!(regexec(&preg, abce_mba_str(bases->u.area->u.ar.mbs[i].u.area), 0, NULL, 0) || nomatch1) == !!regbool->u.d)
         {
           continue;
         }
@@ -1367,8 +1367,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (!(   bsz < ssz
-              || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-ssz],
-                        suf->u.area->u.str.buf, ssz) != 0))
+              || memcmp(&abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)[bsz-ssz],
+                        abce_mba_str(suf->u.area), ssz) != 0))
         {
           continue;
         }
@@ -1409,7 +1409,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           return -EINVAL;
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
+        buf = abce_mba_str(bases->u.area->u.ar.mbs[i].u.area);
         cutpoint = my_memrchr(buf, '.', bsz);
         cutpoint2 = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL || cutpoint < cutpoint2)
@@ -1469,7 +1469,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           return -EINVAL;
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
+        buf = abce_mba_str(bases->u.area->u.ar.mbs[i].u.area);
         cutpoint = my_memrchr(buf, '.', bsz);
         cutpoint2 = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL || cutpoint < cutpoint2)
@@ -1535,7 +1535,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           return -EINVAL;
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
+        buf = abce_mba_str(bases->u.area->u.ar.mbs[i].u.area);
         cutpoint = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL)
         {
@@ -1592,7 +1592,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           return -EINVAL;
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
-        buf = bases->u.area->u.ar.mbs[i].u.area->u.str.buf;
+        buf = abce_mba_str(bases->u.area->u.ar.mbs[i].u.area);
         cutpoint = my_memrchr(buf, '/', bsz);
         if (cutpoint == NULL)
         {
@@ -1663,7 +1663,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return -ENOTDIR;
       }
       GETMBPTR(&base, -1);
-      if (jsonyynameparse(base->u.area->u.str.buf, &jsonyy) != 0)
+      if (jsonyynameparse(abce_mba_str(base->u.area), &jsonyy) != 0)
       {
         (void)fchdir(fdolddir);
         abce->err.code = STIR_E_BAD_JSON;
@@ -1722,7 +1722,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return -ENOTDIR;
       }
       GETMBPTR(&base, -1);
-      ret = glob(base->u.area->u.str.buf, 0, NULL, &globbuf);
+      ret = glob(abce_mba_str(base->u.area), 0, NULL, &globbuf);
       if (ret != 0 && ret != GLOB_NOMATCH)
       {
         abce->err.code = STIR_E_GLOB_FAILED;
@@ -1791,7 +1791,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           return -EINVAL;
         }
         //bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
-        can = canon(bases->u.area->u.ar.mbs[i].u.area->u.str.buf);
+        can = canon(abce_mba_str(bases->u.area->u.ar.mbs[i].u.area));
         newstr = abce_mb_cpush_create_string(abce, can, strlen(can));
         free(can);
         if (newstr == NULL)
@@ -1844,12 +1844,12 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (   bsz < osz
-            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[bsz-osz],
-                      oldsuf->u.area->u.str.buf, osz) != 0)
+            || memcmp(&abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)[bsz-osz],
+                      abce_mba_str(oldsuf->u.area), osz) != 0)
         {
           fprintf(stderr, "stirmake: %s does not end with %s\n",
-                  bases->u.area->u.ar.mbs[i].u.area->u.str.buf,
-                  oldsuf->u.area->u.str.buf);
+                  abce_mba_str(bases->u.area->u.ar.mbs[i].u.area),
+                  abce_mba_str(oldsuf->u.area));
           abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
 	  abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
           abce_cpop(abce);
@@ -1868,11 +1868,11 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_cpop(abce);
           return -ENOMEM;
         }
-        memcpy(newstr->u.area->u.str.buf,
-               bases->u.area->u.ar.mbs[i].u.area->u.str.buf, bsz-osz);
-        memcpy(newstr->u.area->u.str.buf + (bsz - osz),
-               newsuf->u.area->u.str.buf, nsz);
-        newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+        memcpy(abce_mba_str(newstr->u.area),
+               abce_mba_str(bases->u.area->u.ar.mbs[i].u.area), bsz-osz);
+        memcpy(abce_mba_str(newstr->u.area) + (bsz - osz),
+               abce_mba_str(newsuf->u.area), nsz);
+        abce_mba_str(newstr->u.area)[bsz-osz+nsz] = '\0';
         if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
           abce_pop(abce);
@@ -1921,12 +1921,12 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         bsz = bases->u.area->u.ar.mbs[i].u.area->u.str.size;
         if (   bsz < osz
-            || memcmp(&bases->u.area->u.ar.mbs[i].u.area->u.str.buf[0],
-                      oldpre->u.area->u.str.buf, osz) != 0)
+            || memcmp(&abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)[0],
+                      abce_mba_str(oldpre->u.area), osz) != 0)
         {
           fprintf(stderr, "stirmake: %s does not begin with %s\n",
-                  bases->u.area->u.ar.mbs[i].u.area->u.str.buf,
-                  oldpre->u.area->u.str.buf);
+                  abce_mba_str(bases->u.area->u.ar.mbs[i].u.area),
+                  abce_mba_str(oldpre->u.area));
           abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
           abce_mb_errreplace_noinline(abce, &bases->u.area->u.ar.mbs[i]);
           abce_cpop(abce);
@@ -1945,9 +1945,9 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           abce_cpop(abce);
           return -ENOMEM;
         }
-        memcpy(newstr->u.area->u.str.buf, newpre->u.area->u.str.buf, nsz);
-        memcpy(newstr->u.area->u.str.buf + nsz, bases->u.area->u.ar.mbs[i].u.area->u.str.buf+osz, bsz - osz);
-        newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+        memcpy(abce_mba_str(newstr->u.area), abce_mba_str(newpre->u.area), nsz);
+        memcpy(abce_mba_str(newstr->u.area) + nsz, abce_mba_str(bases->u.area->u.ar.mbs[i].u.area)+osz, bsz - osz);
+        abce_mba_str(newstr->u.area)[bsz-osz+nsz] = '\0';
         if (abce_mb_array_append(abce, mods, newstr) != 0)
         {
           abce_pop(abce);
@@ -1971,7 +1971,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       VERIFYMB(-1, ABCE_T_S); // base
       GETMBPTR(&base, -1);
 
-      can = canon(base->u.area->u.str.buf); // RFE '\0' in filename
+      can = canon(abce_mba_str(base->u.area)); // RFE '\0' in filename
       newstr = abce_mb_cpush_create_string(abce, can, strlen(can));
       free(can);
       if (newstr == NULL)
@@ -1993,16 +1993,16 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMBPTR(&base, -1);
       bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base->u.area->u.str.buf, '.', bsz);
-      cutpoint2 = my_memrchr(base->u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(abce_mba_str(base->u.area), '.', bsz);
+      cutpoint2 = my_memrchr(abce_mba_str(base->u.area), '/', bsz);
       if (cutpoint == NULL || cutpoint < cutpoint2)
       {
         abce_npoppush(abce, 1, base);
         return 0;
       }
 
-      newstr = abce_mb_cpush_create_string(abce, base->u.area->u.str.buf,
-                                           cutpoint - base->u.area->u.str.buf);
+      newstr = abce_mb_cpush_create_string(abce, abce_mba_str(base->u.area),
+                                           cutpoint - abce_mba_str(base->u.area));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2022,7 +2022,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMBPTR(&base, -1);
       bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base->u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(abce_mba_str(base->u.area), '/', bsz);
       if (cutpoint == NULL)
       {
         newstr = abce_mb_cpush_create_string(abce, "./", 2);
@@ -2036,8 +2036,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         return 0;
       }
 
-      newstr = abce_mb_cpush_create_string(abce, base->u.area->u.str.buf,
-                                           cutpoint + 1 - base->u.area->u.str.buf);
+      newstr = abce_mb_cpush_create_string(abce, abce_mba_str(base->u.area),
+                                           cutpoint + 1 - abce_mba_str(base->u.area));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2057,7 +2057,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMBPTR(&base, -1);
       bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base->u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(abce_mba_str(base->u.area), '/', bsz);
       if (cutpoint == NULL)
       {
         abce_npoppush(abce, 1, base);
@@ -2065,7 +2065,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       newstr = abce_mb_cpush_create_string(abce, cutpoint+1,
-                                           bsz - (cutpoint+1-base->u.area->u.str.buf));
+                                           bsz - (cutpoint+1-abce_mba_str(base->u.area)));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2085,8 +2085,8 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       GETMBPTR(&base, -1);
       bsz = base->u.area->u.str.size;
 
-      cutpoint = my_memrchr(base->u.area->u.str.buf, '.', bsz);
-      cutpoint2 = my_memrchr(base->u.area->u.str.buf, '/', bsz);
+      cutpoint = my_memrchr(abce_mba_str(base->u.area), '.', bsz);
+      cutpoint2 = my_memrchr(abce_mba_str(base->u.area), '/', bsz);
       if (cutpoint == NULL || cutpoint < cutpoint2)
       {
         newstr = abce_mb_cpush_create_string(abce, "", 0);
@@ -2100,7 +2100,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       newstr = abce_mb_cpush_create_string(abce, cutpoint,
-                                           bsz - (cutpoint-base->u.area->u.str.buf));
+                                           bsz - (cutpoint-abce_mba_str(base->u.area)));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2127,11 +2127,11 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       osz = oldsuf->u.area->u.str.size;
       nsz = newsuf->u.area->u.str.size;
       if (   bsz < osz
-          || memcmp(&base->u.area->u.str.buf[bsz-osz], oldsuf->u.area->u.str.buf,
+          || memcmp(&abce_mba_str(base->u.area)[bsz-osz], abce_mba_str(oldsuf->u.area),
                     osz) != 0)
       {
         fprintf(stderr, "stirmake: %s does not end with %s\n",
-                base->u.area->u.str.buf, oldsuf->u.area->u.str.buf);
+                abce_mba_str(base->u.area), abce_mba_str(oldsuf->u.area));
         abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
 	abce_mb_errreplace_noinline(abce, base);
         return -EINVAL;
@@ -2144,10 +2144,10 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce_pop(abce);
         return -ENOMEM;
       }
-      memcpy(newstr->u.area->u.str.buf, base->u.area->u.str.buf, bsz-osz);
-      memcpy(newstr->u.area->u.str.buf + (bsz - osz),
-             newsuf->u.area->u.str.buf, nsz);
-      newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+      memcpy(abce_mba_str(newstr->u.area), abce_mba_str(base->u.area), bsz-osz);
+      memcpy(abce_mba_str(newstr->u.area) + (bsz - osz),
+             abce_mba_str(newsuf->u.area), nsz);
+      abce_mba_str(newstr->u.area)[bsz-osz+nsz] = '\0';
       abce_npoppush(abce, 3, newstr);
       abce_cpop(abce);
       return 0;
@@ -2169,11 +2169,11 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       osz = oldpre->u.area->u.str.size;
       nsz = newpre->u.area->u.str.size;
       if (   bsz < osz
-          || memcmp(&base->u.area->u.str.buf[0], oldpre->u.area->u.str.buf,
+          || memcmp(&abce_mba_str(base->u.area)[0], abce_mba_str(oldpre->u.area),
                     osz) != 0)
       {
         fprintf(stderr, "stirmake: %s does not begin with %s\n",
-                base->u.area->u.str.buf, oldpre->u.area->u.str.buf);
+                abce_mba_str(base->u.area), abce_mba_str(oldpre->u.area));
         abce->err.code = STIR_E_SUFFIX_NOT_FOUND;
         abce_mb_errreplace_noinline(abce, base);
         return -EINVAL;
@@ -2186,9 +2186,9 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         abce_pop(abce);
         return -ENOMEM;
       }
-      memcpy(newstr->u.area->u.str.buf, newpre->u.area->u.str.buf, nsz);
-      memcpy(newstr->u.area->u.str.buf + nsz, base->u.area->u.str.buf+osz, bsz - osz);
-      newstr->u.area->u.str.buf[bsz-osz+nsz] = '\0';
+      memcpy(abce_mba_str(newstr->u.area), abce_mba_str(newpre->u.area), nsz);
+      memcpy(abce_mba_str(newstr->u.area) + nsz, abce_mba_str(base->u.area)+osz, bsz - osz);
+      abce_mba_str(newstr->u.area)[bsz-osz+nsz] = '\0';
       abce_npoppush(abce, 3, newstr);
       abce_cpop(abce);
       return 0;
@@ -2328,12 +2328,12 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         for (i = 0; i < depar->u.area->u.ar.size; i++)
         {
           const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
-          deps[i] = mb->u.area->u.str.buf;
+          deps[i] = abce_mba_str(mb->u.area);
         }
         for (i = 0; i < tgtar->u.area->u.ar.size; i++)
         {
           const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
-          tgts[i] = mb->u.area->u.str.buf;
+          tgts[i] = abce_mba_str(mb->u.area);
         }
         if (add_dep_after_parsing_stage(tgts, tgtar->u.area->u.ar.size,
                                         deps, depar->u.area->u.ar.size,
@@ -2357,12 +2357,12 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       for (i = 0; i < tgtar->u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
-        stiryy_main_set_tgt(stirmain, prefix, mb->u.area->u.str.buf, 0);
+        stiryy_main_set_tgt(stirmain, prefix, abce_mba_str(mb->u.area), 0);
       }
       for (i = 0; i < depar->u.area->u.ar.size; i++)
       {
         const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
-        stiryy_main_set_dep(stirmain, prefix, mb->u.area->u.str.buf, recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
+        stiryy_main_set_dep(stirmain, prefix, abce_mba_str(mb->u.area), recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
       }
       stiryy_main_mark_deponly(stirmain);
 
@@ -2512,7 +2512,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         size_t newsz;
         char *newstr;
         GETMBSTRPTR(&mbarg, -1);
-        newstr = stir_shellescape(mbarg->u.area->u.str.buf,
+        newstr = stir_shellescape(abce_mba_str(mbarg->u.area),
                                   mbarg->u.area->u.str.size, &newsz);
         if (newstr == NULL)
         {
@@ -2537,16 +2537,16 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         char *realpathptr;
         int do_free = 0;
         GETMBSTRPTR(&mbarg, -1);
-        if (strlen(mbarg->u.area->u.str.buf) != mbarg->u.area->u.str.size)
+        if (strlen(abce_mba_str(mbarg->u.area)) != mbarg->u.area->u.str.size)
         {
           // string contains '\0'
           return -EINVAL;
         }
         do_free = 1;
-        realpathptr = realpath(mbarg->u.area->u.str.buf, NULL);
+        realpathptr = realpath(abce_mba_str(mbarg->u.area), NULL);
         if (realpathptr == NULL && errno == EINVAL)
         {
-          realpathptr = realpath(mbarg->u.area->u.str.buf, realpathbuf);
+          realpathptr = realpath(abce_mba_str(mbarg->u.area), realpathbuf);
           do_free = 0;
         }
 
