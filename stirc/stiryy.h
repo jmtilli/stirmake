@@ -346,7 +346,7 @@ static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbo
   if (ret != 0 && ret != -EEXIST)
   {
     printf("can't add symbol %s\n", symbol);
-    exit(1);
+    exit(2);
   }
   return retloc;
 }
@@ -809,7 +809,7 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
   else
   {
     printf("Pattern rule bases cannot contain @nil lists\n");
-    exit(1);
+    exit(2);
   }
 }
 

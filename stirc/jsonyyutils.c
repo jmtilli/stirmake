@@ -236,11 +236,11 @@ int jsonyynameparse(const char *fname, struct jsonyy *jsonyy)
     if (require)
     {
       fprintf(stderr, "File %s cannot be opened\n", fname);
-      exit(1);
+      exit(2);
     }
     if (jsonyy_postprocess(jsonyy) != 0)
     {
-      exit(1);
+      exit(2);
     }
 #endif
     return -ENOENT;
@@ -249,7 +249,7 @@ int jsonyynameparse(const char *fname, struct jsonyy *jsonyy)
 #if 0
   if (jsonyy_postprocess(jsonyy) != 0)
   {
-    exit(1);
+    exit(2);
   }
 #endif
   fclose(jsonyyfile);

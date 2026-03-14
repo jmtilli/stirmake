@@ -42,13 +42,13 @@ void stiryydomemparse(char *filedata, size_t filesize, struct stiryy *stiryy)
   if (myfile == NULL)
   {
     fprintf(stderr, "can't open memory file\n");
-    exit(1);
+    exit(2);
   }
   stiryydoparse(myfile, stiryy);
   if (fclose(myfile) != 0)
   {
     fprintf(stderr, "can't close memory file\n");
-    exit(1);
+    exit(2);
   }
 }
 
@@ -101,7 +101,7 @@ struct escaped_string yy_escape_string(char *orig)
       if (strlen(hexbuf) != 2 || *endptr != '\0')
       {
         fprintf(stderr, "Invalid string unicode escape: \\x%s\n", hexbuf);
-        exit(1);
+        exit(2);
       }
       i += 4;
     }
@@ -118,7 +118,7 @@ struct escaped_string yy_escape_string(char *orig)
       if (strlen(hexbuf) != 4 || *endptr != '\0')
       {
         fprintf(stderr, "Invalid string unicode escape: \\u%s\n", hexbuf);
-        exit(1);
+        exit(2);
       }
       if (unicode <= 0x7F)
       {
@@ -272,12 +272,12 @@ int stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
     if (require)
     {
       fprintf(stderr, "File %s cannot be opened\n", fname);
-      exit(1);
+      exit(2);
     }
 #if 0
     if (stiryy_postprocess(stiryy) != 0)
     {
-      exit(1);
+      exit(2);
     }
 #endif
     return -ENOENT;
@@ -286,7 +286,7 @@ int stiryynameparse(const char *fname, struct stiryy *stiryy, int require)
 #if 0
   if (stiryy_postprocess(stiryy) != 0)
   {
-    exit(1);
+    exit(2);
   }
 #endif
   fclose(stiryyfile);

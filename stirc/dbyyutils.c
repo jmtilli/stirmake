@@ -60,7 +60,7 @@ int dbyynameparse(const char *fname, struct dbyy *dbyy)
 #if 0
     if (dbyy_postprocess(dbyy) != 0)
     {
-      exit(1);
+      exit(2);
     }
 #endif
     return -ENOENT;
@@ -69,7 +69,7 @@ int dbyynameparse(const char *fname, struct dbyy *dbyy)
 #if 0
   if (dbyy_postprocess(dbyy) != 0)
   {
-    exit(1);
+    exit(2);
   }
 #endif
   fclose(dbyyfile);
