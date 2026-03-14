@@ -474,6 +474,7 @@ custom_assign:
       }
       printf("Additional information:\n");
       abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+      abce_opcode_dump(get_abce(amyplanyy)->err.opcode);
       amyplanyyerror(scanner, amyplanyy, "error in assignment");
       YYABORT;
     }
@@ -910,6 +911,7 @@ custom_rule:
       }
       printf("Additional information:\n");
       abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+      abce_opcode_dump(get_abce(amyplanyy)->err.opcode);
       stiryyerror(scanner, stiryy, "error in @call");
       YYABORT;
     }
@@ -1111,6 +1113,7 @@ custom_rule:
       }
       printf("Additional information:\n");
       abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+      abce_opcode_dump(get_abce(amyplanyy)->err.opcode);
       stiryyerror(scanner, stiryy, "error in @if");
       YYABORT;
     }
@@ -1218,6 +1221,7 @@ OPEN_PAREN expr CLOSE_PAREN NEWLINE
         }
         printf("Additional information:\n");
         abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+        abce_opcode_dump(get_abce(amyplanyy)->err.opcode);
         stiryyerror(scanner, stiryy, "error in @if");
         YYABORT;
       }
@@ -1473,6 +1477,7 @@ expr NEWLINE
         }
         printf("Additional information:\n");
         abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+        abce_opcode_dump(get_abce(amyplanyy)->err.opcode);
         amyplanyyerror(scanner, amyplanyy, "error in assignment");
         YYABORT;
       }
@@ -1559,6 +1564,7 @@ expr NEWLINE
         }
         printf("Additional information:\n");
         abce_mb_dump(&get_abce(amyplanyy)->err.mb);
+        abce_opcode_dump(get_abce(amyplanyy)->err.opcode);
         amyplanyyerror(scanner, amyplanyy, "error in += assignment");
         YYABORT;
       }

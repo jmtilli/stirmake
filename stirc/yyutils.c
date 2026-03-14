@@ -508,6 +508,7 @@ engine_stringlist(struct abce *abce,
     }
     printf("Additional information:\n");
     abce_mb_dump(&abce->err.mb);
+    abce_opcode_dump(abce->err.opcode);
     return -EINVAL;
   }
   if (abce_getmbptr(&mb, abce, 0) != 0)
