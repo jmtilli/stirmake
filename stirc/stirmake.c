@@ -6662,7 +6662,7 @@ int main(int argc, char **argv)
       if (merge_db())
       {
         fprintf(stderr, "stirmake: Cannot write stirmake database\n");
-        exit(1);
+        exit(2);
       }
       exit(0); // don't process first rule
     }
@@ -6843,7 +6843,7 @@ int main(int argc, char **argv)
   if (merge_db())
   {
     fprintf(stderr, "stirmake: Cannot write stirmake database\n");
-    exit(1);
+    exit(2);
   }
   clean_jobserver();
 #if 0
