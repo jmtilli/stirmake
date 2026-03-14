@@ -287,9 +287,9 @@ int jobserver_fd[2];
 
 int children = 0;
 
-void merge_db(void);
-void merge_db_v1(void);
-void merge_db_v2(void);
+int merge_db(void);
+int merge_db_v1(void);
+int merge_db_v2(void);
 void errxit(const char *fmt, ...);
 
 int cmd_equal(struct cmd *cmd1, struct cmd *cmd2)
@@ -565,7 +565,10 @@ void errxit(const char *fmt, ...)
   pid = waitpid(-1, &wstatus, WNOHANG);
   if (pid < 0 && errno == ECHILD)
   {
-    merge_db();
+    if (merge_db())
+    {
+      fprintf(stderr, "stirmake: Cannot write stirmake database\n");
+    }
     exit(2);
   }
   if (pid > 0)
@@ -653,7 +656,10 @@ void errxit(const char *fmt, ...)
       if (pid < 0 && errno == ECHILD)
       {
         fprintf(stderr, "stirmake: *** No children left. Exiting.\n");
-        merge_db();
+        if (merge_db())
+        {
+          fprintf(stderr, "stirmake: Cannot write stirmake database\n");
+        }
         exit(2);
       }
       printf("29.E\n");
@@ -4391,12 +4397,13 @@ void load_db(void)
   // This is necessitated by standard for a+ mode
 }
 
-void merge_db_v1(void)
+int merge_db_v1(void)
 {
   size_t i;
   struct linked_list_node *node;
   FILE *f;
   int firstrule = 1;
+  int ret;
   if (test)
   {
     return;
@@ -4491,16 +4498,26 @@ void merge_db_v1(void)
       fprintf(f, "\n");
     }
   }
-  fclose(f);
+  if (ferror(f))
+  {
+    fclose(f);
+    ret = -1;
+  }
+  else
+  {
+    ret = fclose(f);
+  }
   f = NULL;
   dbf = NULL;
+  return ret;
 }
-void merge_db_v2(void)
+int merge_db_v2(void)
 {
   size_t i;
   struct linked_list_node *node;
   FILE *f;
   int firstrule = 1;
+  int ret;
   if (test)
   {
     return;
@@ -4640,19 +4657,28 @@ void merge_db_v2(void)
     fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec);
     fprintf(f, "\n");
   }
-  fclose(f);
-  f = NULL;
-  dbf = NULL;
-}
-void merge_db(void)
-{
-  if (usetsdb)
+  if (ferror(f))
   {
-    merge_db_v2();
+    fclose(f);
+    ret = -1;
   }
   else
   {
-    merge_db_v1();
+    ret = fclose(f);
+  }
+  f = NULL;
+  dbf = NULL;
+  return ret;
+}
+int merge_db(void)
+{
+  if (usetsdb)
+  {
+    return merge_db_v2();
+  }
+  else
+  {
+    return merge_db_v1();
   }
 }
 
@@ -6602,8 +6628,12 @@ int main(int argc, char **argv)
     if (clean || cleanbinaries)
     {
       do_clean(fwd_path, clean, cleanbinaries);
-      merge_db();
       clean_jobserver();
+      if (merge_db())
+      {
+        fprintf(stderr, "stirmake: Cannot write stirmake database\n");
+        exit(1);
+      }
       exit(0); // don't process first rule
     }
     ruleremain_add(rules[ruleid_first]);
@@ -6780,7 +6810,11 @@ int main(int argc, char **argv)
     printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)(rule_cnt*sizeof(struct rule)));
     printf("  ruleid_by_pid: %zu %zu\n", (size_t)ruleid_by_pid_cnt, (size_t)(ruleid_by_pid_cnt*sizeof(struct ruleid_by_pid)));
   }
-  merge_db();
+  if (merge_db())
+  {
+    fprintf(stderr, "stirmake: Cannot write stirmake database\n");
+    exit(1);
+  }
   clean_jobserver();
 #if 0
   free(dupargv0);
