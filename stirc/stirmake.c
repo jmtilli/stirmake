@@ -4408,7 +4408,7 @@ int merge_db_v1(void)
   int ret;
   if (test)
   {
-    return;
+    return 0;
   }
   for (i = 0; i < rules_size; i++)
   {
@@ -4446,7 +4446,7 @@ int merge_db_v1(void)
     f = NULL;
     dbf = NULL;
     unlink(".stir.db");
-    return;
+    return 0;
   }
   /*
   f = fopen(".stir.db", "w");
@@ -4522,7 +4522,7 @@ int merge_db_v2(void)
   int ret;
   if (test)
   {
-    return;
+    return 0;
   }
   for (i = 0; i < rules_size; i++)
   {
@@ -4561,7 +4561,7 @@ int merge_db_v2(void)
     f = NULL;
     dbf = NULL;
     unlink(".stir.db");
-    return;
+    return 0;
   }
   /*
   f = fopen(".stir.db", "w");
