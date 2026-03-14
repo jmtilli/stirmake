@@ -2583,3 +2583,109 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
   }
   return ret;
 }
+
+void stir_opcode_dump(uint16_t opcode)
+{
+  switch (opcode)
+  {
+    case STIR_OPCODE_TOP_DIR:
+      printf("@dirup\n");
+      break;
+    case STIR_OPCODE_CUR_DIR_FROM_TOP:
+      printf("@dirdown\n");
+      break;
+    case STIR_OPCODE_TOP_DIR_ALL:
+      printf("@dirupall\n");
+      break;
+    case STIR_OPCODE_CUR_DIR_FROM_TOP_ALL:
+      printf("@dirdownall\n");
+      break;
+    case STIR_OPCODE_DEP_ADD:
+      printf("@adddeps\n");
+      break;
+    case STIR_OPCODE_RULE_ADD:
+      printf("@addrule\n");
+      break;
+    case STIR_OPCODE_SUFSUBALL:
+      printf("@sufsuball\n");
+      break;
+    case STIR_OPCODE_SUFSUBONE:
+      printf("@sufsubone\n");
+      break;
+    case STIR_OPCODE_SUFFILTER:
+      printf("@suffilter\n");
+      break;
+    case STIR_OPCODE_PRESUBALL:
+      printf("@presuball\n");
+      break;
+    case STIR_OPCODE_PRESUBONE:
+      printf("@presubone\n");
+      break;
+    case STIR_OPCODE_PREFILTER:
+      printf("@prefilter\n");
+      break;
+    case STIR_OPCODE_PATHSUFFIX:
+      printf("@pathsuffix\n");
+      break;
+    case STIR_OPCODE_PATHBASENAME:
+      printf("@pathbasename\n");
+      break;
+    case STIR_OPCODE_PATHDIR:
+      printf("@pathdir\n");
+      break;
+    case STIR_OPCODE_PATHNOTDIR:
+      printf("@pathnotdir\n");
+      break;
+    case STIR_OPCODE_PATHSIMPLIFY:
+      printf("@pathsimplify\n");
+      break;
+    case STIR_OPCODE_PATHSUFFIXALL:
+      printf("@pathsuffixall\n");
+      break;
+    case STIR_OPCODE_PATHBASENAMEALL:
+      printf("@pathbasenameall\n");
+      break;
+    case STIR_OPCODE_PATHDIRALL:
+      printf("@pathdirall\n");
+      break;
+    case STIR_OPCODE_PATHNOTDIRALL:
+      printf("@pathnotdirall\n");
+      break;
+    case STIR_OPCODE_PATHSIMPLIFYALL:
+      printf("@pathsimplifyall\n");
+      break;
+    case STIR_OPCODE_GLOB:
+      printf("@glob\n");
+      break;
+    case STIR_OPCODE_JSON_IN:
+      printf("@jsonin\n");
+      break;
+    case STIR_OPCODE_SUFFILTEROUT:
+      printf("@suffilterout\n");
+      break;
+    case STIR_OPCODE_PREFILTEROUT:
+      printf("@prefilterout\n");
+      break;
+    case STIR_OPCODE_SHELL_ESCAPE:
+      printf("Shell escaping\n");
+      break;
+    case STIR_OPCODE_ABSPATH:
+      printf("@abspath\n");
+      break;
+    case STIR_OPCODE_REGFILTER:
+      printf("@regfilter\n");
+      break;
+    case STIR_OPCODE_EREGFILTER:
+      printf("@eregfilter\n");
+      break;
+    case STIR_OPCODE_FILTER:
+      printf("@filter\n");
+      break;
+    case STIR_OPCODE_FILTEROUT:
+      printf("@filterout\n");
+      break;
+    default:
+      abce_opcode_dump(opcode);
+      break;
+  }
+}

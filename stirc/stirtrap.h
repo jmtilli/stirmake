@@ -25,4 +25,6 @@ enum {
   STIR_E_REGEXP_ERROR = 0x1012,
 };
 
+void stir_opcode_dump(uint16_t opcode);
+
 #endif

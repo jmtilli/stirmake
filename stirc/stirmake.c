@@ -1084,7 +1084,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         }
         printf("Additional information:\n");
         abce_mb_dump(&abce->err.mb);
-        abce_opcode_dump(abce->err.opcode);
+        stir_opcode_dump(abce->err.opcode);
         return NULL;
       }
       abce->dynscope = oldscope;
@@ -2664,7 +2664,7 @@ void calc_cmd(int ruleid)
 #endif
     fprintf(stderr, "Additional information for error:\n");
     abce_mb_dump(&abce.err.mb);
-    abce_opcode_dump(abce.err.opcode);
+    stir_opcode_dump(abce.err.opcode);
     errxit("evaluating shell commands for %s failed, error: %s",
            sttable[first_tgt->tgtidx].s, stir_err_to_str(abce.err.code));
   }
