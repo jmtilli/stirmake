@@ -711,7 +711,7 @@ char *st_make = "M";
 char *st_nomake = "NM";
 
 
-char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
+char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
 {
   size_t i, j, k;
   struct cmdsrc *cmdsrc = &rule->cmdsrc;
@@ -727,6 +727,8 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
   struct abce_mb oldscope = abce->dynscope; // no refup, it's in cache anyway
   size_t atidx, plusidx, baridx, hatidx, ltidx, staridx;
   int err = 0;
+
+  *info_printed = 0;
 
   atidx = cmdsrc_cache_add_str_nul(abce, "@", &err);
   plusidx = cmdsrc_cache_add_str_nul(abce, "+", &err);
@@ -1085,6 +1087,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule)
         printf("Additional information:\n");
         abce_mb_dump(&abce->err.mb);
         stir_opcode_dump(abce->err.opcode);
+        *info_printed = 1;
         return NULL;
       }
       abce->dynscope = oldscope;
@@ -2640,11 +2643,12 @@ void calc_cmd(int ruleid)
   struct rule *r = rules[ruleid];
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(r->tgtlist.node.next, struct stirtgt, llnode);
+  int info_printed = 0;
   if (r->cmd.args != NULL)
   {
     return;
   }
-  r->cmd.args = cmdsrc_eval(&abce, r);
+  r->cmd.args = cmdsrc_eval(&abce, r, &info_printed);
   if (r->cmd.args == NULL)
   {
 #if 0
@@ -2662,9 +2666,12 @@ void calc_cmd(int ruleid)
       }
     }
 #endif
-    fprintf(stderr, "Additional information for error:\n");
-    abce_mb_dump(&abce.err.mb);
-    stir_opcode_dump(abce.err.opcode);
+    if (!info_printed)
+    {
+      fprintf(stderr, "Additional information for error:\n");
+      abce_mb_dump(&abce.err.mb);
+      stir_opcode_dump(abce.err.opcode);
+    }
     errxit("evaluating shell commands for %s failed, error: %s",
            sttable[first_tgt->tgtidx].s, stir_err_to_str(abce.err.code));
   }
