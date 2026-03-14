@@ -5892,18 +5892,46 @@ int main(int argc, char **argv)
     }
     for (;;)
     {
+      struct stat sb;
       if (strcmp(curcwd, "/") == 0)
       {
         break;
       }
       if (chdir("..") != 0)
       {
+        printf("Can't chdir to ..\n");
         break;
       }
       if (getcwd(curcwd, sizeof(curcwd)) == NULL)
       {
         printf("can't getcwd\n");
         my_abort();
+      }
+      if (stat(".", &sb) != 0)
+      {
+        printf("Can't stat current directory\n");
+        break;
+      }
+      if (sb.st_mode & S_IWOTH)
+      {
+        if ((sb.st_mode & S_ISVTX) && access("Stirfile", R_OK) == 0)
+        {
+          if (stat("Stirfile", &sb) != 0)
+          {
+            printf("Encountered world-writable directory at %s, not considering it\n", curcwd);
+            break;
+          }
+          if (sb.st_uid != getuid())
+          {
+            printf("Encountered world-writable directory at %s, not considering it\n", curcwd);
+            break;
+          }
+        }
+        else
+        {
+          printf("Encountered world-writable directory at %s, not considering it\n", curcwd);
+          break;
+        }
       }
       curupcnt++;
       f = fopen("Stirfile", "r");
