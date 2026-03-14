@@ -5899,17 +5899,17 @@ int main(int argc, char **argv)
       }
       if (chdir("..") != 0)
       {
-        printf("Can't chdir to ..\n");
+        printf("stirmake: Can't change current directory to .. at %s\n", curcwd);
         break;
       }
       if (getcwd(curcwd, sizeof(curcwd)) == NULL)
       {
-        printf("can't getcwd\n");
+        printf("stirmake: Can't get name of current directory\n", curcwd);
         my_abort();
       }
       if (stat(".", &sb) != 0)
       {
-        printf("Can't stat current directory\n");
+        printf("stirmake: Can't stat current directory at %s\n", curcwd);
         break;
       }
       if (sb.st_mode & S_IWOTH)
@@ -5918,18 +5918,18 @@ int main(int argc, char **argv)
         {
           if (stat("Stirfile", &sb) != 0)
           {
-            printf("Encountered world-writable directory at %s, not considering it\n", curcwd);
+            printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
             break;
           }
           if (sb.st_uid != getuid())
           {
-            printf("Encountered world-writable directory at %s, not considering it\n", curcwd);
+            printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
             break;
           }
         }
         else
         {
-          printf("Encountered world-writable directory at %s, not considering it\n", curcwd);
+          printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
           break;
         }
       }
