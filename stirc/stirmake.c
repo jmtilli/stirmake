@@ -1705,6 +1705,13 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
   tret = snprintf(tbuf+toff, tlen-toff, "[%s, %s]", prefix, tgtname);
   if (tret < 0 || (size_t)tret >= tlen - toff)
   {
+    if (ret)
+    {
+      free(tbuf);
+      errxit("Unable to print command");
+      exit(2);
+      return NULL;
+    }
     _exit(1);
   }
   toff += tret;
@@ -1713,6 +1720,13 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
     tret = snprintf(tbuf+toff, tlen-toff, " %s", argiter_orig[i]);
     if (tret < 0 || (size_t)tret >= tlen - toff)
     {
+      if (ret)
+      {
+        free(tbuf);
+        errxit("Unable to print command");
+        exit(2);
+        return NULL;
+      }
       _exit(1);
     }
     toff += tret;
@@ -1720,6 +1734,13 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
   tret = snprintf(tbuf+toff, tlen-toff, "\n");
   if (tret < 0 || (size_t)tret >= tlen - toff)
   {
+    if (ret)
+    {
+      free(tbuf);
+      errxit("Unable to print command");
+      exit(2);
+      return NULL;
+    }
     _exit(1);
   }
   toff += tret;
@@ -2022,8 +2043,8 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
 
   if (chdir(dir) != 0)
   {
-    write(1, "CHDIRERR\n", 9);
-    _exit(1);
+    errxit("Unable to change directory");
+    exit(2);
   }
 
   do_makecmd(0, "touch", create_fd, create_make_fd, outpipewr, 1);
@@ -2328,8 +2349,8 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 
   if (chdir(dir) != 0)
   {
-    write(1, "CHDIRERR\n", 9);
-    _exit(1);
+    errxit("Unable to change directory");
+    exit(2);
   }
 
   do_makecmd(ismake, cmd, create_fd, create_make_fd, outpipewr, 1);
