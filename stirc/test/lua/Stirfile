@@ -16,6 +16,10 @@ $MORE = [3, 4, 5, {"a": 6}]
 
 %lua{
   print(Abce.getlexval("VALUE"))
+  print(Abce.setlexval("VALUE", 12121))
+  print(Abce.getdynval("VALUE"))
+  print(Abce.setdynval("VALUE", 12122))
+  print(Abce.getlexval("VALUE"))
   print(Abce.getlexval("MORE")[1])
   print(Abce.getlexval("MORE")[2])
   print(Abce.getlexval("MORE")[3])
