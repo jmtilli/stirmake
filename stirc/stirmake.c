@@ -5932,7 +5932,7 @@ int main(int argc, char **argv)
       }
       if (getcwd(curcwd, sizeof(curcwd)) == NULL)
       {
-        printf("stirmake: Can't get name of current directory\n", curcwd);
+        printf("stirmake: Can't get name of current directory\n");
         my_abort();
       }
       if (stat(".", &sb) != 0)
