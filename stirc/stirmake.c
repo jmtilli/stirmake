@@ -3440,6 +3440,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         cap = statbuf.st_mtim;
         cap_valid = 1;
       }
+      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
     }
     if (!cap_valid)
     {
@@ -3484,6 +3485,7 @@ void mark_executed(int ruleid, int was_actually_executed)
           print_indent();
           printf("utime %s won't move clock backwards!\n", sttable[e->tgtidx].s);
         }
+        tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
         continue;
       }
       utimeret = utimensat_both_emul(sttable[e->tgtidx].s, r->st_mtim, 0, 1);
@@ -3492,6 +3494,11 @@ void mark_executed(int ruleid, int was_actually_executed)
         print_indent();
         printf("utime %s succeeded? %d\n", sttable[e->tgtidx].s, (utimeret == 0));
       }
+      if (stat(sttable[e->tgtidx].s, &statbuf) != 0)
+      {
+        errxit("Can't stat %s", sttable[e->tgtidx].s);
+      }
+      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
     }
   }
   else if (!r->is_phony && !r->is_inc && !dry_run)
