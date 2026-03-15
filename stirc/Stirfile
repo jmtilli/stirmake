@@ -4,6 +4,8 @@
 @fileinclude @ignore "opts.smk"
 
 # You can modify these during compilation
+$(NO_MMAP) ?= @false
+
 $(CC) ?= @nil
 @if(@type($(CC)) == @type(@nil))
   $(CC) ``= ["sh", "-c", "echo $CC"]
@@ -96,6 +98,9 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @if($(WITH_LUA))
   $(CFLAGS) = [@$(CFLAGS), @$(LUAINCS), "-DWITH_LUA"]
   $(WITH_LUAMAKE) = ["WITH_LUA=yes"]
+@endif
+@if($(NO_MMAP))
+  $(CFLAGS) = [@$(CFLAGS), "-DABCE_NO_MMAP=1", "-DSTIR_NO_MMAP=1"]
 @endif
 
 @phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM) 'abce/all'
