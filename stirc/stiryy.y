@@ -347,6 +347,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token TOPLEVEL SUBFILE
 %token VERSION
 
+%token ACCESS
+
 %token ERROR_TOK
 
 %type<d> value
@@ -744,6 +746,10 @@ custom_expr0:
 | ABSPATH OPEN_PAREN expr CLOSE_PAREN
 {
   amyplanyy_add_byte(amyplanyy, STIR_OPCODE_ABSPATH);
+}
+| ACCESS OPEN_PAREN expr COMMA expr CLOSE_PAREN
+{
+  amyplanyy_add_byte(amyplanyy, STIR_OPCODE_ACCESS);
 }
 ;
 

@@ -226,6 +226,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@beginscope return BEGINSCOPE;
 <INITIAL,STRICT>@beginholeyscope return BEGINHOLEYSCOPE;
 <INITIAL,STRICT>@endscope return ENDSCOPE;
+<INITIAL,STRICT>@access return ACCESS;
 
 <INITIAL,STRICT>@dirup return DIRUP;
 <INITIAL,STRICT>@dirdown return DIRDOWN;

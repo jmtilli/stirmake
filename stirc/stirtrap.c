@@ -2575,6 +2575,59 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         }
         return 0;
       }
+    case STIR_OPCODE_ACCESS:
+      {
+        struct abce_mb *mbf;
+        struct abce_mb *mbmode;
+        int mode = F_OK;
+        GETMBSTRPTR(&mbf, -2);
+        GETMBSTRPTR(&mbmode, -1);
+        if (strcmp(abce_mba_str(mbmode->u.area), "r") == 0)
+        {
+          mode = R_OK;
+        }
+        else if (strcmp(abce_mba_str(mbmode->u.area), "w") == 0)
+        {
+          mode = W_OK;
+        }
+        else if (strcmp(abce_mba_str(mbmode->u.area), "x") == 0)
+        {
+          mode = X_OK;
+        }
+        else if (strcmp(abce_mba_str(mbmode->u.area), "f") == 0)
+        {
+          mode = F_OK;
+        }
+        else
+        {
+          abce->err.code = ABCE_E_INVALID_MODE;
+          abce_mb_errreplace_noinline(abce, mbmode);
+          return -EINVAL;
+        }
+        if (access(abce_mba_str(mbf->u.area), mode) == 0)
+        {
+          if (abce_cpush_boolean(abce, 1) != 0)
+          {
+            abce->err.code = ABCE_E_STACK_OVERFLOW;
+            abce->err.mb.typ = ABCE_T_N;
+            return -EOVERFLOW;
+          }
+          abce_npoppush(abce, 2, &abce->cstackbase[abce->csp-1]);
+          abce_cpop(abce);
+        }
+        else
+        {
+          if (abce_cpush_boolean(abce, 0) != 0)
+          {
+            abce->err.code = ABCE_E_STACK_OVERFLOW;
+            abce->err.mb.typ = ABCE_T_N;
+            return -EOVERFLOW;
+          }
+          abce_npoppush(abce, 2, &abce->cstackbase[abce->csp-1]);
+          abce_cpop(abce);
+        }
+        return 0;
+      }
     default:
       abce->err.code = ABCE_E_UNKNOWN_INSTRUCTION;
       abce->err.mb.typ = ABCE_T_D;
@@ -2683,6 +2736,9 @@ void stir_opcode_dump(uint16_t opcode)
       break;
     case STIR_OPCODE_FILTEROUT:
       printf("@filterout\n");
+      break;
+    case STIR_OPCODE_ACCESS:
+      printf("@access\n");
       break;
     default:
       abce_opcode_dump(opcode);
