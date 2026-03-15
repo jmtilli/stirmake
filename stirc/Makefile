@@ -50,6 +50,7 @@ wc:
 LUAINCS:=
 LUALIBS:=
 WITH_LUA?=no
+NO_MMAP?=no
 ifeq ($(WITH_LUA),yes)
   LUAINCS:=$(shell pkg-config --cflags luajit)
   LUALIBS:=$(shell pkg-config --libs luajit)
@@ -72,6 +73,9 @@ ifeq ($(WITH_LUA),yes)
   CFLAGS += $(LUAINCS) -DWITH_LUA
 else
   LUALIBS :=
+endif
+ifeq ($(NO_MMAP),yes)
+  CFLAGS += -DABCE_NO_MMAP=1 -DSTIR_NO_MMAP=1
 endif
 
 smka:
