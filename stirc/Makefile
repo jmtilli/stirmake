@@ -42,22 +42,26 @@ all: jsonyytest stir inc abce stirmake smka smkt smkp
 
 .PHONY: abce
 
-ifeq ($(WITH_LUA),yes)
-abce:
-	cd abce && $(MAKE) WITH_LUA=yes
-else
-abce:
-	cd abce && $(MAKE)
-endif
-
 wc:
 	wc -l $(LEX) $(YACC) $(SRC) $(filter-out %.lex.h %.tab.h git.h,$(wildcard *.h))
 
 #LUAINC:=/usr/include/lua5.3
 #LUALIB:=/usr/lib/x86_64-linux-gnu/liblua5.3.a
-LUAINC:=/usr/include/luajit-2.1
-LUALIB:=/usr/lib/x86_64-linux-gnu/libluajit-5.1.a
-WITH_LUA:=no
+LUAINCS:=
+LUALIBS:=
+WITH_LUA?=no
+ifeq ($(WITH_LUA),yes)
+  LUAINCS:=$(shell pkg-config --cflags luajit)
+  LUALIBS:=$(shell pkg-config --libs luajit)
+endif
+
+ifeq ($(WITH_LUA),yes)
+abce:
+	cd abce && $(MAKE) WITH_LUA=yes LUAINCS="$(LUAINCS)" LUALIBS="$(LUALIBS)"
+else
+abce:
+	cd abce && $(MAKE)
+endif
 
 #CC=gcc
 #CC=clang
@@ -65,9 +69,9 @@ CC?=cc
 CFLAGS?=-O3 -Wall -Wextra -Wno-unused-parameter -g
 
 ifeq ($(WITH_LUA),yes)
-  CFLAGS += -I$(LUAINC) -DWITH_LUA
+  CFLAGS += $(LUAINCS) -DWITH_LUA
 else
-  LUALIB :=
+  LUALIBS :=
 endif
 
 smka:
@@ -80,17 +84,17 @@ smkp:
 	rm -f smkp
 	ln -s stirmake smkp
 
-stirmake: stirmake.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm
+stirmake: stirmake.o libstirmake.a Makefile abce
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a $(LUALIBS) -lm
 
-stir: stir.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm
+stir: stir.o libstirmake.a Makefile abce
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a $(LUALIBS) -lm
 
-jsonyytest: jsonyytest.o libstirmake.a Makefile $(LUALIB) abce
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a -lm
+jsonyytest: jsonyytest.o libstirmake.a Makefile abce
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) abce/libabce.a $(filter %.a,$^) abce/libabce.a $(LUALIBS) -lm
 
-inc: inc.o libstirmake.a Makefile $(LUALIB)
-	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) -lm
+inc: inc.o libstirmake.a Makefile
+	$(CC) $(CCFLAGS) -o $@ $(filter %.o,$^) $(filter %.a,$^) $(LUALIBS) -lm
 
 libstirmake.a: $(OBJ_LIB) $(OBJGEN_LIB) Makefile
 	rm -f $@
