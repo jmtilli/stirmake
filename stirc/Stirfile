@@ -32,17 +32,27 @@ $(FLEX) ?= @nil
 @if(@type($(FLEX)) == @type(@nil))
   $(FLEX) ``= ["sh", "-c", "echo $FLEX"]
   @if($(FLEX)[] == 0)
+    $(WHICHFLEX) `= ["sh", "-c", "which flex || true"]
+    @if(@strcmp($(WHICHFLEX), "") == 0)
+      $(FLEX_AVAILABLE) ?= @false
+    @endif
     $(FLEX) = ["flex"]
   @endif
 @endif
+$(FLEX_AVAILABLE) ?= @true
 
 $(BYACC) ?= @nil
 @if(@type($(BYACC)) == @type(@nil))
   $(BYACC) ``= ["sh", "-c", "echo $BYACC"]
   @if($(BYACC)[] == 0)
+    $(WHICHBYACC) `= ["sh", "-c", "which byacc || true"]
+    @if(@strcmp($(WHICHBYACC), "") == 0)
+      $(BYACC_AVAILABLE) ?= @false
+    @endif
     $(BYACC) = ["byacc"]
   @endif
 @endif
+$(BYACC_AVAILABLE) ?= @true
 
 $(WITH_LUA) ?= @false
 $(LUAINCS) ?= @nil
@@ -183,10 +193,18 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 @endfunction
 @call $ADD_LEXX_YACC_DEPS($(LEX_LIB))
 
+@if($FLEX_AVAILABLE)
+
 @patrule: $(LEXGEN_LIB): '%.lex.c' '%.lex.h': '%.l'
 @	[@$(FLEX), "--outfile=".$@, "--header-file=".@sufsubone($@,".c",".h"), $<]
 
+@endif
+
+@if($BYACC_AVAILABLE)
+
 @patrule: $(YACCGEN_LIB): '%.tab.c' '%.tab.h': '%.y'
 @	[@$(BYACC), "-d", "-p", @sufsubone($@, ".tab.c", ""), "-b", @sufsubone($@, ".tab.c", ""), "-o", $@, $<]
+
+@endif
 
 @cdepincludes @autophony @autotarget @ignore [@$(DEP), @$(DEPGEN_LIB)]
