@@ -177,6 +177,7 @@ int silent = 0;
 int touchmode = 0;
 int indentlevel = 0;
 int do_trace = 0;
+int unsafe = 0;
 
 void print_indent(void)
 {
@@ -3800,7 +3801,7 @@ void usage(char *argv0)
   fprintf(stderr, "Usage:\n");
   if (isspecprog)
   {
-    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFP] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFPu] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command stirmake\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas stirmake takes\n");
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas stirmake takes\n");
@@ -3808,7 +3809,7 @@ void usage(char *argv0)
   }
   else
   {
-    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFP] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] -f Stirfile | -t | -p | -a [target...]\n", argv0);
+    fprintf(stderr, "%s [-vGdHhcbqikBnsTReEFPu] [-j jobcnt] [-l loadavg] [-W|-X|-o|-r file] [-O n|t|r] [-C dir] -f Stirfile | -t | -p | -a [target...]\n", argv0);
     fprintf(stderr, "  You can start %s as smka, smkt or smkp or use main command %s\n", argv0, argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -t | -p | -a whereas %s takes\n", argv0);
     fprintf(stderr, "  smka, smkt and smkp do not take -f Stirfile whereas %s takes\n", argv0);
@@ -5703,7 +5704,7 @@ int main(int argc, char **argv)
 #endif
 
   debug = 0;
-  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEFP")) != -1)
+  while ((opt = getopt(argc, argv, "vGdf:Htpaj:hcbO:qC:ikBW:X:no:r:sl:TReEFPu")) != -1)
   {
     switch (opt)
     {
@@ -5904,6 +5905,9 @@ int main(int argc, char **argv)
     case 'a':
       set_mode(MODE_ALL, 0, argv[0]);
       break;
+    case 'u':
+      unsafe = 1;
+      break;
     default:
     case '?':
     case 'h':
@@ -5968,7 +5972,7 @@ int main(int argc, char **argv)
         printf("stirmake: Can't stat current directory at %s\n", curcwd);
         break;
       }
-      if (sb.st_mode & S_IWOTH)
+      if ((sb.st_mode & S_IWOTH) && !unsafe)
       {
         if ((sb.st_mode & S_ISVTX) && access("Stirfile", R_OK) == 0)
         {
