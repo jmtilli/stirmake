@@ -36,6 +36,17 @@ export BYACC="${BYACC:-byacc}"
 export CC="${CC:-cc}"
 export CFLAGS="${CFLAGS:--O3 -Wall -Wextra -Wno-unused-parameter -g}"
 export LDFLAGS="${LDFLAGS:-}"
+export STIR_LUAINCS="${STIR_LUAINCS:-}"
+export STIR_LUALIBS="${STIR_LUALIBS:-}"
+
+if [ "$STIR_NO_MMAP" != "" -a "$STIR_NO_MMAP" != "0" ]; then
+  export CFLAGS="${CFLAGS} -DABCE_NO_MMAP=1 -DSTIR_NO_MMAP=1"
+fi
+if [ "$STIR_WITH_LUA" != "" -a "$STIR_WITH_LUA" != "0" ]; then
+  export STIR_LUAINCS="$(pkg-config --cflags luajit)"
+  export STIR_LUALIBS="$(pkg-config --libs luajit)"
+  export CFLAGS="${CFLAGS} ${STIR_LUAINCS} -DWITH_LUA"
+fi
 
 (cd abce; sh bootstrapnomake.sh) || die "abce"
 
@@ -78,7 +89,7 @@ done
 rm -f libstirmake.a
 ar rvs libstirmake.a $libobjs || die "ar"
 
-$CC $CFLAGS $LDFLAGS -o stirmake stirmake.o libstirmake.a abce/libabce.a -lm -ldl || die "cclink"
+$CC $CFLAGS $LDFLAGS -o stirmake stirmake.o libstirmake.a abce/libabce.a $STIR_LUALIBS -lm || die "cclink"
 
 rm -f smka
 rm -f smkt
