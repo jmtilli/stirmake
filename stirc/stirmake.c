@@ -5941,6 +5941,7 @@ int main(int argc, char **argv)
   if (!filename_set)
   {
     size_t curupcnt = 0;
+    int last_was_toplevel = 1; // default
     if (getcwd(cwd, sizeof(cwd)) == NULL)
     {
       my_abort();
@@ -5956,6 +5957,33 @@ int main(int argc, char **argv)
     if (getcwd(cwd_sameproj, sizeof(cwd_sameproj)) == NULL)
     {
       my_abort();
+    }
+    f = fopen("Stirfile", "r");
+    if (f)
+    {
+      abce_init_opts(&abce, 1);
+      abce_inited = 1;
+      abce.trap = stir_trap;
+      abce.trap_baton = &stirmain;
+      init_main_for_realpath(&stirmain, storcwd);
+      stirmain.abce = &abce;
+      stirmain.parsing = 1;
+      stirmain.trial = 1;
+      stirmain.freeform_token_seen = 1;
+      stiryy_init(&stiryy, &stirmain, ".", ".", abce.dynscope, curcwd, "Stirfile", 1);
+      stiryy.abort_early = 1; // for performance, just get toplevel indicator
+      stiryydoparse(f, &stiryy);
+      if (stiryy.indicator_seen)
+      {
+        last_was_toplevel = stiryy.was_toplevel;
+      }
+      fclose(f);
+      stiryy_free(&stiryy);
+      stiryy_main_free(&stirmain);
+      abce_free(&abce);
+      abce_inited = 0;
+      yy_stored_lineno = -1;
+      yy_stored_prefix = NULL;
     }
     for (;;)
     {
@@ -5979,7 +6007,7 @@ int main(int argc, char **argv)
         printf("stirmake: Can't stat current directory at %s\n", curcwd);
         break;
       }
-      if ((sb.st_mode & S_IWOTH) && !unsafe)
+      if ((sb.st_mode & S_IWOTH) && !unsafe && last_was_toplevel)
       {
         if ((sb.st_mode & S_ISVTX) && access("Stirfile", R_OK) == 0)
         {
@@ -6002,6 +6030,7 @@ int main(int argc, char **argv)
       if (f)
       {
         int ret;
+        last_was_toplevel = 1; // unless otherwise proven
         abce_init_opts(&abce, 1);
         abce_inited = 1;
         abce.trap = stir_trap;
@@ -6013,6 +6042,10 @@ int main(int argc, char **argv)
         stirmain.freeform_token_seen = 1;
         stiryy_init(&stiryy, &stirmain, ".", ".", abce.dynscope, curcwd, "Stirfile", 1);
         ret = stiryydoparse(f, &stiryy);
+        if (stiryy.indicator_seen)
+        {
+          last_was_toplevel = stiryy.was_toplevel;
+        }
         fclose(f);
         if (ret == 0 && stirmain.subdirseen)
         {

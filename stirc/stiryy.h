@@ -276,6 +276,9 @@ struct stiryy {
   struct abce_mb curscope;
   int sameproject;
   int expect_toplevel;
+  unsigned abort_early:1;
+  unsigned indicator_seen:1;
+  unsigned was_toplevel:1;
   const char *dirname;
   const char *filename;
   int do_emit;
@@ -309,6 +312,9 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *stirmain,
 {
   yy->main = stirmain;
   yy->sameproject = 1;
+  yy->abort_early = 0;
+  yy->indicator_seen = 0;
+  yy->was_toplevel = 0;
   //abce_init(&yy->abce);
   yy->ctx = NULL;
   yy->curprefix = strdup(prefix);

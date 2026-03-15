@@ -399,6 +399,8 @@ newlines:
 topmarker:
   TOPLEVEL
 {
+  stiryy->indicator_seen = 1;
+  stiryy->was_toplevel = 1;
   if (!stiryy->expect_toplevel)
   {
     if (!stiryy->main->trial)
@@ -407,15 +409,25 @@ topmarker:
     }
     YYABORT;
   }
+  if (stiryy->abort_early)
+  {
+    YYABORT;
+  }
 }
 | SUBFILE
 {
+  stiryy->indicator_seen = 1;
+  stiryy->was_toplevel = 0;
   if (stiryy->expect_toplevel)
   {
     if (!stiryy->main->trial)
     {
       recommend(scanner, stiryy, "Expected @toplevel, got @subfile. Exiting.\n");
     }
+    YYABORT;
+  }
+  if (stiryy->abort_early)
+  {
     YYABORT;
   }
 }
