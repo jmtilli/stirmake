@@ -93,6 +93,9 @@ void *stir_do_mmap_madvise(size_t bytes)
 {
   void *ptr;
   bytes = stir_topages(bytes);
+#if STIR_NO_MMAP
+  return malloc(bytes);
+#else
   // Ugh. I wish all systems had simple and compatible interface.
 #ifdef MAP_ANON
   #ifdef MAP_NORESERVE
@@ -146,10 +149,15 @@ void *stir_do_mmap_madvise(size_t bytes)
   {
     return NULL;
   }
+#endif
   return ptr;
 }
 
 void stir_do_munmap(void *ptr, size_t bytes)
 {
+#if STIR_NO_MMAP
+  free(ptr);
+#else
   munmap(ptr, stir_topages(bytes));
+#endif
 }
