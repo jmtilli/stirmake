@@ -5976,20 +5976,17 @@ int main(int argc, char **argv)
       {
         if ((sb.st_mode & S_ISVTX) && access("Stirfile", R_OK) == 0)
         {
-          if (stat("Stirfile", &sb) != 0)
+          if (stat("Stirfile", &sb) != 0 || sb.st_uid != getuid())
           {
             printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
-            break;
-          }
-          if (sb.st_uid != getuid())
-          {
-            printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
+            printf("stirmake: Hint: execute stirmake with -u to allow unsafe operation\n");
             break;
           }
         }
         else
         {
           printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
+          printf("stirmake: Hint: execute stirmake with -u to allow unsafe operation\n");
           break;
         }
       }
