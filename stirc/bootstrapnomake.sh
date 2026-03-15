@@ -6,6 +6,33 @@ die()
   exit 1
 }
 
+doflex()
+{
+  if [ -e "$1" -a -e "$2" ]; then
+    if which $FLEX > /dev/null; then
+      return 0
+    else
+      echo "No flex but targets exist"
+      return 1
+    fi
+  fi
+  return 0
+}
+dobyacc()
+{
+  if [ -e "$1" -a -e "$2" ]; then
+    if which $BYACC > /dev/null; then
+      return 0
+    else
+      echo "No byacc but targets exist"
+      return 1
+    fi
+  fi
+  return 0
+}
+
+export FLEX="${FLEX:-flex}"
+export BYACC="${BYACC:-byacc}"
 export CC="${CC:-cc}"
 export CFLAGS="${CFLAGS:--O3 -Wall -Wextra -Wno-unused-parameter -g}"
 export LDFLAGS="${LDFLAGS:-}"
@@ -28,11 +55,15 @@ fi
 
 for a in *.l; do
   base="`echo "$a"|sed 's/.l$//g'`"
-  flex --outfile="$base.lex.c" --header-file="$base.lex.h" "$a" || die "flex"
+  if doflex "$base.lex.c" "$base.lex.h"; then
+    $FLEX --outfile="$base.lex.c" --header-file="$base.lex.h" "$a" || die "flex"
+  fi
 done
 for a in *.y; do
   base="`echo "$a"|sed 's/.y$//g'`"
-  byacc -d -p "$base" -b "$base" -o "$base.tab.c" "$a" || die "byacc"
+  if dobyacc "$base.tab.c" "$base.tab.h"; then
+    $BYACC -d -p "$base" -b "$base" -o "$base.tab.c" "$a" || die "byacc"
+  fi
 done
 for a in *.c; do
   base="`echo "$a"|sed 's/.c$//g'`"
