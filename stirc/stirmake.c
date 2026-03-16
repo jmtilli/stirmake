@@ -2873,6 +2873,13 @@ int do_exec(int ruleid)
               }
             }
           }
+          if (usetsdb)
+          {
+            if (!tsszequal_db(e->nameidx, she->st_mtim, r->diridx, she->st_size, 0))
+            {
+              has_to_exec = 1;
+            }
+          }
           seen_nonphony = 1;
         }
         if (!S_ISLNK(she->st_mode))
@@ -3033,7 +3040,7 @@ int do_exec(int ruleid)
                   {
                     trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " tsdb mismatch of dependency '%s'", sttable[e->nameidx].s);
                   }
-                  has_to_exec = 1;
+                  //has_to_exec = 1;
                   continue;
                 }
               }
