@@ -3012,7 +3012,7 @@ int do_exec(int ruleid)
                 struct timespec st_rectim = rec_mtim(r, sttable[e->nameidx].s);
                 if (ts_cmp(st_mtimtgt, st_rectim) < 0)
                 {
-                  trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s'");
+                  trace_add_vprintf(&tracebuf, &tracebufcap, &tracebufsz, " '%s'", sttable[e->nameidx].s);
                 }
                 continue;
               }
