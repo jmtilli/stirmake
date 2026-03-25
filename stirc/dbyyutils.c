@@ -31,6 +31,7 @@ int dbyydoparse(FILE *filein, struct dbyy *dbyy)
   return 0;
 }
 
+#if STIR_NO_MEMPARSE
 int dbyydomemparse(char *filedata, size_t filesize, struct dbyy *dbyy)
 {
   FILE *myfile;
@@ -49,6 +50,7 @@ int dbyydomemparse(char *filedata, size_t filesize, struct dbyy *dbyy)
   }
   return ret;
 }
+#endif
 
 int dbyynameparse(const char *fname, struct dbyy *dbyy)
 {

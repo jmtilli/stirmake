@@ -46,6 +46,7 @@ void incyydoparse(FILE *filein, struct incyy *incyy)
   }
 }
 
+#if STIR_NO_MEMPARSE
 void incyydomemparse(char *filedata, size_t filesize, struct incyy *incyy)
 {
   FILE *myfile;
@@ -62,6 +63,7 @@ void incyydomemparse(char *filedata, size_t filesize, struct incyy *incyy)
     exit(2);
   }
 }
+#endif
 
 void incyynameparse(const char *fname, struct incyy *incyy, int require)
 {

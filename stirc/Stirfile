@@ -5,6 +5,7 @@
 
 # You can modify these during compilation
 $(NO_MMAP) ?= @false
+$(NO_MEMPARSE) ?= @false
 
 $(CC) ?= @nil
 @if(@type($(CC)) == @type(@nil))
@@ -101,6 +102,9 @@ $(PROG) = @sufsuball($(SRC_PROG), ".c", "")
 @endif
 @if($(NO_MMAP))
   $(CFLAGS) = [@$(CFLAGS), "-DABCE_NO_MMAP=1", "-DSTIR_NO_MMAP=1"]
+@endif
+@if($(NO_MEMPARSE))
+  $(CFLAGS) = [@$(CFLAGS), "-DSTIR_NO_MEMPARSE=1"]
 @endif
 
 @phonyrule: 'all': $(PROG) 'abce/libabce.a' $(SYM) 'abce/all'

@@ -35,6 +35,7 @@ int stiryydoparse(FILE *filein, struct stiryy *stiryy)
   return 0;
 }
 
+#if STIR_NO_MEMPARSE
 void stiryydomemparse(char *filedata, size_t filesize, struct stiryy *stiryy)
 {
   FILE *myfile;
@@ -51,6 +52,7 @@ void stiryydomemparse(char *filedata, size_t filesize, struct stiryy *stiryy)
     exit(2);
   }
 }
+#endif
 
 static void *memdup(const void *mem, size_t sz)
 {

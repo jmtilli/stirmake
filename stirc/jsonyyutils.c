@@ -48,6 +48,7 @@ int jsonyydoparse(FILE *filein, struct jsonyy *jsonyy)
   return 0;
 }
 
+#if STIR_NO_MEMPARSE
 int jsonyydomemparse(char *filedata, size_t filesize, struct jsonyy *jsonyy)
 {
   FILE *myfile;
@@ -64,6 +65,7 @@ int jsonyydomemparse(char *filedata, size_t filesize, struct jsonyy *jsonyy)
   }
   return ret;
 }
+#endif
 
 static void *memdup(const void *mem, size_t sz)
 {

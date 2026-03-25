@@ -19,7 +19,9 @@ engine_stringlist(struct abce *abce,
 
 int stiryydoparse(FILE *filein, struct stiryy *stiryy);
 
+#if STIR_NO_MEMPARSE
 void stiryydomemparse(char *filedata, size_t filesize, struct stiryy *stiryy);
+#endif
 
 int stiryynameparse(const char *fname, struct stiryy *stiryy, int require);
 

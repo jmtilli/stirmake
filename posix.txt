@@ -3,10 +3,13 @@ stirmake requires certain non-POSIX operations:
 - potential benefit from MAP_NORESERVE argument to mmap()
 - potential benefit from MADV_DONTNEED / MADV_FREE and madvise()
 - massive benefit from overcommitting memory and lazy demand paging
+- can be compiled without mmap() using compile options
 
 on systems that have it, posix_spawn is used; as a fallback, fork+exec is
 used
 - generally, posix_spawn performs 2-8% better at least on Linux
+
+fmemopen() is required unless STIR_NO_MEMPARSE set
 
 stirmake uses obsolete setitimer() as opposed to the newer POSIX timer API
 - OpenBSD would probably not support the newer POSIX timer API

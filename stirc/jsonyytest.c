@@ -11,9 +11,11 @@ int main(int argc, char **argv)
 "}\n"
 ;
   abce_init(&abce);
+#if STIR_NO_MEMPARSE
   if (jsonyydomemparse(json, strlen(json), &jsonyy) != 0)
   {
     printf("Parsing failure\n");
   }
+#endif
   return 0;
 }

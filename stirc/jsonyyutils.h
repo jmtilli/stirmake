@@ -11,7 +11,9 @@ extern "C" {
 
 int jsonyydoparse(FILE *filein, struct jsonyy *jsonyy);
 
+#if STIR_NO_MEMPARSE
 int jsonyydomemparse(char *filedata, size_t filesize, struct jsonyy *jsonyy);
+#endif
 
 int jsonyynameparse(const char *fname, struct jsonyy *jsonyy);
 

@@ -51,6 +51,7 @@ LUAINCS:=
 LUALIBS:=
 WITH_LUA?=no
 NO_MMAP?=no
+NO_MEMPARSE?=no
 ifeq ($(WITH_LUA),yes)
   LUAINCS:=$(shell pkg-config --cflags luajit)
   LUALIBS:=$(shell pkg-config --libs luajit)
@@ -76,6 +77,9 @@ else
 endif
 ifeq ($(NO_MMAP),yes)
   CFLAGS += -DABCE_NO_MMAP=1 -DSTIR_NO_MMAP=1
+endif
+ifeq ($(NO_MEMPARSE),yes)
+  CFLAGS += -DSTIR_NO_MEMPARSE=1
 endif
 
 smka:
