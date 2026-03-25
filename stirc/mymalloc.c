@@ -92,10 +92,10 @@ int my_malloc_init(void)
 void *stir_do_mmap_madvise(size_t bytes)
 {
   void *ptr;
-  bytes = stir_topages(bytes);
 #if STIR_NO_MMAP
   return malloc(bytes);
 #else
+  bytes = stir_topages(bytes);
   // Ugh. I wish all systems had simple and compatible interface.
 #ifdef MAP_ANON
   #ifdef MAP_NORESERVE

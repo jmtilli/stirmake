@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if STIR_NO_MMAP
+#else
 static inline size_t stir_topages(size_t limit)
 {
   long pagesz = sysconf(_SC_PAGE_SIZE);
@@ -17,6 +19,7 @@ static inline size_t stir_topages(size_t limit)
   actlimit = pages * pagesz;
   return actlimit;
 }
+#endif
 
 void *my_malloc(size_t sz);
 void my_free(void *ptr);

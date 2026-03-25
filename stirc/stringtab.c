@@ -40,6 +40,9 @@ void st_grow(void)
 
 void st_compact(void)
 {
+#if STIR_NO_MMAP
+  // We can't munmap since it would free() partial malloc(), not permitted
+#else
   char *ptr2;
   int errno_save;
   size_t bytes_total, bytes_in_use;
@@ -48,12 +51,9 @@ void st_compact(void)
   ptr2 = (void*)sttable;
   ptr2 += bytes_in_use;
   errno_save = errno;
-#if STIR_NO_MMAP
-  // We can't munmap since it would free() partial malloc(), not permitted
-#else
   stir_do_munmap(ptr2, bytes_total - bytes_in_use);
-#endif
   errno = errno_save;
+#endif
   // don't report errors
 }
 
