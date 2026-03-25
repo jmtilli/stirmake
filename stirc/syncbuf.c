@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/mman.h>
 #include "linkedlist.h"
 #include "syncbuf.h"
