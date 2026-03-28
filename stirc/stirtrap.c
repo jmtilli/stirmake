@@ -14,6 +14,7 @@
 #include "stiryy.h"
 #include "jsonyyutils.h"
 #include "stircommon.h"
+#include "pathmax.h"
 
 void *my_malloc(size_t sz);
 void *my_strdup(const char *str);

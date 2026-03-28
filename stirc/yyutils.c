@@ -6,6 +6,7 @@
 #include <errno.h>
 #include "stiryy.h"
 #include "yyutils.h"
+#include "pathmax.h"
 
 typedef void *yyscan_t;
 extern int stiryyparse(yyscan_t scanner, struct stiryy *stiryy);

@@ -30,6 +30,7 @@
 #include "stirutils.h"
 #include "statcache.h"
 #include "db.h"
+#include "pathmax.h"
 #ifdef __linux__
   #ifdef __GLIBC__
     #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 25)

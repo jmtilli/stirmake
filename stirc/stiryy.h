@@ -16,6 +16,7 @@
 #include "abce/abce.h"
 #include "canon.h"
 #include "stirtrap.h"
+#include "pathmax.h"
 #include "abce/abcescopes.h"
 
 #ifdef __cplusplus
@@ -288,20 +289,37 @@ struct stiryy {
 
 static inline void init_main_for_realpath(struct stiryy_main *stirmain, char *cwd)
 {
+  char *res;
   char buf2[PATH_MAX+16];
-  char buf3[PATH_MAX+16];
+  size_t cap3;
+  int do_free = 1;
+  char *buf3;
   memset(stirmain, 0, sizeof(*stirmain));
-  if (realpath(cwd, buf2) == NULL)
+  errno = EINVAL + 1;
+  res = realpath(cwd, NULL);
+  if (res == NULL && errno == EINVAL)
+  {
+    res = realpath(cwd, buf2);
+    do_free = 0;
+  }
+  if (res == NULL)
   {
     my_abort();
   }
-  if (snprintf(buf3, sizeof(buf3), "%s/Stirfile", buf2) >= (int)sizeof(buf3))
+  cap3 = strlen(buf2) + strlen("/Stirfile") + 1;
+  buf3 = malloc(cap3);
+  if (snprintf(buf3, cap3, "%s/Stirfile", buf2) >= (int)cap3)
   {
     my_abort();
   }
   stirmain->realpathname = canon(buf3);
   stirmain->subdirseen = 0;
   stirmain->rule_in_progress = 0;
+  free(buf3);
+  if (do_free)
+  {
+    free(res);
+  }
 }
 
 static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *stirmain,
