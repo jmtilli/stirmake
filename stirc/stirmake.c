@@ -4741,9 +4741,24 @@ void create_pipe(int jobcnt)
   int i;
   if (create_jobserver_fifo)
   {
-    char tmp[] = "/tmp/SMfifoXXXXXX.YYYYYY";
+    const char *tmpdir = "/tmp";
+    char *tmp;
+    size_t tmpcap;
     int fd;
-    snprintf(tmp, sizeof(tmp), "/tmp/SMfifoXXXXXX");
+    if (getenv("TMPDIR") && *getenv("TMPDIR"))
+    {
+      tmpdir = getenv("TMPDIR");
+    }
+    tmpcap = strlen(tmpdir)+strlen("/SMfifoXXXXXX")+6+1;
+    tmp = malloc(tmpcap);
+    if (tmpdir[strlen(tmpdir)-1] == '/')
+    {
+      snprintf(tmp, tmpcap, "%sSMfifoXXXXXX", tmpdir);
+    }
+    else
+    {
+      snprintf(tmp, tmpcap, "%s/SMfifoXXXXXX", tmpdir);
+    }
     fd = mkstemp(tmp);
     if (fd < 0)
     {
@@ -4754,13 +4769,14 @@ void create_pipe(int jobcnt)
     close(fd);
     unlink(tmp);
     // Add more randomness since an attacker may have seen the file name
-    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), sizeof(tmp)-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
     jobserver_fifo = strdup(tmp);
+    free(tmp);
     if (mkfifo(jobserver_fifo, 0600) != 0)
     {
       printf("stirmake: FIFO didn't work, trying something else instead\n");
