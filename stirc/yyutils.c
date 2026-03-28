@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include <errno.h>
+#include <unistd.h>
 #include "stiryy.h"
 #include "yyutils.h"
 #include "pathmax.h"
@@ -345,7 +346,12 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
     my_abort();
   }
   errno = EINVAL + 1;
+#if _POSIX_VERSION >= 200809
   rp = realpath(filename, NULL);
+#else
+  rp = NULL;
+  errno = EINVAL;
+#endif
   if (rp == NULL && errno == EINVAL)
   {
     rp = realpath(filename, realpathname);

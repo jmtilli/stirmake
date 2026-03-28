@@ -296,7 +296,12 @@ static inline void init_main_for_realpath(struct stiryy_main *stirmain, char *cw
   char *buf3;
   memset(stirmain, 0, sizeof(*stirmain));
   errno = EINVAL + 1;
+#if _POSIX_VERSION >= 200809
   res = realpath(cwd, NULL);
+#else
+  res = NULL;
+  errno = EINVAL;
+#endif
   if (res == NULL && errno == EINVAL)
   {
     res = realpath(cwd, buf2);

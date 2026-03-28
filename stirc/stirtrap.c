@@ -2544,7 +2544,12 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           return -EINVAL;
         }
         do_free = 1;
+#if _POSIX_VERSION >= 200809
         realpathptr = realpath(abce_mba_str(mbarg->u.area), NULL);
+#else
+        realpathptr = NULL;
+        errno = EINVAL;
+#endif
         if (realpathptr == NULL && errno == EINVAL)
         {
           realpathptr = realpath(abce_mba_str(mbarg->u.area), realpathbuf);
