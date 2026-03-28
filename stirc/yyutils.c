@@ -310,6 +310,7 @@ int stiryydirparse(
   free(copy);
   res = stiryynameparse(pathbuf, stiryy, require);
   free(pathbuf);
+  return res;
 }
 
 int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const char *scopevarname)

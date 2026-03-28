@@ -263,9 +263,15 @@ int jsonyydirparse(
 {
   const char *dir;
   char *copy = strdup(argv0);
-  char pathbuf[PATH_MAX];
+  size_t pathcap;
+  char *pathbuf;
+  int res;
   dir = dirname(copy); // NB: not for multi-threaded operation!
-  snprintf(pathbuf, sizeof(pathbuf), "%s/%s", dir, fname);
+  pathcap = strlen(dir)+strlen(fname)+2;
+  pathbuf = malloc(pathcap);
+  snprintf(pathbuf, pathcap, "%s/%s", dir, fname);
   free(copy);
-  return jsonyynameparse(pathbuf, jsonyy);
+  res = jsonyynameparse(pathbuf, jsonyy);
+  free(pathbuf);
+  return res;
 }

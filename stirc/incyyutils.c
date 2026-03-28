@@ -99,9 +99,13 @@ void incyydirparse(
 {
   const char *dir;
   char *copy = strdup(argv0);
-  char pathbuf[PATH_MAX];
+  size_t pathcap;
+  char *pathbuf;
   dir = dirname(copy); // NB: not for multi-threaded operation!
-  snprintf(pathbuf, sizeof(pathbuf), "%s/%s", dir, fname);
+  pathcap = strlen(dir)+strlen(fname)+2;
+  pathbuf = malloc(pathcap);
+  snprintf(pathbuf, pathcap, "%s/%s", dir, fname);
   free(copy);
   incyynameparse(pathbuf, incyy, require);
+  free(pathbuf);
 }
