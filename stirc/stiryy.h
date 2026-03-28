@@ -306,9 +306,9 @@ static inline void init_main_for_realpath(struct stiryy_main *stirmain, char *cw
   {
     my_abort();
   }
-  cap3 = strlen(buf2) + strlen("/Stirfile") + 1;
+  cap3 = strlen(res) + strlen("/Stirfile") + 1;
   buf3 = malloc(cap3);
-  if (snprintf(buf3, cap3, "%s/Stirfile", buf2) >= (int)cap3)
+  if (snprintf(buf3, cap3, "%s/Stirfile", res) >= (int)cap3)
   {
     my_abort();
   }
