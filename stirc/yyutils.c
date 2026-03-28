@@ -326,6 +326,8 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
   char realpathname[PATH_MAX];
   char *prefix2, *projprefix2;
   int ret;
+  int do_free = 1;
+  char *rp;
   FILE *f;
   struct abce_mb oldscope;
   struct abce_mb *mbs = NULL, *mbsc = NULL;
@@ -342,18 +344,29 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
   {
     my_abort();
   }
-  if (realpath(filename, realpathname) == NULL)
+  errno = EINVAL + 1;
+  rp = realpath(filename, NULL);
+  if (rp == NULL && errno == EINVAL)
+  {
+    rp = realpath(filename, realpathname);
+    do_free = 0;
+  }
+  if (rp == NULL)
   {
     printf("path %s does not exist\n", filename);
     return -ENOENT;
   }
-  if (strcmp(realpathname, stiryy->main->realpathname) == 0)
+  if (strcmp(rp, stiryy->main->realpathname) == 0)
   {
     stiryy->main->subdirseen = 1;
     if (noproj && stiryy->sameproject)
     {
       stiryy->main->subdirseen_sameproject = 1;
     }
+  }
+  if (do_free)
+  {
+    free(rp);
   }
   prefix2 = canon(prefix);
   projprefix2 = canon(projprefix);
