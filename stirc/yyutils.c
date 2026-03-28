@@ -300,11 +300,16 @@ int stiryydirparse(
 {
   const char *dir;
   char *copy = strdup(argv0);
-  char pathbuf[PATH_MAX];
+  char *pathbuf;
+  size_t pathcap;
+  int res;
   dir = dirname(copy); // NB: not for multi-threaded operation!
-  snprintf(pathbuf, sizeof(pathbuf), "%s/%s", dir, fname);
+  pathcap = strlen(dir)+strlen(fname)+2;
+  pathbuf = malloc(pathcap);
+  snprintf(pathbuf, pathcap, "%s/%s", dir, fname);
   free(copy);
-  return stiryynameparse(pathbuf, stiryy, require);
+  res = stiryynameparse(pathbuf, stiryy, require);
+  free(pathbuf);
 }
 
 int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const char *scopevarname)
