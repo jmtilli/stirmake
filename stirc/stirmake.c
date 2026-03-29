@@ -5435,10 +5435,14 @@ int main(int argc, char **argv)
   int jobcnt = 1;
   int cleanbinaries = 0;
   int clean = 0;
-  char cwd[PATH_MAX];
-  char cwd_sameproj[PATH_MAX];
-  char storcwd[PATH_MAX];
-  char curcwd[PATH_MAX];
+  size_t cwdcap = PATH_MAX+1;
+  size_t cwd_sameprojcap = PATH_MAX+1;
+  size_t storcwdcap = PATH_MAX+1;
+  size_t curcwdcap = PATH_MAX+1;
+  char *cwd;
+  char *cwd_sameproj;
+  char *storcwd;
+  char *curcwd;
   size_t upcnt = 0;
   size_t upcnt_sameproj = 0;
   char *fwd_path = ".";
@@ -5450,6 +5454,15 @@ int main(int argc, char **argv)
 
   char *dupargv0 = strdup(argv[0]);
   char *basenm = basename(dupargv0);
+
+  cwd = malloc(cwdcap);
+  cwd_sameproj = malloc(cwd_sameprojcap);
+  storcwd = malloc(storcwdcap);
+  curcwd = malloc(curcwdcap);
+  cwd[0] = '\0';
+  cwd_sameproj[0] = '\0';
+  storcwd[0] = '\0';
+  curcwd[0] = '\0';
 
   statcache_init();
 
@@ -5978,19 +5991,40 @@ int main(int argc, char **argv)
   {
     size_t curupcnt = 0;
     int last_was_toplevel = 1; // default
-    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    char *ptr;
+    while ((ptr = getcwd(cwd, cwdcap)) == NULL && errno == ERANGE)
+    {
+      cwdcap *= 2;
+      cwd = realloc(cwd, cwdcap);
+    }
+    if (ptr == NULL)
     {
       my_abort();
     }
-    if (getcwd(storcwd, sizeof(storcwd)) == NULL)
+    while ((ptr = getcwd(storcwd, storcwdcap)) == NULL && errno == ERANGE)
+    {
+      storcwdcap *= 2;
+      storcwd = realloc(storcwd, storcwdcap);
+    }
+    if (ptr == NULL)
     {
       my_abort();
     }
-    if (getcwd(curcwd, sizeof(curcwd)) == NULL)
+    while ((ptr = getcwd(curcwd, curcwdcap)) == NULL && errno == ERANGE)
+    {
+      curcwdcap *= 2;
+      curcwd = realloc(curcwd, curcwdcap);
+    }
+    if (ptr == NULL)
     {
       my_abort();
     }
-    if (getcwd(cwd_sameproj, sizeof(cwd_sameproj)) == NULL)
+    while ((ptr = getcwd(cwd_sameproj, cwd_sameprojcap)) == NULL && errno == ERANGE)
+    {
+      cwd_sameprojcap *= 2;
+      cwd_sameproj = realloc(cwd_sameproj, cwd_sameprojcap);
+    }
+    if (ptr == NULL)
     {
       my_abort();
     }
@@ -6024,6 +6058,7 @@ int main(int argc, char **argv)
     for (;;)
     {
       struct stat sb;
+      char *ptr;
       if (strcmp(curcwd, "/") == 0)
       {
         break;
@@ -6033,7 +6068,12 @@ int main(int argc, char **argv)
         printf("stirmake: Can't change current directory to .. at %s\n", curcwd);
         break;
       }
-      if (getcwd(curcwd, sizeof(curcwd)) == NULL)
+      while ((ptr = getcwd(curcwd, curcwdcap)) == NULL && errno == ERANGE)
+      {
+        curcwdcap *= 2;
+        curcwd = realloc(curcwd, curcwdcap);
+      }
+      if (ptr == NULL)
       {
         printf("stirmake: Can't get name of current directory\n");
         my_abort();
@@ -6086,7 +6126,12 @@ int main(int argc, char **argv)
         if (ret == 0 && stirmain.subdirseen)
         {
           upcnt = curupcnt;
-          if (snprintf(cwd, sizeof(cwd), "%s", curcwd) >= (int)sizeof(cwd))
+          if (curcwdcap > cwdcap)
+          {
+            cwdcap = curcwdcap;
+            cwd = realloc(cwd, cwdcap);
+          }
+          if (snprintf(cwd, cwdcap, "%s", curcwd) >= (int)cwdcap)
           {
             printf("can't snprintf\n");
             my_abort();
@@ -6095,8 +6140,13 @@ int main(int argc, char **argv)
         if (ret == 0 && stirmain.subdirseen_sameproject)
         {
           upcnt_sameproj = curupcnt;
-          if (snprintf(cwd_sameproj, sizeof(cwd_sameproj), "%s", curcwd)
-              >= (int)sizeof(cwd_sameproj))
+          if (curcwdcap > cwd_sameprojcap)
+          {
+            cwd_sameprojcap = curcwdcap;
+            cwd_sameproj = realloc(cwd_sameproj, cwd_sameprojcap);
+          }
+          if (snprintf(cwd_sameproj, cwd_sameprojcap, "%s", curcwd)
+              >= (int)cwd_sameprojcap)
           {
             printf("can't snprintf\n");
             my_abort();
