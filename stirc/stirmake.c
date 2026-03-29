@@ -174,6 +174,10 @@ int create_jobserver_fifo = 0; // OS detection
 #endif
 int created_jobserver_fifo = 0;
 
+#if defined(__APPLE__) || defined(__NetBSD__)
+#define st_mtim st_mtimespec
+#endif
+
 int silent = 0;
 int touchmode = 0;
 int indentlevel = 0;
