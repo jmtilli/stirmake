@@ -5,7 +5,7 @@ stirmake requires certain non-POSIX operations:
 - massive benefit from overcommitting memory and lazy demand paging
 - can be compiled without mmap() using compile options
 
-stirmake requires mkstemp+fchdir+strdup and st_mtim in statbuf from POSIX 2008
+stirmake requires mkstemp and fchdir from POSIX 2008
 
 on systems that have it, posix_spawn is used; as a fallback, fork+exec is
 used
