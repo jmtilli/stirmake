@@ -2483,13 +2483,10 @@ struct timespec rec_mtim(struct rule *r, const char *name)
   {
     struct dirent *de = readdir(dir);
     struct timespec cur;
-    char nam2[PATH_MAX + 1] = {0}; // RFE avoid large static recursive allocs?
-    //std::string nam2(name);
-    if (snprintf(nam2, sizeof(nam2), "%s", name) >= (int)sizeof(nam2))
-    {
-      errxit("Pathname too long");
-      my_abort();
-    }
+    size_t oldlen;
+    size_t namcap;
+    char *nam2;
+    int found_rectgt = 0;
     if (de == NULL)
     {
       break;
@@ -2498,9 +2495,16 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     {
       continue;
     }
-    size_t oldlen = strlen(nam2);
-    if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
-                 "/%s", de->d_name) >= (int)(sizeof(nam2)-oldlen))
+    namcap = strlen(name) + 1 + strlen(de->d_name) + 1;
+    nam2 = malloc(namcap);
+    if (snprintf(nam2, namcap, "%s", name) >= (int)namcap)
+    {
+      errxit("Pathname too long");
+      my_abort();
+    }
+    oldlen = strlen(nam2);
+    if (snprintf(nam2+oldlen, namcap-oldlen,
+                 "/%s", de->d_name) >= (int)(namcap-oldlen))
     {
       errxit("Pathname too long");
       my_abort();
@@ -2528,7 +2532,6 @@ struct timespec rec_mtim(struct rule *r, const char *name)
         cur = statbuf.st_mtim;
       }
     }
-    int found_rectgt = 0;
     if (r->is_rectgt)
     {
       mysize_t stidx = stringtab_get(nam2);
@@ -2554,6 +2557,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
         max = cur;
       }
     }
+    free(nam2);
   }
   closedir(dir);
   return max;
@@ -2572,13 +2576,9 @@ void reccap_mtim(const char *name, struct timespec cap)
   for (;;)
   {
     struct dirent *de = readdir(dir);
-    char nam2[PATH_MAX + 1] = {0}; // RFE avoid large static recursive allocs?
-    //std::string nam2(name);
-    if (snprintf(nam2, sizeof(nam2), "%s", name) >= (int)sizeof(nam2))
-    {
-      errxit("Pathname too long");
-      my_abort();
-    }
+    size_t namcap;
+    size_t oldlen;
+    char *nam2;
     if (de == NULL)
     {
       break;
@@ -2587,9 +2587,16 @@ void reccap_mtim(const char *name, struct timespec cap)
     {
       continue;
     }
-    size_t oldlen = strlen(nam2);
-    if (snprintf(nam2+oldlen, sizeof(nam2)-oldlen,
-                 "/%s", de->d_name) >= (int)(sizeof(nam2)-oldlen))
+    namcap = strlen(name) + 1 + strlen(de->d_name) + 1;
+    nam2 = malloc(namcap);
+    if (snprintf(nam2, namcap, "%s", name) >= (int)namcap)
+    {
+      errxit("Pathname too long");
+      my_abort();
+    }
+    oldlen = strlen(nam2);
+    if (snprintf(nam2+oldlen, namcap-oldlen,
+                 "/%s", de->d_name) >= (int)(namcap-oldlen))
     {
       errxit("Pathname too long");
       my_abort();
@@ -2638,6 +2645,7 @@ void reccap_mtim(const char *name, struct timespec cap)
     {
       reccap_mtim(nam2, cap);
     }
+    free(nam2);
   }
   closedir(dir);
 
@@ -6173,25 +6181,32 @@ int main(int argc, char **argv)
   if (pretend != NULL)
   {
     struct pretend *iter = pretend;
-    char pathbuf[PATH_MAX+1];
+    size_t pathcap;
+    char *pathbuf;
     while (iter != NULL)
     {
       if (iter->relative)
       {
-        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", this_path, iter->fname) >= (int)sizeof(pathbuf))
+        pathcap = strlen(this_path)+1+strlen(iter->fname)+1;
+        pathbuf = malloc(pathcap);
+        if (snprintf(pathbuf, pathcap, "%s/%s", this_path, iter->fname) >= (int)pathcap)
         {
           errxit("too long pathname to pretend: %s", iter->fname);
         }
         iter->fname = canon(pathbuf);
+        free(pathbuf);
         iter->relative = 0;
       }
       else
       {
-        if (snprintf(pathbuf, sizeof(pathbuf), "%s/%s", fwd_path, iter->fname) >= (int)sizeof(pathbuf))
+        pathcap = strlen(fwd_path)+1+strlen(iter->fname)+1;
+        pathbuf = malloc(pathcap);
+        if (snprintf(pathbuf, pathcap, "%s/%s", fwd_path, iter->fname) >= (int)pathcap)
         {
           errxit("too long pathname to pretend: %s", iter->fname);
         }
         iter->fname = canon(pathbuf);
+        free(pathbuf);
       }
       iter = iter->next;
     }
