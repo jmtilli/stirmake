@@ -32,7 +32,7 @@ int dbyydoparse(FILE *filein, struct dbyy *dbyy)
   return 0;
 }
 
-#if STIR_NO_MEMPARSE
+#if !STIR_NO_MEMPARSE
 int dbyydomemparse(char *filedata, size_t filesize, struct dbyy *dbyy)
 {
   FILE *myfile;
