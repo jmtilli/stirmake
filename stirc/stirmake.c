@@ -174,19 +174,27 @@ int create_jobserver_fifo = 0; // OS detection
 #endif
 int created_jobserver_fifo = 0;
 
+static inline struct timespec mtim_from_statbuf(struct stat *sb)
+{
+#define st_mtim_posix st_mtim
 #if defined(__APPLE__) || defined(__NetBSD__)
-#define st_mtim st_mtimespec
+#undef st_mtim_posix
+#define st_mtim_posix st_mtimespec
 #endif
 #ifdef __FreeBSD__
 #if __FreeBSD_version < 1000000
-#define st_mtim st_mtimespec
+#undef st_mtim_posix
+#define st_mtim_posix st_mtimespec
 #endif
 #endif
 #ifdef __OpenBSD__
 #if OpenBSD < 200905 // This means OpenBSD 4.5 according to some strange logic
-#define st_mtim st_mtimespec
+#undef st_mtim_posix
+#define st_mtim_posix st_mtimespec
 #endif
 #endif
+  return sb->st_mtim_posix;
+}
 
 int silent = 0;
 int touchmode = 0;
@@ -2480,15 +2488,15 @@ struct timespec rec_mtim(struct rule *r, const char *name)
     errxit("can't open file %s", name);
     exit(2);
   }
-  max = statbuf.st_mtim;
+  max = mtim_from_statbuf(&statbuf);
   if (lstat(name, &statbuf) != 0)
   {
     errxit("can't open file %s", name);
     exit(2);
   }
-  if (ts_cmp(statbuf.st_mtim, max) > 0)
+  if (ts_cmp(mtim_from_statbuf(&statbuf), max) > 0)
   {
-    max = statbuf.st_mtim;
+    max = mtim_from_statbuf(&statbuf);
   }
   if (dir == NULL)
   {
@@ -2537,15 +2545,15 @@ struct timespec rec_mtim(struct rule *r, const char *name)
         errxit("can't open file %s", nam2);
         exit(2);
       }
-      cur = statbuf.st_mtim;
+      cur = mtim_from_statbuf(&statbuf);
       if (lstat(nam2, &statbuf) != 0)
       {
         errxit("can't open file %s", nam2);
         exit(2);
       }
-      if (ts_cmp(statbuf.st_mtim, cur) > 0)
+      if (ts_cmp(mtim_from_statbuf(&statbuf), cur) > 0)
       {
-        cur = statbuf.st_mtim;
+        cur = mtim_from_statbuf(&statbuf);
       }
     }
     if (r->is_rectgt)
@@ -2629,7 +2637,7 @@ void reccap_mtim(const char *name, struct timespec cap)
         errxit("can't open file %s", nam2);
         exit(2);
       }
-      if (ts_cmp(statbuf.st_mtim, cap) > 0)
+      if (ts_cmp(mtim_from_statbuf(&statbuf), cap) > 0)
       {
         utimensat_both_emul(nam2, cap, 0, 0);
       }
@@ -2638,7 +2646,7 @@ void reccap_mtim(const char *name, struct timespec cap)
         errxit("can't open file %s", nam2);
         exit(2);
       }
-      if (ts_cmp(statbuf.st_mtim, cap) > 0)
+      if (ts_cmp(mtim_from_statbuf(&statbuf), cap) > 0)
       {
         utimensat_both_emul(nam2, cap, 1, 0);
       }
@@ -2670,7 +2678,7 @@ void reccap_mtim(const char *name, struct timespec cap)
     errxit("can't open file %s", name);
     exit(2);
   }
-  if (ts_cmp(statbuf.st_mtim, cap) > 0)
+  if (ts_cmp(mtim_from_statbuf(&statbuf), cap) > 0)
   {
     utimensat_both_emul(name, cap, 0, 0);
   }
@@ -2679,7 +2687,7 @@ void reccap_mtim(const char *name, struct timespec cap)
     errxit("can't open file %s", name);
     exit(2);
   }
-  if (ts_cmp(statbuf.st_mtim, cap) > 0)
+  if (ts_cmp(mtim_from_statbuf(&statbuf), cap) > 0)
   {
     utimensat_both_emul(name, cap, 1, 0);
   }
@@ -2936,11 +2944,11 @@ int do_exec(int ruleid)
         }
         if (!e->is_orderonly)
         {
-          if (!seen_nonphony || ts_cmp(statbuf.st_mtim, st_mtim) > 0)
+          if (!seen_nonphony || ts_cmp(mtim_from_statbuf(&statbuf), st_mtim) > 0)
           {
             if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
             {
-              st_mtim = statbuf.st_mtim;
+              st_mtim = mtim_from_statbuf(&statbuf);
             }
             else
             {
@@ -3089,7 +3097,7 @@ int do_exec(int ruleid)
               {
                 continue;
               }
-              if (ts_cmp(st_mtimtgt, statbuf.st_mtim) < 0)
+              if (ts_cmp(st_mtimtgt, mtim_from_statbuf(&statbuf)) < 0)
               {
                 if (!ispretend(sttable[e->nameidx].s, PRETEND_VERY_OLD_NO_REMAKE))
                 {
@@ -3141,7 +3149,7 @@ int do_exec(int ruleid)
         }
         if (usetsdb && !S_ISDIR(statbuf.st_mode))
         {
-          if (!tsszequal_db(e->tgtidx, statbuf.st_mtim, r->diridx, statbuf.st_size, 1))
+          if (!tsszequal_db(e->tgtidx, mtim_from_statbuf(&statbuf), r->diridx, statbuf.st_size, 1))
           {
             if (do_trace)
             {
@@ -3462,21 +3470,21 @@ void mark_executed(int ruleid, int was_actually_executed)
       {
         errxit("Can't stat %s", sttable[e->tgtidx].s);
       }
-      if (!cap_valid || ts_cmp(statbuf.st_mtim, cap) < 0)
+      if (!cap_valid || ts_cmp(mtim_from_statbuf(&statbuf), cap) < 0)
       {
-        cap = statbuf.st_mtim;
+        cap = mtim_from_statbuf(&statbuf);
         cap_valid = 1;
       }
       if (lstat(sttable[e->tgtidx].s, &statbuf) != 0)
       {
         errxit("Can't lstat %s", sttable[e->tgtidx].s);
       }
-      if (!cap_valid || ts_cmp(statbuf.st_mtim, cap) < 0)
+      if (!cap_valid || ts_cmp(mtim_from_statbuf(&statbuf), cap) < 0)
       {
-        cap = statbuf.st_mtim;
+        cap = mtim_from_statbuf(&statbuf);
         cap_valid = 1;
       }
-      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
+      tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
     }
     if (!cap_valid)
     {
@@ -3514,14 +3522,14 @@ void mark_executed(int ruleid, int was_actually_executed)
       {
         errxit("Can't stat %s", sttable[e->tgtidx].s);
       }
-      if (ts_cmp(r->st_mtim, statbuf.st_mtim) <= 0)
+      if (ts_cmp(r->st_mtim, mtim_from_statbuf(&statbuf)) <= 0)
       {
         if (debug)
         {
           print_indent();
           printf("utime %s won't move clock backwards!\n", sttable[e->tgtidx].s);
         }
-        tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
+        tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
         continue;
       }
       utimeret = utimensat_both_emul(sttable[e->tgtidx].s, r->st_mtim, 0, 1);
@@ -3534,7 +3542,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       {
         errxit("Can't stat %s", sttable[e->tgtidx].s);
       }
-      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
+      tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
     }
   }
   else if (!r->is_phony && !r->is_inc && !dry_run)
@@ -3561,7 +3569,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target %s was not created by rule", sttable[e->tgtidx].s);
       }
-      if (r->st_mtim_valid && ts_cmp(statbuf.st_mtim, r->st_mtim) < 0 && !seen_pretend && !r->is_maybe)
+      if (r->st_mtim_valid && ts_cmp(mtim_from_statbuf(&statbuf), r->st_mtim) < 0 && !seen_pretend && !r->is_maybe)
       {
         fprintf(stderr, "stirmake: *** Target %s was not updated by rule.\n",
                sttable[e->tgtidx].s);
@@ -3570,7 +3578,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target %s was not updated by rule", sttable[e->tgtidx].s);
       }
-      tsszstoretarget(&tsdb, e->tgtidx, statbuf.st_mtim, statbuf.st_size);
+      tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
     }
   }
   LINKED_LIST_FOR_EACH(node, &r->deplist)
