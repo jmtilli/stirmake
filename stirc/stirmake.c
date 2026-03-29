@@ -177,6 +177,16 @@ int created_jobserver_fifo = 0;
 #if defined(__APPLE__) || defined(__NetBSD__)
 #define st_mtim st_mtimespec
 #endif
+#ifdef __FreeBSD__
+#if __FreeBSD_version < 1000000
+#define st_mtim st_mtimespec
+#endif
+#endif
+#ifdef __OpenBSD__
+#if OpenBSD < 200905 // This means OpenBSD 4.5 according to some strange logic
+#define st_mtim st_mtimespec
+#endif
+#endif
 
 int silent = 0;
 int touchmode = 0;
