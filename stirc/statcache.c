@@ -1,6 +1,7 @@
 #include "statcache.h"
 #include "mymalloc.h"
 #include "stircommon.h"
+#include "stirutils.h"
 #include "stringtab.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -176,7 +177,7 @@ struct stathashentry *lstat_cached(mysize_t nameidx)
   if (ret == 0)
   {
     e->st_mode = statbuf.st_mode;
-    e->st_mtim = statbuf.st_mtim;
+    e->st_mtim = mtim_from_statbuf(&statbuf);
     e->st_size = statbuf.st_size;
   }
   else

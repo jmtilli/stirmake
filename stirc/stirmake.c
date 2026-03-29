@@ -174,43 +174,6 @@ int create_jobserver_fifo = 0; // OS detection
 #endif
 int created_jobserver_fifo = 0;
 
-static inline struct timespec mtim_from_statbuf(struct stat *sb)
-{
-#define st_mtim_posix st_mtim
-#if defined(__APPLE__) || defined(__NetBSD__)
-#undef st_mtim_posix
-#define st_mtim_posix st_mtimespec
-#ifndef st_mtime
-#define st_mtime st_mtimespec.tv_sec
-#endif
-#endif
-#ifdef __FreeBSD__
-#if __FreeBSD_version < 1000000
-#undef st_mtim_posix
-#define st_mtim_posix st_mtimespec
-#ifndef st_mtime
-#define st_mtime st_mtimespec.tv_sec
-#endif
-#endif
-#endif
-#ifdef __OpenBSD__
-#if OpenBSD < 200905 // This means OpenBSD 4.5 according to some strange logic
-#undef st_mtim_posix
-#define st_mtim_posix st_mtimespec
-#ifndef st_mtime
-#define st_mtime st_mtimespec.tv_sec
-#endif
-#endif
-#endif
-#ifdef st_mtime
-  return sb->st_mtim_posix;
-#else
-  struct timespec ts;
-  ts.tv_nsec = 0;
-  ts.tv_sec = sb->st_mtime;
-#endif
-}
-
 int silent = 0;
 int touchmode = 0;
 int indentlevel = 0;

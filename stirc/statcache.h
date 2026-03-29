@@ -7,6 +7,7 @@
 #include "abce/abcerbtree.h"
 #include "stiryy.h"
 #include "const.h"
+#include <time.h>
 // Just in case something could define st_mtim into something different,
 // we include these 3 headers in all files that access the token st_mtim
 #include <sys/types.h>
