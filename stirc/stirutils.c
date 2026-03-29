@@ -26,6 +26,11 @@
 #ifdef __linux__
 #include <sys/sysinfo.h>
 #define HAS_UTIMENSAT 1
+#ifdef _POSIX_C_SOURCE
+#if _POSIX_C_SOURCE < 200809L
+#undef HAS_UTIMENSAT
+#endif
+#endif
 #endif
 #ifdef __APPLE__
 #include <sys/sysctl.h>
