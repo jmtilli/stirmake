@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include "dbyy.h"
+#include "stirutils.h"
 #include "dbyyutils.h"
 
 typedef void *yyscan_t;
@@ -82,7 +83,7 @@ int dbyydirparse(
   const char *argv0, const char *fname, struct dbyy *dbyy)
 {
   const char *dir;
-  char *copy = strdup(argv0);
+  char *copy = stir_strdup(argv0);
   size_t pathcap;
   char *pathbuf;
   int res;

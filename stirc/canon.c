@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "canon.h"
+#include "stirutils.h"
 
 void my_abort(void);
 
@@ -191,12 +192,12 @@ char *neighpath(const char *path, const char *file)
   size_t pathlen;
   if (file[0] == '/' || strcmp(path, ".") == 0)
   {
-    return strdup(file);
+    return stir_strdup(file);
   }
   pathlen = strlen(path);
   if (strncmp(path, file, pathlen) == 0 && file[pathlen] == '/')
   {
-    return strdup(file+pathlen+1);
+    return stir_strdup(file+pathlen+1);
   }
   filecanon = canon(file);
   if (filecanon == NULL)

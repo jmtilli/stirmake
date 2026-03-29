@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "jsonyy.h"
+#include "stirutils.h"
 #include "jsonyyutils.h"
 
 typedef void *yyscan_t;
@@ -262,7 +263,7 @@ int jsonyydirparse(
   const char *argv0, const char *fname, struct jsonyy *jsonyy)
 {
   const char *dir;
-  char *copy = strdup(argv0);
+  char *copy = stir_strdup(argv0);
   size_t pathcap;
   char *pathbuf;
   int res;

@@ -4214,7 +4214,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     LINKED_LIST_FOR_EACH(node2, &rules[i]->tgtlist)
     {
       struct stirtgt *tgt = ABCE_CONTAINER_OF(node2, struct stirtgt, llnode);
-      char *oldname = strdup(sttable[tgt->tgtidx].s);
+      char *oldname = stir_strdup(sttable[tgt->tgtidx].s);
       char *name;
       mysize_t stidx;
       int ruleid;
@@ -4786,7 +4786,7 @@ void create_pipe(int jobcnt)
     snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
     snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
     snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    jobserver_fifo = strdup(tmp);
+    jobserver_fifo = stir_strdup(tmp);
     free(tmp);
     if (mkfifo(jobserver_fifo, 0600) != 0)
     {
@@ -5454,7 +5454,7 @@ int main(int argc, char **argv)
   char *outsyncmflag = NULL;
   struct linked_list_node *node;
 
-  char *dupargv0 = strdup(argv[0]);
+  char *dupargv0 = stir_strdup(argv[0]);
   char *basenm = basename(dupargv0);
 
   cwd = malloc(cwdcap);

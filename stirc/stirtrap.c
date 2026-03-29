@@ -10,6 +10,7 @@
 #include "abce/abcetrees.h"
 #include "stiropcodes.h"
 #include "stirtrap.h"
+#include "stirutils.h"
 #include "canon.h"
 #include "stiryy.h"
 #include "jsonyyutils.h"
@@ -813,10 +814,10 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       my_abort();
     }
     can = canon(nam);
-    yytgts[i].name = strdup(can);
+    yytgts[i].name = stir_strdup(can);
     free(nam);
     free(can);
-    yytgts[i].namenodir = strdup(abce_mba_str(mbstr->u.area));
+    yytgts[i].namenodir = stir_strdup(abce_mba_str(mbstr->u.area));
     yytgts[i].suffix = NULL; // FIXME what should be given?
     yytgts[i].is_dist = 0;
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
@@ -843,10 +844,10 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       my_abort();
     }
     can = canon(nam);
-    yydeps[i].name = strdup(can);
+    yydeps[i].name = stir_strdup(can);
     free(can);
     free(nam);
-    yydeps[i].namenodir = strdup(abce_mba_str(mbstr->u.area));
+    yydeps[i].namenodir = stir_strdup(abce_mba_str(mbstr->u.area));
     yydeps[i].suffix = NULL; // FIXME what should be given?
     yydeps[i].rec = 0;
     yydeps[i].orderonly = 0;
@@ -941,7 +942,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
                  * sizeof(*yyshells[i].u.cmds[j]));
         for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
         {
-          yyshells[i].u.cmds[j][k] = strdup(
+          yyshells[i].u.cmds[j][k] = stir_strdup(
             abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area));
         }
         yyshells[i].u.cmds[j][attr1->u.area->u.ar.mbs[j].u.area->u.ar.size] =
@@ -968,7 +969,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
         malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
-        yyshells[i].u.args[j] = strdup(
+        yyshells[i].u.args[j] = stir_strdup(
           abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area));
       }
       yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
@@ -979,7 +980,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     .itemsz = shellsz, .itemcapacity = shellsz, .items = yyshells
   };
 
-  char *prefix_ugh = strdup(prefix); // RFE make add_rule_yy take const char*
+  char *prefix_ugh = stir_strdup(prefix); // RFE make add_rule_yy take const char*
   errcod = 0;
   abce->err.code = ABCE_E_NONE;
   if (attr_sanity(&attrstruct) != 0)

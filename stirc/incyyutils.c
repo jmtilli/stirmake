@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include "incyy.h"
+#include "stirutils.h"
 #include "incyyutils.h"
 
 typedef void *yyscan_t;
@@ -98,7 +99,7 @@ void incyydirparse(
   const char *argv0, const char *fname, struct incyy *incyy, int require)
 {
   const char *dir;
-  char *copy = strdup(argv0);
+  char *copy = stir_strdup(argv0);
   size_t pathcap;
   char *pathbuf;
   dir = dirname(copy); // NB: not for multi-threaded operation!

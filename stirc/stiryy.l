@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "yyutils.h"
+#include "stirutils.h"
 #include "stiryy.tab.h"
 
 /*
@@ -299,40 +300,40 @@ struct CSnippet luaSnippet = {
 
 
 <INITIAL,STRICT>[$]^ {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$][+] {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$][|] {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$]< {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$]@ {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$][*] {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$][A-Za-z0-9_]+ {
-  yylval->s = strdup(yytext+1);
+  yylval->s = stir_strdup(yytext+1);
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$][(][A-Za-z0-9_]+[)] {
-  yylval->s = strdup(yytext+2);
+  yylval->s = stir_strdup(yytext+2);
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
 <INITIAL,STRICT>[$][{][A-Za-z0-9_]+[}] {
-  yylval->s = strdup(yytext+2);
+  yylval->s = stir_strdup(yytext+2);
   yylval->s[strlen(yylval->s)-1] = '\0';
   return VARREF_LITERAL;
 }
@@ -350,7 +351,7 @@ struct CSnippet luaSnippet = {
    * file names. The solution for the user is to type (6)/(2) or
    * 6 / 2 or anything else. Very similar to the ">>" problem in C++.
    */
-  yylval->s = strdup(yytext);
+  yylval->s = stir_strdup(yytext);
   return FREEFORM_TOKEN;
 }
 
@@ -384,7 +385,7 @@ struct CSnippet luaSnippet = {
 }
 <SHELL>[^\n]+(\\\n[^\n]*)* {
   size_t len, idx;
-  yylval->s = strdup(yytext);
+  yylval->s = stir_strdup(yytext);
   len = strlen(yylval->s);
   yycolumn = 2;
   for (idx = 0; idx < len; idx++)
@@ -411,7 +412,7 @@ struct CSnippet luaSnippet = {
 }
 <INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
 <INITIAL,STRICT>.            return ERROR_TOK;
-<INITIAL,STRICT>@[A-Za-z][A-Za-z0-9]* { yylval->s = strdup(yytext); return FUTURE_BUILTIN; }
+<INITIAL,STRICT>@[A-Za-z][A-Za-z0-9]* { yylval->s = stir_strdup(yytext); return FUTURE_BUILTIN; }
 
 
 %%

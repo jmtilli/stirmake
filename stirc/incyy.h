@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include "canon.h"
+#include "stirutils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,8 +68,8 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
     rule->depsnodir = (char**)realloc(rule->depsnodir, sizeof(*rule->depsnodir)*newcapacity);
     rule->depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz] = strdup(can);
-  rule->depsnodir[rule->depsz] = strdup(dep);
+  rule->deps[rule->depsz] = stir_strdup(can);
+  rule->depsnodir[rule->depsz] = stir_strdup(dep);
   rule->depsz++;
   free(can);
 }
@@ -103,7 +104,7 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
     rule->targets = (char**)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
     rule->targetcapacity = newcapacity;
   }
-  rule->targets[rule->targetsz++] = strdup(can);
+  rule->targets[rule->targetsz++] = stir_strdup(can);
   free(can);
 }
 

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "stiryy.h"
 #include "yyutils.h"
+#include "stirutils.h"
 #include "pathmax.h"
 
 typedef void *yyscan_t;
@@ -301,7 +302,7 @@ int stiryydirparse(
   const char *argv0, const char *fname, struct stiryy *stiryy, int require)
 {
   const char *dir;
-  char *copy = strdup(argv0);
+  char *copy = stir_strdup(argv0);
   char *pathbuf;
   size_t pathcap;
   int res;
@@ -380,7 +381,7 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
   {
     // replace projprefix2
     free(projprefix2);
-    projprefix2 = strdup(".");
+    projprefix2 = stir_strdup(".");
   }
   oldscope = stiryy->main->abce->dynscope;
   oldscopeidx = oldscope.u.area->u.sc.locidx;
@@ -553,7 +554,7 @@ engine_stringlist(struct abce *abce,
     }
     *strsz = 1;
     *strs = malloc(sizeof(**strs) * (*strsz));
-    (*strs)[0] = strdup(abce_mba_str(mb->u.area));
+    (*strs)[0] = stir_strdup(abce_mba_str(mb->u.area));
   }
   else if (mb->typ == ABCE_T_A)
   {
@@ -580,7 +581,7 @@ engine_stringlist(struct abce *abce,
         (*strs)[i] = NULL;
         continue;
       }
-      (*strs)[i] = strdup(abce_mba_str(mb->u.area->u.ar.mbs[i].u.area));
+      (*strs)[i] = stir_strdup(abce_mba_str(mb->u.area->u.ar.mbs[i].u.area));
     }
   }
   else
