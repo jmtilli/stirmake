@@ -1969,12 +1969,13 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     fcntl(outpiperd, F_SETFD, fcntl(outpiperd, F_GETFD) | FD_CLOEXEC);
   }
 
-  fdcurdir = open(".", O_RDONLY|O_CLOEXEC);
+  fdcurdir = open(".", O_RDONLY);
   if (fdcurdir < 0)
   {
     errxit("can't open current directory");
     exit(2);
   }
+  fcntl(fdcurdir, F_SETFD, fcntl(fdcurdir, F_GETFD) | FD_CLOEXEC);
 
 #ifdef HAVE_POSIX_SPAWN
   ret = posix_spawn_file_actions_init(&file_actions);
@@ -2210,12 +2211,13 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   ismake = (strcmp(args[2], st_make) == 0);
   cmd = args[3];
 
-  fdcurdir = open(".", O_RDONLY|O_CLOEXEC);
+  fdcurdir = open(".", O_RDONLY);
   if (fdcurdir < 0)
   {
     errxit("can't open current directory");
     exit(2);
   }
+  fcntl(fdcurdir, F_SETFD, fcntl(fdcurdir, F_GETFD) | FD_CLOEXEC);
 
 #ifdef HAVE_POSIX_SPAWN
   ret = posix_spawn_file_actions_init(&file_actions);
