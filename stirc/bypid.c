@@ -1,5 +1,7 @@
 #include "bypid.h"
 #include "mymalloc.h"
+#include <sys/types.h>
+#include <signal.h>
 
 struct abce_rb_tree_nocmp ruleid_by_pid[RULEID_BY_PID_SIZE];
 struct abce_rb_tree_nocmp ruleid_by_pid_fd[RULEID_BY_PID_SIZE];
