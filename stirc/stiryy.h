@@ -36,6 +36,24 @@ struct escaped_string {
   char *str;
 };
 
+struct stiryy_both {
+  int i;
+  char *s;
+};
+struct stiryy_tokenoptstmp {
+  uint8_t has_i:1;
+  uint8_t has_prio:1;
+  int prio;
+};
+struct stiryy_tokenopts {
+  uint8_t i:1;
+  int prio;
+};
+struct stiryy_dflags {
+  double d;
+  unsigned flags;
+};
+
 struct CSnippet {
   char *data;
   size_t len;
@@ -153,6 +171,18 @@ static inline void csaddstr(struct CSnippet *cs, char *str)
   cs->data[cs->len] = '\0';
 }
 
+struct cmdsrcfunarg {
+  size_t funidx;
+  size_t argidx;
+};
+
+union cmdsrcunion {
+  struct cmdsrcfunarg funarg;
+  size_t locidx;
+  char **args; // NULL-terminated list
+  char ***cmds; // NULL-terminated list of NULL-terminated lists
+};
+
 struct cmdsrcitem {
   unsigned merge:1;
   unsigned iscode:1;
@@ -162,15 +192,7 @@ struct cmdsrcitem {
   unsigned ismake:1;
   size_t sz; // for args
   size_t capacity; // for args
-  union {
-    struct {
-      size_t funidx;
-      size_t argidx;
-    } funarg;
-    size_t locidx;
-    char **args; // NULL-terminated list
-    char ***cmds; // NULL-terminated list of NULL-terminated lists
-  } u;
+  union cmdsrcunion u;
 };
 
 struct cmdsrc {

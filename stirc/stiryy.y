@@ -156,23 +156,10 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
   double d;
   char *s;
   struct escaped_string str;
-  struct {
-    int i;
-    char *s;
-  } both;
-  struct {
-    uint8_t has_i:1;
-    uint8_t has_prio:1;
-    int prio;
-  } tokenoptstmp;
-  struct {
-    uint8_t i:1;
-    int prio;
-  } tokenopts;
-  struct {
-    double d;
-    unsigned flags;
-  } dflags;
+  struct stiryy_both both;
+  struct stiryy_tokenoptstmp tokenoptstmp;
+  struct stiryy_tokenopts tokenopts;
+  struct stiryy_dflags dflags;
 }
 
 /*
