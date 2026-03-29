@@ -2548,7 +2548,7 @@ struct timespec rec_mtim(struct rule *r, const char *name)
       //printf("nam2 file new %s\n", nam2);
       max = cur;
     }
-    if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
+    if (S_ISDIR(statbuf.st_mode))
     {
       cur = rec_mtim(r, nam2);
       if (ts_cmp(cur, max) > 0)
@@ -2641,7 +2641,7 @@ void reccap_mtim(const char *name, struct timespec cap)
       }
     }
 #endif
-    if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
+    if (S_ISDIR(statbuf.st_mode))
     {
       reccap_mtim(nam2, cap);
     }
