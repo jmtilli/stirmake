@@ -6085,6 +6085,7 @@ int main(int argc, char **argv)
       }
       if ((sb.st_mode & S_IWOTH) && !unsafe && last_was_toplevel)
       {
+#if 0
         if ((sb.st_mode & S_ISVTX) && access("Stirfile", R_OK) == 0)
         {
           if (stat("Stirfile", &sb) != 0 || sb.st_uid != getuid())
@@ -6095,6 +6096,7 @@ int main(int argc, char **argv)
           }
         }
         else
+#endif
         {
           printf("stirmake: Encountered world-writable directory at %s, not considering it\n", curcwd);
           printf("stirmake: Hint: execute stirmake with -u to allow unsafe operation\n");

@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 char *my_arena;
 char *my_arena_ptr;
