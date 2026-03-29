@@ -9,6 +9,11 @@
 #include "db.h"
 #include "const.h"
 #include "syncbuf.h"
+// Just in case something could define st_mtim into something different,
+// we include these 3 headers in all files that access the token st_mtim
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 struct stirdep {
   struct abce_rb_tree_node node;
