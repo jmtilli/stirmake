@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <unistd.h>
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
@@ -29,6 +30,12 @@
 #ifdef _POSIX_C_SOURCE
 #if _POSIX_C_SOURCE < 200809L
 #undef HAS_UTIMENSAT
+#endif
+#else
+#ifdef _POSIX_VERSION
+#if _POSIX_VERSION < 200809L
+#undef HAS_UTIMENSAT
+#endif
 #endif
 #endif
 #endif
