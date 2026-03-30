@@ -831,10 +831,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         return NULL;
       }
       //abce_mb_refdn(abce, &mbkey);
-      LINKED_LIST_FOR_EACH(node, &rule->dupedeplist)
+      LINKED_LIST_FOR_EACH(node, &rule->deplist)
       {
         struct stirdep *dep =
-          ABCE_CONTAINER_OF(node, struct stirdep, dupellnode);
+          ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         char *namenodir;
         if (dep->is_orderonly)
         {
@@ -902,6 +902,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         {
           continue;
         }
+        if (dep->is_dupe)
+        {
+          continue;
+        }
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
@@ -961,6 +965,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
           ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         char *namenodir;
         if (dep->is_orderonly)
+        {
+          continue;
+        }
+        if (dep->is_dupe)
         {
           continue;
         }
@@ -1299,6 +1307,10 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     int ruleid = get_ruleid_by_tgt(e->nameidx);
+    if (e->is_dupe)
+    {
+      continue;
+    }
     if (ruleid >= 0)
     {
       better_cycle_detect_impl(ruleid, no_cycles, parents, mark_traversed);
@@ -1527,6 +1539,10 @@ void process_additional_deps(mysize_t global_scopeidx)
       LINKED_LIST_FOR_EACH(node2, &rule->deplist)
       {
         struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
+        if (dep->is_dupe)
+        {
+          continue;
+        }
         ins_ruleid_by_dep(dep->nameidx, rule->ruleid);
         //printf(" dep: %s\n", dep->name);
       }
@@ -1545,6 +1561,10 @@ void process_additional_deps(mysize_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &rule->deplist)
     {
       struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
+      if (dep->is_dupe)
+      {
+        continue;
+      }
       ins_ruleid_by_dep(dep->nameidx, rule->ruleid);
       //printf(" dep: %s\n", dep->name);
     }
@@ -2788,6 +2808,10 @@ int do_exec(int ruleid)
         struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         struct stat statbuf;
         int depid = get_ruleid_by_tgt(e->nameidx);
+        if (e->is_dupe)
+        {
+          continue;
+        }
         if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || sttable[e->nameidx].is_remade)
         {
           if (do_trace)
@@ -3029,6 +3053,10 @@ int do_exec(int ruleid)
               struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
               struct stathashentry *she;
               struct stat statbuf;
+              if (e->is_dupe)
+              {
+                continue;
+              }
               if (e->is_recursive)
               {
                 struct timespec st_rectim = rec_mtim(r, sttable[e->nameidx].s);
@@ -3237,6 +3265,10 @@ int consider(int ruleid)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     int idbytgt = get_ruleid_by_tgt(e->nameidx);
+    if (e->is_dupe)
+    {
+      continue;
+    }
     r->waitloc = e;
     if (r->wait_remain_cnt > 0 && e->is_wait)
     {
@@ -3366,6 +3398,10 @@ void reconsider(int ruleid, int ruleid_executed)
     {
       break;
     }
+    if (e->is_dupe)
+    {
+      continue; // RFE correct?
+    }
     if (idbytgt >= 0)
     {
       indentlevel++;
@@ -3471,6 +3507,10 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->deplist)
     {
       struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+      if (e->is_dupe)
+      {
+        continue;
+      }
       if (e->is_recursive)
       {
         reccap_mtim(sttable[e->nameidx].s, cap);
@@ -3482,6 +3522,10 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->deplist)
     {
       struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
+      if (e->is_dupe)
+      {
+        continue;
+      }
       if (e->is_recursive)
       {
         struct timespec st_mtim2 = rec_mtim(r, sttable[e->nameidx].s);
@@ -3563,6 +3607,10 @@ void mark_executed(int ruleid, int was_actually_executed)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
     struct stathashentry *she;
+    if (e->is_dupe)
+    {
+      continue;
+    }
     she = lstat_cached(e->nameidx);
     if (she->ret != 0)
     {

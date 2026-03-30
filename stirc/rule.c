@@ -222,7 +222,6 @@ void zero_rule(struct rule *rule)
 {
   memset(rule, 0, sizeof(*rule));
   linked_list_head_init(&rule->deplist);
-  linked_list_head_init(&rule->dupedeplist);
   linked_list_head_init(&rule->tgtlist);
   syncbuf_init(&rule->output);
   rule->deps_remain_cnt = 0;
@@ -272,11 +271,12 @@ int ins_dep(struct rule *rule,
   e->is_recursive = !!is_recursive;
   e->is_orderonly = !!orderonly;
   e->is_wait = !!wait;
+  e->is_dupe = 0;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
   if (ret == 0)
   {
-    linked_list_add_tail(&e->llnode, &rule->deplist);
+    //linked_list_add_tail(&e->llnode, &rule->deplist);
   }
   else
   {
@@ -286,10 +286,11 @@ int ins_dep(struct rule *rule,
       fprintf(stderr, "stirmake: duplicate dep %s: %s detected\n",
               sttable[tgtidx].s, sttable[depidx].s);
     }
+    e->is_dupe = 1;
     //my_abort();
     ret = -EEXIST;
   }
-  linked_list_add_tail(&e->dupellnode, &rule->dupedeplist);
+  linked_list_add_tail(&e->llnode, &rule->deplist);
   e->is_primary = !!primary;
   return ret;
 }
