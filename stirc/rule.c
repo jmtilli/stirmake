@@ -222,7 +222,6 @@ void zero_rule(struct rule *rule)
 {
   memset(rule, 0, sizeof(*rule));
   linked_list_head_init(&rule->deplist);
-  linked_list_head_init(&rule->primarydeplist);
   linked_list_head_init(&rule->dupedeplist);
   linked_list_head_init(&rule->tgtlist);
   syncbuf_init(&rule->output);
@@ -291,9 +290,6 @@ int ins_dep(struct rule *rule,
     ret = -EEXIST;
   }
   linked_list_add_tail(&e->dupellnode, &rule->dupedeplist);
-  if (primary)
-  {
-    linked_list_add_tail(&e->primaryllnode, &rule->primarydeplist);
-  }
+  e->is_primary = !!primary;
   return ret;
 }

@@ -18,13 +18,14 @@
 struct stirdep {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
-  struct linked_list_node primaryllnode;
   struct linked_list_node dupellnode;
   mysize_t nameidx;
   mysize_t nameidxnodir;
   unsigned is_recursive:1;
   unsigned is_orderonly:1;
   unsigned is_wait:1;
+  unsigned is_primary:1;
+  unsigned is_dupe:1;
 };
 
 struct dep_remain {
@@ -88,7 +89,6 @@ struct rule {
   struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
   struct linked_list_head depremainlist;
-  struct linked_list_head primarydeplist;
   struct linked_list_head dupedeplist;
   struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   mysize_t deps_remain_cnt;
