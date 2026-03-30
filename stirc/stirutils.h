@@ -67,7 +67,15 @@ static inline struct timespec mtim_from_statbuf(struct stat *sb)
 
 #ifdef _POSIX_C_SOURCE
 #if _POSIX_C_SOURCE < 200809L
+#undef STIR_NO_MEMPARSE
 #define STIR_NO_MEMPARSE 1
+#endif
+#else
+#ifdef _POSIX_VERSION
+#if _POSIX_VERSION < 200809L
+#undef STIR_NO_MEMPARSE
+#define STIR_NO_MEMPARSE 1
+#endif
 #endif
 #endif
 
