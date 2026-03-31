@@ -18,7 +18,7 @@ int ruleid_by_fd(int fd)
   {
     abort();
   }
-  hashvalfd = abce_murmur32(HASH_SEED, fd);
+  hashvalfd = abce_murmur32(HASH_SEED, (uint32_t)fd);
   hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_asym, NULL, &fd);
   if (n == NULL)
@@ -36,7 +36,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
   size_t hashloc, hashlocfd;
   int ruleid;
   struct ruleid_by_pid *bypid;
-  hashval = abce_murmur32(HASH_SEED, pid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
   if (n == NULL)
@@ -47,7 +47,7 @@ int ruleid_by_pid_erase(pid_t pid, int *fd)
   abce_rb_tree_nocmp_delete(&ruleid_by_pid[hashloc], &bypid->node);
   if (bypid->fd >= 0)
   {
-    hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
+    hashvalfd = abce_murmur32(HASH_SEED, (uint32_t)bypid->fd);
     hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
     abce_rb_tree_nocmp_delete(&ruleid_by_pid_fd[hashlocfd], &bypid->fdnode);
   }
@@ -67,7 +67,7 @@ int ignore_by_pid(pid_t pid)
   uint32_t hashval;
   size_t hashloc;
   struct ruleid_by_pid *bypid;
-  hashval = abce_murmur32(HASH_SEED, pid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   n = ABCE_RB_TREE_NOCMP_FIND(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_asym, NULL, &pid);
   if (n == NULL)
@@ -92,7 +92,7 @@ void ruleid_by_pid_insert(int ruleid, pid_t pid, int outpiperd, int ignore)
   bypid->ruleid = ruleid;
   bypid->fd = outpiperd;
   bypid->ignore = ignore;
-  hashval = abce_murmur32(HASH_SEED, pid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)pid);
   hashloc = hashval % (sizeof(ruleid_by_pid)/sizeof(*ruleid_by_pid));
   if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid[hashloc], ruleid_by_pid_cmp_sym, NULL, &bypid->node) != 0)
   {
@@ -101,7 +101,7 @@ void ruleid_by_pid_insert(int ruleid, pid_t pid, int outpiperd, int ignore)
   }
   if (bypid->fd >= 0)
   {
-    hashvalfd = abce_murmur32(HASH_SEED, bypid->fd);
+    hashvalfd = abce_murmur32(HASH_SEED, (uint32_t)bypid->fd);
     hashlocfd = hashvalfd % (sizeof(ruleid_by_pid_fd)/sizeof(*ruleid_by_pid_fd));
     if (abce_rb_tree_nocmp_insert_nonexist(&ruleid_by_pid_fd[hashlocfd], ruleid_by_pid_fd_cmp_sym, NULL, &bypid->fdnode) != 0)
     {

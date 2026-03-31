@@ -92,7 +92,7 @@ char *canon(const char *old)
         old = (*old2 == '\0') ? old2 : (old2 + 1);
         continue;
       }
-      idx = neu2 - neu;
+      idx = (size_t)(neu2 - neu);
       neu[idx] = '\0';
       old = (*old2 == '\0') ? old2 : (old2 + 1);
       continue;
@@ -101,8 +101,8 @@ char *canon(const char *old)
     {
       neu[idx++] = '/';
     }
-    memcpy(neu+idx, old, old2 - old);
-    idx += (old2 - old);
+    memcpy(neu+idx, old, (size_t)(old2 - old));
+    idx += (size_t)(old2 - old);
     neu[idx] = '\0';
     old = (*old2 == '\0') ? old2 : (old2 + 1);
     continue;
@@ -226,7 +226,7 @@ char *neighpath(const char *path, const char *file)
     }
     if (   pathslash - path != fileslash - file
         || pathslash - path == 0
-        || memcmp(path, file, pathslash - path) != 0)
+        || memcmp(path, file, (size_t)(pathslash - path)) != 0)
     {
       char *bp = construct_backpath((*path) ? path : ".");
       size_t bufsiz;

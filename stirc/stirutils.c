@@ -90,7 +90,7 @@ char *calc_forward_path(char *storcwd, size_t upcnt)
     }
     else
     {
-      idx = ptr - storcwd;
+      idx = (size_t)(ptr - storcwd);
     }
   }
   if (storcwd[idx] == '/')

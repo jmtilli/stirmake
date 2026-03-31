@@ -121,7 +121,7 @@ mysize_t one_ruleid_by_dep_entry_cnt;
 void ins_ruleid_by_dep(mysize_t depidx, int ruleid)
 {
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(depidx);
-  uint32_t hash = abce_murmur32(HASH_SEED, ruleid);
+  uint32_t hash = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
   struct one_ruleid_by_dep_entry *one;
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;

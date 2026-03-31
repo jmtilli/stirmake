@@ -132,7 +132,7 @@ int deps_remain_has(struct rule *rule, int ruleid)
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   size_t hashloc;
-  hashval = abce_murmur32(HASH_SEED, ruleid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   return n != NULL;
@@ -144,7 +144,7 @@ void deps_remain_forwait(struct rule *rule, int ruleid)
   uint32_t hashval;
   size_t hashloc;
   struct dep_remain *dep_remain;
-  hashval = abce_murmur32(HASH_SEED, ruleid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n == NULL)
@@ -161,7 +161,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   uint32_t hashval;
   size_t hashloc;
   struct dep_remain *dep_remain;
-  hashval = abce_murmur32(HASH_SEED, ruleid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n == NULL)
@@ -172,7 +172,11 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
   linked_list_delete(&dep_remain->llnode);
   rule->deps_remain_cnt--;
-  rule->wait_remain_cnt -= dep_remain->waitcnt;
+  if (dep_remain->waitcnt < 0 || rule->wait_remain_cnt < (mysize_t)dep_remain->waitcnt)
+  {
+    abort();
+  }
+  rule->wait_remain_cnt = rule->wait_remain_cnt - (mysize_t)dep_remain->waitcnt;
   my_free(dep_remain);
 }
 
@@ -183,7 +187,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   uint32_t hashval;
   size_t hashloc;
   struct dep_remain *dep_remain;
-  hashval = abce_murmur32(HASH_SEED, ruleid);
+  hashval = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
   hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n != NULL)

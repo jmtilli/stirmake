@@ -127,22 +127,22 @@ struct escaped_string yy_escape_string(char *orig)
       }
       if (unicode <= 0x7F)
       {
-        buf[j++] = (uint8_t)unicode;
+        buf[j++] = (char)(uint8_t)unicode;
         i += 6;
         continue;
       }
       if (unicode <= 0x7FF)
       {
-        buf[j++] = (uint8_t)(0xc0|(unicode>>6));
-        buf[j++] = (uint8_t)(0x80|(unicode&0x3f));
+        buf[j++] = (char)(uint8_t)(0xc0|(unicode>>6));
+        buf[j++] = (char)(uint8_t)(0x80|(unicode&0x3f));
         i += 6;
         continue;
       }
       if (unicode <= 0xFFFF)
       {
-        buf[j++] = (uint8_t)(0xe0|(unicode>>12));
-        buf[j++] = (uint8_t)(0x80|((unicode>>6)&0x3f));
-        buf[j++] = (uint8_t)(0x80|(unicode&0x3f));
+        buf[j++] = (char)(uint8_t)(0xe0|(unicode>>12));
+        buf[j++] = (char)(uint8_t)(0x80|((unicode>>6)&0x3f));
+        buf[j++] = (char)(uint8_t)(0x80|(unicode&0x3f));
         i += 6;
         continue;
       }
@@ -641,7 +641,7 @@ void file_escape_string(FILE *f, const char *str)
   const char *ptr;
   for (ptr = str; *ptr; ptr++)
   {
-    unsigned char uch = *ptr;
+    unsigned char uch = (unsigned char)*ptr;
     switch (uch)
     {
       case '\\':

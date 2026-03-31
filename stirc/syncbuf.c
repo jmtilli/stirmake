@@ -74,9 +74,9 @@ size_t writeall(int fd, const void *buf, size_t sz)
     {
       return total_written;
     }
-    total_written += bytes_written;
+    total_written += (size_t)bytes_written;
     cdata += bytes_written;
-    sz -= bytes_written;
+    sz -= (size_t)bytes_written;
   }
   return total_written;
 }
