@@ -51,14 +51,19 @@
     escaped characters including newline and permitted characters in any
     configuration.
    */
-  size_t idx;
-  size_t len;
+  int idx;
+  int len;
   char *cp;
 
   //len = strlen(yytext);
   len = yyleng;
 
-  yylval->s = malloc(len+1);
+  if (len < 0)
+  {
+    return ERROR_TOK;
+  }
+
+  yylval->s = malloc((size_t)len+1);
   cp = yylval->s;
 
   // Re-count yylineno and yycolumn
