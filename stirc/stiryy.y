@@ -439,9 +439,16 @@ custom_assign:
   {
     unsigned char tmpbuf[256] = {0};
     size_t tmpsiz = 0;
+    size_t symidx;
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
-    amyplanyy_add_double(amyplanyy, amyplan_symbol_add(amyplanyy, $1, strlen($1)));
+    symidx = amyplan_symbol_add(amyplanyy, $1, strlen($1));
+    if (symidx == (size_t)-1)
+    {
+      amyplanyyerror(scanner, amyplanyy, "can't add symbol for function, probably out of memory");
+      YYABORT;
+    }
+    amyplanyy_add_double(amyplanyy, symidx);
     if (get_abce(amyplanyy)->sp != 0)
     {
       abort();
@@ -1328,6 +1335,7 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
+    size_t symidx;
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL); // retval
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, amyplanyy->ctx->args); // argcnt
@@ -1335,7 +1343,13 @@ OPEN_PAREN maybe_parlist CLOSE_PAREN NEWLINE
     amyplanyy_add_double(amyplanyy, amyplanyy->ctx->sz - amyplanyy->ctx->args); // locvarcnt
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RETEX2);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
-    amyplanyy_add_double(amyplanyy, amyplan_symbol_add(amyplanyy, $3, strlen($3)));
+    symidx = amyplan_symbol_add(amyplanyy, $3, strlen($3));
+    if (symidx == (size_t)-1)
+    {
+      amyplanyyerror(scanner, amyplanyy, "can't add symbol for function, probably out of memory");
+      YYABORT;
+    }
+    amyplanyy_add_double(amyplanyy, symidx);
     amyplan_locvarctx_free(amyplanyy->ctx);
     amyplanyy->ctx = NULL;
   }
@@ -1439,9 +1453,16 @@ expr NEWLINE
   {
     unsigned char tmpbuf[256] = {0};
     size_t tmpsiz = 0;
+    size_t symidx;
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
-    amyplanyy_add_double(amyplanyy, amyplan_symbol_add(amyplanyy, $1, strlen($1)));
+    symidx = amyplan_symbol_add(amyplanyy, $1, strlen($1));
+    if (symidx == (size_t)-1)
+    {
+      amyplanyyerror(scanner, amyplanyy, "can't add symbol for function, probably out of memory");
+      YYABORT;
+    }
+    amyplanyy_add_double(amyplanyy, symidx);
 
     if ($2)
     {
@@ -1532,6 +1553,11 @@ expr NEWLINE
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_RET);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FUN_TRAILER);
     symidx = amyplan_symbol_add(amyplanyy, $1, strlen($1));
+    if (symidx == (size_t)-1)
+    {
+      amyplanyyerror(scanner, amyplanyy, "can't add symbol for function, probably out of memory");
+      YYABORT;
+    }
     amyplanyy_add_double(amyplanyy, symidx);
 
     if (!$2)

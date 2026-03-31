@@ -357,6 +357,7 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *stirmain,
                                const char *dirname, const char *filename,
                                int expect_toplevel)
 {
+  int64_t curscopeidx;
   yy->main = stirmain;
   yy->sameproject = 1;
   yy->abort_early = 0;
@@ -366,7 +367,13 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *stirmain,
   yy->ctx = NULL;
   yy->curprefix = stir_strdup(prefix);
   yy->curprojprefix = stir_strdup(projprefix);
-  yy->curscopeidx = abce_cache_add(yy->main->abce, &curscope); // avoid GC abort
+  curscopeidx = abce_cache_add(yy->main->abce, &curscope); // avoid GC abort
+  if (curscopeidx < 0)
+  {
+    fprintf(stderr, "Out of memory\n");
+    exit(2);
+  }
+  yy->curscopeidx = (size_t)curscopeidx;
   yy->curscope = curscope;
   yy->filename = filename;
   yy->dirname = dirname;
@@ -376,20 +383,35 @@ static inline void stiryy_init(struct stiryy *yy, struct stiryy_main *stirmain,
 
 static inline size_t stiryy_symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
 {
-  return abce_cache_add_str(stiryy->main->abce, symbol, symlen);
+  int64_t res;
+  res = abce_cache_add_str(stiryy->main->abce, symbol, symlen);
+  if (res < 0)
+  {
+    return (size_t)-1;
+  }
+  return (size_t)res;
 }
 static inline size_t stiryy_add_fun_sym(struct stiryy *stiryy, const char *symbol, int maybe, size_t loc)
 {
   struct abce_mb mb;
   const struct abce_mb *oldmb;
   int ret;
+  int64_t retlocsigned;
   size_t retloc;
   mb.typ = ABCE_T_F;
   mb.u.d = loc;
   oldmb = abce_sc_get_rec_str_area(stiryy->main->abce->dynscope.u.area, symbol, 1);
   if (oldmb != NULL)
   {
-    retloc = abce_cache_add(stiryy->main->abce, oldmb);
+    retlocsigned = abce_cache_add(stiryy->main->abce, oldmb);
+    if (retlocsigned < 0)
+    {
+      retloc = (size_t)-1;
+    }
+    else
+    {
+      retloc = (size_t)retlocsigned;
+    }
   }
   else
   {
