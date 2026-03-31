@@ -177,13 +177,14 @@ static inline void abce_npoppush(struct abce *abce, size_t n, struct abce_mb *mb
 
 size_t cache_add_str_nul(struct abce *abce, const char *str, int *err)
 {
-  size_t ret;
+  int64_t ret;
   ret = abce_cache_add_str_nul(abce, str);
-  if (ret == (size_t)-1)
+  if (ret < 0)
   {
     *err = 1;
+    return (size_t)-1;
   }
-  return ret;
+  return (size_t)ret;
 }
 
 struct attrstruct {
@@ -910,12 +911,12 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
         my_abort();
       }
       argidx = abce_cache_add(abce, attr1);
-      yyshells[i].u.funarg.argidx = argidx;
       if (argidx < 0)
       {
         // OK, we could handle this error better, FIXME do it!
         my_abort();
       }
+      yyshells[i].u.funarg.argidx = (size_t)argidx;
     }
     else if (boolembed)
     {
@@ -1426,7 +1427,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           }
           continue;
         }
-        newstr = abce_mb_cpush_create_string(abce, buf, cutpoint-buf);
+        newstr = abce_mb_cpush_create_string(abce, buf, (size_t)(cutpoint-buf));
         if (newstr == NULL)
         {
 	  abce_cpop(abce);
@@ -1493,7 +1494,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 	  abce_cpop(abce);
           continue;
         }
-        newstr = abce_mb_cpush_create_string(abce, cutpoint, bsz-(cutpoint-buf));
+        newstr = abce_mb_cpush_create_string(abce, cutpoint, bsz-(size_t)(cutpoint-buf));
         if (newstr == NULL)
         {
           return -ENOMEM;
@@ -1550,7 +1551,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
           }
           continue;
         }
-        newstr = abce_mb_cpush_create_string(abce, cutpoint+1, bsz-(cutpoint+1-buf));
+        newstr = abce_mb_cpush_create_string(abce, cutpoint+1, bsz-(size_t)(cutpoint+1-buf));
         if (newstr == NULL)
         {
 	  abce_cpop(abce);
@@ -1615,7 +1616,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 	  abce_cpop(abce);
           continue;
         }
-        newstr = abce_mb_cpush_create_string(abce, buf, cutpoint + 1 - buf);
+        newstr = abce_mb_cpush_create_string(abce, buf, (size_t)(cutpoint + 1 - buf));
         if (newstr == NULL)
         {
 	  abce_cpop(abce);
@@ -2004,7 +2005,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       newstr = abce_mb_cpush_create_string(abce, abce_mba_str(base->u.area),
-                                           cutpoint - abce_mba_str(base->u.area));
+                                           (size_t)(cutpoint - abce_mba_str(base->u.area)));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2039,7 +2040,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       newstr = abce_mb_cpush_create_string(abce, abce_mba_str(base->u.area),
-                                           cutpoint + 1 - abce_mba_str(base->u.area));
+                                           (size_t)(cutpoint + 1 - abce_mba_str(base->u.area)));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2067,7 +2068,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       newstr = abce_mb_cpush_create_string(abce, cutpoint+1,
-                                           bsz - (cutpoint+1-abce_mba_str(base->u.area)));
+                                           bsz - (size_t)(cutpoint+1-abce_mba_str(base->u.area)));
       if (newstr == NULL)
       {
         abce_pop(abce);
@@ -2102,7 +2103,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       }
 
       newstr = abce_mb_cpush_create_string(abce, cutpoint,
-                                           bsz - (cutpoint-abce_mba_str(base->u.area)));
+                                           bsz - (size_t)(cutpoint-abce_mba_str(base->u.area)));
       if (newstr == NULL)
       {
         abce_pop(abce);
