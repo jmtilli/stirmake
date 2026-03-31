@@ -371,7 +371,7 @@ struct CSnippet luaSnippet = {
 <PERCENTLUA>.             { csadd(&luaSnippet, yytext[0]); }
 <PERCENTLUA>"\n"          { csadd(&luaSnippet, yytext[0]); ++yylineno; yycolumn=1; }
 
-<INITIAL,STRICT>\n                                { ++yylineno; yycolumn=1; yyextra &= (~2); return NEWLINE; }
+<INITIAL,STRICT>\n                                { ++yylineno; yycolumn=1; yyextra &= (~2U); return NEWLINE; }
 <INITIAL,STRICT>\\\n                              { ++yylineno; yycolumn=1; yyextra |= 2; }
 <INITIAL,STRICT>\t {
   if (yycolumn == 2 && (yyextra&1) != 0 && (yyextra&2) == 0)
@@ -407,7 +407,7 @@ struct CSnippet luaSnippet = {
   yycolumn=1;
   (void)yy_top_state(yyscanner); // so that it's not unused
   yy_pop_state(yyscanner);
-  yyextra &= (~2);
+  yyextra &= (~2U);
   return NEWLINE;
 }
 <INITIAL,STRICT>[ \t]                            /* ignore whitespaces */;
