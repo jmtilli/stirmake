@@ -1525,7 +1525,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       rule->diridx = stringtab_add("."); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
-      rule->ruleid = rules_size++;
+      rule->ruleid = (int)rules_size++;
       ins_ruleid_by_tgt(entry->tgtidx, rule->ruleid, NULL, -1);
       ins_tgt(rule, entry->tgtidx, (mysize_t)-1, 0, NULL, -1);
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
@@ -1602,7 +1602,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       rule->diridx = stringtab_add("."); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
-      rule->ruleid = rules_size++;
+      rule->ruleid = (int)rules_size++;
       ins_ruleid_by_tgt(dep->depidx, rule->ruleid, NULL, -1);
       ins_tgt(rule, dep->depidx, (mysize_t)-1, 0, NULL, -1);
       rule->is_phony = 0; // is_inc is enough
@@ -1652,7 +1652,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   zero_rule(rule);
   rule->cmdsrc = *shells; // FIXME duplicate?
   rule->scopeidx = scopeidx;
-  rule->ruleid = rules_size++;
+  rule->ruleid = (int)rules_size++;
   rule->is_phony = !!phony;
   rule->is_maybe = !!maybe;
   rule->is_rectgt = !!rectgt;
@@ -1736,7 +1736,7 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
     }
     _exit(1);
   }
-  toff += tret;
+  toff += (size_t)tret;
   for (i = 0; i < argcnt; i++)
   {
     tret = snprintf(tbuf+toff, tlen-toff, " %s", argiter_orig[i]);
@@ -1751,7 +1751,7 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
       }
       _exit(1);
     }
-    toff += tret;
+    toff += (size_t)tret;
   }
   tret = snprintf(tbuf+toff, tlen-toff, "\n");
   if (tret < 0 || (size_t)tret >= tlen - toff)
@@ -1765,7 +1765,7 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
     }
     _exit(1);
   }
-  toff += tret;
+  toff += (size_t)tret;
   /*
    * Why not writev, you ask. Well, writev is not atomic for terminals, at
    * least on Linux. And, writev requires us to allocate memory for the iovec
@@ -2747,7 +2747,7 @@ void trace_add_vprintf(char **buf, size_t *cap, size_t *sz, const char *fmt, ...
   {
     size_t cap2;
     char *buf2;
-    cap2 = *cap + (need - (*cap - *sz));
+    cap2 = *cap + ((size_t)need - (*cap - *sz));
     buf2 = realloc(*buf, cap2);
     if (buf2 == NULL)
     {
@@ -2763,7 +2763,7 @@ void trace_add_vprintf(char **buf, size_t *cap, size_t *sz, const char *fmt, ...
     errxit("trace_add_vprintf failed");
   }
   va_end(ap);
-  *sz += ret;
+  *sz += (size_t)ret;
 }
 
 int do_exec(int ruleid)
@@ -4041,12 +4041,12 @@ int process_jobserver(int fds[2])
       if (sp)
       {
         char *fifostr2;
-        fifostr2 = malloc(sp-fifostr+1);
+        fifostr2 = malloc((size_t)(sp-fifostr)+1);
         if (fifostr2 == NULL)
         {
           return -ENOENT;
         }
-        memcpy(fifostr2, fifostr, sp-fifostr);
+        memcpy(fifostr2, fifostr, (size_t)(sp-fifostr));
         fifostr2[sp-fifostr] = '\0';
         fifostr = fifostr2;
       }
@@ -4828,12 +4828,12 @@ void create_pipe(int jobcnt)
     close(fd);
     unlink(tmp);
     // Add more randomness since an attacker may have seen the file name
-    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
-    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[(unsigned)rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[(unsigned)rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[(unsigned)rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[(unsigned)rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[(unsigned)rand()%(sizeof(base62)-1)]);
+    snprintf(tmp+strlen(tmp), tmpcap-strlen(tmp), "%c", base62[(unsigned)rand()%(sizeof(base62)-1)]);
     jobserver_fifo = stir_strdup(tmp);
     free(tmp);
     if (mkfifo(jobserver_fifo, 0600) != 0)
@@ -5000,7 +5000,7 @@ void drain_pipe(struct rule *rule, int fdit)
       FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
       break;
     }
-    syncbuf_append(&rule->output, buf, bytes_read);
+    syncbuf_append(&rule->output, buf, (size_t)bytes_read);
   }
 }
 
@@ -6359,7 +6359,7 @@ int main(int argc, char **argv)
             loc = strchr(tgt, '%');
             locp1 = loc+1;
             locp1sz = strlen(locp1);
-            if (memcmp(basenodir, tgt, loc-tgt) != 0)
+            if (memcmp(basenodir, tgt, (size_t)(loc-tgt)) != 0)
             {
               errxit("Target %s didn't match base %s", tgt, basenodir);
               exit(2);
@@ -6417,11 +6417,11 @@ int main(int argc, char **argv)
               locp1sz = strlen(locp1);
               exptgtsz = strlen(tgt) - 1 + meatsz;
               exptgt = my_malloc(exptgtsz + 1);
-              memcpy(exptgt, tgt, loc-tgt);
-              memcpy(&exptgt[loc-tgt], meat, meatsz);
-              memcpy(&exptgt[loc-tgt+meatsz], locp1, locp1sz);
-              exptgt[loc-tgt+meatsz+locp1sz] = '\0';
-              if (loc-tgt+meatsz+locp1sz != exptgtsz)
+              memcpy(exptgt, tgt, (size_t)(loc-tgt));
+              memcpy(&exptgt[(size_t)(loc-tgt)], meat, meatsz);
+              memcpy(&exptgt[(size_t)(loc-tgt)+meatsz], locp1, locp1sz);
+              exptgt[(size_t)(loc-tgt)+meatsz+locp1sz] = '\0';
+              if ((size_t)(loc-tgt)+meatsz+locp1sz != exptgtsz)
               {
                 my_abort();
               }
@@ -6541,11 +6541,11 @@ int main(int argc, char **argv)
               locp1sz = strlen(locp1);
               expdepsz = strlen(dep) - 1 + meatsz;
               expdep = my_malloc(expdepsz + 1);
-              memcpy(expdep, dep, loc-dep);
+              memcpy(expdep, dep, (size_t)(loc-dep));
               memcpy(&expdep[loc-dep], meat, meatsz);
-              memcpy(&expdep[loc-dep+meatsz], locp1, locp1sz);
-              expdep[loc-dep+meatsz+locp1sz] = '\0';
-              if (loc-dep+meatsz+locp1sz != expdepsz)
+              memcpy(&expdep[(size_t)(loc-dep)+meatsz], locp1, locp1sz);
+              expdep[(size_t)(loc-dep)+meatsz+locp1sz] = '\0';
+              if ((size_t)(loc-dep)+meatsz+locp1sz != expdepsz)
               {
                 my_abort();
               }
@@ -6618,7 +6618,7 @@ int main(int argc, char **argv)
         {
           continue;
         }
-        ruleid_first = rules_size - 1;
+        ruleid_first = (int)rules_size - 1;
         ruleid_first_set = 1;
       }
     }
