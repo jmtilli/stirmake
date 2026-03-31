@@ -460,7 +460,7 @@ custom_assign:
     abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
     abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
 
-    get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
+    get_abce(amyplanyy)->ip = -(int64_t)tmpsiz-ABCE_GUARD;
     yy_stored_lineno = stiryyget_lineno(scanner) - 1;
     yy_stored_prefix = stiryy->curprefix;
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
@@ -1481,7 +1481,7 @@ expr NEWLINE
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
 
-      get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
+      get_abce(amyplanyy)->ip = -(int64_t)tmpsiz-ABCE_GUARD;
       yy_stored_lineno = stiryyget_lineno(scanner) - 1;
       yy_stored_prefix = stiryy->curprefix;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
@@ -1573,7 +1573,7 @@ expr NEWLINE
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_CALL_IF_FUN);
       abce_add_ins_alt(tmpbuf, &tmpsiz, sizeof(tmpbuf), ABCE_OPCODE_EXIT);
 
-      get_abce(amyplanyy)->ip = -tmpsiz-ABCE_GUARD;
+      get_abce(amyplanyy)->ip = -(int64_t)tmpsiz-ABCE_GUARD;
       yy_stored_lineno = stiryyget_lineno(scanner) - 1;
       yy_stored_prefix = stiryy->curprefix;
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
@@ -2394,6 +2394,11 @@ varref:
       amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETSCOPE_DYN);
 
       int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1, strlen($1));
+      if (idx < 0)
+      {
+        printf("out of memory\n");
+        YYABORT;
+      }
       amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
       amyplanyy_add_double(amyplanyy, idx);
       amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -2504,6 +2509,11 @@ varref:
   if (amyplanyy_do_emit(amyplanyy))
   {
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $2, strlen($2));
+    if (idx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, idx);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -2848,6 +2858,11 @@ expr0_or_string:
   if (amyplanyy_do_emit(amyplanyy))
   {
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
+    if (idx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, idx);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -3374,7 +3389,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     if (stiryy_check_rule(stiryy) != 0)
@@ -3402,7 +3417,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy->main->rule_in_progress = 0;
@@ -3423,7 +3438,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy->main->rule_in_progress = 0;
@@ -3444,7 +3459,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy->main->rule_in_progress = 0;
@@ -3456,7 +3471,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_rectgt(stiryy);
@@ -3473,7 +3488,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_detouch(stiryy);
@@ -3490,7 +3505,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_phony(stiryy);
@@ -3503,7 +3518,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_maybe(stiryy);
@@ -3516,7 +3531,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     stiryy_mark_dist(stiryy);
@@ -3558,7 +3573,7 @@ stirrule:
 }
   NEWLINE shell_commands
 {
-  stiryyset_extra(stiryyget_extra(scanner) & (~1), scanner);
+  stiryyset_extra(stiryyget_extra(scanner) & (~1U), scanner);
   if (amyplanyy_do_emit(amyplanyy))
   {
     if ($2)
@@ -3580,20 +3595,30 @@ shell_command:
   if (amyplanyy_do_emit(amyplanyy))
   {
     char *outbuf = NULL;
-    size_t cidx;
+    int64_t cidx;
     size_t outcap = 0;
     size_t outsz = 0;
     size_t len = strlen($1);
     size_t i;
     size_t codeloc = amyplanyy->main->abce->bytecodesz;
-    size_t shidx;
-    size_t dashcidx;
-    size_t emptyidx;
+    int64_t shidx;
+    int64_t dashcidx;
+    int64_t emptyidx;
     int ismake = 0;
     int noecho = 0;
     int ignore = 0;
     shidx = abce_cache_add_str(amyplanyy->main->abce, "sh", 2);
+    if (shidx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     dashcidx = abce_cache_add_str(amyplanyy->main->abce, "-c", 2);
+    if (dashcidx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_NEW_ARRAY);
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
     abce_add_double(amyplanyy->main->abce, shidx);
@@ -3604,6 +3629,11 @@ shell_command:
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_APPEND_MAINTAIN);
     emptyidx = abce_cache_add_str(amyplanyy->main->abce, "", 0);
+    if (emptyidx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
     abce_add_double(amyplanyy->main->abce, emptyidx);
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -3646,7 +3676,7 @@ shell_command:
       {
         if (outsz)
         {
-          size_t cidx;
+          int64_t cidx;
           /*
           if (i > 0 && $1[i] != ' ')
           {
@@ -3654,6 +3684,11 @@ shell_command:
           }
           */
           cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
+          if (cidx < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -3662,8 +3697,13 @@ shell_command:
         }
         if (i+1 < len && $1[i+1] == '$')
         {
-          size_t cidx;
+          int64_t cidx;
           cidx = abce_cache_add_str(amyplanyy->main->abce, "$", 1);
+          if (cidx < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -3674,8 +3714,13 @@ shell_command:
         }
         if (i+1 < len && ($1[i+1] == '<' || $1[i+1] == '@' || $1[i+1] == '*'))
         {
-          size_t cidx;
+          int64_t cidx;
           cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);
+          if (cidx < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
@@ -3688,12 +3733,22 @@ shell_command:
         }
         if (i+1 < len && ($1[i+1] == '^' || $1[i+1] == '+' || $1[i+1] == '|'))
         {
-          size_t cidx;
+          int64_t cidx;
           cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
+          if (cidx < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
           cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);
+          if (cidx < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
           abce_add_double(amyplanyy->main->abce, cidx);
@@ -3708,7 +3763,7 @@ shell_command:
         if (i+1 < len && $1[i+1] == '(')
         {
           size_t end;
-          size_t cidxvar, cidx;
+          int64_t cidxvar, cidx;
           int isarray = 0;
           if (i+2 < len && $1[i+2] == '@')
           {
@@ -3723,10 +3778,20 @@ shell_command:
             stiryyerror(scanner, stiryy, "Old-style shell command varref literal not terminated");
             YYABORT;
           }
-          cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + isarray, end - (i+2+isarray));
+          cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + (unsigned)isarray, end - (i+2+(unsigned)isarray));
+          if (cidxvar < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           if (isarray)
           {
             cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
+            if (cidx < 0)
+            {
+              printf("out of memory\n");
+              YYABORT;
+            }
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
             abce_add_double(amyplanyy->main->abce, cidx);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -3757,7 +3822,7 @@ shell_command:
         if (i+1 < len && $1[i+1] == '{')
         {
           size_t end;
-          size_t cidxvar, cidx;
+          int64_t cidxvar, cidx;
           int isarray = 0;
           if (i+2 < len && $1[i+2] == '@')
           {
@@ -3772,10 +3837,20 @@ shell_command:
             stiryyerror(scanner, stiryy, "Old-style shell command varref literal not terminated");
             YYABORT;
           }
-          cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + isarray, end - (i+2+isarray));
+          cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + (unsigned)isarray, end - (i+2+(unsigned)isarray));
+          if (cidxvar < 0)
+          {
+            printf("out of memory\n");
+            YYABORT;
+          }
           if (isarray)
           {
             cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
+            if (cidx < 0)
+            {
+              printf("out of memory\n");
+              YYABORT;
+            }
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
             abce_add_double(amyplanyy->main->abce, cidx);
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -3816,6 +3891,11 @@ shell_command:
     if (outsz)
     {
       cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
+      if (cidx < 0)
+      {
+        printf("out of memory\n");
+        YYABORT;
+      }
       abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
       abce_add_double(amyplanyy->main->abce, cidx);
       abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -4100,6 +4180,11 @@ tgtdepref:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETSCOPE_DYN);
 
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1, strlen($1));
+    if (idx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, idx);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
@@ -4114,6 +4199,11 @@ tgtdepref:
   if (amyplanyy_do_emit(amyplanyy))
   {
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
+    if (idx < 0)
+    {
+      printf("out of memory\n");
+      YYABORT;
+    }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, idx);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
