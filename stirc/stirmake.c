@@ -2089,8 +2089,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
 #ifdef HAVE_POSIX_SPAWN
   if (posix_spawnp(&pid, "touch", file_actionsp, NULL, args, environ) != 0)
   {
-    errxit("Unable to fork child");
-    my_abort(); // FIXME maybe rm?
+    errxit("Unable to spawn child: touch");
     exit(2);
   }
 #else
@@ -2399,8 +2398,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 #ifdef HAVE_POSIX_SPAWN
   if (posix_spawnp(&pid, cmd, file_actionsp, NULL, &args[3], environ) != 0)
   {
-    errxit("Unable to fork child");
-    my_abort(); // FIXME maybe rm?
+    errxit("Unable to spawn child: %s", cmd);
     exit(2);
   }
 #else
