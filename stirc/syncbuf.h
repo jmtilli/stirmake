@@ -24,4 +24,6 @@ void syncbuf_append(struct syncbuf *buf, const void *data, size_t sz);
 
 void syncbuf_dump(struct syncbuf *buf, int fd);
 
+size_t writeall(int fd, const void *buf, size_t sz);
+
 #endif

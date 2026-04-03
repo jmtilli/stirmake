@@ -1789,7 +1789,7 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
   }
   if (!silent)
   {
-    write(1, tbuf, toff);
+    writeall(1, tbuf, toff);
   }
   free(tbuf); // We could let it leak, too...
   return NULL;
@@ -2082,7 +2082,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   }
   else if (cmdprint != NULL)
   {
-    write(1, cmdprint, strlen(cmdprint));
+    writeall(1, cmdprint, strlen(cmdprint));
   }
   free(cmdprint);
 
@@ -2392,7 +2392,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   else if (cmdprint != NULL)
   {
-    write(1, cmdprint, strlen(cmdprint));
+    writeall(1, cmdprint, strlen(cmdprint));
   }
   free(cmdprint);
 
@@ -4995,9 +4995,13 @@ void drain_pipe(struct rule *rule, int fdit)
     {
       break;
     }
+    if (bytes_read < 0 && (errno == EINTR))
+    {
+      continue;
+    }
     if (bytes_read < 0)
     {
-      my_abort(); // RFE EINTR?
+      my_abort();
     }
     if (bytes_read == 0)
     {
