@@ -1948,6 +1948,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   int was_first = 0;
   char *cmdprint = NULL;
   char *args[3] = {"touch", NULL, NULL};
+  int pipecloexec[2];
 
 #ifdef HAVE_POSIX_SPAWN
   posix_spawn_file_actions_t file_actions;
@@ -2093,6 +2094,11 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     exit(2);
   }
 #else
+  if (pipe(pipecloexec) != 0)
+  {
+    errxit("Unable to create pipe");
+    exit(2);
+  }
 #ifdef USE_VFORK
   pid = vfork();
 #else
@@ -2101,7 +2107,6 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   if (pid < 0)
   {
     errxit("Unable to fork child");
-    my_abort(); // FIXME maybe rm?
     exit(2);
   }
   else if (pid == 0)
@@ -2111,6 +2116,8 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     close(self_pipe_fd[1]);
     close(jobserver_fd[0]);
     close(jobserver_fd[1]);
+    close(pipecloexec[0]);
+    fcntl(pipecloexec[1], F_SETFD, fcntl(pipecloexec[1], F_GETFD) | FD_CLOEXEC);
     if (create_fd)
     {
       dup2(outpipewr, 1);
@@ -2118,7 +2125,10 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
       close(outpipewr);
       close(outpiperd);
     }
+    // TODO create CLOEXEC pipe, write 1 char into it if "touch" fails,
+    // read the EOF or the 1 char from it
     execvp("touch", args);
+    write(pipecloexec[1], "E", 1);
     _exit(1);
   }
 #endif
@@ -2130,6 +2140,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   }
   unsetenv("MAKEFLAGS");
   close(fdcurdir);
+  close(pipecloexec[1]);
 
 
   if (was_first)
@@ -2146,6 +2157,26 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   {
     *fdout = outpiperd;
   }
+  for (;;)
+  {
+    char ch;
+    ssize_t bytes_read = read(pipecloexec[0], &ch, 1);
+    if (bytes_read == 0)
+    {
+      break;
+    }
+    if (bytes_read < 0 && errno == EINTR)
+    {
+      continue;
+    }
+    if (bytes_read == 1)
+    {
+      errxit("Unable to exec child: touch");
+      fflush(stderr);
+      exit(2);
+    }
+  }
+  close(pipecloexec[0]);
   return pid;
 }
 
@@ -2163,6 +2194,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   char **args;
   char *cmd;
   int ismake;
+  int pipecloexec[2];
   int fd_in_use = 0;
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
@@ -2402,6 +2434,11 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     exit(2);
   }
 #else
+  if (pipe(pipecloexec) != 0)
+  {
+    errxit("Unable to create pipe");
+    exit(2);
+  }
 #ifdef USE_VFORK
   pid = vfork();
 #else
@@ -2410,7 +2447,6 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   if (pid < 0)
   {
     errxit("Unable to fork child");
-    my_abort(); // FIXME maybe rm?
     exit(2);
   }
   else if (pid == 0)
@@ -2418,6 +2454,8 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     close(fileno(dbf));
     close(self_pipe_fd[0]);
     close(self_pipe_fd[1]);
+    close(pipecloexec[0]);
+    fcntl(pipecloexec[1], F_SETFD, fcntl(pipecloexec[1], F_GETFD) | FD_CLOEXEC);
     if (!ismake && !is_makecmd(cmd))
     {
       close(jobserver_fd[0]);
@@ -2445,7 +2483,10 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
         close(outpiperd);
       }
     }
+    // TODO create CLOEXEC pipe, write 1 char into it if "touch" fails,
+    // read the EOF or the 1 char from it
     execvp(args[3], &args[3]);
+    write(pipecloexec[1], "E", 1);
     _exit(1);
   }
 #endif
@@ -2457,6 +2498,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   unsetenv("MAKEFLAGS");
   close(fdcurdir);
+  close(pipecloexec[1]);
 
   if (was_first)
   {
@@ -2472,6 +2514,26 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     *fdout = outpiperd;
   }
+  for (;;)
+  {
+    char ch;
+    ssize_t bytes_read = read(pipecloexec[0], &ch, 1);
+    if (bytes_read == 0)
+    {
+      break;
+    }
+    if (bytes_read < 0 && errno == EINTR)
+    {
+      continue;
+    }
+    if (bytes_read == 1)
+    {
+      errxit("Unable to exec child: %s", cmd);
+      my_abort();
+      exit(2);
+    }
+  }
+  close(pipecloexec[0]);
   return pid;
 }
 
