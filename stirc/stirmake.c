@@ -669,6 +669,10 @@ void errxit(const char *fmt, ...)
     }
     if (pid < 0)
     {
+      if (errno == EINTR)
+      {
+        continue;
+      }
       printf("30.E\n");
       perror("Error was");
       printf("number of children: %d\n", children);
