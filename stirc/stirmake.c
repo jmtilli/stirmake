@@ -5586,55 +5586,91 @@ int main(int argc, char **argv)
 
   struct sigaction saseg;
   sigemptyset(&saseg.sa_mask);
+#ifdef SA_RESTART
+  saseg.sa_flags = SA_RESTART;
+#else
   saseg.sa_flags = 0;
+#endif
   saseg.sa_handler = sigsegv_handler;
   sigaction(SIGSEGV, &saseg, NULL);
 
   struct sigaction safpe;
   sigemptyset(&safpe.sa_mask);
+#ifdef SA_RESTART
+  safpe.sa_flags = SA_RESTART;
+#else
   safpe.sa_flags = 0;
+#endif
   safpe.sa_handler = sigfpe_handler;
   sigaction(SIGFPE, &safpe, NULL);
 
   struct sigaction saill;
   sigemptyset(&saill.sa_mask);
+#ifdef SA_RESTART
+  saill.sa_flags = SA_RESTART;
+#else
   saill.sa_flags = 0;
+#endif
   saill.sa_handler = sigill_handler;
   sigaction(SIGILL, &saill, NULL);
 
   struct sigaction saquit;
   sigemptyset(&saquit.sa_mask);
+#ifdef SA_RESTART
+  saquit.sa_flags = SA_RESTART;
+#else
   saquit.sa_flags = 0;
+#endif
   saquit.sa_handler = sigquit_handler;
   sigaction(SIGQUIT, &saquit, NULL);
 
   struct sigaction sasys;
   sigemptyset(&sasys.sa_mask);
+#ifdef SA_RESTART
+  sasys.sa_flags = SA_RESTART;
+#else
   sasys.sa_flags = 0;
+#endif
   sasys.sa_handler = sigsys_handler;
   sigaction(SIGSYS, &sasys, NULL);
 
   struct sigaction saxcpu;
   sigemptyset(&saxcpu.sa_mask);
+#ifdef SA_RESTART
+  saxcpu.sa_flags = SA_RESTART;
+#else
   saxcpu.sa_flags = 0;
+#endif
   saxcpu.sa_handler = sigxcpu_handler;
   sigaction(SIGXCPU, &saxcpu, NULL);
 
   struct sigaction saxfsz;
   sigemptyset(&saxfsz.sa_mask);
+#ifdef SA_RESTART
+  saxfsz.sa_flags = SA_RESTART;
+#else
   saxfsz.sa_flags = 0;
+#endif
   saxfsz.sa_handler = sigxfsz_handler;
   sigaction(SIGXFSZ, &saxfsz, NULL);
 
   struct sigaction saabrt;
   sigemptyset(&saabrt.sa_mask);
+#ifdef SA_RESTART
+  saabrt.sa_flags = SA_RESTART;
+#else
   saabrt.sa_flags = 0;
+#endif
   saabrt.sa_handler = sigabrt_handler;
   sigaction(SIGABRT, &saabrt, NULL);
 
   struct sigaction sabus;
   sigemptyset(&sabus.sa_mask);
+#ifdef SA_RESTART
+  sabus.sa_flags = SA_RESTART;
+#else
   sabus.sa_flags = 0;
+#endif
   sabus.sa_handler = sigbus_handler;
   sigaction(SIGBUS, &sabus, NULL);
 
@@ -6871,27 +6907,47 @@ int main(int argc, char **argv)
 
   struct sigaction sa;
   sigemptyset(&sa.sa_mask);
+#ifdef SA_RESTART
+  sa.sa_flags = SA_RESTART;
+#else
   sa.sa_flags = 0;
+#endif
   sa.sa_handler = sigchld_handler;
   sigaction(SIGCHLD, &sa, NULL);
 
   struct sigaction salrm;
   sigemptyset(&salrm.sa_mask);
+#ifdef SA_RESTART
+  salrm.sa_flags = SA_RESTART;
+#else
   salrm.sa_flags = 0;
+#endif
   salrm.sa_handler = sigalrm_handler;
   sigaction(SIGALRM, &salrm, NULL);
 
   struct sigaction saint, saterm, sahup;
   sigemptyset(&saint.sa_mask);
+#ifdef SA_RESTART
+  saint.sa_flags = SA_RESTART;
+#else
   saint.sa_flags = 0;
+#endif
   saint.sa_handler = sigint_handler;
   sigaction(SIGINT, &saint, NULL);
   sigemptyset(&saterm.sa_mask);
+#ifdef SA_RESTART
+  saterm.sa_flags = SA_RESTART;
+#else
   saterm.sa_flags = 0;
+#endif
   saterm.sa_handler = sigterm_handler;
   sigaction(SIGTERM, &saterm, NULL);
   sigemptyset(&sahup.sa_mask);
+#ifdef SA_RESTART
+  sahup.sa_flags = SA_RESTART;
+#else
   sahup.sa_flags = 0;
+#endif
   sahup.sa_handler = sighup_handler;
   sigaction(SIGHUP, &sahup, NULL);
 
