@@ -6,6 +6,13 @@ die()
   exit 1
 }
 
+docmd()
+{
+  echo "$@"
+  "$@"
+  return $?
+}
+
 doflex()
 {
   if [ -e "$1" -a -e "$2" ]; then
@@ -74,13 +81,13 @@ fi
 for a in *.l; do
   base="`echo "$a"|sed 's/.l$//g'`"
   if doflex "$base.lex.c" "$base.lex.h"; then
-    $FLEX --outfile="$base.lex.c" --header-file="$base.lex.h" "$a" || die "flex"
+    docmd $FLEX --outfile="$base.lex.c" --header-file="$base.lex.h" "$a" || die "flex"
   fi
 done
 for a in *.y; do
   base="`echo "$a"|sed 's/.y$//g'`"
   if dobyacc "$base.tab.c" "$base.tab.h"; then
-    $BYACC -d -p "$base" -b "$base" -o "$base.tab.c" "$a" || die "byacc"
+    docmd $BYACC -d -p "$base" -b "$base" -o "$base.tab.c" "$a" || die "byacc"
   fi
 done
 for a in *.c; do
@@ -90,17 +97,17 @@ for a in *.c; do
   else
     libobjs="$libobjs $base.o"
   fi
-  $CC $CFLAGS -Wno-sign-compare -Wno-missing-prototypes -c -o "$base.o" "$a" || die "cc"
+  docmd $CC $CFLAGS -Wno-sign-compare -Wno-missing-prototypes -c -o "$base.o" "$a" || die "cc"
 done
 
-rm -f libstirmake.a
-ar rvs libstirmake.a $libobjs || die "ar"
+docmd rm -f libstirmake.a
+docmd ar rvs libstirmake.a $libobjs || die "ar"
 
-$CC $CFLAGS $LDFLAGS -o stirmake stirmake.o libstirmake.a abce/libabce.a $STIR_LUALIBS -lm || die "cclink"
+docmd $CC $CFLAGS $LDFLAGS -o stirmake stirmake.o libstirmake.a abce/libabce.a $STIR_LUALIBS -lm || die "cclink"
 
-rm -f smka
-rm -f smkt
-rm -f smkp
-ln -s stirmake smka
-ln -s stirmake smkt
-ln -s stirmake smkp
+docmd rm -f smka
+docmd rm -f smkt
+docmd rm -f smkp
+docmd ln -s stirmake smka
+docmd ln -s stirmake smkt
+docmd ln -s stirmake smkp
