@@ -58,6 +58,10 @@
 #endif
 #endif
 
+#if defined(__sun) && defined(__SVR4)
+#define HAS_UTIMENSAT 1
+#endif
+
 void *my_memrchr(const void *s, int c, size_t n)
 {
   unsigned const char *ptr = ((unsigned const char*)s) + n;

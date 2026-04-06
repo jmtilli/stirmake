@@ -104,6 +104,10 @@
   #endif
   #undef USE_VFORK // probably normal fork() + block parent here, inefficient
 #endif
+#if defined(__sun) && defined(__SVR4)
+  #include <sys/loadavg.h>
+  #define LOADAVG 1
+#endif
 
 #ifdef _POSIX_SPAWN // For other systems
 #ifndef HAVE_POSIX_SPAWN
