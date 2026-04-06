@@ -1990,7 +1990,9 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   int was_first = 0;
   char *cmdprint = NULL;
   char *args[3] = {"touch", NULL, NULL};
+#ifndef HAVE_POSIX_SPAWN
   int pipecloexec[2];
+#endif
 
 #ifdef HAVE_POSIX_SPAWN
   posix_spawn_file_actions_t file_actions;
@@ -2132,7 +2134,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
 #ifdef HAVE_POSIX_SPAWN
   if (posix_spawnp(&pid, "touch", file_actionsp, NULL, args, environ) != 0)
   {
-    errxit("Unable to spawn child: touch");
+    errxit("Unable to spawn child '%s' for target '%s' in directory '%s'", "touch", sttable[first_tgt->tgtidx].s, sttable[rules[ruleid]->diridx].s);
     exit(2);
   }
 #else
@@ -2182,7 +2184,9 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   }
   unsetenv("MAKEFLAGS");
   close(fdcurdir);
+#ifndef HAVE_POSIX_SPAWN
   close(pipecloexec[1]);
+#endif
 
 
   if (was_first)
@@ -2199,10 +2203,15 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   {
     *fdout = outpiperd;
   }
+#ifndef HAVE_POSIX_SPAWN
   for (;;)
   {
     char ch;
     ssize_t bytes_read = read(pipecloexec[0], &ch, 1);
+    if (bytes_read < 0)
+    {
+      break;
+    }
     if (bytes_read == 0)
     {
       break;
@@ -2213,12 +2222,13 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
     }
     if (bytes_read == 1)
     {
-      errxit("Unable to exec child: touch");
+      errxit("Unable to exec child '%s' for target '%s' in directory '%s'", "touch", sttable[first_tgt->tgtidx].s, sttable[rules[ruleid]->diridx].s);
       fflush(stderr);
       exit(2);
     }
   }
   close(pipecloexec[0]);
+#endif
   return pid;
 }
 
@@ -2236,7 +2246,9 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   char **args;
   char *cmd;
   int ismake;
+#ifndef HAVE_POSIX_SPAWN
   int pipecloexec[2];
+#endif
   int fd_in_use = 0;
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode);
@@ -2472,7 +2484,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
 #ifdef HAVE_POSIX_SPAWN
   if (posix_spawnp(&pid, cmd, file_actionsp, NULL, &args[3], environ) != 0)
   {
-    errxit("Unable to spawn child: %s", cmd);
+    errxit("Unable to spawn child '%s' for target '%s' in directory '%s'", cmd, sttable[first_tgt->tgtidx].s, sttable[rules[ruleid]->diridx].s);
     exit(2);
   }
 #else
@@ -2540,7 +2552,9 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   }
   unsetenv("MAKEFLAGS");
   close(fdcurdir);
+#ifndef HAVE_POSIX_SPAWN
   close(pipecloexec[1]);
+#endif
 
   if (was_first)
   {
@@ -2556,10 +2570,15 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     *fdout = outpiperd;
   }
+#ifndef HAVE_POSIX_SPAWN
   for (;;)
   {
     char ch;
     ssize_t bytes_read = read(pipecloexec[0], &ch, 1);
+    if (bytes_read < 0)
+    {
+      break;
+    }
     if (bytes_read == 0)
     {
       break;
@@ -2570,12 +2589,13 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
     }
     if (bytes_read == 1)
     {
-      errxit("Unable to exec child: %s", cmd);
-      my_abort();
+      errxit("Unable to exec child '%s' for target '%s' in directory '%s'", cmd, sttable[first_tgt->tgtidx].s, sttable[rules[ruleid]->diridx].s);
+      fflush(stderr);
       exit(2);
     }
   }
   close(pipecloexec[0]);
+#endif
   return pid;
 }
 
@@ -5311,7 +5331,6 @@ back:
             children--;
             if (!touchmode)
             {
-              size_t i = 3;
               char *cmd;
               cmd = get_cmd_only(&rules[ruleid]->cmd.args[rules[ruleid]->cmdidx-1][3]);
               fprintf(stderr, "stirmake: recipe for target '%s' in directory '%s' failed\nstirmake: failed command was: %s\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s, sttable[rules[ruleid]->diridx].s, cmd);
