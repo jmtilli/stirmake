@@ -2831,8 +2831,8 @@ void calc_cmd(int ruleid)
       abce_mb_dump(&abce.err.mb);
       stir_opcode_dump(abce.err.opcode);
     }
-    errxit("evaluating shell commands for %s failed, error: %s",
-           sttable[first_tgt->tgtidx].s, stir_err_to_str(abce.err.code));
+    errxit("evaluating shell commands for '%s' (directory: '%s') failed, error: %s",
+           sttable[first_tgt->tgtidx].s, sttable[r->diridx].s, stir_err_to_str(abce.err.code));
   }
 }
 
