@@ -1798,6 +1798,44 @@ char *print_cmd(const char *tgtname, const char *prefix, char **argiter_orig, in
   free(tbuf); // We could let it leak, too...
   return NULL;
 }
+char *get_cmd_only(char **argiter_orig)
+{
+  size_t argcnt = 0;
+  char **argiter = argiter_orig;
+  size_t i;
+  size_t tlen = 0;
+  char *tbuf = NULL;
+  size_t toff = 0;
+  int tret;
+  while (*argiter != NULL)
+  {
+    argiter++;
+    argcnt++;
+  }
+  for (i = 0; i < argcnt; i++)
+  {
+    tlen += strlen(argiter_orig[i]);
+    tlen += 1;
+  }
+  tlen += 1; // "\0"
+  /* Observe how we use standard malloc. A custom allocator using MAP_SHARED
+   * would not be safe to use in the child process. */
+  tbuf = malloc(tlen);
+  if (tbuf == NULL)
+  {
+    return NULL;
+  }
+  for (i = 0; i < argcnt; i++)
+  {
+    tret = snprintf(tbuf+toff, tlen-toff, (i==0) ? "%s" : " %s", argiter_orig[i]);
+    if (tret < 0 || (size_t)tret >= tlen - toff)
+    {
+      return NULL;
+    }
+    toff += (size_t)tret;
+  }
+  return tbuf;
+}
 
 const char *makecmds[] = {
   "make",
@@ -5271,7 +5309,18 @@ back:
               FD_CLR(fd, &globfds);
             }
             children--;
-            fprintf(stderr, "stirmake: recipe for target '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s);
+            if (!touchmode)
+            {
+              size_t i = 3;
+              char *cmd;
+              cmd = get_cmd_only(&rules[ruleid]->cmd.args[rules[ruleid]->cmdidx-1][3]);
+              fprintf(stderr, "stirmake: recipe for target '%s' in directory '%s' failed\nstirmake: failed command was: %s\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s, sttable[rules[ruleid]->diridx].s, cmd);
+              free(cmd);
+            }
+            else
+            {
+              fprintf(stderr, "stirmake: recipe for target '%s' in directory '%s' failed\n", sttable[ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx].s, sttable[rules[ruleid]->diridx].s);
+            }
             LINKED_LIST_FOR_EACH(node, &rules[ruleid]->tgtlist)
             {
               struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
