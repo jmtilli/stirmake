@@ -3690,21 +3690,21 @@ void mark_executed(int ruleid, int was_actually_executed)
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
       if (lstat(sttable[e->tgtidx].s, &statbuf) != 0 && !seen_pretend && !r->is_maybe)
       {
-        fprintf(stderr, "stirmake: *** Target %s was not created by rule.\n",
-               sttable[e->tgtidx].s);
+        fprintf(stderr, "stirmake: *** Target '%s' was not created by rule (directory: '%s').\n",
+               sttable[e->tgtidx].s, sttable[r->diridx].s);
         fprintf(stderr, "stirmake: *** Hint: use @phonyrule for phony rules.\n");
         fprintf(stderr, "stirmake: *** Hint: use @mayberule for rules that may or may not update target.\n");
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
-        errxit("Target %s was not created by rule", sttable[e->tgtidx].s);
+        errxit("Target '%s' was not created by rule", sttable[e->tgtidx].s);
       }
       if (r->st_mtim_valid && ts_cmp(mtim_from_statbuf(&statbuf), r->st_mtim) < 0 && !seen_pretend && !r->is_maybe)
       {
-        fprintf(stderr, "stirmake: *** Target %s was not updated by rule.\n",
-               sttable[e->tgtidx].s);
+        fprintf(stderr, "stirmake: *** Target '%s' was not updated by rule (directory: '%s').\n",
+               sttable[e->tgtidx].s, sttable[r->diridx].s);
         fprintf(stderr, "stirmake: *** Hint: use @phonyrule for phony rules.\n");
         fprintf(stderr, "stirmake: *** Hint: use @mayberule for rules that may or may not update target.\n");
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
-        errxit("Target %s was not updated by rule", sttable[e->tgtidx].s);
+        errxit("Target '%s' was not updated by rule", sttable[e->tgtidx].s);
       }
       tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
     }
