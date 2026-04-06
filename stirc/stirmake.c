@@ -1121,6 +1121,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
       if (mb->typ != ABCE_T_A)
       {
         abce->err.code = ABCE_E_EXPECT_ARRAY;
+        abce->err.opcode = ABCE_OPCODE_NOP;
 	abce_mb_errreplace_noinline(abce, mb);
         //abce->err.mb = abce_mb_refup(abce, mb);
         //abce_mb_refdn(abce, &mb);
@@ -1134,6 +1135,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
           if (mb->u.area->u.ar.mbs[j].typ != ABCE_T_A)
           {
             abce->err.code = ABCE_E_EXPECT_ARRAY;
+            abce->err.opcode = ABCE_OPCODE_NOP;
             abce->err.mb = abce_mb_refup(abce, &mb->u.area->u.ar.mbs[j]);
             //abce_mb_refdn(abce, &mb);
 	    abce_pop(abce);
@@ -1148,6 +1150,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
             if (mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
             {
               abce->err.code = ABCE_E_EXPECT_STR;
+              abce->err.opcode = ABCE_OPCODE_NOP;
               abce->err.mb =
                 abce_mb_refup(
                   abce, &mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k]);
@@ -1179,6 +1182,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
           if (mb->u.area->u.ar.mbs[j].typ != ABCE_T_S)
           {
             abce->err.code = ABCE_E_EXPECT_STR;
+            abce->err.opcode = ABCE_OPCODE_NOP;
             abce->err.mb = abce_mb_refup(abce, &mb->u.area->u.ar.mbs[j]);
             //abce_mb_refdn(abce, &mb);
 	    abce_pop(abce);
