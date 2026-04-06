@@ -3303,7 +3303,7 @@ int do_exec(int ruleid)
     }
     free(tracebuf);
     tracebuf = NULL;
-    if (has_to_exec && r->cmd.args[0] != NULL && !seen_no_remake)
+    if (has_to_exec && r->cmd.args[0] != NULL && !seen_no_remake && !(r->is_phony && touchmode))
     {
       if (debug)
       {
