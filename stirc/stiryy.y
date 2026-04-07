@@ -516,21 +516,21 @@ custom_assign:
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
       size_t i;
-      printf("Error executing bytecode for var %s\n", $1);
-      printf("error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
-      printf("Backtrace:\n");
+      fprintf(stderr, "Error executing bytecode for var %s\n", $1);
+      fprintf(stderr, "error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
+      fprintf(stderr, "Backtrace:\n");
       for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
       {
         if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
         {
-          printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
+          fprintf(stderr, "%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
         }
         else
         {
-          printf("(-)\n");
+          fprintf(stderr, "(-)\n");
         }
       }
-      printf("Additional information:\n");
+      fprintf(stderr, "Additional information:\n");
       abce_mb_dump(&get_abce(amyplanyy)->err.mb);
       stir_opcode_dump(get_abce(amyplanyy)->err.opcode);
       amyplanyyerror(scanner, amyplanyy, "error in assignment");
@@ -664,7 +664,7 @@ custom_expr0:
   // To allow non-emitting locations like if branches to have future builtins
   if (amyplanyy_do_emit(amyplanyy))
   {
-    fprintf(stderr, "Builtin %s not supported\n", $1);
+    stiryyerrorfmt(scanner, stiryy, "Builtin %s not supported", $1);
     YYABORT;
   }
 }
@@ -957,21 +957,21 @@ custom_rule:
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
       size_t i;
-      printf("Error executing bytecode for call directive\n");
-      printf("error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
-      printf("Backtrace:\n");
+      fprintf(stderr, "Error executing bytecode for call directive\n");
+      fprintf(stderr, "error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
+      fprintf(stderr, "Backtrace:\n");
       for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
       {
         if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
         {
-          printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
+          fprintf(stderr, "%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
         }
         else
         {
-          printf("(-)\n");
+          fprintf(stderr, "(-)\n");
         }
       }
-      printf("Additional information:\n");
+      fprintf(stderr, "Additional information:\n");
       abce_mb_dump(&get_abce(amyplanyy)->err.mb);
       stir_opcode_dump(get_abce(amyplanyy)->err.opcode);
       stiryyerror(scanner, stiryy, "error in @call");
@@ -1061,7 +1061,7 @@ custom_rule:
     }
     if ($3 != NULL && strsz != 1)
     {
-      printf("If setting include scope, must have 1 include, has %zu includes\n", strsz);
+      fprintf(stderr, "If setting include scope, must have 1 include, has %zu includes\n", strsz);
       stiryyerror(scanner, stiryy, "error in @dirinclude");
       YYABORT;
     }
@@ -1159,21 +1159,21 @@ custom_rule:
     if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
     {
       size_t i;
-      printf("Error executing bytecode for @if directive\n");
-      printf("error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
-      printf("Backtrace:\n");
+      fprintf(stderr, "Error executing bytecode for @if directive\n");
+      fprintf(stderr, "error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
+      fprintf(stderr, "Backtrace:\n");
       for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
       {
         if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
         {
-          printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
+          fprintf(stderr, "%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
         }
         else
         {
-          printf("(-)\n");
+          fprintf(stderr, "(-)\n");
         }
       }
-      printf("Additional information:\n");
+      fprintf(stderr, "Additional information:\n");
       abce_mb_dump(&get_abce(amyplanyy)->err.mb);
       stir_opcode_dump(get_abce(amyplanyy)->err.opcode);
       stiryyerror(scanner, stiryy, "error in @if");
@@ -1186,7 +1186,7 @@ custom_rule:
     int b;
     if (abce_getboolean(&b, get_abce(amyplanyy), 0) != 0)
     {
-      printf("expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+      fprintf(stderr, "expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
       stiryyerror(scanner, stiryy, "error in @if");
       YYABORT;
     }
@@ -1228,6 +1228,7 @@ custom_rule:
   {
     fprintf(stderr, "Incompatible version of stirmake installed, expected to contain git SHA1:\n");
     fprintf(stderr, "%s\n", $3.str);
+    stiryyerror(scanner, stiryy, "incompatible version");
     YYABORT;
   }
 }
@@ -1285,21 +1286,21 @@ OPEN_PAREN expr CLOSE_PAREN NEWLINE
       if (abce_engine(get_abce(amyplanyy), tmpbuf, tmpsiz) != 0)
       {
         size_t i;
-        printf("Error executing bytecode for @if directive\n");
-        printf("error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
-        printf("Backtrace:\n");
+        fprintf(stderr, "Error executing bytecode for @if directive\n");
+        fprintf(stderr, "error %s\n", stir_err_to_str(get_abce(amyplanyy)->err.code));
+        fprintf(stderr, "Backtrace:\n");
         for (i = 0; i < get_abce(amyplanyy)->btsz; i++)
         {
           if (get_abce(amyplanyy)->btbase[i].typ == ABCE_T_S)
           {
-            printf("%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
+            fprintf(stderr, "%s\n", abce_mba_str(get_abce(amyplanyy)->btbase[i].u.area));
           }
           else
           {
-            printf("(-)\n");
+            fprintf(stderr, "(-)\n");
           }
         }
-        printf("Additional information:\n");
+        fprintf(stderr, "Additional information:\n");
         abce_mb_dump(&get_abce(amyplanyy)->err.mb);
         stir_opcode_dump(get_abce(amyplanyy)->err.opcode);
         stiryyerror(scanner, stiryy, "error in @if");
@@ -1312,7 +1313,7 @@ OPEN_PAREN expr CLOSE_PAREN NEWLINE
       int b;
       if (abce_getboolean(&b, get_abce(amyplanyy), 0) != 0)
       {
-        printf("expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
+        fprintf(stderr, "expected boolean, got type %d\n", get_abce(amyplanyy)->err.mb.typ);
         stiryyerror(scanner, stiryy, "error in @if");
         YYABORT;
       }
@@ -3658,13 +3659,13 @@ shell_command:
     shidx = abce_cache_add_str(amyplanyy->main->abce, "sh", 2);
     if (shidx < 0)
     {
-      printf("out of memory\n");
+      stiryyerror(scanner, stiryy, "out of memory");
       YYABORT;
     }
     dashcidx = abce_cache_add_str(amyplanyy->main->abce, "-c", 2);
     if (dashcidx < 0)
     {
-      printf("out of memory\n");
+      stiryyerror(scanner, stiryy, "out of memory");
       YYABORT;
     }
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_NEW_ARRAY);
@@ -3679,7 +3680,7 @@ shell_command:
     emptyidx = abce_cache_add_str(amyplanyy->main->abce, "", 0);
     if (emptyidx < 0)
     {
-      printf("out of memory\n");
+      stiryyerror(scanner, stiryy, "out of memory");
       YYABORT;
     }
     abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -3734,7 +3735,7 @@ shell_command:
           cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
           if (cidx < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -3749,7 +3750,7 @@ shell_command:
           cidx = abce_cache_add_str(amyplanyy->main->abce, "$", 1);
           if (cidx < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -3766,7 +3767,7 @@ shell_command:
           cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);
           if (cidx < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
@@ -3785,7 +3786,7 @@ shell_command:
           cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
           if (cidx < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -3794,7 +3795,7 @@ shell_command:
           cidx = abce_cache_add_str(amyplanyy->main->abce, &$1[i+1], 1);
           if (cidx < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_GETSCOPE_DYN);
@@ -3829,7 +3830,7 @@ shell_command:
           cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + (unsigned)isarray, end - (i+2+(unsigned)isarray));
           if (cidxvar < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           if (isarray)
@@ -3837,7 +3838,7 @@ shell_command:
             cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
             if (cidx < 0)
             {
-              printf("out of memory\n");
+              stiryyerror(scanner, stiryy, "out of memory");
               YYABORT;
             }
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -3888,7 +3889,7 @@ shell_command:
           cidxvar = abce_cache_add_str(amyplanyy->main->abce, $1 + i + 2 + (unsigned)isarray, end - (i+2+(unsigned)isarray));
           if (cidxvar < 0)
           {
-            printf("out of memory\n");
+            stiryyerror(scanner, stiryy, "out of memory");
             YYABORT;
           }
           if (isarray)
@@ -3896,7 +3897,7 @@ shell_command:
             cidx = abce_cache_add_str(amyplanyy->main->abce, " ", 1);
             if (cidx < 0)
             {
-              printf("out of memory\n");
+              stiryyerror(scanner, stiryy, "out of memory");
               YYABORT;
             }
             abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -3941,7 +3942,7 @@ shell_command:
       cidx = abce_cache_add_str(amyplanyy->main->abce, outbuf, outsz);
       if (cidx < 0)
       {
-        printf("out of memory\n");
+        stiryyerror(scanner, stiryy, "out of memory");
         YYABORT;
       }
       abce_add_ins(amyplanyy->main->abce, ABCE_OPCODE_PUSH_DBL);
@@ -4018,7 +4019,7 @@ targetspec:
   {
     if (stiryy->main->rules[stiryy->main->rulesz - 1].targetsz == 0)
     {
-      printf("empty target list\n");
+      stiryyerror(scanner, stiryy, "empty target list");
       YYABORT;
     }
   }
@@ -4230,7 +4231,7 @@ tgtdepref:
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1, strlen($1));
     if (idx < 0)
     {
-      printf("out of memory\n");
+      stiryyerror(scanner, stiryy, "out of memory");
       YYABORT;
     }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
@@ -4249,7 +4250,7 @@ tgtdepref:
     int64_t idx = abce_cache_add_str(get_abce(amyplanyy), $1.str, $1.sz);
     if (idx < 0)
     {
-      printf("out of memory\n");
+      stiryyerror(scanner, stiryy, "out of memory");
       YYABORT;
     }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
