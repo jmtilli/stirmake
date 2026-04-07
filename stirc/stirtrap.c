@@ -317,6 +317,7 @@ char *stir_shellescape(const char *old, size_t oldsz, size_t *newszptr)
         || old[i] == '{' // brace expansion: source.{c,h}
         || old[i] == '}' // brace expansion, probably just } would be ok
         || old[i] == '^' // unknown, but safest to quote
+        || old[i] == ' ' // space, argument separator
        )
     {
       emit(&newbuf, &newsz, &newcap, '\\');
@@ -2532,6 +2533,54 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
         free(newstr);
         return 0;
       }
+    case STIR_OPCODE_SHELL_ESCAPE_MULTI:
+      {
+        struct abce_mb *mbarg, *mbnew;
+        size_t i;
+        GETMBARPTR(&mbarg, -1);
+        for (i = 0; i < mbarg->u.area->u.ar.size; i++)
+        {
+          const struct abce_mb *mb = &mbarg->u.area->u.ar.mbs[i];
+          if (mb->typ != ABCE_T_S)
+          {
+            abce->err.code = ABCE_E_EXPECT_STR;
+            abce_mb_errreplace_noinline(abce, mb);
+            return -EINVAL;
+          }
+        }
+        mbnew = abce_mb_cpush_create_array(abce);
+        for (i = 0; i < mbarg->u.area->u.ar.size; i++)
+        {
+          const struct abce_mb *mb = &mbarg->u.area->u.ar.mbs[i];
+          char *newstr;
+          size_t newsz;
+          struct abce_mb *mbnew2;
+          newstr = stir_shellescape(abce_mba_str(mb->u.area), mb->u.area->u.str.size, &newsz);
+          if (newstr == NULL)
+          {
+            abce_cpop(abce);
+            return -ENOMEM;
+          }
+          mbnew2 = abce_mb_cpush_create_string(abce, newstr, newsz);
+          if (mbnew2 == NULL)
+          {
+            abce_cpop(abce);
+            free(newstr);
+            return -ENOMEM;
+          }
+          free(newstr);
+          if (abce_mb_array_append(abce, mbnew, mbnew2) != 0)
+          {
+            abce_cpop(abce);
+            abce_cpop(abce);
+            return -ENOMEM;
+          }
+          abce_cpop(abce);
+        }
+        abce_npoppush(abce, 1, mbnew);
+        abce_cpop(abce);
+        return 0;
+      }
     case STIR_OPCODE_ABSPATH:
       {
         struct abce_mb *mbarg;
@@ -2729,6 +2778,9 @@ void stir_opcode_dump(uint16_t opcode)
       break;
     case STIR_OPCODE_SHELL_ESCAPE:
       printf("Shell escaping\n");
+      break;
+    case STIR_OPCODE_SHELL_ESCAPE_MULTI:
+      printf("Shell escaping multi\n");
       break;
     case STIR_OPCODE_ABSPATH:
       printf("@abspath\n");
