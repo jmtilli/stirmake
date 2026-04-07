@@ -2777,10 +2777,10 @@ void stir_opcode_dump(uint16_t opcode)
       printf("@prefilterout\n");
       break;
     case STIR_OPCODE_SHELL_ESCAPE:
-      printf("Shell escaping\n");
+      printf("@shellescape\n");
       break;
     case STIR_OPCODE_SHELL_ESCAPE_MULTI:
-      printf("Shell escaping multi\n");
+      printf("@shellescapemulti\n");
       break;
     case STIR_OPCODE_ABSPATH:
       printf("@abspath\n");

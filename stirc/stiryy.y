@@ -231,6 +231,9 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DUMMY_TOK1
 %token DUMMY_TOK2
 
+%token SHELLESCAPE
+%token SHELLESCAPEMULTI
+
 %token <s> SHELL_COMMAND
 %token ATTAB ATATTAB
 
@@ -666,6 +669,20 @@ custom_expr0:
   {
     stiryyerrorfmt(scanner, stiryy, "Builtin %s not supported", $1);
     YYABORT;
+  }
+}
+| SHELLESCAPE OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SHELL_ESCAPE);
+  }
+}
+| SHELLESCAPEMULTI OPEN_PAREN expr CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, STIR_OPCODE_SHELL_ESCAPE_MULTI);
   }
 }
 | VERSION OPEN_PAREN STRING_LITERAL CLOSE_PAREN
