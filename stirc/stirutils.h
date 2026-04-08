@@ -30,11 +30,20 @@ int utimensat_both_emul(const char *pathname, struct timespec time, int l,
 static inline struct timespec mtim_from_statbuf(struct stat *sb)
 {
 #define st_mtim_posix st_mtim
-#if defined(__APPLE__) || defined(__NetBSD__)
+#if defined(__APPLE__)
 #undef st_mtim_posix
 #define st_mtim_posix st_mtimespec
 #ifndef st_mtime
 #define st_mtime st_mtimespec.tv_sec
+#endif
+#endif
+#if defined(__NetBSD__)
+#if __NetBSD_Version__ < 700000000
+#undef st_mtim_posix
+#define st_mtim_posix st_mtimespec
+#ifndef st_mtime
+#define st_mtime st_mtimespec.tv_sec
+#endif
 #endif
 #endif
 #ifdef __FreeBSD__
