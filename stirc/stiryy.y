@@ -248,7 +248,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token BEGINSCOPE BEGINHOLEYSCOPE ENDSCOPE
 %token FORDICT FORDICTPREV
 
-%token FOPEN FCLOSE FREAD FSEEK FFLUSH FWRITE FGETDELIM
+%token FOPEN FCLOSE FREAD2 FSEEK FFLUSH FWRITE2 FGETDELIM
 
 %token ONCE ENDONCE STDOUT STDERR ERROR DUMP EXIT
 %token EQUALS
@@ -3081,7 +3081,7 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_CLOSE); }
 | FFLUSH OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_FLUSH); }
-| FREAD OPEN_PAREN expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
+| FREAD2 OPEN_PAREN expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_GET); }
 | FGETDELIM OPEN_PAREN expr COMMA expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_GETDELIM); }
@@ -3095,7 +3095,7 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_MKTIME); }
 | FSEEK OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_SEEK_TELL); }
-| FWRITE OPEN_PAREN expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
+| FWRITE2 OPEN_PAREN expr COMMA expr COMMA expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_WRITE); }
 | SPLICE OPEN_PAREN expr COMMA expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LISTSPLICE); }

@@ -146,11 +146,11 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@endfor   return ENDFOR;
 <INITIAL,STRICT>@fopen    return FOPEN;
 <INITIAL,STRICT>@fclose   return FCLOSE;
-<INITIAL,STRICT>@fread    return FREAD;
+<INITIAL,STRICT>@fread    return FREAD2;
 <INITIAL,STRICT>@fseek    return FSEEK;
 <INITIAL,STRICT>@fgetdelim return FGETDELIM;
 <INITIAL,STRICT>@fflush   return FFLUSH;
-<INITIAL,STRICT>@fwrite   return FWRITE;
+<INITIAL,STRICT>@fwrite   return FWRITE2;
 <INITIAL,STRICT>@jsonenc  return JSONENC;
 <INITIAL,STRICT>@jsondec  return JSONDEC;
 <INITIAL,STRICT>@jsontest return JSONTEST;
