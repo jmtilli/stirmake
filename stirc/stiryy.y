@@ -34,6 +34,7 @@ typedef void *yyscan_t;
 #include "abce/amyplanlocvarctx.h"
 #include "git.h"
 #include <arpa/inet.h>
+#include <stdarg.h>
 
 void stiryy_store_lineno(struct stiryy *stiryy, yyscan_t scanner)
 {
