@@ -248,7 +248,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token BEGINSCOPE BEGINHOLEYSCOPE ENDSCOPE
 %token FORDICT FORDICTPREV
 
-%token FOPEN FCLOSE FREAD2 FSEEK FFLUSH FWRITE2 FGETDELIM
+%token FOPEN2 FCLOSE FREAD2 FSEEK FFLUSH FWRITE2 FGETDELIM
 
 %token ONCE ENDONCE STDOUT STDERR ERROR DUMP EXIT
 %token EQUALS
@@ -3075,7 +3075,7 @@ expr0_without_string:
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRAPPEND); }
 | STRSTRIP OPEN_PAREN expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_STRSTRIP); }
-| FOPEN OPEN_PAREN expr COMMA expr CLOSE_PAREN
+| FOPEN2 OPEN_PAREN expr COMMA expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_OPEN); }
 | FCLOSE OPEN_PAREN expr CLOSE_PAREN
 { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_FILE_CLOSE); }

@@ -144,7 +144,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@fordict  return FORDICT;
 <INITIAL,STRICT>@fordictprev  return FORDICTPREV;
 <INITIAL,STRICT>@endfor   return ENDFOR;
-<INITIAL,STRICT>@fopen    return FOPEN;
+<INITIAL,STRICT>@fopen    return FOPEN2;
 <INITIAL,STRICT>@fclose   return FCLOSE;
 <INITIAL,STRICT>@fread    return FREAD2;
 <INITIAL,STRICT>@fseek    return FSEEK;
