@@ -1004,21 +1004,6 @@ To fix this, use the
 .Va @strict
 mode. However, then free-form token support is entirely disabled.
 .It
-If doing
-.Pp
-.Bd -literal
-cp file.c file.c.bak
-$EDITOR file.c
-smka
-mv file.c.bak file.c
-smka
-.Ed
-.Pp
-there will not be a rebuild of files depending on
-.Pa file.c ,
-because its timestamp is older than that of
-.Pa file.o .
-.It
 Some error codes are translated to
 .Dq "Unknown error"
 instead of a descriptive
