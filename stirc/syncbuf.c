@@ -15,7 +15,7 @@ void stir_do_munmap(void *ptr, size_t bytes);
 struct syncbufpage *getbuf(void)
 {
   struct syncbufpage *page;
-  page = stir_do_mmap_madvise(sizeof(page));
+  page = stir_do_mmap_madvise(sizeof(*page));
   page->meatsz = 0;
   return page;
 }
