@@ -1,4 +1,3 @@
-/*
 %code requires {
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #define YY_TYPEDEF_YY_SCANNER_T
@@ -8,6 +7,7 @@ typedef void *yyscan_t;
 #include <sys/types.h>
 }
 
+/*
 %define api.prefix {stiryy}
 */
 
@@ -4282,8 +4282,8 @@ tgtdepref:
 }
 | OPEN_PAREN
 {
-  $$.d = get_abce(amyplanyy)->bytecodesz;
-  $$.flags = 0;
+  $<dflags>$.d = get_abce(amyplanyy)->bytecodesz;
+  $<dflags>$.flags = 0;
 }
   expr CLOSE_PAREN
 {
