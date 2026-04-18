@@ -400,7 +400,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   if (tgtres->typ != ABCE_T_A)
   {
     abce->err.code = ABCE_E_EXPECT_ARRAY;
-    abce->err.mb.typ = ABCE_T_N; // FIXME
+    abce->err.mb = abce_mb_refup(abce, tgtres);
     abce_pop(abce);
     return -EINVAL;
   }
@@ -412,7 +412,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     if (mb->typ != ABCE_T_T)
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
-      abce->err.mb.typ = ABCE_T_N; // FIXME
+      abce->err.mb = abce_mb_refup(abce, mb);
       abce_pop(abce);
       return -EINVAL;
     }
@@ -425,7 +425,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     if (mbstr->typ != ABCE_T_S)
     {
       abce->err.code = ABCE_E_EXPECT_STR;
-      abce->err.mb.typ = ABCE_T_N; // FIXME
+      abce->err.mb = abce_mb_refup(abce, mbstr);
       abce_pop(abce);
       return -EINVAL;
     }
@@ -434,7 +434,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -448,7 +448,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   if (depres && depres->typ != ABCE_T_A)
   {
     abce->err.code = ABCE_E_EXPECT_ARRAY;
-    abce->err.mb.typ = ABCE_T_N; // FIXME
+    abce->err.mb = abce_mb_refup(abce, depres);
     abce_pop(abce);
     return -EINVAL;
   }
@@ -464,7 +464,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     if (mb->typ != ABCE_T_T)
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
-      abce->err.mb.typ = ABCE_T_N; // FIXME
+      abce->err.mb = abce_mb_refup(abce, mb);
       abce_pop(abce);
       return -EINVAL;
     }
@@ -477,7 +477,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     if (mbstr->typ != ABCE_T_S)
     {
       abce->err.code = ABCE_E_EXPECT_STR;
-      abce->err.mb.typ = ABCE_T_N; // FIXME
+      abce->err.mb = abce_mb_refup(abce, mbstr);
       abce_pop(abce);
       return -EINVAL;
     }
@@ -486,7 +486,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -496,7 +496,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -510,7 +510,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   if (shellsres && shellsres->typ != ABCE_T_A)
   {
     abce->err.code = ABCE_E_EXPECT_ARRAY;
-    abce->err.mb.typ = ABCE_T_N; // FIXME
+    abce->err.mb = abce_mb_refup(abce, shellsres);
     abce_pop(abce);
     return -EINVAL;
   }
@@ -528,7 +528,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     if (mb->typ != ABCE_T_T)
     {
       abce->err.code = ABCE_E_EXPECT_TREE;
-      abce->err.mb.typ = ABCE_T_N; // FIXME
+      abce->err.mb = abce_mb_refup(abce, mb);
       abce_pop(abce);
       return -EINVAL;
     }
@@ -538,7 +538,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -549,7 +549,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -560,7 +560,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -570,7 +570,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -580,7 +580,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -590,21 +590,21 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[fun]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, &abce->cachebase[fun]);
         abce_pop(abce);
         return -EINVAL;
       }
       if (attr1->typ != ABCE_T_F)
       {
         abce->err.code = ABCE_E_EXPECT_FUNC;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[arg]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, &abce->cachebase[arg]);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -615,14 +615,14 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmds]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, &abce->cachebase[cmds]);
         abce_pop(abce);
         return -EINVAL;
       }
       if (attr1->typ != ABCE_T_A)
       {
         abce->err.code = ABCE_E_EXPECT_ARRAY;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -632,7 +632,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
         if (attr1->u.area->u.ar.mbs[j].typ != ABCE_T_A)
         {
           abce->err.code = ABCE_E_EXPECT_ARRAY;
-          abce->err.mb.typ = ABCE_T_N; // FIXME
+          abce->err.mb = abce_mb_refup(abce, &attr1->u.area->u.ar.mbs[j]);
           abce_pop(abce);
           return -EINVAL;
         }
@@ -641,7 +641,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
           if (attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].typ != ABCE_T_S)
           {
             abce->err.code = ABCE_E_EXPECT_STR;
-            abce->err.mb.typ = ABCE_T_N; // FIXME
+            abce->err.mb = abce_mb_refup(abce, &attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k]);
             abce_pop(abce);
             return -EINVAL;
           }
@@ -654,14 +654,14 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[cmd]) != 0)
       {
         abce->err.code = STIR_E_NO_SHELLARG;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, &abce->cachebase[cmd]);
         abce_pop(abce);
         return -EINVAL;
       }
       if (attr1->typ != ABCE_T_A)
       {
         abce->err.code = ABCE_E_EXPECT_ARRAY;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -670,7 +670,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
         if (attr1->u.area->u.ar.mbs[j].typ != ABCE_T_S)
         {
           abce->err.code = ABCE_E_EXPECT_STR;
-          abce->err.mb.typ = ABCE_T_N; // FIXME
+          abce->err.mb = abce_mb_refup(abce, &attr1->u.area->u.ar.mbs[j]);
           abce_pop(abce);
           return -EINVAL;
         }
@@ -685,7 +685,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   if (attrsres && attrsres->typ != ABCE_T_T)
   {
     abce->err.code = ABCE_E_EXPECT_TREE;
-    abce->err.mb.typ = ABCE_T_N; // FIXME
+    abce->err.mb = abce_mb_refup(abce, attrsres);
     abce_pop(abce);
     return -EINVAL;
   }
@@ -697,7 +697,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -708,7 +708,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -719,7 +719,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -730,7 +730,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -741,7 +741,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -752,7 +752,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -763,7 +763,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -774,7 +774,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -785,7 +785,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
-        abce->err.mb.typ = ABCE_T_N; // FIXME
+        abce->err.mb = abce_mb_refup(abce, attr1);
         abce_pop(abce);
         return -EINVAL;
       }
@@ -866,7 +866,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   for (i = 0; i < shellsz; i++)
   {
     struct abce_mb *mb = &shellsres->u.area->u.ar.mbs[i];
-    struct abce_mb *attr1;
+    struct abce_mb *attr1 = NULL;
     int boolembed = 0;
     int boolisfun = 0;
     int boolismake = 0, boolnoecho = 0, boolignore = 0;
