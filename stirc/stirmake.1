@@ -8,21 +8,49 @@
 .Nd scalable true implementation of recursive make
 .Sh SYNOPSIS
 .Nm stirmake
-.Op Fl bcdqv
+.Op Fl vGdhcbqikBnsTReEFPu
 .Op Fl j Ar jobcnt
+.Op Fl l Ar limit
+.Op Fl W Ar file
+.Op Fl X Ar file
+.Op Fl o Ar file
+.Op Fl r Ar file
+.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl C Ar dir
 .Op Fl f Ar Stirfile | Fl t | Fl p | Fl a
 .Op Ar target ...
 .Nm smka
-.Op Fl bcdqv
+.Op Fl vGdhcbqikBnsTReEFPu
 .Op Fl j Ar jobcnt
+.Op Fl l Ar limit
+.Op Fl W Ar file
+.Op Fl X Ar file
+.Op Fl o Ar file
+.Op Fl r Ar file
+.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl C Ar dir
 .Op Ar target ...
 .Nm smkp
-.Op Fl bcdqv
+.Op Fl vGdhcbqikBnsTReEFPu
 .Op Fl j Ar jobcnt
+.Op Fl l Ar limit
+.Op Fl W Ar file
+.Op Fl X Ar file
+.Op Fl o Ar file
+.Op Fl r Ar file
+.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl C Ar dir
 .Op Ar target ...
 .Nm smkt
-.Op Fl bcdqv
+.Op Fl vGdhcbqikBnsTReEFPu
 .Op Fl j Ar jobcnt
+.Op Fl l Ar limit
+.Op Fl W Ar file
+.Op Fl X Ar file
+.Op Fl o Ar file
+.Op Fl r Ar file
+.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl C Ar dir
 .Op Ar target ...
 .Sh DESCRIPTION
 .Nm stirmake
@@ -85,18 +113,38 @@ Build things relative to project hierarchy root. This is automatic if
 .Nm stirmake
 is invoked as 
 .Nm smka .
+.It Fl B
+Unconditional build of everything. Build things even though they seem to be
+up-to-date.
 .It Fl b
 Clean all binaries and exit, except if targets were specified, in which case
 build the targets afterwards.
+.It Fl C Ar dir
+Enter directory
+.Ao Ar dir Ac
+before building. This option can be specified multiple times.
 .It Fl c
-Clean all binaries and exit, except if targets were specified, in which case
-build the targets afterwards.
+Clean all object files and exit, except if targets were specified, in which
+case build the targets afterwards.
 .It Fl d
 Print debugging information.
+.It Fl E
+Use timestamp database
+.It Fl e
+Do not use timestamp database
+.It Fl F
+Use FIFO style jobserver, for compatibility with GNU make (at least 4.4) and
+Ninja.
 .It Fl f Ao Ar Stirfile Ac
 Use
 .Ao Ar Stirfile Ac
 as the file to read build instructions from.
+.It Fl G
+Print the full git history of commits that this version of stirmake contains.
+.It Fl h
+Print help and exit
+.It Fl i
+Ignore errors
 .It Fl j Ao Ar jobcnt Ac
 Use
 .Ao Ar jobcnt Ac
@@ -106,21 +154,71 @@ begins with
 .Sq a ,
 detect CPU count in the system automatically and use that as
 job count.
+.It Fl k
+Do as much as possible even after encountering the first error
+.It Fl l Ao Ar limit Ac
+Limit the load average to
+.Ao Ar limit Ac .
+If a process past the first needs to be forked, but load average is above the
+limit, it is not forked.
+.It Fl n
+Do a dry run, don't build anything
+.It Fl O Ar n | Fl O Ar t | Fl O Ar r
+Do output sync for
+.Ao Ar n Ac
+(nothing),
+.Ao Ar t Ac
+(each target),
+.Ao Ar r Ac
+(recursively).
+.It Fl o Ar file
+Pretend
+.Ao Ar file Ac
+relative to the project structure root (smka), project root (smkp) or current
+directory (smkt), is very old but do not remake anything based on it.
+.It Fl P
+Use a pipe style jobserver, for compatibility with GNU make versions prior to
+4.4.
 .It Fl p
 Build things relative to project root. This is automatic if
 .Nm stirmake
 is invoked as 
 .Nm smkp .
+.It Fl q
+Exit with status 0 if target is up-to-date and with status 1 if target is
+not up-to-date. Don't do any build steps.
+.It Fl R
+Tracing mode. Print information of what is done and why.
+.It Fl r Ar file
+Pretend
+.Ao Ar file Ac
+relative to the current directory is very old but do not remake anything based
+on it.
+.It Fl s
+Silent mode.
+.It Fl T
+Touch mode. Do not build targets with the specified commands, but touch them
+instead so that the files exist and their timestamps are updated.
 .It Fl t
 Build things relative to current directory. This is automatic if
 .Nm stirmake
 is invoked as 
 .Nm smkt .
-.It Fl q
-Exit with status 0 if target is up-to-date and with status 1 if target is
-not up-to-date. Don't do any build steps.
+.It Fl u
+Unsafe mode. Can detect project root as a directory that is world-writable
+such as
+.Pa /tmp .
 .It Fl v
 Print version information and exit.
+.It Fl W Ar file
+Pretend that
+.Ao Ar file Ac
+has just been modified, relative to the project structure root (smka), project
+root (smkp) or current directory (smkt).
+.It Fl X Ar file
+Pretend that
+.Ao Ar file Ac
+has just been modified, relative to the current directory.
 .El
 .Sh "STIRFILE FORMAT"
 Each Stirfile must begin with a marker 
