@@ -1994,6 +1994,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   int was_first = 0;
   char *cmdprint = NULL;
   char *args[3] = {"touch", NULL, NULL};
+  char *args_true[2] = {"true", NULL};
 #ifndef HAVE_POSIX_SPAWN
   int pipecloexec[2];
 #endif
@@ -2136,7 +2137,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
   free(cmdprint);
 
 #ifdef HAVE_POSIX_SPAWN
-  if (posix_spawnp(&pid, "touch", file_actionsp, NULL, args, environ) != 0)
+  if (posix_spawnp(&pid, dry_run ? "true" : "touch", file_actionsp, NULL, dry_run ? args_true : args, environ) != 0)
   {
     errxit("Unable to spawn child '%s' for target '%s' in directory '%s'", "touch", sttable[first_tgt->tgtidx].s, sttable[rules[ruleid]->diridx].s);
     exit(2);
@@ -2172,6 +2173,10 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
       dup2(outpipewr, 2);
       close(outpipewr);
       close(outpiperd);
+    }
+    if (dry_run)
+    {
+      _exit(0);
     }
     // TODO create CLOEXEC pipe, write 1 char into it if "touch" fails,
     // read the EOF or the 1 char from it
@@ -2248,6 +2253,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   char *cmdprint = NULL;
   int was_first = 0;
   char **args;
+  char *args_true[2] = {"true", NULL};
   char *cmd;
   int ismake;
 #ifndef HAVE_POSIX_SPAWN
@@ -2486,7 +2492,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   free(cmdprint);
 
 #ifdef HAVE_POSIX_SPAWN
-  if (posix_spawnp(&pid, cmd, file_actionsp, NULL, &args[3], environ) != 0)
+  if (posix_spawnp(&pid, dry_run ? "true" : cmd, file_actionsp, NULL, dry_run ? args_true : &args[3], environ) != 0)
   {
     errxit("Unable to spawn child '%s' for target '%s' in directory '%s'", cmd, sttable[first_tgt->tgtidx].s, sttable[rules[ruleid]->diridx].s);
     exit(2);
@@ -2540,6 +2546,10 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
         close(outpipewr);
         close(outpiperd);
       }
+    }
+    if (dry_run)
+    {
+      _exit(0);
     }
     // TODO create CLOEXEC pipe, write 1 char into it if "touch" fails,
     // read the EOF or the 1 char from it
