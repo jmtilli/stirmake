@@ -3,6 +3,9 @@
 SRC_LIB := yyutils.c incyyutils.c dbyyutils.c canon.c stirtrap.c jsonyyutils.c syncbuf.c bypid.c mymalloc.c stringtab.c db.c stirutils.c statcache.c bytgt.c bydep.c adddep.c rule.c
 SRC := $(SRC_LIB) stir.c inc.c stirmake.c jsonyytest.c
 
+BYACC ?= byacc
+FLEX ?= flex
+
 LEX_LIB := stiryy.l incyy.l dbyy.l jsonyy.l
 LEX := $(LEX_LIB)
 
@@ -124,15 +127,15 @@ stiryy.tab.d: stiryy.tab.h stiryy.lex.h
 stiryy.tab.o: stiryy.tab.h stiryy.lex.h
 
 stiryy.lex.c: stiryy.l Makefile
-	flex --outfile=stiryy.lex.c --header-file=/dev/null stiryy.l
+	$(FLEX) --outfile=stiryy.lex.c --header-file=/dev/null stiryy.l
 stiryy.lex.h: stiryy.l Makefile
-	flex --outfile=/dev/null --header-file=stiryy.lex.h stiryy.l
+	$(FLEX) --outfile=/dev/null --header-file=stiryy.lex.h stiryy.l
 stiryy.tab.c: stiryy.y Makefile
-	byacc -d -p stiryy -b stiryy -o .tmpc.stiryy.tab.c stiryy.y
+	$(BYACC) -d -p stiryy -b stiryy -o .tmpc.stiryy.tab.c stiryy.y
 	rm .tmpc.stiryy.tab.h
 	mv .tmpc.stiryy.tab.c stiryy.tab.c
 stiryy.tab.h: stiryy.y Makefile
-	byacc -d -p stiryy -b stiryy -o .tmph.stiryy.tab.c stiryy.y
+	$(BYACC) -d -p stiryy -b stiryy -o .tmph.stiryy.tab.c stiryy.y
 	rm .tmph.stiryy.tab.c
 	mv .tmph.stiryy.tab.h stiryy.tab.h
 
@@ -142,15 +145,15 @@ incyy.tab.d: incyy.tab.h incyy.lex.h
 incyy.tab.o: incyy.tab.h incyy.lex.h
 
 incyy.lex.c: incyy.l Makefile
-	flex --outfile=incyy.lex.c --header-file=/dev/null incyy.l
+	$(FLEX) --outfile=incyy.lex.c --header-file=/dev/null incyy.l
 incyy.lex.h: incyy.l Makefile
-	flex --outfile=/dev/null --header-file=incyy.lex.h incyy.l
+	$(FLEX) --outfile=/dev/null --header-file=incyy.lex.h incyy.l
 incyy.tab.c: incyy.y Makefile
-	byacc -d -p incyy -b incyy -o .tmpc.incyy.tab.c incyy.y
+	$(BYACC) -d -p incyy -b incyy -o .tmpc.incyy.tab.c incyy.y
 	rm .tmpc.incyy.tab.h
 	mv .tmpc.incyy.tab.c incyy.tab.c
 incyy.tab.h: incyy.y Makefile
-	byacc -d -p incyy -b incyy -o .tmph.incyy.tab.c incyy.y
+	$(BYACC) -d -p incyy -b incyy -o .tmph.incyy.tab.c incyy.y
 	rm .tmph.incyy.tab.c
 	mv .tmph.incyy.tab.h incyy.tab.h
 
@@ -160,15 +163,15 @@ dbyy.tab.d: dbyy.tab.h dbyy.lex.h
 dbyy.tab.o: dbyy.tab.h dbyy.lex.h
 
 dbyy.lex.c: dbyy.l Makefile
-	flex --outfile=dbyy.lex.c --header-file=/dev/null dbyy.l
+	$(FLEX) --outfile=dbyy.lex.c --header-file=/dev/null dbyy.l
 dbyy.lex.h: dbyy.l Makefile
-	flex --outfile=/dev/null --header-file=dbyy.lex.h dbyy.l
+	$(FLEX) --outfile=/dev/null --header-file=dbyy.lex.h dbyy.l
 dbyy.tab.c: dbyy.y Makefile
-	byacc -d -p dbyy -b dbyy -o .tmpc.dbyy.tab.c dbyy.y
+	$(BYACC) -d -p dbyy -b dbyy -o .tmpc.dbyy.tab.c dbyy.y
 	rm .tmpc.dbyy.tab.h
 	mv .tmpc.dbyy.tab.c dbyy.tab.c
 dbyy.tab.h: dbyy.y Makefile
-	byacc -d -p dbyy -b dbyy -o .tmph.dbyy.tab.c dbyy.y
+	$(BYACC) -d -p dbyy -b dbyy -o .tmph.dbyy.tab.c dbyy.y
 	rm .tmph.dbyy.tab.c
 	mv .tmph.dbyy.tab.h dbyy.tab.h
 
@@ -178,15 +181,15 @@ jsonyy.tab.d: jsonyy.tab.h jsonyy.lex.h
 jsonyy.tab.o: jsonyy.tab.h jsonyy.lex.h
 
 jsonyy.lex.c: jsonyy.l Makefile
-	flex --outfile=jsonyy.lex.c --header-file=/dev/null jsonyy.l
+	$(FLEX) --outfile=jsonyy.lex.c --header-file=/dev/null jsonyy.l
 jsonyy.lex.h: jsonyy.l Makefile
-	flex --outfile=/dev/null --header-file=jsonyy.lex.h jsonyy.l
+	$(FLEX) --outfile=/dev/null --header-file=jsonyy.lex.h jsonyy.l
 jsonyy.tab.c: jsonyy.y Makefile
-	byacc -d -p jsonyy -b jsonyy -o .tmpc.jsonyy.tab.c jsonyy.y
+	$(BYACC) -d -p jsonyy -b jsonyy -o .tmpc.jsonyy.tab.c jsonyy.y
 	rm .tmpc.jsonyy.tab.h
 	mv .tmpc.jsonyy.tab.c jsonyy.tab.c
 jsonyy.tab.h: jsonyy.y Makefile
-	byacc -d -p jsonyy -b jsonyy -o .tmph.jsonyy.tab.c jsonyy.y
+	$(BYACC) -d -p jsonyy -b jsonyy -o .tmph.jsonyy.tab.c jsonyy.y
 	rm .tmph.jsonyy.tab.c
 	mv .tmph.jsonyy.tab.h jsonyy.tab.h
 
