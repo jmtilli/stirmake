@@ -47,17 +47,19 @@ https://jmtilli.github.io/stirmakeguide
 
 ## Building stirmake
 
-In order to build stirmake, you need to install flex and byacc. Depending on
-the Linux distribution, that can be:
+In order to build stirmake, you need to install development tools, git, flex
+and byacc. Depending on the Linux distribution, that can be:
 
 ```
-apt install flex byacc
+sudo apt install git build-essential
+sudo apt install flex byacc
 ```
 
 Or:
 
 ```
-yum install flex byacc
+sudo yum groupinstall 'Development Tools'
+sudo yum install git flex byacc
 ```
 
 If you use cygwin, install flex and byacc but also install m4, because flex
