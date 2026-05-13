@@ -205,6 +205,10 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %union {
   int i;
   double d;
+  struct {
+    double d;
+    int is_integer;
+  } d2;
   char *s;
   struct escaped_string str;
   struct stiryy_both both;
@@ -263,7 +267,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token COMMA
 %token SCOPENAME
 %token <str> STRING_LITERAL
-%token <d> NUMBER
+%token <d2> NUMBER
 %token <s> VARREF_LITERAL
 %token <s> FREEFORM_TOKEN
 %token <s> FUTURE_BUILTIN
@@ -951,7 +955,7 @@ custom_rule:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    printf("%g\n", $2);
+    printf("%g\n", $2.d);
   }
 }
 | CALL
@@ -1847,9 +1851,9 @@ statement:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    size_t sz = $2;
+    size_t sz = $2.d;
     int64_t loc;
-    if ((double)sz != $2 || sz == 0)
+    if ((double)sz != $2.d || sz == 0 || $2.d < 0)
     {
       amyplanyyerror(scanner, amyplanyy, "Break count not positive integer");
       YYABORT;
@@ -1865,9 +1869,9 @@ statement:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    size_t sz = $2;
+    size_t sz = $2.d;
     int64_t loc;
-    if ((double)sz != $2 || sz == 0)
+    if ((double)sz != $2.d || sz == 0 || $2.d < 0)
     {
       amyplanyyerror(scanner, amyplanyy, "Continue count not positive integer");
       YYABORT;
@@ -2963,8 +2967,8 @@ expr0_without_string:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
-    amyplanyy_add_double(amyplanyy, $1);
+    amyplanyy_add_byte(amyplanyy, $1.is_integer ? ABCE_OPCODE_PUSH_INT : ABCE_OPCODE_PUSH_DBL);
+    amyplanyy_add_double(amyplanyy, $1.d);
   }
 }
 | TRUE { if (amyplanyy_do_emit(amyplanyy)) amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_TRUE); }
