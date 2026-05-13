@@ -342,7 +342,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)? {
   // Original regexp was: [-+]?[0-9]+([.][0-9]+)?([eE][-+]?[0-9]+)?
   // The sign from original regexp was removed to allow $a=$a+1 to work
-  yylval->d = atof(yytext);
+  yylval->d2.d = atof(yytext);
+  yylval->d2.is_integer = !(strchr(yytext, '.') || strchr(yytext, 'e') || strchr(yytext, 'E'));
   return NUMBER;
 }
 <INITIAL>[A-Za-z0-9_.]([A-Za-z0-9_./]*[A-Za-z0-9_.])? {

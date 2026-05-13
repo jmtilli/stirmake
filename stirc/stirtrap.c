@@ -447,7 +447,7 @@ int stir_trap_depadd(struct stiryy_main *stirmain,
   }
   abce_cpop(abce);
 
-  if (recres && recres->typ != ABCE_T_B && recres->typ != ABCE_T_D)
+  if (recres && recres->typ != ABCE_T_B && recres->typ != ABCE_T_D && recres->typ != ABCE_T_I)
   {
     abce->err.code = ABCE_E_EXPECT_BOOL;
     abce_mb_errreplace_noinline(abce, recres);
@@ -459,7 +459,7 @@ int stir_trap_depadd(struct stiryy_main *stirmain,
     abce_pop(abce);
     return -EINVAL;
   }
-  if (orderonlyres && orderonlyres->typ != ABCE_T_B && orderonlyres->typ != ABCE_T_D)
+  if (orderonlyres && orderonlyres->typ != ABCE_T_B && orderonlyres->typ != ABCE_T_D && orderonlyres->typ != ABCE_T_I)
   {
     abce->err.code = ABCE_E_EXPECT_BOOL;
     abce_mb_errreplace_noinline(abce, orderonlyres);
@@ -471,7 +471,7 @@ int stir_trap_depadd(struct stiryy_main *stirmain,
     abce_pop(abce);
     return -EINVAL;
   }
-  if (waitres && waitres->typ != ABCE_T_B && waitres->typ != ABCE_T_D)
+  if (waitres && waitres->typ != ABCE_T_B && waitres->typ != ABCE_T_D && waitres->typ != ABCE_T_I)
   {
     abce->err.code = ABCE_E_EXPECT_BOOL;
     abce_mb_errreplace_noinline(abce, waitres);
@@ -638,7 +638,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[dist]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -690,7 +690,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[rec]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -700,7 +700,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[orderonly]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -742,7 +742,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
 
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[embed]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -753,7 +753,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[isfun]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -764,7 +764,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[ismake]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -774,7 +774,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[noecho]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -784,7 +784,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, mb, &abce->cachebase[ignore]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -901,7 +901,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     struct abce_mb *attr1;
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[phony]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -912,7 +912,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[rectgt]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -923,7 +923,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[detouch]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -934,7 +934,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[maybe]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -945,7 +945,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[dist]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -956,7 +956,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[deponly]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -967,7 +967,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[iscleanhook]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -978,7 +978,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[isdistcleanhook]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
@@ -989,7 +989,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     }
     if (abce_tree_get_str(abce, &attr1, attrsres, &abce->cachebase[isbothcleanhook]) == 0)
     {
-      if (attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
+      if (attr1->typ != ABCE_T_I && attr1->typ != ABCE_T_D && attr1->typ != ABCE_T_B)
       {
         abce->err.code = ABCE_E_EXPECT_BOOL;
         abce->err.mb = abce_mb_refup(abce, attr1);
