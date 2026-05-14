@@ -399,6 +399,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %type<d> arglist
 %type<d> valuelistentry
 %type<d> maybe_arglist
+%type<d> maybe_comma_arglist
 %type<d> maybe_atqm
 %type<d> maybe_distrule
 %type<d> maybe_disttgt
@@ -3206,12 +3207,12 @@ expr0_without_string:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_GETSCOPE_DYN);
   }
 }
-  OPEN_PAREN expr COMMA maybe_arglist CLOSE_PAREN
+  OPEN_PAREN expr maybe_comma_arglist CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
-    amyplanyy_add_double(amyplanyy, $6);
+    amyplanyy_add_double(amyplanyy, $5);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LUACALL);
   }
 }
@@ -3224,12 +3225,12 @@ expr0_without_string:
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_FROM_CACHE);
   }
 }
-  OPEN_PAREN expr COMMA maybe_arglist CLOSE_PAREN
+  OPEN_PAREN expr maybe_comma_arglist CLOSE_PAREN
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
-    amyplanyy_add_double(amyplanyy, $6);
+    amyplanyy_add_double(amyplanyy, $5);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_LUACALL);
   }
 }
@@ -3329,6 +3330,16 @@ maybe_arglist:
 | arglist
 {
   $$ = $1;
+}
+;
+
+maybe_comma_arglist:
+{
+  $$ = 0;
+}
+| COMMA arglist
+{
+  $$ = $2;
 }
 ;
 
