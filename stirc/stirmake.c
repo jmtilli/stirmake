@@ -5626,6 +5626,112 @@ void chomp(char *x)
 }
 
 #ifdef WITH_LUA
+int lua_dirup(lua_State *lua)
+{
+  char *prefix;
+  char *backpath;
+  struct abce *abce;
+  struct stiryy_main *stirmain;
+  lua_getglobal(lua, "__abcelua_abce");
+  abce = lua_touserdata(lua, -1);
+  stirmain = abce->trap_baton;
+  lua_pop(lua, 1);
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prjprefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  if (prefix == NULL)
+  {
+    prefix = ".";
+  }
+  backpath = construct_backpath(prefix);
+  lua_pushstring(lua, backpath);
+  free(backpath);
+  return 1;
+}
+int lua_dirupall(lua_State *lua)
+{
+  char *prefix;
+  char *backpath;
+  struct abce *abce;
+  struct stiryy_main *stirmain;
+  lua_getglobal(lua, "__abcelua_abce");
+  abce = lua_touserdata(lua, -1);
+  stirmain = abce->trap_baton;
+  lua_pop(lua, 1);
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  if (prefix == NULL)
+  {
+    prefix = ".";
+  }
+  backpath = construct_backpath(prefix);
+  lua_pushstring(lua, backpath);
+  free(backpath);
+  return 1;
+}
+int lua_dirdown(lua_State *lua)
+{
+  char *prefix;
+  struct abce *abce;
+  struct stiryy_main *stirmain;
+  lua_getglobal(lua, "__abcelua_abce");
+  abce = lua_touserdata(lua, -1);
+  stirmain = abce->trap_baton;
+  lua_pop(lua, 1);
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prjprefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  if (prefix == NULL)
+  {
+    prefix = ".";
+  }
+  lua_pushstring(lua, prefix);
+  return 1;
+}
+int lua_dirdownall(lua_State *lua)
+{
+  char *prefix;
+  struct abce *abce;
+  struct stiryy_main *stirmain;
+  lua_getglobal(lua, "__abcelua_abce");
+  abce = lua_touserdata(lua, -1);
+  stirmain = abce->trap_baton;
+  lua_pop(lua, 1);
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  if (prefix == NULL)
+  {
+    prefix = ".";
+  }
+  lua_pushstring(lua, prefix);
+  return 1;
+}
 int lua_addrule(lua_State *lua)
 {
   struct abce *abce;
@@ -5745,6 +5851,10 @@ int luaopen_stir1(lua_State *lua)
   static const luaL_Reg stir_lib[] = {
     {"addrule", lua_addrule},
     {"adddep", lua_adddep},
+    {"dirup", lua_dirup},
+    {"dirupall", lua_dirupall},
+    {"dirdown", lua_dirdown},
+    {"dirdownall", lua_dirdownall},
     {NULL, NULL}
   };
   luaL_newlib(lua, stir_lib);
