@@ -330,6 +330,213 @@ char *stir_shellescape(const char *old, size_t oldsz, size_t *newszptr)
   return newbuf;
 }
 
+int stir_trap_depadd(struct stiryy_main *stirmain,
+                     struct abce *abce, char *prefix)
+{
+  size_t i;
+  struct abce_mb *depar;
+  struct abce_mb *tgtar;
+  struct abce_mb *tree;
+  struct abce_mb *orderonly;
+  struct abce_mb *rec;
+  struct abce_mb *wait;
+  struct abce_mb *orderonlyres = NULL;
+  struct abce_mb *recres = NULL;
+  struct abce_mb *waitres = NULL;
+  int ret;
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  ret = abce_verifymb(abce, -1, ABCE_T_T);
+  if (ret)
+  {
+    return ret;
+  }
+  ret = abce_verifymb(abce, -2, ABCE_T_A);
+  if (ret)
+  {
+    return ret;
+  }
+  ret = abce_verifymb(abce, -3, ABCE_T_A);
+  if (ret)
+  {
+    return ret;
+  }
+  ret = abce_getmbptr(&tree, abce, -1);
+  if (ret)
+  {
+    return ret;
+  }
+  ret = abce_getmbptr(&depar, abce, -2);
+  if (ret)
+  {
+    return ret;
+  }
+  ret = abce_getmbptr(&tgtar, abce, -3);
+  if (ret)
+  {
+    return ret;
+  }
+
+  for (i = 0; i < depar->u.area->u.ar.size; i++)
+  {
+    const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
+    if (mb->typ != ABCE_T_S)
+    {
+      abce->err.code = ABCE_E_EXPECT_STR;
+      abce_mb_errreplace_noinline(abce, mb);
+      return -EINVAL;
+    }
+  }
+  for (i = 0; i < tgtar->u.area->u.ar.size; i++)
+  {
+    const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
+    if (mb->typ != ABCE_T_S)
+    {
+      abce->err.code = ABCE_E_EXPECT_STR;
+      abce_mb_errreplace_noinline(abce, mb);
+      return -EINVAL;
+    }
+  }
+
+  rec = abce_mb_cpush_create_string_nul(abce, "rec");
+  if (rec == NULL)
+  {
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return -ENOMEM;
+  }
+  if (abce_tree_get_str(abce, &recres, tree, rec) != 0)
+  {
+    recres = NULL;
+  }
+  abce_cpop(abce);
+
+  orderonly = abce_mb_cpush_create_string_nul(abce, "orderonly");
+  if (orderonly == NULL)
+  {
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return -ENOMEM;
+  }
+  if (abce_tree_get_str(abce, &orderonlyres, tree, orderonly) != 0)
+  {
+    orderonlyres = NULL;
+  }
+  abce_cpop(abce);
+
+  wait = abce_mb_cpush_create_string_nul(abce, "wait");
+  if (wait == NULL)
+  {
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return -ENOMEM;
+  }
+  if (abce_tree_get_str(abce, &waitres, tree, wait) != 0)
+  {
+    waitres = NULL;
+  }
+  abce_cpop(abce);
+
+  if (recres && recres->typ != ABCE_T_B && recres->typ != ABCE_T_D)
+  {
+    abce->err.code = ABCE_E_EXPECT_BOOL;
+    abce_mb_errreplace_noinline(abce, recres);
+    //abce_mb_refdn(abce, &recres);
+    //abce_mb_refdn(abce, &orderonlyres);
+    //abce_mb_refdn(abce, &waitres);
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return -EINVAL;
+  }
+  if (orderonlyres && orderonlyres->typ != ABCE_T_B && orderonlyres->typ != ABCE_T_D)
+  {
+    abce->err.code = ABCE_E_EXPECT_BOOL;
+    abce_mb_errreplace_noinline(abce, orderonlyres);
+    //abce_mb_refdn(abce, &recres);
+    //abce_mb_refdn(abce, &orderonlyres);
+    //abce_mb_refdn(abce, &waitres);
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return -EINVAL;
+  }
+  if (waitres && waitres->typ != ABCE_T_B && waitres->typ != ABCE_T_D)
+  {
+    abce->err.code = ABCE_E_EXPECT_BOOL;
+    abce_mb_errreplace_noinline(abce, waitres);
+    //abce_mb_refdn(abce, &recres);
+    //abce_mb_refdn(abce, &orderonlyres);
+    //abce_mb_refdn(abce, &waitres);
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return -EINVAL;
+  }
+
+  if (!stirmain->parsing)
+  {
+    char **tgts = malloc(sizeof(*tgts) * tgtar->u.area->u.ar.size);
+    char **deps = malloc(sizeof(*deps) * depar->u.area->u.ar.size);
+    for (i = 0; i < depar->u.area->u.ar.size; i++)
+    {
+      const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
+      deps[i] = abce_mba_str(mb->u.area);
+    }
+    for (i = 0; i < tgtar->u.area->u.ar.size; i++)
+    {
+      const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
+      tgts[i] = abce_mba_str(mb->u.area);
+    }
+    if (add_dep_after_parsing_stage(tgts, tgtar->u.area->u.ar.size,
+                                    deps, depar->u.area->u.ar.size,
+                                    prefix,
+                                    recres && recres->u.d != 0,
+                                    orderonlyres && orderonlyres->u.d != 0,
+                                    waitres && waitres->u.d != 0)
+        != 0)
+    {
+      abce->err.code = STIR_E_RULE_NOT_FOUND;
+      abce->err.mb.typ = ABCE_T_N;
+      return -ENOENT;
+    }
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return 0;
+  }
+
+  stiryy_main_emplace_rule(stirmain, prefix, abce->dynscope.u.area->u.sc.locidx, -1); // FIXME lineno
+  for (i = 0; i < tgtar->u.area->u.ar.size; i++)
+  {
+    const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
+    stiryy_main_set_tgt(stirmain, prefix, abce_mba_str(mb->u.area), 0);
+  }
+  for (i = 0; i < depar->u.area->u.ar.size; i++)
+  {
+    const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
+    stiryy_main_set_dep(stirmain, prefix, abce_mba_str(mb->u.area), recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
+  }
+  stiryy_main_mark_deponly(stirmain);
+
+  //abce_mb_refdn(abce, &recres);
+  //abce_mb_refdn(abce, &orderonlyres);
+  abce_pop(abce);
+  abce_pop(abce);
+  abce_pop(abce);
+  return 0;
+}
+
 int stir_trap_ruleadd(struct stiryy_main *stirmain,
                       struct abce *abce, const char *prefix)
 {
@@ -1045,7 +1252,6 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
 {
   int ret = 0;
-  size_t i;
   char *prefix, *backpath;
   struct abce *abce = ABCE_CONTAINER_OF(pbaton, struct abce, trap_baton);
   struct abce_mb *mb;
@@ -2199,16 +2405,6 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
     }
     // FIXME what if there are many deps? Is it added for all rules?
     case STIR_OPCODE_DEP_ADD:
-    {
-      struct abce_mb *depar;
-      struct abce_mb *tgtar;
-      struct abce_mb *tree;
-      struct abce_mb *orderonly;
-      struct abce_mb *rec;
-      struct abce_mb *wait;
-      struct abce_mb *orderonlyres = NULL;
-      struct abce_mb *recres = NULL;
-      struct abce_mb *waitres = NULL;
       if (abce_scope_get_userdata(&abce->dynscope))
       {
         prefix =
@@ -2218,165 +2414,7 @@ int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz)
       {
         prefix = ".";
       }
-      VERIFYMB(-1, ABCE_T_T);
-      VERIFYMB(-2, ABCE_T_A);
-      VERIFYMB(-3, ABCE_T_A);
-      GETMBPTR(&tree, -1);
-      GETMBPTR(&depar, -2);
-      GETMBPTR(&tgtar, -3);
-
-      for (i = 0; i < depar->u.area->u.ar.size; i++)
-      {
-        const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
-        if (mb->typ != ABCE_T_S)
-        {
-          abce->err.code = ABCE_E_EXPECT_STR;
-	  abce_mb_errreplace_noinline(abce, mb);
-          return -EINVAL;
-        }
-      }
-      for (i = 0; i < tgtar->u.area->u.ar.size; i++)
-      {
-        const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
-        if (mb->typ != ABCE_T_S)
-        {
-          abce->err.code = ABCE_E_EXPECT_STR;
-	  abce_mb_errreplace_noinline(abce, mb);
-          return -EINVAL;
-        }
-      }
-
-      rec = abce_mb_cpush_create_string_nul(abce, "rec");
-      if (rec == NULL)
-      {
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return -ENOMEM;
-      }
-      if (abce_tree_get_str(abce, &recres, tree, rec) != 0)
-      {
-        recres = NULL;
-      }
-      abce_cpop(abce);
-
-      orderonly = abce_mb_cpush_create_string_nul(abce, "orderonly");
-      if (orderonly == NULL)
-      {
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return -ENOMEM;
-      }
-      if (abce_tree_get_str(abce, &orderonlyres, tree, orderonly) != 0)
-      {
-        orderonlyres = NULL;
-      }
-      abce_cpop(abce);
-
-      wait = abce_mb_cpush_create_string_nul(abce, "wait");
-      if (wait == NULL)
-      {
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return -ENOMEM;
-      }
-      if (abce_tree_get_str(abce, &waitres, tree, wait) != 0)
-      {
-        waitres = NULL;
-      }
-      abce_cpop(abce);
-
-      if (recres && recres->typ != ABCE_T_B && recres->typ != ABCE_T_D)
-      {
-        abce->err.code = ABCE_E_EXPECT_BOOL;
-	abce_mb_errreplace_noinline(abce, recres);
-        //abce_mb_refdn(abce, &recres);
-        //abce_mb_refdn(abce, &orderonlyres);
-        //abce_mb_refdn(abce, &waitres);
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return -EINVAL;
-      }
-      if (orderonlyres && orderonlyres->typ != ABCE_T_B && orderonlyres->typ != ABCE_T_D)
-      {
-        abce->err.code = ABCE_E_EXPECT_BOOL;
-	abce_mb_errreplace_noinline(abce, orderonlyres);
-        //abce_mb_refdn(abce, &recres);
-        //abce_mb_refdn(abce, &orderonlyres);
-        //abce_mb_refdn(abce, &waitres);
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return -EINVAL;
-      }
-      if (waitres && waitres->typ != ABCE_T_B && waitres->typ != ABCE_T_D)
-      {
-        abce->err.code = ABCE_E_EXPECT_BOOL;
-	abce_mb_errreplace_noinline(abce, waitres);
-        //abce_mb_refdn(abce, &recres);
-        //abce_mb_refdn(abce, &orderonlyres);
-        //abce_mb_refdn(abce, &waitres);
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return -EINVAL;
-      }
-
-      if (!stirmain->parsing)
-      {
-        char **tgts = malloc(sizeof(*tgts) * tgtar->u.area->u.ar.size);
-        char **deps = malloc(sizeof(*deps) * depar->u.area->u.ar.size);
-        for (i = 0; i < depar->u.area->u.ar.size; i++)
-        {
-          const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
-          deps[i] = abce_mba_str(mb->u.area);
-        }
-        for (i = 0; i < tgtar->u.area->u.ar.size; i++)
-        {
-          const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
-          tgts[i] = abce_mba_str(mb->u.area);
-        }
-        if (add_dep_after_parsing_stage(tgts, tgtar->u.area->u.ar.size,
-                                        deps, depar->u.area->u.ar.size,
-                                        prefix,
-                                        recres && recres->u.d != 0,
-                                        orderonlyres && orderonlyres->u.d != 0,
-                                        waitres && waitres->u.d != 0)
-            != 0)
-        {
-          abce->err.code = STIR_E_RULE_NOT_FOUND;
-          abce->err.mb.typ = ABCE_T_N;
-          return -ENOENT;
-        }
-        abce_pop(abce);
-        abce_pop(abce);
-        abce_pop(abce);
-        return 0;
-      }
-
-      stiryy_main_emplace_rule(stirmain, prefix, abce->dynscope.u.area->u.sc.locidx, -1); // FIXME lineno
-      for (i = 0; i < tgtar->u.area->u.ar.size; i++)
-      {
-        const struct abce_mb *mb = &tgtar->u.area->u.ar.mbs[i];
-        stiryy_main_set_tgt(stirmain, prefix, abce_mba_str(mb->u.area), 0);
-      }
-      for (i = 0; i < depar->u.area->u.ar.size; i++)
-      {
-        const struct abce_mb *mb = &depar->u.area->u.ar.mbs[i];
-        stiryy_main_set_dep(stirmain, prefix, abce_mba_str(mb->u.area), recres && recres->u.d != 0, orderonlyres && orderonlyres->u.d != 0, waitres && waitres->u.d != 0);
-      }
-      stiryy_main_mark_deponly(stirmain);
-
-      //abce_mb_refdn(abce, &recres);
-      //abce_mb_refdn(abce, &orderonlyres);
-      abce_pop(abce);
-      abce_pop(abce);
-      abce_pop(abce);
-      return 0;
-    }
+      return stir_trap_depadd(stirmain, abce, prefix);
     case STIR_OPCODE_RULE_ADD:
       if (!stirmain->parsing)
       {

@@ -6,6 +6,13 @@ struct scope_ud {
   char *prjprefix;
 };
 
+struct stiryy_main;
+
+int stir_trap_depadd(struct stiryy_main *stirmain,
+                     struct abce *abce, char *prefix);
+int stir_trap_ruleadd(struct stiryy_main *stirmain,
+                      struct abce *abce, const char *prefix);
+
 int stir_trap(void **pbaton, uint16_t ins, unsigned char *addcode, size_t addsz);
 
 const char *stir_err_to_str(enum abce_errcode code);
