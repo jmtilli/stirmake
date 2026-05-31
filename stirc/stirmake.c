@@ -31,6 +31,7 @@
 #include "statcache.h"
 #include "db.h"
 #include "pathmax.h"
+#include "stirtrap.h"
 #ifdef __linux__
   #ifdef __GLIBC__
     #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 25)
@@ -5624,6 +5625,142 @@ void chomp(char *x)
   }
 }
 
+#ifdef WITH_LUA
+int lua_addrule(lua_State *lua)
+{
+  struct abce *abce;
+  if (lua_gettop(lua) == 0)
+  {
+    return luaL_error(lua, "Stir.addrule requires an argument");
+  }
+  const char *btsym = "(Stir.addrule)";
+  struct abce_mb *mb = NULL;
+  char *prefix;
+  struct stiryy_main *stirmain;
+  lua_getglobal(lua, "__abcelua_abce");
+  abce = lua_touserdata(lua, -1);
+  stirmain = abce->trap_baton;
+  lua_pop(lua, 1);
+  mb_from_lua(lua, abce, 1);
+  if (abce_getmbptr(&mb, abce, -1) != 0)
+  {
+    abce_pop(abce);
+    return luaL_error(lua, "Stir.addrule encountered error");
+  }
+  // Convert empty array into empty tree
+  if (mb->typ == ABCE_T_A && mb->u.area->u.ar.size == 0)
+  {
+    struct abce_mb *mbt;
+    mbt = abce_mb_cpush_create_tree(abce);
+    if (mbt != NULL)
+    {
+      abce_pop(abce);
+      abce_push_mb(abce, mbt);
+      abce_cpop(abce);
+    }
+  }
+  if (!stirmain->parsing)
+  {
+    abce->err.code = STIR_E_RULECHANGE_NOT_PERMITTED;
+    abce->err.mb.typ = ABCE_T_N;
+    return luaL_error(lua, "Stir.addrule encountered error, rule change not permitted in non-parsing state");
+  }
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  if (stir_trap_ruleadd(stirmain, abce, prefix) != 0)
+  {
+    abce_pop(abce);
+    return luaL_error(lua, "Stir.addrule encountered error");
+  }
+  //abce_pop(abce); // No result for this operation
+  lua_pushnil(lua);
+  return 1;
+}
+int lua_adddep(lua_State *lua)
+{
+  struct abce *abce;
+  if (lua_gettop(lua) < 3)
+  {
+    return luaL_error(lua, "Stir.adddep requires three arguments");
+  }
+  const char *btsym = "(Stir.adddep)";
+  struct abce_mb *mb = NULL;
+  char *prefix;
+  struct stiryy_main *stirmain;
+  lua_getglobal(lua, "__abcelua_abce");
+  abce = lua_touserdata(lua, -1);
+  stirmain = abce->trap_baton;
+  lua_pop(lua, 1);
+  mb_from_lua(lua, abce, 1);
+  mb_from_lua(lua, abce, 2);
+  mb_from_lua(lua, abce, 3);
+  if (abce_getmbptr(&mb, abce, -1) != 0)
+  {
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return luaL_error(lua, "Stir.adddep encountered error");
+  }
+  // Convert empty array into empty tree
+  if (mb->typ == ABCE_T_A && mb->u.area->u.ar.size == 0)
+  {
+    struct abce_mb *mbt;
+    mbt = abce_mb_cpush_create_tree(abce);
+    if (mbt != NULL)
+    {
+      abce_pop(abce);
+      abce_push_mb(abce, mbt);
+      abce_cpop(abce);
+    }
+  }
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    prefix =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+  }
+  else
+  {
+    prefix = ".";
+  }
+  if (stir_trap_depadd(stirmain, abce, prefix) != 0)
+  {
+    abce_pop(abce);
+    abce_pop(abce);
+    abce_pop(abce);
+    return luaL_error(lua, "Stir.adddep encountered error");
+  }
+  //abce_pop(abce); // No result for this operation
+  lua_pushnil(lua);
+  return 1;
+}
+int luaopen_stir1(lua_State *lua)
+{
+  static const luaL_Reg stir_lib[] = {
+    {"addrule", lua_addrule},
+    {"adddep", lua_adddep},
+    {NULL, NULL}
+  };
+  luaL_newlib(lua, stir_lib);
+  return 1;
+}
+void luaopen_stir(lua_State *lua, struct abce *abce, struct abce_mb_area *scope)
+{
+  lua_pushcfunction(lua, luaopen_stir1);
+  lua_pushstring(lua, "Stir");
+  lua_call(lua, 1, 1);
+  lua_pushvalue(lua, -1);
+  lua_setglobal(lua, "Stir");
+  lua_pop(lua, 1);
+}
+#endif
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -6272,6 +6409,9 @@ int main(int argc, char **argv)
     if (f)
     {
       abce_init_opts(&abce, 1);
+#ifdef WITH_LUA
+      abce_set_luaopen_caller(&abce, luaopen_stir);
+#endif
       abce_inited = 1;
       abce.trap = stir_trap;
       abce.trap_baton = &stirmain;
@@ -6350,6 +6490,9 @@ int main(int argc, char **argv)
         int ret;
         last_was_toplevel = 1; // unless otherwise proven
         abce_init_opts(&abce, 1);
+#ifdef WITH_LUA
+        abce_set_luaopen_caller(&abce, luaopen_stir);
+#endif
         abce_inited = 1;
         abce.trap = stir_trap;
         abce.trap_baton = &stirmain;
@@ -6416,6 +6559,9 @@ int main(int argc, char **argv)
   linked_list_head_init(&tsdb.ll);
   load_db();
   abce_init_opts(&abce, 1);
+#ifdef WITH_LUA
+  abce_set_luaopen_caller(&abce, luaopen_stir);
+#endif
   abce_inited = 1;
   abce.trap = stir_trap;
   abce.trap_baton = &stirmain;
