@@ -50,14 +50,23 @@ $MORE = [3, 4, 5, {"a": 6}]
 
 @phonyrule: 'reallyall': 'all'
 
+@phonyrule: 'test':
+	echo OK
+
 %lua{
   print(666)
   -- test=Abce.makelexcall("LUARULE", {tgts={{name="all"}}, attrs={phony=true}})
   print(667)
+  print(Stir.dirup())
+  print(Stir.dirupall())
+  print(Stir.dirdown())
+  print(Stir.dirdownall())
 
   function recursive(x)
     print(669)
-    Abce.makelexcall("LUARULE", {tgts={{name="all"}}, attrs={phony=true}})
+    -- Abce.makelexcall("LUARULE", {tgts={{name="all"}}, attrs={phony=true}})
+    Stir.addrule({tgts={{name="all"}}, attrs={phony=true}})
+    Stir.adddep({"reallyall"}, {"test"}, {})
     return 0
   end
 %}
