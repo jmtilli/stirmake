@@ -1,0 +1,11 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+@function $AMYPLANDUMP($x)
+  @dump($x)
+  @return [1,2,3]
+@endfunction
+
+@projdirinclude "subdir"

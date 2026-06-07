@@ -1,0 +1,13 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+%lua{
+require "../inc"
+function luafun2(dummy)
+  luafun(dummy)
+end
+%}
+
+@call @dynluacall("luafun2", @nil)

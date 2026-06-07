@@ -5862,12 +5862,45 @@ int luaopen_stir1(lua_State *lua)
 }
 void luaopen_stir(lua_State *lua, struct abce *abce, struct abce_mb_area *scope)
 {
+  const char *luapathorig;
+  size_t sz;
+  char *luapathnew;
+  char *dirdownall;
   lua_pushcfunction(lua, luaopen_stir1);
   lua_pushstring(lua, "Stir");
   lua_call(lua, 1, 1);
   lua_pushvalue(lua, -1);
   lua_setglobal(lua, "Stir");
   lua_pop(lua, 1);
+  //
+  if (abce_scope_get_userdata(&abce->dynscope))
+  {
+    dirdownall =
+      ((struct scope_ud*)abce_scope_get_userdata(&abce->dynscope))->prefix;
+  }
+  else
+  {
+    dirdownall = ".";
+  }
+  if (dirdownall == NULL)
+  {
+    dirdownall = ".";
+  }
+  //
+  lua_getglobal(lua, "package");
+  lua_getfield(lua, -1, "path");
+  luapathorig = lua_tostring(lua, -1);
+  sz = strlen("./")+strlen(dirdownall)+strlen("/?.lua;")+strlen(luapathorig)+1;
+  luapathnew = malloc(sz);
+  if (snprintf(luapathnew, sz, "./%s/?.lua;%s", dirdownall, luapathorig) >= (int)sz)
+  {
+    abort();
+  }
+  lua_pop(lua, 1);
+  lua_pushstring(lua, luapathnew);
+  lua_setfield(lua, -2, "path");
+  lua_pop(lua, 1);
+  free(luapathnew);
 }
 #endif
 
