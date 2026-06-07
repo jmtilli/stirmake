@@ -4,7 +4,7 @@
 @phonyrule: 'all':
 
 %lua{
-require "../inc"
+require(Stir.dirupall() .. "/inc")
 function luafun2(dummy)
   luafun(dummy)
 end
