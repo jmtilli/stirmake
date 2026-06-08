@@ -32,6 +32,7 @@
 #include "db.h"
 #include "pathmax.h"
 #include "stirtrap.h"
+#include "abce/abcetrees.h"
 #ifdef __linux__
   #ifdef __GLIBC__
     #if __GLIBC__  > 2 || (__GLIBC__  == 2 && __GLIBC_MINOR__  >= 25)
@@ -5765,6 +5766,24 @@ int lua_addrule(lua_State *lua)
       abce_cpop(abce);
     }
   }
+  if (mb->typ == ABCE_T_T)
+  {
+    struct abce_mb *res;
+    int64_t attrs;
+    attrs = abce_cache_add_str_nul(abce, "attrs");
+    if (attrs >= 0 && abce_tree_get_str(abce, &res, mb, &abce->cachebase[attrs]) == 0)
+    {
+      if (res->typ == ABCE_T_A && res->u.area->u.ar.size == 0)
+      {
+        struct abce_mb *mbval = abce_mb_cpush_create_tree(abce);
+	if (mbval)
+	{
+          abce_tree_set_str(abce, mb, &abce->cachebase[attrs], mbval);
+	  abce_cpop(abce);
+	}
+      }
+    }
+  }
   if (!stirmain->parsing)
   {
     abce->err.code = STIR_E_RULECHANGE_NOT_PERMITTED;
@@ -5782,7 +5801,7 @@ int lua_addrule(lua_State *lua)
   }
   if (stir_trap_ruleadd(stirmain, abce, prefix) != 0)
   {
-    abce_pop(abce);
+    //abce_pop(abce); // stir_trap_ruleadd does this
     return luaL_error(lua, "Stir.addrule encountered error");
   }
   //abce_pop(abce); // No result for this operation
@@ -5837,9 +5856,9 @@ int lua_adddep(lua_State *lua)
   }
   if (stir_trap_depadd(stirmain, abce, prefix) != 0)
   {
-    abce_pop(abce);
-    abce_pop(abce);
-    abce_pop(abce);
+    //abce_pop(abce); // stir_trap_depadd does this
+    //abce_pop(abce); // stir_trap_depadd does this
+    //abce_pop(abce); // stir_trap_depadd does this
     return luaL_error(lua, "Stir.adddep encountered error");
   }
   //abce_pop(abce); // No result for this operation
