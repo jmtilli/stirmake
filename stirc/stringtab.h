@@ -38,15 +38,7 @@ static inline int stringtabentry_cmp_asym(const void *stringlenv, struct abce_rb
   {
     return ret;
   }
-  if (len1 < len2)
-  {
-    return -1;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  return 0;
+  return (len1 > len2) - (len1 < len2);
 }
 
 static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
@@ -62,15 +54,7 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
   {
     return ret;
   }
-  if (len1 < len2)
-  {
-    return -1;
-  }
-  if (len1 > len2)
-  {
-    return 1;
-  }
-  return 0;
+  return (len1 > len2) - (len1 < len2);
 }
 
 struct sttable_entry {

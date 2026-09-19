@@ -6,30 +6,18 @@ static inline int one_ruleid_by_dep_entry_cmp_asym(const void *ruleidv, struct a
 {
   const int *ruleid = ruleidv;
   struct one_ruleid_by_dep_entry *e = ABCE_CONTAINER_OF(n2, struct one_ruleid_by_dep_entry, node);
-  if (*ruleid > e->ruleid)
-  {
-    return 1;
-  }
-  if (*ruleid < e->ruleid)
-  {
-    return -1;
-  }
-  return 0;
+  int r1 = *ruleid;
+  int r2 = e->ruleid;
+  return (r1>r2) - (r1<r2);
 }
 
 static inline int one_ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
   struct one_ruleid_by_dep_entry *e1 = ABCE_CONTAINER_OF(n1, struct one_ruleid_by_dep_entry, node);
   struct one_ruleid_by_dep_entry *e2 = ABCE_CONTAINER_OF(n2, struct one_ruleid_by_dep_entry, node);
-  if (e1->ruleid > e2->ruleid)
-  {
-    return 1;
-  }
-  if (e1->ruleid < e2->ruleid)
-  {
-    return -1;
-  }
-  return 0;
+  int r1 = e1->ruleid;
+  int r2 = e2->ruleid;
+  return (r1>r2) - (r1<r2);
 }
 
 static inline int ruleid_by_dep_entry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
@@ -40,11 +28,7 @@ static inline int ruleid_by_dep_entry_cmp_asym(const void *strv, struct abce_rb_
   mysize_t str2;
   str2 = e->depidx;
   ret = sizecmp(*str, str2);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
+  return ret;
 }
 static inline int ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -53,11 +37,7 @@ static inline int ruleid_by_dep_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
   int ret;
 
   ret = sizecmp(e1->depidx, e2->depidx);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
+  return ret;
 }
 
 struct abce_rb_tree_nocmp ruleids_by_dep[RULEIDS_BY_DEP_SIZE];

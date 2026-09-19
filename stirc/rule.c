@@ -16,26 +16,16 @@ static inline int tgt_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
   int ret;
   ret = sizecmp(e1->tgtidx, e2->tgtidx);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
+  return ret;
 }
 
 static inline int tgt_cmp_asym(const void *tgtidxv, struct abce_rb_tree_node *n2, void *ud)
 {
   const mysize_t *tgtidx = tgtidxv;
   struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
-  if (*tgtidx > e2->tgtidx)
-  {
-    return 1;
-  }
-  if (*tgtidx < e2->tgtidx)
-  {
-    return -1;
-  }
-  return 0;
+  int r1 = *tgtidx;
+  int r2 = e2->tgtidx;
+  return (r1>r2)-(r1<r2);
 }
 
 static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
@@ -44,11 +34,7 @@ static inline int dep_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   struct stirdep *e2 = ABCE_CONTAINER_OF(n2, struct stirdep, node);
   int ret;
   ret = sizecmp(e1->nameidx, e2->nameidx);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
+  return ret;
 }
 
 
