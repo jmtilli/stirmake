@@ -29,6 +29,7 @@
 #include "stringtab.h"
 #include "stirutils.h"
 #include "statcache.h"
+#include "accesscache.h"
 #include "db.h"
 #include "pathmax.h"
 #include "stirtrap.h"
@@ -3445,7 +3446,7 @@ int consider(int ruleid)
         print_indent();
         printf("ruleid by target %s not found\n", sttable[e->nameidx].s);
       }
-      if (access(sttable[e->nameidx].s, F_OK) == -1)
+      if (access_cached(e->nameidx) == -1)
       {
         errxit("No %s and rule not found, required by target %s", sttable[e->nameidx].s, sttable[first_tgt->tgtidx].s);
         exit(2);
@@ -3573,7 +3574,7 @@ void reconsider(int ruleid, int ruleid_executed)
         print_indent();
         printf("ruleid by target %s not found\n", sttable[e->nameidx].s);
       }
-      if (access(sttable[e->nameidx].s, F_OK) == -1)
+      if (access_cached(e->nameidx) == -1)
       {
         errxit("No %s and rule not found, required by target %s", sttable[e->nameidx].s, sttable[first_tgt->tgtidx].s);
         exit(2);
@@ -3770,6 +3771,7 @@ void mark_executed(int ruleid, int was_actually_executed)
   {
     struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
     lstat_evict_named(e->tgtidx);
+    accesshash_evict_named(e->tgtidx);
     if (dry_run && was_actually_executed)
     {
       sttable[e->tgtidx].is_remade = 1;
@@ -5968,6 +5970,7 @@ int main(int argc, char **argv)
   curcwd[0] = '\0';
 
   statcache_init();
+  accesscache_init();
 
   struct sigaction saseg;
   sigemptyset(&saseg.sa_mask);

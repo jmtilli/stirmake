@@ -1,6 +1,6 @@
 .SUFFIXES:
 
-SRC_LIB := yyutils.c incyyutils.c dbyyutils.c canon.c stirtrap.c jsonyyutils.c syncbuf.c bypid.c mymalloc.c stringtab.c db.c stirutils.c statcache.c bytgt.c bydep.c adddep.c rule.c
+SRC_LIB := yyutils.c incyyutils.c dbyyutils.c canon.c stirtrap.c jsonyyutils.c syncbuf.c bypid.c mymalloc.c stringtab.c db.c stirutils.c statcache.c bytgt.c bydep.c adddep.c rule.c accesscache.c
 SRC := $(SRC_LIB) stir.c inc.c stirmake.c jsonyytest.c
 
 BYACC ?= byacc
