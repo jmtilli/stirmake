@@ -1,3 +1,6 @@
-beforefirstrule: longdepall
+@toplevel
+@strict
+
+@phonyrule: 'beforefirstrule': 'longdepall'
 
 @cdepincludes "longdepfile.dep"

@@ -1,3 +1,6 @@
-firstrule: all
+@toplevel
+@strict
+
+@phonyrule: 'firstrule': 'all'
 
 @cdepincludes "longdep3.dep"
