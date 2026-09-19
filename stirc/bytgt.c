@@ -20,24 +20,14 @@ static inline int ruleid_by_tgt_entry_cmp_asym(const void *strv, struct abce_rb_
   int ret;
   size_t str2;
   str2 = e->tgtidx;
-  ret = sizecmp(*str, str2);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
+  return sizecmp(*str, str2);
 }
 static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
   struct ruleid_by_tgt_entry *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_tgt_entry, node);
   struct ruleid_by_tgt_entry *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
   int ret;
-  ret = sizecmp(e1->tgtidx, e2->tgtidx);
-  if (ret != 0)
-  {
-    return ret;
-  }
-  return 0;
+  return sizecmp(e1->tgtidx, e2->tgtidx);
 }
 
 void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int lineno)

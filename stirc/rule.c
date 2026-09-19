@@ -56,6 +56,10 @@ static inline int dep_remain_cmp_asym(const void *ruleidv, struct abce_rb_tree_n
 {
   const int *ruleid = ruleidv;
   struct dep_remain *e = ABCE_CONTAINER_OF(n2, struct dep_remain, node);
+  int r1 = *ruleid;
+  int r2 = e->ruleid;
+  return (r1>r2) - (r1<r2);
+#if 0
   if (*ruleid > e->ruleid)
   {
     return 1;
@@ -65,12 +69,17 @@ static inline int dep_remain_cmp_asym(const void *ruleidv, struct abce_rb_tree_n
     return -1;
   }
   return 0;
+#endif
 }
 
 static inline int dep_remain_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_node *n2, void *ud)
 {
   struct dep_remain *e1 = ABCE_CONTAINER_OF(n1, struct dep_remain, node);
   struct dep_remain *e2 = ABCE_CONTAINER_OF(n2, struct dep_remain, node);
+  int r1 = e1->ruleid;
+  int r2 = e2->ruleid;
+  return (r1>r2) - (r1<r2);
+#if 0
   if (e1->ruleid > e2->ruleid)
   {
     return 1;
@@ -80,6 +89,7 @@ static inline int dep_remain_cmp_sym(struct abce_rb_tree_node *n1, struct abce_r
     return -1;
   }
   return 0;
+#endif
 }
 
 void ins_tgt(struct rule *rule, mysize_t tgtidx, mysize_t tgtidxnodir, int is_dist, const char *prefix, int lineno)
