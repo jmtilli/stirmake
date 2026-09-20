@@ -7736,6 +7736,8 @@ int main(int argc, char **argv)
     printf("  dep_remain: %zu %zu\n", (size_t)dep_remain_cnt, (size_t)(dep_remain_cnt*sizeof(struct dep_remain)));
     printf("  ruleid_by_dep_entry: %zu %zu\n", (size_t)ruleid_by_dep_entry_cnt, (size_t)(ruleid_by_dep_entry_cnt*sizeof(struct ruleid_by_dep_entry)));
     printf("  one_ruleid_by_dep_entry: %zu %zu\n", (size_t)one_ruleid_by_dep_entry_cnt, (size_t)(one_ruleid_by_dep_entry_cnt*sizeof(struct one_ruleid_by_dep_entry)));
+    printf("  ruleid_by_dep_entry_block: %zu %zu\n", (size_t)ruleid_by_dep_entry_block_cnt, (size_t)(ruleid_by_dep_entry_block_cnt*sizeof(struct ruleid_by_dep_entry_block)));
+    printf("  ruleid_by_dep_entry_block_later: %zu %zu\n", (size_t)ruleid_by_dep_entry_block_later_cnt, (size_t)(ruleid_by_dep_entry_block_later_cnt*sizeof(struct ruleid_by_dep_entry_block_later)));
     printf("  add_dep: %zu %zu\n", (size_t)add_dep_cnt, (size_t)(add_dep_cnt*sizeof(struct add_dep)));
     printf("  add_deps: %zu %zu\n", (size_t)add_deps_cnt, (size_t)(add_deps_cnt*sizeof(struct add_deps)));
     printf("  add_dep_entry_block: %zu %zu\n", (size_t)add_dep_entry_block_cnt, (size_t)(add_dep_entry_block_cnt*sizeof(struct add_dep_entry_block)));

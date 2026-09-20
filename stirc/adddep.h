@@ -18,7 +18,7 @@ struct one_add_dep_entry_block {
 
 struct add_dep_entry_block {
   uint32_t cnt;
-  struct one_add_dep_entry_block e[RULEID_BY_DEP_ENTRY_BLOCK_SIZE/3];
+  struct one_add_dep_entry_block e[ADD_DEP_ENTRY_BLOCK_SIZE];
   struct add_dep_entry_block *next;
 };
 

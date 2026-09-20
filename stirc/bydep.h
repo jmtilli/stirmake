@@ -15,11 +15,13 @@ struct one_ruleid_by_dep_entry_block_later {
 
 struct ruleid_by_dep_entry_block_later {
   uint32_t cnt;
-  struct one_ruleid_by_dep_entry_block_later e[RULEID_BY_DEP_ENTRY_BLOCK_SIZE/2];
+  struct one_ruleid_by_dep_entry_block_later e[RULEID_BY_DEP_ENTRY_LATER_BLOCK_SIZE];
   struct ruleid_by_dep_entry_block_later *next;
 };
 
 extern struct ruleid_by_dep_entry_block_later *ruleid_by_dep_entry_block_later_first;
+extern mysize_t ruleid_by_dep_entry_block_later_cnt;
+extern mysize_t ruleid_by_dep_entry_block_cnt;
 
 struct ruleid_by_dep_entry_block {
   uint32_t cnt;

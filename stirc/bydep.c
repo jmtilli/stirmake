@@ -7,6 +7,8 @@
 
 struct ruleid_by_dep_entry_block_later *ruleid_by_dep_entry_block_later_first;
 struct ruleid_by_dep_entry_block_later *ruleid_by_dep_entry_block_later_last;
+mysize_t ruleid_by_dep_entry_block_later_cnt;
+mysize_t ruleid_by_dep_entry_block_cnt;
 
 static inline int one_ruleid_by_dep_entry_cmp_asym(const void *ruleidv, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -140,6 +142,7 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
     if (!ruleid_by_dep_entry_block_later_first)
     {
       ruleid_by_dep_entry_block_later_first = my_malloc(sizeof(*later));
+      ruleid_by_dep_entry_block_later_cnt++;
       later = ruleid_by_dep_entry_block_later_first;
       later->cnt = 0;
       later->next = NULL;
@@ -151,6 +154,7 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
       if (later->next == NULL)
       {
         later->next = my_malloc(sizeof(*later->next));
+        ruleid_by_dep_entry_block_later_cnt++;
 	later->next->cnt = 0;
 	later->next->next = NULL;
 	ruleid_by_dep_entry_block_later_last = later->next;
@@ -167,16 +171,18 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
   if (rules[depruleid]->firstdepblock == NULL)
   {
     rules[depruleid]->firstdepblock = my_malloc(sizeof(*rules[depruleid]->firstdepblock));
+    ruleid_by_dep_entry_block_cnt++;
     rules[depruleid]->firstdepblock->cnt = 0;
     rules[depruleid]->firstdepblock->next = NULL;
     rules[depruleid]->lastdepblock = rules[depruleid]->firstdepblock;
   }
   blk = rules[depruleid]->lastdepblock;
-  while (blk->cnt >= RULEID_BY_DEP_ENTRY_BLOCK_SIZE)
+  while (blk->cnt >= sizeof(blk->ruleid)/sizeof(*blk->ruleid))
   {
     if (blk->next == NULL)
     {
       blk->next = my_malloc(sizeof(*blk->next));
+      ruleid_by_dep_entry_block_cnt++;
       blk->next->cnt = 0;
       blk->next->next = NULL;
       rules[depruleid]->lastdepblock = blk->next;
