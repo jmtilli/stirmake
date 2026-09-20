@@ -166,7 +166,10 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   }
   dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
   abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
-  linked_list_delete(&dep_remain->llnode);
+  if (debug)
+  {
+    linked_list_delete(&dep_remain->llnode);
+  }
   rule->deps_remain_cnt--;
   if (dep_remain->waitcnt < 0 || rule->wait_remain_cnt < (mysize_t)dep_remain->waitcnt)
   {
@@ -199,7 +202,10 @@ int deps_remain_insert(struct rule *rule, int ruleid)
     printf("4\n");
     my_abort();
   }
-  linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
+  if (debug)
+  {
+    linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
+  }
   rule->deps_remain_cnt++;
   return 0;
 }
