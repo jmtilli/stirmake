@@ -2,6 +2,41 @@
 #include "stircommon.h"
 #include "mymalloc.h"
 
+struct add_dep_entry_block *add_dep_entry_block_first;
+struct add_dep_entry_block *add_dep_entry_block_last;
+
+void ins_add_dep(mysize_t tgtidx, mysize_t depidx, mysize_t depidxnodir,
+                 int auto_phony, int tgt_phony)
+{
+  struct add_dep_entry_block *blk;
+  if (add_dep_entry_block_first == NULL)
+  {
+    add_dep_entry_block_first = my_malloc(sizeof(*add_dep_entry_block_first));
+    add_dep_entry_block_first->cnt = 0;
+    add_dep_entry_block_first->next = NULL;
+    add_dep_entry_block_last = add_dep_entry_block_first;
+  }
+  blk = add_dep_entry_block_last;
+  while (blk->cnt >= sizeof(blk->e)/sizeof(*blk->e))
+  {
+    if (blk->next == NULL)
+    {
+      blk->next = my_malloc(sizeof(*blk->next));
+      blk->next->cnt = 0;
+      blk->next->next = NULL;
+      add_dep_entry_block_last = blk;
+    }
+    //printf("OK\n");
+    blk = blk->next;
+  }
+  blk->e[blk->cnt].tgtidx = tgtidx;
+  blk->e[blk->cnt].depidx = depidx;
+  blk->e[blk->cnt].depidxnodir = depidxnodir;
+  blk->e[blk->cnt].auto_phony = !!auto_phony;
+  blk->e[blk->cnt].tgt_phony = !!tgt_phony;
+  blk->cnt++;
+}
+
 struct abce_rb_tree_nocmp add_deps[ADD_DEPS_SIZE];
 
 struct linked_list_head add_deplist = STIR_LINKED_LIST_HEAD_INITER(add_deplist);
