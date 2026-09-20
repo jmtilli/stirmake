@@ -11,14 +11,14 @@
 struct one_add_dep_entry_block {
   mysize_t tgtidx;
   mysize_t depidx;
-  mysize_t depidxnodir;
+  //mysize_t depidxnodir;
   unsigned auto_phony:1;
   unsigned tgt_phony:1;
 };
 
 struct add_dep_entry_block {
   uint32_t cnt;
-  struct one_add_dep_entry_block e[RULEID_BY_DEP_ENTRY_BLOCK_SIZE/4];
+  struct one_add_dep_entry_block e[RULEID_BY_DEP_ENTRY_BLOCK_SIZE/3];
   struct add_dep_entry_block *next;
 };
 
@@ -43,6 +43,7 @@ struct add_deps {
 
 extern mysize_t add_deps_cnt;
 extern mysize_t add_dep_cnt;
+extern mysize_t add_dep_entry_block_cnt;
 
 extern struct linked_list_head add_deplist;
 
