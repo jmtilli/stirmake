@@ -1,6 +1,11 @@
 #include "bydep.h"
 #include "mymalloc.h"
 #include "stircommon.h"
+#include "stringtab.h"
+#include "rule.h"
+#include "bytgt.h"
+
+struct ruleid_by_dep_entry_block_later *ruleid_by_dep_entry_block_later_first;
 
 static inline int one_ruleid_by_dep_entry_cmp_asym(const void *ruleidv, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -50,6 +55,8 @@ struct ruleid_by_dep_entry *find_ruleids_by_dep(mysize_t depidx)
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
 
+  abort();
+
   head = &ruleids_by_dep[hash % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_dep_entry_cmp_asym, NULL, &depidx);
   if (n != NULL)
@@ -98,8 +105,85 @@ struct ruleid_by_dep_entry *ensure_ruleid_by_dep(mysize_t depidx)
 
 mysize_t one_ruleid_by_dep_entry_cnt;
 
+void ins_ruleid_by_dep_later(void)
+{
+  struct ruleid_by_dep_entry_block_later *later;
+  unsigned i;
+  later = ruleid_by_dep_entry_block_later_first;
+  while (later)
+  {
+    for (i = 0; i < later->cnt; i++)
+    {
+      ins_ruleid_by_dep2(later->e[i].depid, later->e[i].tgt_ruleid, 1);
+    }
+    later = later->next;
+  }
+  ruleid_by_dep_entry_block_later_first = NULL; // let it leak
+}
+
+void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
+{
+  int depruleid;
+  struct ruleid_by_dep_entry_block *blk;
+  depruleid = get_ruleid_by_tgt(depidx);
+  if (depruleid < 0)
+  {
+    struct ruleid_by_dep_entry_block_later *later;
+    if (enforce)
+    {
+      //mysize_t tgtidx = ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
+      //printf("ins_ruleid_by_dep2 enforce dep %s rule %s\n", sttable[depidx].s, sttable[tgtidx].s); // FIXME better message
+      return;
+      //abort();
+    }
+    if (!ruleid_by_dep_entry_block_later_first)
+    {
+      ruleid_by_dep_entry_block_later_first = my_malloc(sizeof(*later));
+      later = ruleid_by_dep_entry_block_later_first;
+      later->cnt = 0;
+      later->next = NULL;
+    }
+    later = ruleid_by_dep_entry_block_later_first;
+    while (later->cnt >= sizeof(later->e)/sizeof(*later->e))
+    {
+      if (later->next == NULL)
+      {
+        later->next = my_malloc(sizeof(*later->next));
+	later->next->cnt = 0;
+	later->next->next = NULL;
+      }
+      later = later->next;
+    }
+    later->e[later->cnt].depid = depidx;
+    later->e[later->cnt].tgt_ruleid = ruleid;
+    later->cnt++;
+    mysize_t tgtidx = ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
+    //printf("ins_ruleid_by_dep2 dep %s rule %s\n", sttable[depidx].s, sttable[tgtidx].s);
+    return;
+  }
+  if (rules[depruleid]->firstdepblock == NULL)
+  {
+    rules[depruleid]->firstdepblock = my_malloc(sizeof(*rules[depruleid]->firstdepblock));
+    rules[depruleid]->firstdepblock->cnt = 0;
+    rules[depruleid]->firstdepblock->next = NULL;
+  }
+  blk = rules[depruleid]->firstdepblock;
+  while (blk->cnt >= RULEID_BY_DEP_ENTRY_BLOCK_SIZE)
+  {
+    if (blk->next == NULL)
+    {
+      blk->next = my_malloc(sizeof(*blk->next));
+      blk->next->cnt = 0;
+      blk->next->next = NULL;
+    }
+    blk = blk->next;
+  }
+  blk->ruleid[blk->cnt++] = ruleid;
+}
+
 void ins_ruleid_by_dep(mysize_t depidx, int ruleid)
 {
+#if 0
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(depidx);
   uint32_t hash = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
   struct one_ruleid_by_dep_entry *one;
@@ -124,5 +208,6 @@ void ins_ruleid_by_dep(mysize_t depidx, int ruleid)
     printf("6\n");
     my_abort();
   }
+#endif
   return;
 }

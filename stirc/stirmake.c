@@ -1487,6 +1487,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
       char *fulldep;
       mysize_t depidx;
       int otherid;
+      int ret;
 
       fulldep = malloc(fulldepsz);
       if (snprintf(fulldep, fulldepsz, "%s/%s", prefix, deps[j]) >= (int)fulldepsz)
@@ -1505,9 +1506,13 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                 deps[j]);
         return -ENOENT;
       }
-      ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0);
+      ret = ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0);
       deps_remain_insert(rule, otherid);
-      ins_ruleid_by_dep(depidx, ruleid);
+      if (ret == 0)
+      {
+        ins_ruleid_by_dep2(depidx, ruleid, 1);
+        ins_ruleid_by_dep(depidx, ruleid);
+      }
     }
   }
   return 0;
@@ -1610,6 +1615,7 @@ void process_additional_deps(mysize_t global_scopeidx)
         }
         else
         {
+          ins_ruleid_by_dep2(dep->nameidx, rule->ruleid, 1);
           ins_ruleid_by_dep(dep->nameidx, rule->ruleid);
         }
         //printf(" dep: %s\n", dep->name);
@@ -1643,6 +1649,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       }
       else
       {
+        ins_ruleid_by_dep2(dep->nameidx, rule->ruleid, 1); // FIXME!
         ins_ruleid_by_dep(dep->nameidx, rule->ruleid); // FIXME!
       }
       //printf(" dep: %s\n", dep->name);
@@ -1721,6 +1728,9 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
     mysize_t nameidxnodir = stringtab_add(deps[i].namenodir);
     if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1) == 0)
     {
+      //printf("<INS>\n");
+      ins_ruleid_by_dep2(nameidx, rule->ruleid, 0);
+      //printf("</INS>\n");
       ins_ruleid_by_dep(nameidx, rule->ruleid);
     }
   }
@@ -3833,21 +3843,23 @@ void mark_executed(int ruleid, int was_actually_executed)
       }
     }
   }
-  LINKED_LIST_FOR_EACH(node, &r->tgtlist)
+  //LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
-    struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-    struct ruleid_by_dep_entry *e2 = find_ruleids_by_dep(e->tgtidx);
-    if (e2 == NULL)
+    //struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
+    //int tgt_ruleid = get_ruleid_by_tgt(e->tgtidx);
+    //struct ruleid_by_dep_entry_block *blk = rules[tgt_ruleid]->firstdepblock;
+    struct ruleid_by_dep_entry_block *blk = rules[ruleid]->firstdepblock;
+    while (blk != NULL)
     {
-      continue;
-    }
-    LINKED_LIST_FOR_EACH(node2, &e2->one_ruleid_by_deplist)
-    {
-      struct one_ruleid_by_dep_entry *one =
-        ABCE_CONTAINER_OF(node2, struct one_ruleid_by_dep_entry, llnode);
-      indentlevel++;
-      reconsider(one->ruleid, ruleid);
-      indentlevel--;
+      size_t i;
+      for (i = 0; i < blk->cnt; i++)
+      {
+        int one_ruleid = blk->ruleid[i];
+        indentlevel++;
+        reconsider(one_ruleid, ruleid);
+        indentlevel--;
+      }
+      blk = blk->next;
     }
   }
 }
@@ -4396,6 +4408,8 @@ void do_clean(char *fwd_path, int objs, int bins)
     }
     deps_remain_calculated = 1;
   }
+
+  ins_ruleid_by_dep_later();
 
   run_loop(0);
   for (i = 0; i < rules_size; i++)
@@ -5572,6 +5586,7 @@ void process_orders(struct stiryy_main *stirmain)
   for (i = 0; i < stirmain->ordersz; i++)
   {
     struct rule *rule;
+    int ret;
     if (stirmain->orders[i].rulecnt != 2)
     {
       my_abort();
@@ -5601,9 +5616,13 @@ void process_orders(struct stiryy_main *stirmain)
       continue;
     }
     rule = rules[secondrule];
-    ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+    ret = ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
     deps_remain_insert(rule, firstrule);
-    ins_ruleid_by_dep(first, secondrule);
+    if (ret == 0)
+    {
+      ins_ruleid_by_dep2(first, secondrule, 1);
+      ins_ruleid_by_dep(first, secondrule);
+    }
     if (debug)
     {
       print_indent();
@@ -7550,6 +7569,8 @@ int main(int argc, char **argv)
       free(better_cycle_detect(ruleid, 0));
     }
   }
+
+  ins_ruleid_by_dep_later();
 
   run_loop(1);
 

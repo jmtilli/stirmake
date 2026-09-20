@@ -96,12 +96,13 @@ struct rule {
   struct stirtgt *curtgt_touch;
   struct syncbuf output;
   struct stirdep *waitloc;
+  struct ruleid_by_dep_entry_block *firstdepblock;
 };
 extern struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
 
 void zero_rule(struct rule *rule);
 void calc_deps_remain(struct rule *rule);
-void deps_remain_insert(struct rule *rule, int ruleid);
+int deps_remain_insert(struct rule *rule, int ruleid);
 void deps_remain_erase(struct rule *rule, int ruleid);
 void deps_remain_forwait(struct rule *rule, int ruleid);
 int deps_remain_has(struct rule *rule, int ruleid);

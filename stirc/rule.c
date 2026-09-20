@@ -177,7 +177,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
 }
 
 
-void deps_remain_insert(struct rule *rule, int ruleid)
+int deps_remain_insert(struct rule *rule, int ruleid)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -188,7 +188,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
   if (n != NULL)
   {
-    return;
+    return -EEXIST;
   }
   dep_remain_cnt++;
   dep_remain = my_malloc(sizeof(struct dep_remain));
@@ -201,6 +201,7 @@ void deps_remain_insert(struct rule *rule, int ruleid)
   }
   linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
   rule->deps_remain_cnt++;
+  return 0;
 }
 
 void calc_deps_remain(struct rule *rule)
