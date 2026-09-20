@@ -1593,33 +1593,28 @@ void process_additional_deps(mysize_t global_scopeidx)
       LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-        ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+	int ret;
+        ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+	if (ret == 0)
+	{
+          if (get_ruleid_by_tgt(dep->depidx) < 0)
+          {
+            if (debug)
+            {
+              print_indent();
+              printf("Omitting-1 ruleid_by_dep for dep %s of rule %s\n", sttable[dep->depidx].s, sttable[entry->tgtidx].s);
+            }
+          }
+          else
+          {
+            ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1);
+            ins_ruleid_by_dep(dep->depidx, rule->ruleid);
+          }
+        }
       }
       rule->is_phony = !!entry->phony;
       rule->is_rectgt = 0;
       rule->is_detouch = 0;
-      LINKED_LIST_FOR_EACH(node2, &rule->deplist)
-      {
-        struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
-        if (dep->is_dupe)
-        {
-          continue;
-        }
-        if (get_ruleid_by_tgt(dep->nameidx) < 0)
-        {
-          if (debug)
-          {
-            print_indent();
-            printf("Omitting-1 ruleid_by_dep for dep %s of rule %s\n", sttable[dep->nameidx].s, sttable[entry->tgtidx].s);
-          }
-        }
-        else
-        {
-          ins_ruleid_by_dep2(dep->nameidx, rule->ruleid, 1);
-          ins_ruleid_by_dep(dep->nameidx, rule->ruleid);
-        }
-        //printf(" dep: %s\n", dep->name);
-      }
       continue;
     }
     rule = rules[ruleid];
@@ -1630,29 +1625,24 @@ void process_additional_deps(mysize_t global_scopeidx)
     LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
-    }
-    LINKED_LIST_FOR_EACH(node2, &rule->deplist)
-    {
-      struct stirdep *dep = ABCE_CONTAINER_OF(node2, struct stirdep, llnode);
-      if (dep->is_dupe)
+      int ret;
+      ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+      if (ret == 0)
       {
-        continue;
-      }
-      if (get_ruleid_by_tgt(dep->nameidx) < 0)
-      {
-	if (debug)
-	{
-          print_indent();
-          printf("Omitting-2 ruleid_by_dep for dep %s of rule %s\n", sttable[dep->nameidx].s, sttable[entry->tgtidx].s);
+        if (get_ruleid_by_tgt(dep->depidx) < 0)
+        {
+          if (debug)
+          {
+            print_indent();
+            printf("Omitting-2 ruleid_by_dep for dep %s of rule %s\n", sttable[dep->depidx].s, sttable[entry->tgtidx].s);
+          }
+        }
+        else
+        {
+          ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1); // FIXME!
+          ins_ruleid_by_dep(dep->depidx, rule->ruleid); // FIXME!
         }
       }
-      else
-      {
-        ins_ruleid_by_dep2(dep->nameidx, rule->ruleid, 1); // FIXME!
-        ins_ruleid_by_dep(dep->nameidx, rule->ruleid); // FIXME!
-      }
-      //printf(" dep: %s\n", dep->name);
     }
   }
 }
