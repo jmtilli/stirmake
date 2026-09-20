@@ -97,6 +97,7 @@ struct rule {
   struct syncbuf output;
   struct stirdep *waitloc;
   struct ruleid_by_dep_entry_block *firstdepblock;
+  struct ruleid_by_dep_entry_block *lastdepblock;
 };
 extern struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
 

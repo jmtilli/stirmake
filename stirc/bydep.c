@@ -6,6 +6,7 @@
 #include "bytgt.h"
 
 struct ruleid_by_dep_entry_block_later *ruleid_by_dep_entry_block_later_first;
+struct ruleid_by_dep_entry_block_later *ruleid_by_dep_entry_block_later_last;
 
 static inline int one_ruleid_by_dep_entry_cmp_asym(const void *ruleidv, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -142,8 +143,9 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
       later = ruleid_by_dep_entry_block_later_first;
       later->cnt = 0;
       later->next = NULL;
+      ruleid_by_dep_entry_block_later_last = later;
     }
-    later = ruleid_by_dep_entry_block_later_first;
+    later = ruleid_by_dep_entry_block_later_last;
     while (later->cnt >= sizeof(later->e)/sizeof(*later->e))
     {
       if (later->next == NULL)
@@ -151,6 +153,7 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
         later->next = my_malloc(sizeof(*later->next));
 	later->next->cnt = 0;
 	later->next->next = NULL;
+	ruleid_by_dep_entry_block_later_last = later->next;
       }
       later = later->next;
     }
@@ -166,8 +169,9 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
     rules[depruleid]->firstdepblock = my_malloc(sizeof(*rules[depruleid]->firstdepblock));
     rules[depruleid]->firstdepblock->cnt = 0;
     rules[depruleid]->firstdepblock->next = NULL;
+    rules[depruleid]->lastdepblock = rules[depruleid]->firstdepblock;
   }
-  blk = rules[depruleid]->firstdepblock;
+  blk = rules[depruleid]->lastdepblock;
   while (blk->cnt >= RULEID_BY_DEP_ENTRY_BLOCK_SIZE)
   {
     if (blk->next == NULL)
@@ -175,6 +179,7 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
       blk->next = my_malloc(sizeof(*blk->next));
       blk->next->cnt = 0;
       blk->next->next = NULL;
+      rules[depruleid]->lastdepblock = blk->next;
     }
     blk = blk->next;
   }
