@@ -23,8 +23,8 @@ static inline int tgt_cmp_asym(const void *tgtidxv, struct abce_rb_tree_node *n2
 {
   const mysize_t *tgtidx = tgtidxv;
   struct stirtgt *e2 = ABCE_CONTAINER_OF(n2, struct stirtgt, node);
-  int r1 = *tgtidx;
-  int r2 = e2->tgtidx;
+  mysize_t r1 = *tgtidx;
+  mysize_t r2 = e2->tgtidx;
   return (r1>r2)-(r1<r2);
 }
 
