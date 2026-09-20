@@ -1,5 +1,5 @@
-#ifndef _STATCACHE_H_
-#define _STATCACHE_H_
+#ifndef _ACCESSCACHE_H_
+#define _ACCESSCACHE_H_
 
 #include "linkedlist.h"
 #include "abce/abcemurmur.h"
