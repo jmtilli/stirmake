@@ -15,9 +15,17 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+struct dep_remain {
+  struct abce_rb_tree_node node;
+  struct linked_list_node llnode; // only used if debug mode on
+  int ruleid;
+  int waitcnt;
+};
+
 struct stirdep {
   struct abce_rb_tree_node node;
   struct linked_list_node llnode;
+  struct dep_remain dep_remain;
   mysize_t nameidx;
   mysize_t nameidxnodir;
   unsigned is_recursive:1;
@@ -25,13 +33,7 @@ struct stirdep {
   unsigned is_wait:1;
   unsigned is_primary:1;
   unsigned is_dupe:1;
-};
-
-struct dep_remain {
-  struct abce_rb_tree_node node;
-  struct linked_list_node llnode; // only used if debug mode on
-  int ruleid;
-  int waitcnt;
+  unsigned has_already_dep_remain:1;
 };
 
 struct stirtgt {
@@ -103,7 +105,7 @@ extern struct rule **rules; // Needs doubly indirect, otherwise pointers messed 
 
 void zero_rule(struct rule *rule);
 void calc_deps_remain(struct rule *rule);
-int deps_remain_insert(struct rule *rule, int ruleid);
+int deps_remain_insert(struct rule *rule, int ruleid, struct stirdep *stirdep);
 void deps_remain_erase(struct rule *rule, int ruleid);
 void deps_remain_forwait(struct rule *rule, int ruleid);
 int deps_remain_has(struct rule *rule, int ruleid);
@@ -111,7 +113,8 @@ struct stirtgt *rule_get_tgt(struct rule *rule, mysize_t tgtidx);
 void ins_tgt(struct rule *rule, mysize_t tgtidx, mysize_t tgtidxnodir, int is_dist, const char *prefix, int lineno);
 int ins_dep(struct rule *rule,
             mysize_t depidx, mysize_t diridx, mysize_t depidxnodir,
-            int is_recursive, int orderonly, int wait, int primary);
+            int is_recursive, int orderonly, int wait, int primary,
+            struct stirdep **dep);
 
 extern struct linked_list_head rules_remain_list;
 extern mysize_t tgt_cnt;

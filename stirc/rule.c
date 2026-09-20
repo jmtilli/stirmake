@@ -180,7 +180,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
 }
 
 
-int deps_remain_insert(struct rule *rule, int ruleid)
+int deps_remain_insert(struct rule *rule, int ruleid, struct stirdep *stirdep)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
@@ -193,8 +193,14 @@ int deps_remain_insert(struct rule *rule, int ruleid)
   {
     return -EEXIST;
   }
-  dep_remain_cnt++;
-  dep_remain = my_malloc(sizeof(struct dep_remain));
+  if (stirdep->has_already_dep_remain)
+  {
+    return -EEXIST;
+  }
+  stirdep->has_already_dep_remain = 1;
+  dep_remain = &stirdep->dep_remain;
+  //dep_remain_cnt++;
+  //dep_remain = my_malloc(sizeof(struct dep_remain));
   dep_remain->ruleid = ruleid;
   dep_remain->waitcnt = 0;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
@@ -220,7 +226,7 @@ void calc_deps_remain(struct rule *rule)
     int ruleid = get_ruleid_by_tgt(depnameidx);
     if (ruleid >= 0)
     {
-      deps_remain_insert(rule, ruleid);
+      deps_remain_insert(rule, ruleid, e);
     }
   }
 }
@@ -242,7 +248,8 @@ mysize_t stirdep_cnt;
 
 int ins_dep(struct rule *rule,
             mysize_t depidx, mysize_t diridx, mysize_t depidxnodir,
-            int is_recursive, int orderonly, int wait, int primary)
+            int is_recursive, int orderonly, int wait, int primary,
+            struct stirdep **dep)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct stirdep *e;

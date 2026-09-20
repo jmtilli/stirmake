@@ -1504,6 +1504,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
       mysize_t depidx;
       int otherid;
       int ret;
+      struct stirdep *stirdep = NULL;
 
       fulldep = malloc(fulldepsz);
       if (snprintf(fulldep, fulldepsz, "%s/%s", prefix, deps[j]) >= (int)fulldepsz)
@@ -1522,10 +1523,10 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                 deps[j]);
         return -ENOENT;
       }
-      ret = ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0);
-      deps_remain_insert(rule, otherid);
+      ret = ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0, &stirdep);
       if (ret == 0)
       {
+        deps_remain_insert(rule, otherid, stirdep);
         ins_ruleid_by_dep2(depidx, ruleid, 1);
         ins_ruleid_by_dep(depidx, ruleid);
       }
@@ -1610,7 +1611,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
 	int ret;
-        ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+        ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, NULL);
 	if (ret == 0)
 	{
           if (get_ruleid_by_tgt(dep->depidx) < 0)
@@ -1642,7 +1643,7 @@ void process_additional_deps(mysize_t global_scopeidx)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
       int ret;
-      ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+      ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, NULL);
       if (ret == 0)
       {
         if (get_ruleid_by_tgt(dep->depidx) < 0)
@@ -1756,7 +1757,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         {
           //struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
           int ret;
-          ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+          ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, NULL);
           if (ret == 0)
           {
             if (get_ruleid_by_tgt(blk->e[i].depidx) < 0)
@@ -1786,7 +1787,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
       {
         //struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
         int ret;
-        ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+        ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, NULL);
         if (ret == 0)
         {
           if (get_ruleid_by_tgt(blk->e[i].depidx) < 0)
@@ -1877,7 +1878,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     mysize_t nameidx = stringtab_add(deps[i].name);
     mysize_t nameidxnodir = stringtab_add(deps[i].namenodir);
-    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1) == 0)
+    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1, NULL) == 0)
     {
       //printf("<INS>\n");
       ins_ruleid_by_dep2(nameidx, rule->ruleid, 0);
@@ -5738,6 +5739,7 @@ void process_orders(struct stiryy_main *stirmain)
   {
     struct rule *rule;
     int ret;
+    struct stirdep *stirdep;
     if (stirmain->orders[i].rulecnt != 2)
     {
       my_abort();
@@ -5767,10 +5769,10 @@ void process_orders(struct stiryy_main *stirmain)
       continue;
     }
     rule = rules[secondrule];
-    ret = ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
-    deps_remain_insert(rule, firstrule);
+    ret = ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, &stirdep);
     if (ret == 0)
     {
+      deps_remain_insert(rule, firstrule, stirdep);
       ins_ruleid_by_dep2(first, secondrule, 1);
       ins_ruleid_by_dep(first, secondrule);
     }
