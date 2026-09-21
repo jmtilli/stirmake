@@ -3123,7 +3123,7 @@ int do_exec(int ruleid)
       has_to_exec = 1;
     }
     calc_cmd(ruleid);
-    if (!r->is_phony && !linked_list_is_empty(&r->deplist))
+    if (!r->is_phony && !r->is_inc && !linked_list_is_empty(&r->deplist))
     {
       int seen_nonphony = 0;
       int seen_tgt = 0;
@@ -3443,7 +3443,7 @@ int do_exec(int ruleid)
         }
       }
     }
-    else if (r->is_phony)
+    else if (r->is_phony || r->is_inc)
     {
       if (do_trace)
       {
@@ -3929,6 +3929,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
     }
   }
+  if (!r->is_inc && !r->is_phony)
   LINKED_LIST_FOR_EACH(node, &r->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
