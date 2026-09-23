@@ -4,7 +4,7 @@
 @fileinclude @ignore "opts.smk"
 
 # You can modify these during compilation
-$(NO_MMAP) ?= @false
+$(NO_MMAP) ?= @true
 $(NO_MEMPARSE) ?= @false
 
 $(CC) ?= @nil
