@@ -14,6 +14,7 @@ struct one_add_dep_entry_block {
   //mysize_t depidxnodir;
   unsigned auto_phony:1;
   unsigned tgt_phony:1;
+  unsigned is_inc:1;
 };
 
 struct add_dep_entry_block {
@@ -50,6 +51,6 @@ extern struct linked_list_head add_deplist;
 struct add_deps *add_deps_ensure(mysize_t tgtidx);
 struct add_dep *add_dep_ensure(struct add_deps *entry, mysize_t depidx, mysize_t depidxnodir);
 void ins_add_dep(mysize_t tgtidx, mysize_t depidx, mysize_t depidxnodir,
-                 int auto_phony, int tgt_phony);
+                 int auto_phony, int tgt_phony, int is_inc);
 
 #endif

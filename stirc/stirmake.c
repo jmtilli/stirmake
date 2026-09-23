@@ -1368,7 +1368,7 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
       entry->phony = 1;
     }
     #endif
-    ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony);
+    ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony, 0);
     for (j = 0; j < depsz; j++)
     {
       struct add_dep *add;
@@ -1377,14 +1377,14 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
       add = add_dep_ensure(entry, depidx, (mysize_t)-1);
       (void)add;
       #endif
-      ins_add_dep(tgtidx, depidx, (mysize_t)-1, 0, !!phony);
+      ins_add_dep(tgtidx, depidx, (mysize_t)-1, 0, !!phony, 0);
     }
   }
 }
 
 void add_dep(char **tgts, size_t tgts_sz,
              char **deps, size_t deps_sz,
-             int phony, int auto_phony)
+             int phony, int auto_phony, int is_inc)
 {
   size_t i, j;
   for (i = 0; i < tgts_sz; i++)
@@ -1397,7 +1397,7 @@ void add_dep(char **tgts, size_t tgts_sz,
       entry->phony = 1;
     }
     #endif
-    ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony);
+    ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony, !!is_inc);
     for (j = 0; j < deps_sz; j++)
     {
       struct add_dep *add;
@@ -1409,7 +1409,7 @@ void add_dep(char **tgts, size_t tgts_sz,
         add->auto_phony = 1;
       }
       #endif
-      ins_add_dep(tgtidx, depidx, (mysize_t)-1, !!auto_phony, !!phony);
+      ins_add_dep(tgtidx, depidx, (mysize_t)-1, !!auto_phony, !!phony, !!is_inc);
     }
   }
 }
@@ -1522,7 +1522,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                 deps[j]);
         return -ENOENT;
       }
-      ret = ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0);
+      ret = ins_dep(rule, depidx, rule->diridx, (mysize_t)-1, rec, orderonly, wait, 0, 0);
       deps_remain_insert(rule, otherid);
       if (ret == 0)
       {
@@ -1610,7 +1610,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       {
         struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
 	int ret;
-        ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+        ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, 0);
 	if (ret == 0)
 	{
           if (get_ruleid_by_tgt(dep->depidx) < 0)
@@ -1642,7 +1642,7 @@ void process_additional_deps(mysize_t global_scopeidx)
     {
       struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
       int ret;
-      ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+      ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, 0);
       if (ret == 0)
       {
         if (get_ruleid_by_tgt(dep->depidx) < 0)
@@ -1678,7 +1678,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
     {
       struct rule *rule;
       int ruleid;
-      if (!blk->e[i].auto_phony)
+      if (1 || !blk->e[i].auto_phony) // now handled via is_inc
       {
         continue;
       }
@@ -1756,7 +1756,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         {
           //struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
           int ret;
-          ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+          ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, !!blk->e[i].is_inc);
           if (ret == 0)
           {
             if (get_ruleid_by_tgt(blk->e[i].depidx) < 0)
@@ -1786,7 +1786,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
       {
         //struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
         int ret;
-        ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+        ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, !!blk->e[i].is_inc);
         if (ret == 0)
         {
           if (get_ruleid_by_tgt(blk->e[i].depidx) < 0)
@@ -1877,7 +1877,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   {
     mysize_t nameidx = stringtab_add(deps[i].name);
     mysize_t nameidxnodir = stringtab_add(deps[i].namenodir);
-    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1) == 0)
+    if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1, 0) == 0)
     {
       //printf("<INS>\n");
       ins_ruleid_by_dep2(nameidx, rule->ruleid, 0);
@@ -3629,7 +3629,7 @@ int consider(int ruleid)
         print_indent();
         printf("ruleid by target %s not found\n", sttable[e->nameidx].s);
       }
-      if (access_cached(e->nameidx) == -1)
+      if (!e->is_inc && access_cached(e->nameidx) == -1)
       {
         errxit("No %s and rule not found, required by target %s", sttable[e->nameidx].s, sttable[first_tgt->tgtidx].s);
         exit(2);
@@ -3757,7 +3757,7 @@ void reconsider(int ruleid, int ruleid_executed)
         print_indent();
         printf("ruleid by target %s not found\n", sttable[e->nameidx].s);
       }
-      if (access_cached(e->nameidx) == -1)
+      if (!e->is_inc && access_cached(e->nameidx) == -1)
       {
         errxit("No %s and rule not found, required by target %s", sttable[e->nameidx].s, sttable[first_tgt->tgtidx].s);
         exit(2);
@@ -4541,7 +4541,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     {
       mysize_t tgtidx = ABCE_CONTAINER_OF(rules[i]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
       // FIXME!!! The path to child is incorrect!
-      add_dep(&parent, 1, &sttable[tgtidx].s, 1, /*&cleanslash,*/ 0, 0);
+      add_dep(&parent, 1, &sttable[tgtidx].s, 1, /*&cleanslash,*/ 0, 0, 0);
     }
 
     free(parent);
@@ -5768,7 +5768,7 @@ void process_orders(struct stiryy_main *stirmain)
       continue;
     }
     rule = rules[secondrule];
-    ret = ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0);
+    ret = ins_dep(rule, first, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, 0);
     deps_remain_insert(rule, firstrule);
     if (ret == 0)
     {
@@ -7405,7 +7405,8 @@ int main(int argc, char **argv)
       }
       add_dep(incyy.rules[j].targets, incyy.rules[j].targetsz,
               incyy.rules[j].deps, incyy.rules[j].depsz,
-              0, !!stiryy.main->cdepincludes[i].auto_phony);
+              0, !!stiryy.main->cdepincludes[i].auto_phony,
+	      !!stiryy.main->cdepincludes[i].auto_phony);
       //add_dep(tgt, dep, 0);
     }
     fclose(f);

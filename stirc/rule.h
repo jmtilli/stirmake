@@ -25,6 +25,7 @@ struct stirdep {
   unsigned is_wait:1;
   unsigned is_primary:1;
   unsigned is_dupe:1;
+  unsigned is_inc:1;
 };
 
 struct dep_remain {
@@ -111,7 +112,8 @@ struct stirtgt *rule_get_tgt(struct rule *rule, mysize_t tgtidx);
 void ins_tgt(struct rule *rule, mysize_t tgtidx, mysize_t tgtidxnodir, int is_dist, const char *prefix, int lineno);
 int ins_dep(struct rule *rule,
             mysize_t depidx, mysize_t diridx, mysize_t depidxnodir,
-            int is_recursive, int orderonly, int wait, int primary);
+            int is_recursive, int orderonly, int wait, int primary,
+            int is_inc);
 
 extern struct linked_list_head rules_remain_list;
 extern mysize_t tgt_cnt;

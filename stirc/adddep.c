@@ -7,7 +7,7 @@ struct add_dep_entry_block *add_dep_entry_block_last;
 mysize_t add_dep_entry_block_cnt;
 
 void ins_add_dep(mysize_t tgtidx, mysize_t depidx, mysize_t depidxnodir,
-                 int auto_phony, int tgt_phony)
+                 int auto_phony, int tgt_phony, int is_inc)
 {
   struct add_dep_entry_block *blk;
   if (add_dep_entry_block_first == NULL)
@@ -37,6 +37,7 @@ void ins_add_dep(mysize_t tgtidx, mysize_t depidx, mysize_t depidxnodir,
   //blk->e[blk->cnt].depidxnodir = depidxnodir;
   blk->e[blk->cnt].auto_phony = !!auto_phony;
   blk->e[blk->cnt].tgt_phony = !!tgt_phony;
+  blk->e[blk->cnt].is_inc = !!is_inc;
   blk->cnt++;
 }
 

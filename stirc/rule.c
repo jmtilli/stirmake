@@ -242,7 +242,8 @@ mysize_t stirdep_cnt;
 
 int ins_dep(struct rule *rule,
             mysize_t depidx, mysize_t diridx, mysize_t depidxnodir,
-            int is_recursive, int orderonly, int wait, int primary)
+            int is_recursive, int orderonly, int wait, int primary,
+            int is_inc)
 {
   uint32_t hash = abce_murmur32(HASH_SEED, depidx);
   struct stirdep *e;
@@ -278,6 +279,7 @@ int ins_dep(struct rule *rule,
   e->is_recursive = !!is_recursive;
   e->is_orderonly = !!orderonly;
   e->is_wait = !!wait;
+  e->is_inc = !!is_inc;
   e->is_dupe = 0;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
