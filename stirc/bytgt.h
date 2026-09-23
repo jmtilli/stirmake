@@ -10,7 +10,7 @@
 
 struct ruleid_by_tgt_entry {
   struct abce_rb_tree_node node;
-  struct linked_list_node llnode;
+  //struct linked_list_node llnode;
   int ruleid;
   //char *tgt;
   mysize_t tgtidx;

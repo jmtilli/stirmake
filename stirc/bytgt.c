@@ -6,11 +6,11 @@
 void errxit(const char *fmt, ...);
 
 extern struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
-extern struct linked_list_head ruleid_by_tgt_list;
+//extern struct linked_list_head ruleid_by_tgt_list;
 
 struct abce_rb_tree_nocmp ruleid_by_tgt[RULEID_BY_TGT_SIZE];
-struct linked_list_head ruleid_by_tgt_list =
-  STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
+//struct linked_list_head ruleid_by_tgt_list =
+//  STIR_LINKED_LIST_HEAD_INITER(ruleid_by_tgt_list);
 mysize_t ruleid_by_tgt_entry_cnt;
 
 static inline int ruleid_by_tgt_entry_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
@@ -54,7 +54,7 @@ void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int line
     }
     exit(2);
   }
-  linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
+  //linked_list_add_tail(&e->llnode, &ruleid_by_tgt_list);
 }
 
 int get_ruleid_by_tgt(mysize_t tgt)
