@@ -606,6 +606,10 @@ int add_rule_yy(struct stiryy_main *stirmain, struct tgt *tgts, size_t tgtsz,
                 int deponly,
                 char *prefix, size_t scopeidx, int lineno)
 {
+  if (stirmain->trial)
+  {
+    return 0;
+  }
   if (stirmain->rule_in_progress)
   {
     return -EINVAL;

@@ -462,6 +462,10 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
 
 static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(dep) + 2;
@@ -513,6 +517,10 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
 }
 static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz1 = strlen(curprefix) + 1 + strlen(dep[0]) + 1;
@@ -568,6 +576,10 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
 
 static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const char *curprefix, const char *name)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyorder *order = &stirmain->orders[stirmain->ordersz - 1];
   size_t sz = strlen(curprefix) + strlen(name) + 2;
   char *can, *tmp = malloc(sz);
@@ -599,6 +611,10 @@ static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const cha
 
 static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(dep) + 2;
@@ -652,6 +668,10 @@ static inline void stiryy_set_dep(struct stiryy *stiryy, const char *dep, int re
 
 static inline void stiryy_main_add_order(struct stiryy_main *stirmain)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   size_t newcapacity;
   if (stirmain->ordersz >= stirmain->ordercapacity)
   {
@@ -678,6 +698,10 @@ static inline void stiryy_set_order(struct stiryy *stiryy, const char *name)
 
 static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(tgt) + 2;
@@ -741,6 +765,10 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
 
 static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist, int percent_special)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(tgt) + 2;
@@ -828,6 +856,10 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
 }
 static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const char *curprefix, const char **tgt, int is_dist)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz1 = strlen(curprefix) + 1 + strlen(tgt[0]) + 1;
@@ -890,6 +922,10 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
 
 static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(curprefix) + strlen(tgt) + 2;
@@ -946,6 +982,10 @@ static inline void stiryy_set_cleanhooktgt(struct stiryy *stiryy, const char *tg
 
 static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
   struct cmdsrcitem *item = &rule->shells.items[rule->shells.itemsz - 1];
@@ -966,6 +1006,10 @@ static inline void stiryy_add_shell(struct stiryy *stiryy, const char *shell)
 static inline void stiryy_add_shell_attab(struct stiryy *stiryy, size_t locidx,
                                           int ignore, int noecho, int ismake)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
   struct cmdsrc *cmdsrc = &rule->shells;
@@ -991,6 +1035,10 @@ static inline void stiryy_add_shell_atattab(struct stiryy *stiryy,
                                             size_t locidx,
                                             int ignore, int noecho, int ismake)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
   struct cmdsrc *cmdsrc = &rule->shells;
@@ -1015,6 +1063,10 @@ static inline void stiryy_add_shell_atattab(struct stiryy *stiryy,
 
 static inline void stiryy_add_shell_section(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t newcapacity;
   struct cmdsrc *cmdsrc = &rule->shells;
@@ -1039,6 +1091,10 @@ static inline void stiryy_add_shell_section(struct stiryy *stiryy)
 
 static inline void stiryy_main_emplace_rule(struct stiryy_main *stirmain, const char *curprefix, size_t scopeidx, int lineno)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   size_t newcapacity;
   if (stirmain->rulesz >= stirmain->rulecapacity)
   {
@@ -1077,11 +1133,19 @@ static inline void stiryy_main_emplace_rule(struct stiryy_main *stirmain, const 
 }
 static inline void stiryy_main_emplace_patrule(struct stiryy_main *stirmain, const char *curprefix, size_t scopeidx, int lineno)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   stiryy_main_emplace_rule(stirmain, curprefix, scopeidx, lineno);
   stirmain->rules[stirmain->rulesz-1].ispat = 1;
 }
 static inline void stiryy_main_freeze_patrule(struct stiryy_main *stirmain)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   if (stirmain->rulesz == 0 || !stirmain->rules[stirmain->rulesz-1].ispat)
   {
     abort();
@@ -1104,26 +1168,50 @@ static inline void stiryy_freeze_patrule(struct stiryy *stiryy)
 
 static inline void stiryy_mark_phony(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   stiryy->main->rules[stiryy->main->rulesz-1].phony = 1;
 }
 static inline void stiryy_mark_dist(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   stiryy->main->rules[stiryy->main->rulesz-1].dist = 1;
 }
 static inline void stiryy_mark_maybe(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   stiryy->main->rules[stiryy->main->rulesz-1].maybe = 1;
 }
 static inline void stiryy_mark_rectgt(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   stiryy->main->rules[stiryy->main->rulesz-1].rectgt = 1;
 }
 static inline void stiryy_mark_detouch(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return;
+  }
   stiryy->main->rules[stiryy->main->rulesz-1].detouch = 1;
 }
 static inline int stiryy_check_rule(struct stiryy *stiryy)
 {
+  if (stiryy->main->trial)
+  {
+    return 0;
+  }
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
   size_t j ;
   if (rule->rectgt || rule->detouch)
@@ -1151,6 +1239,10 @@ static inline int stiryy_check_rule(struct stiryy *stiryy)
 }
 static inline void stiryy_main_mark_deponly(struct stiryy_main *stirmain)
 {
+  if (stirmain->trial)
+  {
+    return;
+  }
   stirmain->rules[stirmain->rulesz-1].deponly = 1;
 }
 static inline void stiryy_mark_deponly(struct stiryy *stiryy)

@@ -4051,7 +4051,7 @@ patdepspec:
 targetspec:
   targets
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     if (stiryy->main->rules[stiryy->main->rulesz - 1].targetsz == 0)
     {
@@ -4069,7 +4069,7 @@ depspec:
 pattargets:
   maybe_disttgt FREEFORM_TOKEN
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     if ($1 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
     {
@@ -4086,7 +4086,7 @@ pattargets:
 }
 | maybe_disttgt tgtdepref
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     int ret;
     int has_nil = -1;
@@ -4161,7 +4161,7 @@ pattargets:
 }
 | pattargets maybe_disttgt FREEFORM_TOKEN
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     if ($2 && !stiryy->main->rules[stiryy->main->rulesz-1].patfrozen)
     {
@@ -4178,7 +4178,7 @@ pattargets:
 }
 | pattargets maybe_disttgt tgtdepref
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     int ret;
     int has_nil = -1;
