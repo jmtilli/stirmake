@@ -1250,7 +1250,8 @@ static inline void stiryy_mark_deponly(struct stiryy *stiryy)
   stiryy_main_mark_deponly(stiryy->main);
 }
 
-static inline void stiryy_main_free(struct stiryy_main *stirmain)
+// NB: this function is leaky, it leaves some garbage behind
+static inline void stiryy_main_free_rules(struct stiryy_main *stirmain)
 {
   size_t i;
   size_t j;
@@ -1277,6 +1278,7 @@ static inline void stiryy_main_free(struct stiryy_main *stirmain)
     free(stirmain->rules[i].deps);
     free(stirmain->rules[i].targets);
     free(stirmain->rules[i].prefix);
+    if (0) // We can't free the following:
     for (j = 0; j < stirmain->rules[i].shells.itemsz; j++)
     {
       if (stirmain->rules[i].shells.items[j].isfun)
@@ -1311,9 +1313,17 @@ static inline void stiryy_main_free(struct stiryy_main *stirmain)
         free(stirmain->rules[i].shells.items[j].u.cmds);
       }
     }
+    if (0) // We can't free the following:
     free(stirmain->rules[i].shells.items);
   }
   free(stirmain->rules);
+  stirmain->rulesz = 0;
+}
+
+static inline void stiryy_main_free(struct stiryy_main *stirmain)
+{
+  size_t i;
+  stiryy_main_free_rules(stirmain);
   for (i = 0; i < stirmain->ordersz; i++)
   {
     free(stirmain->orders[i].rules[0]);

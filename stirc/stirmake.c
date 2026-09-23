@@ -7338,7 +7338,9 @@ int main(int argc, char **argv)
   {
     errxit("no applicable rules");
   }
-
+  // cdepincludes is going to take a lot of memory, so free some
+  // excess memory here
+  stiryy_main_free_rules(&stirmain);
   for (i = 0; i < stiryy.main->cdepincludesz; i++)
   {
     struct incyy incyy = {
@@ -7410,8 +7412,6 @@ int main(int argc, char **argv)
     incyy_free(&incyy);
   }
   stiryy_free(&stiryy);
-  free(stirmain.rules);
-  stirmain.rules = NULL;
 
   //add_dep(v_l3e, v_l1g, 0); // offending rule
 
