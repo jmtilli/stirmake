@@ -16,6 +16,8 @@ extern "C" {
 
 void *my_strdup(const char *str);
 void *my_malloc(size_t sz);
+void *my_argstrdup(const char *str);
+void *my_argmalloc(size_t sz);
 
 struct dbyycmd {
   char **args;
@@ -69,7 +71,7 @@ static inline void dbyy_post_cmd(struct dbyy *dbyy)
   if (rule->cmdssz > 0)
   {
     void *tmpptr;
-    tmpptr = my_malloc(sizeof(rule->cmds[rule->cmdssz-1].args[0])*rule->cmds[rule->cmdssz-1].argssz);
+    tmpptr = my_argmalloc(sizeof(rule->cmds[rule->cmdssz-1].args[0])*rule->cmds[rule->cmdssz-1].argssz);
     memcpy(tmpptr, rule->cmds[rule->cmdssz-1].args, sizeof(rule->cmds[rule->cmdssz-1].args[0])*rule->cmds[rule->cmdssz-1].argssz);
     free(rule->cmds[rule->cmdssz-1].args);
     rule->cmds[rule->cmdssz-1].args = tmpptr;
@@ -79,7 +81,7 @@ static inline void dbyy_post_cmds(struct dbyy *dbyy)
 {
   struct dbyyrule *rule = &dbyy->rules[dbyy->rulesz - 1];
   void *tmpptr;
-  tmpptr = my_malloc(sizeof(rule->cmds[0])*rule->cmdssz);
+  tmpptr = my_argmalloc(sizeof(rule->cmds[0])*rule->cmdssz);
   memcpy(tmpptr, rule->cmds, sizeof(rule->cmds[0])*rule->cmdssz);
   free(rule->cmds);
   rule->cmds = tmpptr;
@@ -96,7 +98,7 @@ static inline void dbyy_add_arg(struct dbyy *dbyy, const char *arg)
     cmd->args = (char**)realloc(cmd->args, sizeof(*cmd->args)*newcapacity);
     cmd->argscapacity = newcapacity;
   }
-  cmd->args[cmd->argssz++] = my_strdup(arg);
+  cmd->args[cmd->argssz++] = my_argstrdup(arg);
 }
 
 static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const char *tgt)
