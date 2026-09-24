@@ -68,6 +68,7 @@ extern struct sttable_entry *sttable;
 extern mysize_t st_cap;
 extern mysize_t st_cnt;
 extern mysize_t stringtab_cnt;
+extern size_t stringtab_bytes;
 
 
 void st_grow(void);

@@ -12,6 +12,7 @@ struct sttable_entry *sttable = NULL;
  */
 mysize_t st_cap = 64*1024;
 mysize_t st_cnt;
+size_t stringtab_bytes;
 
 void errxit(const char *fmt, ...);
 
@@ -104,6 +105,7 @@ mysize_t stringtab_add(const char *symbol)
   sttable[st_cnt].is_remade = 0;
   sttable[st_cnt].is_cdepwatch = 0;
   stringtabentry->idx = st_cnt++;
+  stringtab_bytes += stringlen.len+1;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
   {
     printf("23\n");
