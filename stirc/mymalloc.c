@@ -42,7 +42,7 @@ void *my_malloc(size_t sz)
   }
   if (my_arena_ptr + (sz+7)/8*8 > my_arena + sizeof_my_arena)
   {
-    mymemwaste += my_arena + sizeof_my_arena - my_arena_ptr;
+    mymemwaste += (size_t)(my_arena + sizeof_my_arena - my_arena_ptr);
 #if 0
     if (debug)
     {
