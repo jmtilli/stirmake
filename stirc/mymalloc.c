@@ -9,6 +9,7 @@
 char *my_arena;
 char *my_arena_ptr;
 size_t sizeof_my_arena;
+size_t argmem;
 
 void errxit(const char *fmt, ...);
 void my_abort(void);
@@ -60,6 +61,16 @@ void *my_malloc(size_t sz)
   }
   return result;
 }
+void *my_argmalloc(size_t sz)
+{
+  void *res;
+  res = my_malloc(sz);
+  if (res)
+  {
+    argmem += sz;
+  }
+  return res;
+}
 void my_free(void *ptr)
 {
   // nop
@@ -75,6 +86,20 @@ void *my_strdup(const char *str)
 {
   size_t sz = strlen(str);
   void *result = my_malloc(sz + 1);
+  memcpy(result, str, sz + 1);
+  return result;
+}
+void *my_argstrdup_len(const char *str, size_t sz)
+{
+  char *result = my_argmalloc(sz + 1);
+  memcpy(result, str, sz);
+  result[sz] = '\0';
+  return result;
+}
+void *my_argstrdup(const char *str)
+{
+  size_t sz = strlen(str);
+  void *result = my_argmalloc(sz + 1);
   memcpy(result, str, sz + 1);
   return result;
 }

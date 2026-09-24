@@ -1144,7 +1144,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
 	    abce_pop(abce);
             return NULL;
           }
-          char **cmd = my_malloc((mb->u.area->u.ar.mbs[j].u.area->u.ar.size+4)*sizeof(*cmd));
+          char **cmd = my_argmalloc((mb->u.area->u.ar.mbs[j].u.area->u.ar.size+4)*sizeof(*cmd));
           cmd[0] = cmdsrc->items[i].ignore ? st_ignore : st_noignore;
           cmd[1] = cmdsrc->items[i].noecho ? st_noecho : st_echo;
           cmd[2] = cmdsrc->items[i].ismake ? st_make : st_nomake;
@@ -1162,7 +1162,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
               return NULL;
             }
             cmd[3+k] =
-              my_strdup(
+              my_argstrdup(
                 abce_mba_str(mb->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area));
           }
           cmd[3+mb->u.area->u.ar.mbs[j].u.area->u.ar.size] = NULL;
@@ -1176,7 +1176,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
       }
       else
       {
-        char **cmd = my_malloc((mb->u.area->u.ar.size+4)*sizeof(*cmd));
+        char **cmd = my_argmalloc((mb->u.area->u.ar.size+4)*sizeof(*cmd));
         cmd[0] = cmdsrc->items[i].ignore ? st_ignore : st_noignore;
         cmd[1] = cmdsrc->items[i].noecho ? st_noecho : st_echo;
         cmd[2] = cmdsrc->items[i].ismake ? st_make : st_nomake;
@@ -1191,7 +1191,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
 	    abce_pop(abce);
             return NULL;
           }
-          cmd[3+j] = my_strdup(abce_mba_str(mb->u.area->u.ar.mbs[j].u.area));
+          cmd[3+j] = my_argstrdup(abce_mba_str(mb->u.area->u.ar.mbs[j].u.area));
         }
         cmd[3+mb->u.area->u.ar.size] = NULL;
         if (resultsz >= resultcap)
@@ -1275,7 +1275,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   result[resultsz++] = NULL;
   // Replace it with allocation by my_malloc since that is MAP_SHARED
   // Previously we used malloc() since we needed realloc()
-  result2 = my_malloc(resultsz*sizeof(*result));
+  result2 = my_argmalloc(resultsz*sizeof(*result));
   memcpy(result2, result, resultsz*sizeof(*result));
   free(result);
   return result2;
@@ -1426,13 +1426,13 @@ char **argdup(int ignore, int noecho, int ismake, char **cmdargs)
   {
     cnt++;
   }
-  result = my_malloc((cnt+4) * sizeof(*result));
+  result = my_argmalloc((cnt+4) * sizeof(*result));
   result[0] = ignore ? st_ignore : st_noignore;
   result[1] = noecho ? st_noecho : st_echo;
   result[2] = ismake ? st_make : st_nomake;
   for (i = 0; i < cnt; i++)
   {
-    result[i+3] = my_strdup(cmdargs[i]);
+    result[i+3] = my_argstrdup(cmdargs[i]);
   }
   result[cnt+3] = NULL;
   return result;
@@ -1442,7 +1442,7 @@ char ***argsdupcnt(char ***cmdargs, size_t cnt)
 {
   size_t i;
   char ***result;
-  result = my_malloc((cnt+1) * sizeof(*result));
+  result = my_argmalloc((cnt+1) * sizeof(*result));
   for (i = 0; i < cnt; i++)
   {
     result[i] = cmdargs[i] ? argdup(0, 0, 0, cmdargs[i]) : NULL;
@@ -4750,13 +4750,13 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
 {
   struct cmd ret = CMD_EMPTY;
   size_t i, j;
-  char ***result = my_malloc((cmdssz+1) * sizeof(*result));
+  char ***result = my_argmalloc((cmdssz+1) * sizeof(*result));
   for (i = 0; i < cmdssz; i++)
   {
-    result[i] = my_malloc((cmds[i].argssz+1) * sizeof(*(result[i])));
+    result[i] = my_argmalloc((cmds[i].argssz+1) * sizeof(*(result[i])));
     for (j = 0; j < cmds[i].argssz; j++)
     {
-      result[i][j] = my_strdup(cmds[i].args[j]);
+      result[i][j] = my_argstrdup(cmds[i].args[j]);
     }
     result[i][cmds[i].argssz] = NULL;
   }
@@ -7731,6 +7731,7 @@ int main(int argc, char **argv)
   {
     printf("\n");
     printf("Memory use statistics:\n");
+    printf("  argmem: %zu\n", (size_t)argmem);
     printf("  stringtab: %zu %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes);
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));

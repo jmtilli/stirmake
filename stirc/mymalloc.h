@@ -21,6 +21,10 @@ static inline size_t stir_topages(size_t limit)
 }
 #endif
 
+void *my_argmalloc(size_t sz);
+void *my_argstrdup_len(const char *str, size_t sz);
+void *my_argstrdup(const char *str);
+
 void *my_malloc(size_t sz);
 void my_free(void *ptr);
 void *my_strdup_len(const char *str, size_t sz);
@@ -28,5 +32,7 @@ void *my_strdup(const char *str);
 int my_malloc_init(void);
 void *stir_do_mmap_madvise(size_t bytes);
 void stir_do_munmap(void *ptr, size_t bytes);
+
+extern size_t argmem;
 
 #endif
