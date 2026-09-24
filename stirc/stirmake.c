@@ -188,7 +188,7 @@ int do_trace = 0;
 int unsafe = 0;
 
 size_t dbecnt;
-size_t tsdbecnt;
+extern size_t tsdbecnt;
 
 void print_indent(void)
 {

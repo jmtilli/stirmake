@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 int usetsdb = 1;
+size_t tsdbecnt;
 
 static inline int tsdbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
@@ -163,6 +164,7 @@ int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts
   if (n == NULL)
   {
     tsdbe = my_malloc(sizeof(struct tsdbe));
+    tsdbecnt++;
     tsdbe->stringtabidx = stringtabidx;
     tsdbe->tsnew = ts;
     tsdbe->ts = ts;
@@ -193,6 +195,7 @@ int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts
   if (n == NULL)
   {
     tsdbe = my_malloc(sizeof(struct tsdbe));
+    tsdbecnt++;
     tsdbe->stringtabidx = stringtabidx;
     tsdbe->tsnew = ts;
     tsdbe->ts = ts;
