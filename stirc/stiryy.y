@@ -4115,9 +4115,9 @@ pattargets:
 
     for (i = 0; i < strsz; i++)
     {
-      if (strs[i] == NULL)
+      if (strs[i] == NULL && i < INT_MAX)
       {
-        has_nil = i;
+        has_nil = (int)i;
       }
     }
     if (strsz == 3 && has_nil == 1)
@@ -4206,9 +4206,9 @@ pattargets:
     }
     for (i = 0; i < strsz; i++)
     {
-      if (strs[i] == NULL)
+      if (strs[i] == NULL && i < INT_MAX)
       {
-        has_nil = i;
+        has_nil = (int)i;
       }
     }
 
@@ -4444,9 +4444,9 @@ patdeps:
 
     for (i = 0; i < strsz; i++)
     {
-      if (strs[i] == NULL)
+      if (strs[i] == NULL && i < INT_MAX)
       {
-        has_nil = i;
+        has_nil = (int)i;
       }
     }
     if (strsz == 3 && has_nil == 1)
