@@ -187,6 +187,9 @@ int indentlevel = 0;
 int do_trace = 0;
 int unsafe = 0;
 
+size_t dbecnt;
+size_t tsdbecnt;
+
 void print_indent(void)
 {
   int i;
@@ -4817,6 +4820,7 @@ void load_db(void)
   for (i = 0; i < dbyy.rulesz; i++)
   {
     struct dbe *dbe = my_malloc(sizeof(struct dbe));
+    dbecnt++;
     dbe->tgtidx = stringtab_add(dbyy.rules[i].tgt);
     dbe->diridx = stringtab_add(dbyy.rules[i].dir);
     dbe->cmds = dbyycmd_add(dbyy.rules[i].cmds, dbyy.rules[i].cmdssz);
@@ -4825,6 +4829,7 @@ void load_db(void)
   for (i = 0; i < dbyy.tssz; i++)
   {
     struct tsdbe *tsdbe = my_malloc(sizeof(struct tsdbe));
+    tsdbecnt++;
     tsdbe->stringtabidx = stringtab_add(dbyy.tsdb[i].tgt);
     tsdbe->seen = 0;
     tsdbe->sz = dbyy.tsdb[i].filesz;
@@ -4872,6 +4877,7 @@ int merge_db_v1(void)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
       struct dbe *dbe = my_malloc(sizeof(struct dbe));
+      dbecnt++;
       dbe->tgtidx = e->tgtidx;
       dbe->diridx = rule->diridx;
       dbe->cmds = rule->cmd;
@@ -4986,6 +4992,7 @@ int merge_db_v2(void)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
       struct dbe *dbe = my_malloc(sizeof(struct dbe));
+      dbecnt++;
       dbe->tgtidx = e->tgtidx;
       dbe->diridx = rule->diridx;
       dbe->cmds = rule->cmd;
@@ -7731,6 +7738,8 @@ int main(int argc, char **argv)
   {
     printf("\n");
     printf("Memory use statistics:\n");
+    printf("  dbe: %zu %zu\n", (size_t)dbecnt, dbecnt*(size_t)sizeof(struct dbe));
+    printf("  tsdbe: %zu %zu\n", (size_t)tsdbecnt, tsdbecnt*(size_t)sizeof(struct tsdbe));
     printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
     printf("  stringtab: %zu %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes);
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
