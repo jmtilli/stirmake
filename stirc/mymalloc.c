@@ -11,6 +11,9 @@ char *my_arena_ptr;
 size_t sizeof_my_arena;
 size_t argmem;
 size_t argmemcnt;
+size_t mymem;
+size_t mymemcnt;
+size_t mymemwaste;
 
 void errxit(const char *fmt, ...);
 void my_abort(void);
@@ -33,11 +36,13 @@ void *my_malloc(size_t sz)
       fprintf(stderr, "too large alloc, out of memory: %zu bytes\n", sz);
       my_abort();
     }
+    mymem += sz;
+    mymemcnt += 1;
     return result;
   }
-  my_arena_ptr += (sz+7)/8*8;
-  if (my_arena_ptr > my_arena + sizeof_my_arena)
+  if (my_arena_ptr + (sz+7)/8*8 > my_arena + sizeof_my_arena)
   {
+    mymemwaste += my_arena + sizeof_my_arena - my_arena_ptr;
 #if 0
     if (debug)
     {
@@ -60,6 +65,13 @@ void *my_malloc(size_t sz)
       my_abort();
     }
   }
+  else
+  {
+    my_arena_ptr += (sz+7)/8*8;
+  }
+  mymem += sz;
+  mymemcnt += 1;
+  mymemwaste += (sz+7)/8*8 - sz;
   return result;
 }
 void *my_argmalloc(size_t sz)

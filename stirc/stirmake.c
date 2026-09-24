@@ -30,6 +30,7 @@
 #include "stirutils.h"
 #include "statcache.h"
 #include "accesscache.h"
+#include "abce/abcejmalloc.h"
 #include "db.h"
 #include "pathmax.h"
 #include "stirtrap.h"
@@ -7738,10 +7739,14 @@ int main(int argc, char **argv)
   {
     printf("\n");
     printf("Memory use statistics:\n");
+    printf("  accesscache: %zu %zu\n", (size_t)accesshashentriescnt, (size_t)accesshashentriescnt*sizeof(struct accesshashentry));
+    printf("  statcache: %zu %zu\n", (size_t)stathashentriescnt, (size_t)stathashentriescnt*sizeof(struct stathashentry));
+    printf("  my_malloc all: %zu %zu (+ wasted %zu)\n", (size_t)mymemcnt, (size_t)mymem, (size_t)mymemwaste);
+    printf("  abce arena all: %zu \n", (size_t)abce_jmgetarenabytes());
     printf("  dbe: %zu %zu\n", (size_t)dbecnt, dbecnt*(size_t)sizeof(struct dbe));
     printf("  tsdbe: %zu %zu\n", (size_t)tsdbecnt, tsdbecnt*(size_t)sizeof(struct tsdbe));
     printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
-    printf("  stringtab: %zu %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes);
+    printf("  stringtab: %zu %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)));
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));
     printf("  stirdep: %zu %zu\n", (size_t)stirdep_cnt, (size_t)(stirdep_cnt*sizeof(struct stirdep)));

@@ -35,5 +35,8 @@ void stir_do_munmap(void *ptr, size_t bytes);
 
 extern size_t argmem;
 extern size_t argmemcnt;
+extern size_t mymem;
+extern size_t mymemcnt;
+extern size_t mymemwaste;
 
 #endif
