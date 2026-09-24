@@ -10,6 +10,7 @@ char *my_arena;
 char *my_arena_ptr;
 size_t sizeof_my_arena;
 size_t argmem;
+size_t argmemcnt;
 
 void errxit(const char *fmt, ...);
 void my_abort(void);
@@ -68,6 +69,7 @@ void *my_argmalloc(size_t sz)
   if (res)
   {
     argmem += sz;
+    argmemcnt += 1;
   }
   return res;
 }

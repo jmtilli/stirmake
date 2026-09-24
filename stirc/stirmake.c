@@ -7731,7 +7731,7 @@ int main(int argc, char **argv)
   {
     printf("\n");
     printf("Memory use statistics:\n");
-    printf("  argmem: %zu\n", (size_t)argmem);
+    printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
     printf("  stringtab: %zu %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes);
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));

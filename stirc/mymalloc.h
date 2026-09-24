@@ -34,5 +34,6 @@ void *stir_do_mmap_madvise(size_t bytes);
 void stir_do_munmap(void *ptr, size_t bytes);
 
 extern size_t argmem;
+extern size_t argmemcnt;
 
 #endif
