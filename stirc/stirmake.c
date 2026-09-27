@@ -1325,7 +1325,7 @@ void better_cycle_detect_impl(int cur, unsigned char *no_cycles, unsigned char *
   LINKED_LIST_FOR_EACH(node, &rules[cur]->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
-    int ruleid = get_ruleid_by_tgt(e->nameidx);
+    int ruleid = stirdep_ruleid(e);
     if (e->is_dupe)
     {
       continue;
@@ -3137,7 +3137,7 @@ int do_exec(int ruleid)
       {
         struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
         struct stat statbuf;
-        int depid = get_ruleid_by_tgt(e->nameidx);
+        int depid = stirdep_ruleid(e);
         if (e->is_dupe)
         {
           continue;
@@ -3594,7 +3594,7 @@ int consider(int ruleid)
   LINKED_LIST_FOR_EACH(node, &r->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
-    int idbytgt = get_ruleid_by_tgt(e->nameidx);
+    int idbytgt = stirdep_ruleid(e);
     if (e->is_dupe)
     {
       continue;
@@ -3722,7 +3722,7 @@ void reconsider(int ruleid, int ruleid_executed)
   for (node = &r->waitloc->llnode; node != &r->deplist.node; node = node->next)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
-    int idbytgt = get_ruleid_by_tgt(e->nameidx);
+    int idbytgt = stirdep_ruleid(e);
     r->waitloc = e;
     if (r->wait_remain_cnt > 0 && e->is_wait)
     {

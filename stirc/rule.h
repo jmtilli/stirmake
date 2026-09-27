@@ -26,6 +26,7 @@ struct stirdep {
   unsigned is_primary:1;
   unsigned is_dupe:1;
   unsigned is_inc:1;
+  int ruleid;
 };
 
 struct dep_remain {
@@ -137,6 +138,22 @@ static inline void ruleremain_rm(struct rule *rule)
   }
   linked_list_delete(&rule->remainllnode);
   rule->remain = 0;
+}
+
+static inline int stirdep_ruleid(struct stirdep *d)
+{
+  int res;
+  if (abce_likely(d->ruleid >= 0))
+  {
+    return d->ruleid;
+  }
+  res = get_ruleid_by_tgt(d->nameidx);
+  if (abce_likely(res >= 0))
+  {
+    d->ruleid = res;
+    return res;
+  }
+  return -1;
 }
 
 #endif

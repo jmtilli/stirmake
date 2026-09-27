@@ -281,6 +281,7 @@ int ins_dep(struct rule *rule,
   e->is_wait = !!wait;
   e->is_inc = !!is_inc;
   e->is_dupe = 0;
+  e->ruleid = -1;
   head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
   if (ret == 0)
