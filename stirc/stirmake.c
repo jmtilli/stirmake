@@ -7455,7 +7455,7 @@ int main(int argc, char **argv)
         }
         uint32_t hashval;
         size_t hashloc;
-        hashval = abce_murmur32(HASH_SEED, one->ruleid);
+        hashval = abce_nonmurmur32(one->ruleid);
         hashloc = hashval % (sizeof(entry->one_ruleid_by_dep)/sizeof(*entry->one_ruleid_by_dep));
         abce_rb_tree_nocmp_delete(&entry->one_ruleid_by_dep[hashloc], &one->node);
         linked_list_delete(&one->llnode);
@@ -7466,7 +7466,7 @@ int main(int argc, char **argv)
     {
       uint32_t hashval;
       size_t hashloc;
-      hashval = abce_murmur32(HASH_SEED, entry->depidx);
+      hashval = abce_nonmurmur32(entry->depidx);
       hashloc = hashval % (sizeof(ruleids_by_dep)/sizeof(*ruleids_by_dep));
       abce_rb_tree_nocmp_delete(&ruleids_by_dep[hashloc], &entry->node);
       linked_list_delete(&entry->llnode);
@@ -7483,7 +7483,7 @@ int main(int argc, char **argv)
     }
     uint32_t hashval;
     size_t hashloc;
-    hashval = abce_murmur32(HASH_SEED, entry->tgtidx);
+    hashval = abce_nonmurmur32(entry->tgtidx);
     hashloc = hashval % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt));
     abce_rb_tree_nocmp_delete(&ruleid_by_tgt[hashloc], &entry->node);
     linked_list_delete(&entry->llnode);

@@ -66,7 +66,7 @@ struct db db;
 
 void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
+  uint32_t hash = abce_nonmurmur32(tgtidx);
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
@@ -81,7 +81,7 @@ void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx)
 
 void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, tsdbe->stringtabidx);
+  uint32_t hash = abce_nonmurmur32(tsdbe->stringtabidx);
   struct abce_rb_tree_nocmp *head;
   int ret;
   head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
@@ -107,7 +107,7 @@ void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe)
 
 void maybe_del_dbe(struct db *db, mysize_t tgtidx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
+  uint32_t hash = abce_nonmurmur32(tgtidx);
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
   head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
@@ -122,7 +122,7 @@ void maybe_del_dbe(struct db *db, mysize_t tgtidx)
 
 void ins_dbe(struct db *db, struct dbe *dbe)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, dbe->tgtidx);
+  uint32_t hash = abce_nonmurmur32(dbe->tgtidx);
   struct abce_rb_tree_nocmp *head;
   int ret;
   head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
@@ -148,7 +148,7 @@ void ins_dbe(struct db *db, struct dbe *dbe)
 
 int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  uint32_t hash = abce_nonmurmur32(stringtabidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
@@ -185,7 +185,7 @@ int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts
 
 int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  uint32_t hash = abce_nonmurmur32(stringtabidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
@@ -216,7 +216,7 @@ int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts
 
 struct tsdbe *get_tsdbe(mysize_t stringtabidx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  uint32_t hash = abce_nonmurmur32(stringtabidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
@@ -232,7 +232,7 @@ struct tsdbe *get_tsdbe(mysize_t stringtabidx)
 
 struct dbe *get_dbe(mysize_t stringtabidx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, stringtabidx);
+  uint32_t hash = abce_nonmurmur32(stringtabidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct dbe *dbe;

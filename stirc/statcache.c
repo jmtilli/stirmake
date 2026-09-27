@@ -60,7 +60,7 @@ static inline void stathashentry_evict(void)
   uint32_t hash;
   struct abce_rb_tree_nocmp *head;
   e = ABCE_CONTAINER_OF(statlrulist.node.prev, struct stathashentry, llnode);
-  hash = abce_murmur32(HASH_SEED, e->nameidx);
+  hash = abce_nonmurmur32(e->nameidx);
   head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
   linked_list_delete(&e->llnode); 
   abce_rb_tree_nocmp_delete(head, &e->node);
@@ -131,7 +131,7 @@ void lstat_evict_named(mysize_t nameidx)
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
 
-  hash = abce_murmur32(HASH_SEED, nameidx);
+  hash = abce_nonmurmur32(nameidx);
   head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, &nameidx);
   if (n == NULL)
@@ -153,7 +153,7 @@ struct stathashentry *lstat_cached(mysize_t nameidx)
   struct abce_rb_tree_nocmp *head;
   int ret;
   struct stat statbuf;
-  hash = abce_murmur32(HASH_SEED, nameidx);
+  hash = abce_nonmurmur32(nameidx);
   head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, &nameidx);
   if (n != NULL)

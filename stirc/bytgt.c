@@ -30,15 +30,9 @@ static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
   return sizecmp(e1->tgtidx, e2->tgtidx);
 }
 
-#undef BYTGT_SLOW_HASH
-
 void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int lineno)
 {
-#ifdef BYTGT_SLOW_HASH
-  uint32_t hash = abce_murmur32(HASH_SEED, tgtidx);
-#else
-  uint32_t hash = tgtidx;
-#endif
+  uint32_t hash = abce_nonmurmur32(tgtidx);
   struct ruleid_by_tgt_entry *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
@@ -65,11 +59,7 @@ void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int line
 
 int get_ruleid_by_tgt(mysize_t tgt)
 {
-#ifdef BYTGT_SLOW_HASH
-  uint32_t hash = abce_murmur32(HASH_SEED, tgt);
-#else
-  uint32_t hash = tgt;
-#endif
+  uint32_t hash = abce_nonmurmur32(tgt);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   head = &ruleid_by_tgt[hash % (sizeof(ruleid_by_tgt)/sizeof(*ruleid_by_tgt))];

@@ -54,7 +54,7 @@ struct linked_list_head ruleids_by_dep_list =
 
 struct ruleid_by_dep_entry *find_ruleids_by_dep(mysize_t depidx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, depidx);
+  uint32_t hash = abce_nonmurmur32(depidx);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
 
@@ -73,7 +73,7 @@ mysize_t ruleid_by_dep_entry_cnt;
 
 struct ruleid_by_dep_entry *ensure_ruleid_by_dep(mysize_t depidx)
 {
-  uint32_t hash = abce_murmur32(HASH_SEED, depidx);
+  uint32_t hash = abce_nonmurmur32(depidx);
   struct ruleid_by_dep_entry *e;
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
@@ -196,7 +196,7 @@ void ins_ruleid_by_dep(mysize_t depidx, int ruleid)
 {
 #if 0
   struct ruleid_by_dep_entry *e = ensure_ruleid_by_dep(depidx);
-  uint32_t hash = abce_murmur32(HASH_SEED, (uint32_t)ruleid);
+  uint32_t hash = abce_nonmurmur32((uint32_t)ruleid);
   struct one_ruleid_by_dep_entry *one;
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;

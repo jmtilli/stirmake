@@ -57,7 +57,7 @@ static inline void accesshashentry_evict(void)
   uint32_t hash;
   struct abce_rb_tree_nocmp *head;
   e = ABCE_CONTAINER_OF(accesslrulist.node.prev, struct accesshashentry, llnode);
-  hash = abce_murmur32(HASH_SEED, e->nameidx);
+  hash = abce_nonmurmur32(e->nameidx);
   head = &accesshash[hash % (sizeof(accesshash)/sizeof(*accesshash))];
   linked_list_delete(&e->llnode); 
   abce_rb_tree_nocmp_delete(head, &e->node);
@@ -128,7 +128,7 @@ void accesshash_evict_named(mysize_t nameidx)
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
 
-  hash = abce_murmur32(HASH_SEED, nameidx);
+  hash = abce_nonmurmur32(nameidx);
   head = &accesshash[hash % (sizeof(accesshash)/sizeof(*accesshash))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, accesshashentry_cmp_asym, NULL, &nameidx);
   if (n == NULL)
@@ -149,7 +149,7 @@ int access_cached(mysize_t nameidx)
   uint32_t hash;
   struct abce_rb_tree_nocmp *head;
   int ret;
-  hash = abce_murmur32(HASH_SEED, nameidx);
+  hash = abce_nonmurmur32(nameidx);
   head = &accesshash[hash % (sizeof(accesshash)/sizeof(*accesshash))];
   n = ABCE_RB_TREE_NOCMP_FIND(head, accesshashentry_cmp_asym, NULL, &nameidx);
   if (n != NULL)
