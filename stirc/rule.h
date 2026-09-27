@@ -153,7 +153,7 @@ static inline int stirdep_ruleid(struct stirdep *d)
     d->ruleid = res;
     return res;
   }
-  return -1;
+  return -ENOENT;
 }
 
 #endif
