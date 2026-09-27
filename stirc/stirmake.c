@@ -4915,17 +4915,17 @@ int merge_db_v1(void)
     }
     else
     {
-      fprintf(f, "\n");
+      putc('\n', f);
     }
-    fprintf(f, "\"");
+    putc('"', f);
     file_escape_string(f, sttable[dbe->diridx].s);
-    fprintf(f, "\" \"");
+    fputs("\" \"", f);
     file_escape_string(f, sttable[dbe->tgtidx].s);
-    fprintf(f, "\":\n");
+    fputs("\":\n", f);
     while (*argiter)
     {
       int first = 1;
-      fprintf(f, "\t");
+      putc('\t', f);
       oneargiter = *argiter++;
       while (*oneargiter)
       {
@@ -4935,14 +4935,14 @@ int merge_db_v1(void)
         }
         else
         {
-          fprintf(f, " ");
+          putc(' ', f);
         }
-        fprintf(f, "\"");
+        putc('"', f);
         file_escape_string(f, *oneargiter);
-        fprintf(f, "\"");
+        putc('"', f);
         oneargiter++;
       }
-      fprintf(f, "\n");
+      putc('\n', f);
     }
   }
   if (ferror(f))
@@ -5031,17 +5031,17 @@ int merge_db_v2(void)
     }
     else
     {
-      fprintf(f, "\n");
+      putc('\n', f);
     }
-    fprintf(f, "\"");
+    putc('"', f);
     file_escape_string(f, sttable[dbe->diridx].s);
-    fprintf(f, "\" \"");
+    fputs("\" \"", f);
     file_escape_string(f, sttable[dbe->tgtidx].s);
-    fprintf(f, "\":\n");
+    fputs("\":\n", f);
     while (*argiter)
     {
       int first = 1;
-      fprintf(f, "\t");
+      putc('\t', f);
       oneargiter = *argiter++;
       while (*oneargiter)
       {
@@ -5051,14 +5051,14 @@ int merge_db_v2(void)
         }
         else
         {
-          fprintf(f, " ");
+          putc(' ', f);
         }
-        fprintf(f, "\"");
+        putc('"', f);
         file_escape_string(f, *oneargiter);
-        fprintf(f, "\"");
+        putc('"', f);
         oneargiter++;
       }
-      fprintf(f, "\n");
+      putc('\n', f);
     }
   }
   LINKED_LIST_FOR_EACH(node, &tsdb.ll)
@@ -5073,17 +5073,17 @@ int merge_db_v2(void)
       }
       else
       {
-        fprintf(f, "\n");
+        putc('\n', f);
       }
-      fprintf(f, "\"");
+      putc('"', f);
       file_escape_string(f, sttable[tsdbe->stringtabidx].s);
-      fprintf(f, "\" = ");
+      fputs("\" = ", f);
       fprintf(f, "%lld", (long long)tsdbe->sz);
-      fprintf(f, " ");
+      putc(' ', f);
       fprintf(f, "%lld", (long long)tsdbe->ts.tv_sec);
-      fprintf(f, " ");
+      putc(' ', f);
       fprintf(f, "%lld", (long long)tsdbe->ts.tv_nsec);
-      fprintf(f, "\n");
+      putc('\n', f);
       continue;
     }
     // dir tgt:
@@ -5093,17 +5093,17 @@ int merge_db_v2(void)
     }
     else
     {
-      fprintf(f, "\n");
+      putc('\n', f);
     }
-    fprintf(f, "\"");
+    putc('"', f);
     file_escape_string(f, sttable[tsdbe->stringtabidx].s);
-    fprintf(f, "\" = ");
+    fputs("\" = ", f);
     fprintf(f, "%lld", (long long)tsdbe->sznew);
-    fprintf(f, " ");
+    putc(' ', f);
     fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_sec);
-    fprintf(f, " ");
+    putc(' ', f);
     fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec);
-    fprintf(f, "\n");
+    putc('\n', f);
   }
   if (ferror(f))
   {
