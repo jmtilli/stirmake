@@ -208,7 +208,8 @@ struct escaped_string yy_escape_string_single(char *orig)
   size_t i = 1;
   while (orig[i] != '\'')
   {
-    if (j >= capacity)
+    //if (j+2 >= capacity)
+    if (j+7 >= capacity)
     {
       char *buf2;
       capacity = 2*capacity+10;
@@ -224,14 +225,65 @@ struct escaped_string yy_escape_string_single(char *orig)
     if (orig[i] != '\\')
     {
       buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
+      if (orig[i] != '\\' && orig[i] != '\'') buf[j++] = orig[i++];
     }
     else if (orig[i+1] == 'x')
     {
       char hexbuf[3] = {0};
+      char *endptr;
       hexbuf[0] = orig[i+2];
       hexbuf[1] = orig[i+3];
-      buf[j++] = strtol(hexbuf, NULL, 16);
+      buf[j++] = strtol(hexbuf, &endptr, 16);
+      if (strlen(hexbuf) != 2 || *endptr != '\0')
+      {
+        fprintf(stderr, "Invalid string unicode escape: \\x%s\n", hexbuf);
+        exit(2);
+      }
       i += 4;
+    }
+    else if (orig[i+1] == 'u')
+    {
+      char hexbuf[5] = {0};
+      uint16_t unicode;
+      char *endptr;
+      hexbuf[0] = orig[i+2];
+      hexbuf[1] = orig[i+3];
+      hexbuf[2] = orig[i+4];
+      hexbuf[3] = orig[i+5];
+      unicode = strtol(hexbuf, &endptr, 16);
+      if (strlen(hexbuf) != 4 || *endptr != '\0')
+      {
+        fprintf(stderr, "Invalid string unicode escape: \\u%s\n", hexbuf);
+        exit(2);
+      }
+      if (unicode <= 0x7F)
+      {
+        buf[j++] = (char)(uint8_t)unicode;
+        i += 6;
+        continue;
+      }
+      if (unicode <= 0x7FF)
+      {
+        buf[j++] = (char)(uint8_t)(0xc0|(unicode>>6));
+        buf[j++] = (char)(uint8_t)(0x80|(unicode&0x3f));
+        i += 6;
+        continue;
+      }
+      if (unicode <= 0xFFFF)
+      {
+        buf[j++] = (char)(uint8_t)(0xe0|(unicode>>12));
+        buf[j++] = (char)(uint8_t)(0x80|((unicode>>6)&0x3f));
+        buf[j++] = (char)(uint8_t)(0x80|(unicode&0x3f));
+        i += 6;
+        continue;
+      }
+      abort();
     }
     else if (orig[i+1] == 't')
     {
