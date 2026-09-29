@@ -7,6 +7,7 @@
 #include "abce/abcerbtree.h"
 #include "stiryy.h"
 #include "db.h"
+#include "bytgt.h"
 #include "const.h"
 #include "syncbuf.h"
 // Just in case something could define st_mtim into something different,
