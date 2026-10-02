@@ -1673,6 +1673,46 @@ void process_additional_deps_2(mysize_t global_scopeidx)
   struct linked_list_node *node, *node2;
   int last_ruleid = -1;
   mysize_t last_tgtidx = (mysize_t)-1;
+  // Ensure all targets are present
+  for (blk = add_dep_entry_block_first; blk != NULL; blk = blk->next)
+  {
+    size_t i;
+    for (i = 0; i < blk->cnt; i++)
+    {
+      struct rule *rule;
+      int ruleid;
+      if (blk->e[i].depidx != (mysize_t)-1)
+      {
+        continue;
+      }
+      ruleid = get_ruleid_by_tgt(blk->e[i].tgtidx);
+      if (ruleid >= 0)
+      {
+        continue;
+      }
+      if (rules_size >= rules_capacity)
+      {
+        size_t new_capacity = 2*rules_capacity + 16;
+        rules = realloc(rules, new_capacity * sizeof(*rules));
+        rules_capacity = new_capacity;
+      }
+      rule_cnt++;
+      rule = my_malloc(sizeof(*rule));
+      rules[rules_size] = rule;
+      zero_rule(rule);
+      rule->cmd.args = argsdupcnt(null_cmds, 1);
+      rule->is_inc = 1;
+      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+
+      rule->scopeidx = global_scopeidx;
+      rule->ruleid = (int)rules_size++;
+      ins_ruleid_by_tgt(blk->e[i].tgtidx, rule->ruleid, NULL, -1);
+      ins_tgt(rule, blk->e[i].tgtidx, (mysize_t)-1, 0, NULL, -1);
+      rule->is_phony = 0; // is_inc is enough
+      rule->is_rectgt = 0;
+      rule->is_detouch = 0;
+    }
+  }
   // Auto-phony-adder
 #if 1
   for (blk = add_dep_entry_block_first; blk != NULL; blk = blk->next)
