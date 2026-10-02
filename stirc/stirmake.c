@@ -1714,7 +1714,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
     }
   }
   // Auto-phony-adder
-#if 1
+#if 0
   for (blk = add_dep_entry_block_first; blk != NULL; blk = blk->next)
   {
     size_t i;
