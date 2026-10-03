@@ -48,7 +48,7 @@ extern mysize_t one_ruleid_by_dep_entry_cnt;
 
 struct ruleid_by_dep_entry *find_ruleids_by_dep(mysize_t depidx);
 void ins_ruleid_by_dep(mysize_t depidx, int ruleid);
-void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce);
+int ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce);
 void ins_ruleid_by_dep_later(void);
 
 #endif

@@ -124,7 +124,7 @@ void ins_ruleid_by_dep_later(void)
   ruleid_by_dep_entry_block_later_first = NULL; // let it leak
 }
 
-void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
+int ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
 {
   int depruleid;
   struct ruleid_by_dep_entry_block *blk;
@@ -136,7 +136,7 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
     {
       //mysize_t tgtidx = ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
       //printf("ins_ruleid_by_dep2 enforce dep %s rule %s\n", sttable[depidx].s, sttable[tgtidx].s); // FIXME better message
-      return;
+      return -1;
       //abort();
     }
     if (!ruleid_by_dep_entry_block_later_first)
@@ -190,6 +190,7 @@ void ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
     blk = blk->next;
   }
   blk->ruleid[blk->cnt++] = ruleid;
+  return 0;
 }
 
 void ins_ruleid_by_dep(mysize_t depidx, int ruleid)

@@ -1833,7 +1833,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, !!blk->e[i].is_inc);
         if (ret == 0)
         {
-          if (get_ruleid_by_tgt(blk->e[i].depidx) < 0)
+          if (ins_ruleid_by_dep2(blk->e[i].depidx, rule->ruleid, 1) != 0)
           {
             if (debug)
             {
@@ -1841,11 +1841,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
               printf("Omitting-2 ruleid_by_dep for dep %s of rule %s\n", sttable[blk->e[i].depidx].s, sttable[cur_tgtidx].s);
             }
           }
-          else
-          {
-            ins_ruleid_by_dep2(blk->e[i].depidx, rule->ruleid, 1); // FIXME!
-            ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid); // FIXME!
-          }
+          ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid); // FIXME!
         }
       }
     }
