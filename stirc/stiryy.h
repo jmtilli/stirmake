@@ -463,24 +463,21 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
 static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
   char canbuf[1024];
+  char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(curprefix) + strlen(dep) + 2;
-  char *can, *tmp = malloc(sz);
+  char *can, *tmp;
   if (!rule->ispat || !rule->patfrozen)
   {
     abort();
   }
   if (dep[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat1_buf(dep, catbuf, sizeof(catbuf));
   }
 #if 0
   else if (dep[0] == '%')
@@ -493,13 +490,13 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
 #endif
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat2_buf(curprefix, dep, catbuf, sizeof(catbuf));
   }
   can = canon_buf(tmp, canbuf, sizeof(canbuf));
-  free(tmp);
+  if (tmp != catbuf)
+  {
+    free(tmp);
+  }
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
@@ -522,15 +519,15 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
 static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
 {
   char canbuf[1024];
+  char catbuf1[1024];
+  char catbuf2[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  size_t sz1 = strlen(curprefix) + 1 + strlen(dep[0]) + 1;
-  size_t sz2 = strlen(dep[2]) + 1;
-  char *can, *tmp1 = malloc(sz1), *tmp2 = malloc(sz2);
+  char *can, *tmp1, *tmp2;
   size_t off = 0;
   if (!rule->ispat || !rule->patfrozen)
   {
@@ -538,26 +535,14 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
   }
   if (dep[0][0] == '/')
   {
-    if (snprintf(tmp1, sz1, "%s", dep[0]) >= (int)sz1)
-    {
-      my_abort();
-    }
-    if (snprintf(tmp2, sz2, "%s", dep[2]) >= (int)sz2)
-    {
-      my_abort();
-    }
+    tmp1 = pathcat1_buf(dep[0], catbuf1, sizeof(catbuf1));
+    tmp2 = pathcat1_buf(dep[2], catbuf2, sizeof(catbuf2));
   }
   else
   {
     off = strlen(curprefix)+1;
-    if (snprintf(tmp1, sz1, "%s/%s", curprefix, dep[0]) >= (int)sz1)
-    {
-      my_abort();
-    }
-    if (snprintf(tmp2, sz2, "%s", dep[2]) >= (int)sz2)
-    {
-      my_abort();
-    }
+    tmp1 = pathcat2_buf(curprefix, dep[0], catbuf1, sizeof(catbuf1));
+    tmp2 = pathcat1_buf(dep[2], catbuf2, sizeof(catbuf2));
   }
   can = canon_buf(tmp1, canbuf, sizeof(canbuf));
   if (rule->depsz >= rule->depcapacity)
@@ -578,8 +563,14 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
   {
     free(can);
   }
-  free(tmp1);
-  free(tmp2);
+  if (tmp1 != catbuf1)
+  {
+    free(tmp1);
+  }
+  if (tmp2 != catbuf2)
+  {
+    free(tmp2);
+  }
 }
 
 static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const char *curprefix, const char *name)
@@ -624,30 +615,27 @@ static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const cha
 static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
   char canbuf[1024];
+  char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(curprefix) + strlen(dep) + 2;
-  char *can, *tmp = malloc(sz);
+  char *can, *tmp;
   if (dep[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat1_buf(dep, catbuf, sizeof(catbuf));
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, dep) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat2_buf(curprefix, dep, catbuf, sizeof(catbuf));
   }
   can = canon_buf(tmp, canbuf, sizeof(canbuf));
-  free(tmp);
+  if (tmp != catbuf)
+  {
+    free(tmp);
+  }
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
@@ -786,14 +774,14 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
 static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist, int percent_special)
 {
   char canbuf[1024];
+  char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(curprefix) + strlen(tgt) + 2;
-  char *can, *tmp = malloc(sz);
+  char *can, *tmp;
   if (!rule->ispat)
   {
     printf("rule is not pat\n");
@@ -803,10 +791,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
   {
     if (tgt[0] == '/')
     {
-      if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
-      {
-        my_abort();
-      }
+      tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
     }
 #if 0
     else if (tgt[0] == '%')
@@ -819,13 +804,13 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
 #endif
     else
     {
-      if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
-      {
-        my_abort();
-      }
+      tmp = pathcat2_buf(curprefix, tgt, catbuf, sizeof(catbuf));
     }
     can = canon_buf(tmp, canbuf, sizeof(canbuf));
-    free(tmp);
+    if (tmp != catbuf)
+    {
+      free(tmp);
+    }
     if (rule->targetsz >= rule->targetcapacity)
     {
       newcapacity = 2*rule->targetcapacity + 1;
@@ -852,20 +837,17 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
     }
     if (tgt[0] == '/')
     {
-      if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
-      {
-        my_abort();
-      }
+      tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
     }
     else
     {
-      if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
-      {
-        my_abort();
-      }
+      tmp = pathcat2_buf(curprefix, tgt, catbuf, sizeof(catbuf));
     }
     can = canon_buf(tmp, canbuf, sizeof(canbuf));
-    free(tmp);
+    if (tmp != catbuf)
+    {
+      free(tmp);
+    }
     if (rule->basesz >= rule->basecapacity)
     {
       newcapacity = 2*rule->basecapacity + 1;
@@ -884,15 +866,15 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
 static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const char *curprefix, const char **tgt, int is_dist)
 {
   char canbuf[1024];
+  char catbuf1[1024];
+  char catbuf2[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  size_t sz1 = strlen(curprefix) + 1 + strlen(tgt[0]) + 1;
-  size_t sz2 = strlen(tgt[2]) + 1;
-  char *can, *tmp1 = malloc(sz1), *tmp2 = malloc(sz2);
+  char *can, *tmp1, *tmp2;
   size_t off = 0;
   if (!rule->ispat)
   {
@@ -903,26 +885,14 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
   {
     if (tgt[0][0] == '/')
     {
-      if (snprintf(tmp1, sz1, "%s", tgt[0]) >= (int)sz1)
-      {
-        my_abort();
-      }
-      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= (int)sz2)
-      {
-        my_abort();
-      }
+      tmp1 = pathcat1_buf(tgt[0], catbuf1, sizeof(catbuf1));
+      tmp2 = pathcat1_buf(tgt[2], catbuf2, sizeof(catbuf2));
     }
     else
     {
       off = strlen(curprefix) + 1;
-      if (snprintf(tmp1, sz1, "%s/%s", curprefix, tgt[0]) >= (int)sz1)
-      {
-        my_abort();
-      }
-      if (snprintf(tmp2, sz2, "%s", tgt[2]) >= (int)sz2)
-      {
-        my_abort();
-      }
+      tmp1 = pathcat2_buf(curprefix, tgt[0], catbuf1, sizeof(catbuf1));
+      tmp2 = pathcat1_buf(tgt[2], catbuf2, sizeof(catbuf2));
     }
     can = canon_buf(tmp1, canbuf, sizeof(canbuf));
     if (rule->targetsz >= rule->targetcapacity)
@@ -941,8 +911,14 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
     {
       free(can);
     }
-    free(tmp1);
-    free(tmp2);
+    if (tmp1 != catbuf1)
+    {
+      free(tmp1);
+    }
+    if (tmp2 != catbuf2)
+    {
+      free(tmp2);
+    }
   }
   else
   {
@@ -954,30 +930,27 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
 static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist)
 {
   char canbuf[1024];
+  char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(curprefix) + strlen(tgt) + 2;
-  char *can, *tmp = malloc(sz);
+  char *can, *tmp;
   if (tgt[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", curprefix, tgt) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat2_buf(curprefix, tgt, catbuf, sizeof(catbuf));
   }
   can = canon_buf(tmp, canbuf, sizeof(canbuf));
-  free(tmp);
+  if (tmp != catbuf)
+  {
+    free(tmp);
+  }
   if (rule->targetsz >= rule->targetcapacity)
   {
     newcapacity = 2*rule->targetcapacity + 1;

@@ -1463,28 +1463,26 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
                                 int rec, int orderonly, int wait)
 {
   size_t i, j;
-  size_t prefixlen = strlen(prefix);
   for (i = 0; i < tgtsz; i++)
   {
-    size_t fulltgtsz = strlen(tgts[i]) + prefixlen + 2;
     char *fulltgt;
     char *can;
     char canbuf[1024];
+    char catbuf[1024];
     size_t tgtidx;
     int ruleid;
     struct rule *rule;
-    fulltgt = malloc(fulltgtsz);
-    if (snprintf(fulltgt, fulltgtsz, "%s/%s", prefix, tgts[i]) >= (int)fulltgtsz)
-    {
-      my_abort();
-    }
+    fulltgt = pathcat2_buf(prefix, tgts[i], catbuf, sizeof(catbuf));
     can = canon_buf(fulltgt, canbuf, sizeof(canbuf));
     tgtidx = stringtab_add(can);
     if (can != canbuf)
     {
       free(can);
     }
-    free(fulltgt);
+    if (fulltgt != catbuf)
+    {
+      free(fulltgt);
+    }
     ruleid = get_ruleid_by_tgt(tgtidx);
     if (ruleid < 0)
     {
@@ -1507,25 +1505,24 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     }
     for (j = 0; j < depsz; j++)
     {
-      size_t fulldepsz = strlen(deps[j]) + prefixlen + 2;
       char *fulldep;
+      char catbuf[1024];
       char canbuf[1024];
       mysize_t depidx;
       int otherid;
       int ret;
 
-      fulldep = malloc(fulldepsz);
-      if (snprintf(fulldep, fulldepsz, "%s/%s", prefix, deps[j]) >= (int)fulldepsz)
-      {
-        my_abort();
-      };
+      fulldep = pathcat2_buf(prefix, deps[j], catbuf, sizeof(catbuf));
       can = canon_buf(fulldep, canbuf, sizeof(canbuf));
       depidx = stringtab_add(can);
       if (can != canbuf)
       {
         free(can);
       }
-      free(fulldep);
+      if (fulldep != catbuf)
+      {
+        free(fulldep);
+      }
 
       otherid = get_ruleid_by_tgt(depidx);
       if (otherid < 0)
@@ -7079,7 +7076,6 @@ int main(int argc, char **argv)
       if (stirmain.rules[i].ispat)
       {
         char *prefix = stirmain.rules[i].prefix;
-        size_t prefixlen = strlen(prefix);
         size_t j, k;
         if (stirmain.rules[i].targetsz < 1)
         {
@@ -7158,7 +7154,7 @@ int main(int argc, char **argv)
             char *suffix = stirmain.rules[i].targets[k].suffix;
             size_t exptgtsz; // expanded target size
             char *exptgt;
-            size_t namedirsz;
+            char catbuf[1024];
             char *namedir;
             if (stirmain.rules[i].targets[k].percent_special && strcnt(tgt, '%') == 1)
             {
@@ -7175,16 +7171,13 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedirsz = prefixlen+strlen(exptgt)+2;
-              namedir = malloc(namedirsz);
-              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
-                  >= (int)namedirsz)
-              {
-                my_abort();
-              }
+              namedir = pathcat2_buf(prefix, exptgt, catbuf, sizeof(catbuf));
               tgts[k].name = canon(namedir);
               tgts[k].namenodir = exptgt;
-              free(namedir);
+              if (namedir != catbuf)
+              {
+                free(namedir);
+              }
             }
             else if (suffix)
             {
@@ -7201,16 +7194,13 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedirsz = prefixlen+strlen(exptgt)+2;
-              namedir = malloc(namedirsz);
-              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, exptgt)
-                  >= (int)namedirsz)
-              {
-                my_abort();
-              }
+              namedir = pathcat2_buf(prefix, exptgt, catbuf, sizeof(catbuf));
               tgts[k].name = canon(namedir);
               tgts[k].namenodir = exptgt;
-              free(namedir);
+              if (namedir != catbuf)
+              {
+                free(namedir);
+              }
             }
             else
             {
@@ -7220,12 +7210,12 @@ int main(int argc, char **argv)
           }
           for (k = 0; k < stirmain.rules[i].depsz; k++)
           {
+            char catbuf[1024];
             char *dep = stirmain.rules[i].deps[k].namenodir;
             char *suffix = stirmain.rules[i].deps[k].suffix;
             //char *dep = stirmain.rules[i].deps[k].name;
             size_t expdepsz; // expanded target size
             char *expdep;
-            size_t namedirsz;
             char *namedir;
             if (suffix)
             {
@@ -7242,19 +7232,16 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedirsz = prefixlen+strlen(expdep)+2;
-              namedir = malloc(namedirsz);
-              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
-                  >= (int)namedirsz)
-              {
-                my_abort();
-              }
+              namedir = pathcat2_buf(prefix, expdep, catbuf, sizeof(catbuf));
               deps[k].name = canon(namedir);
               deps[k].namenodir = expdep;
               deps[k].rec = stirmain.rules[i].deps[k].rec;
               deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
               deps[k].wait = stirmain.rules[i].deps[k].wait;
-              free(namedir);
+              if (namedir != catbuf)
+              {
+                free(namedir);
+              }
             }
             else
             {
@@ -7271,16 +7258,12 @@ int main(int argc, char **argv)
               if (loc == NULL)
               {
                 char *prefixdep;
-                size_t prefixdepsz;
-                prefixdepsz = prefixlen+strlen(dep)+2;
-                prefixdep = malloc(prefixdepsz);
-                if (snprintf(prefixdep, prefixdepsz, "%s/%s", prefix, dep) >=
-                    (int)prefixdepsz)
-                {
-                  my_abort();
-                }
+                prefixdep = pathcat2_buf(prefix, dep, catbuf, sizeof(catbuf));
                 deps[k].name = canon(prefixdep);
-                free(prefixdep);
+                if (prefixdep != catbuf)
+                {
+                  free(prefixdep);
+                }
                 deps[k].namenodir = stirmain.rules[i].deps[k].namenodir;
                 deps[k].rec = stirmain.rules[i].deps[k].rec;
                 deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
@@ -7299,19 +7282,16 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedirsz = prefixlen+strlen(expdep)+2;
-              namedir = malloc(namedirsz);
-              if (   snprintf(namedir, namedirsz, "%s/%s", prefix, expdep)
-                  >= (int)namedirsz)
-              {
-                my_abort();
-              }
+              namedir = pathcat2_buf(prefix, expdep, catbuf, sizeof(catbuf));
               deps[k].name = canon(namedir);
               deps[k].namenodir = expdep;
               deps[k].rec = stirmain.rules[i].deps[k].rec;
               deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
               deps[k].wait = stirmain.rules[i].deps[k].wait;
-              free(namedir);
+              if (namedir != catbuf)
+              {
+                free(namedir);
+              }
             }
           }
           if (   stirmain.rules[i].iscleanhook

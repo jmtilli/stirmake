@@ -6,6 +6,47 @@
 
 void my_abort(void);
 
+char *pathcat1_buf(const char *old, char *buf, size_t bufsz)
+{
+  size_t strlen_old = strlen(old);
+  char *neu = NULL;
+  if (buf == NULL)
+  {
+    neu = malloc(strlen_old + 1);
+  }
+  else
+  {
+    neu = buf;
+    if (bufsz < strlen_old + 1)
+    {
+      neu = malloc(strlen_old + 1);
+    }
+  }
+  snprintf(neu, strlen_old + 1, "%s", old);
+  return neu;
+}
+char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
+{
+  size_t strlen_old = strlen(old);
+  size_t strlen_old2 = strlen(old2);
+  size_t bufneed = strlen_old + strlen_old2 + 2;
+  char *neu = NULL;
+  if (buf == NULL)
+  {
+    neu = malloc(bufneed);
+  }
+  else
+  {
+    neu = buf;
+    if (bufsz < bufneed)
+    {
+      neu = malloc(bufneed);
+    }
+  }
+  snprintf(neu, bufneed, "%s/%s", old, old2);
+  return neu;
+}
+
 char *canon_buf(const char *old, char *buf, size_t bufsz)
 {
   char *neu = NULL;
