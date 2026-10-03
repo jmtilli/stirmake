@@ -39,6 +39,7 @@ void my_abort(void);
 
 static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
 {
+  char canbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(incyy->prefix) + strlen(dep) + 2;
@@ -58,7 +59,7 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
 
   if (rule->depsz >= rule->depcapacity)
@@ -71,11 +72,15 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
   rule->deps[rule->depsz] = stir_strdup(can);
   rule->depsnodir[rule->depsz] = stir_strdup(dep);
   rule->depsz++;
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 }
 
 static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
 {
+  char canbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(incyy->prefix) + strlen(tgt) + 2;
@@ -95,7 +100,7 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
 
   if (rule->targetsz >= rule->targetcapacity)
@@ -105,7 +110,10 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
     rule->targetcapacity = newcapacity;
   }
   rule->targets[rule->targetsz++] = stir_strdup(can);
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 }
 
 static inline void incyy_emplace_rule(struct incyy *incyy)
