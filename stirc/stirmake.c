@@ -3953,7 +3953,7 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      if (lstat(sttable[e->tgtidx].s, &statbuf) != 0 && !seen_pretend && !r->is_maybe)
+      if ((was_actually_executed ? lstat(sttable[e->tgtidx].s, &statbuf) != 0 : lstat_cached(e->tgtidx)->ret != 0) && !seen_pretend && !r->is_maybe)
       {
         fprintf(stderr, "stirmake: *** Target '%s' was not created by rule (directory: '%s').\n",
                sttable[e->tgtidx].s, sttable[r->diridx].s);
@@ -3999,8 +3999,11 @@ void mark_executed(int ruleid, int was_actually_executed)
   LINKED_LIST_FOR_EACH(node, &r->tgtlist)
   {
     struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-    lstat_evict_named(e->tgtidx);
-    accesshash_evict_named(e->tgtidx);
+    if (was_actually_executed)
+    {
+      lstat_evict_named(e->tgtidx);
+      accesshash_evict_named(e->tgtidx);
+    }
     if (dry_run && was_actually_executed)
     {
       sttable[e->tgtidx].is_remade = 1;
