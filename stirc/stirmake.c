@@ -1531,7 +1531,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
       if (ret == 0)
       {
         ins_ruleid_by_dep2(depidx, ruleid, 1);
-        ins_ruleid_by_dep(depidx, ruleid);
+        //ins_ruleid_by_dep(depidx, ruleid);
       }
     }
   }
@@ -1628,7 +1628,7 @@ void process_additional_deps(mysize_t global_scopeidx)
           else
           {
             ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1);
-            ins_ruleid_by_dep(dep->depidx, rule->ruleid);
+            //ins_ruleid_by_dep(dep->depidx, rule->ruleid);
           }
         }
       }
@@ -1659,8 +1659,8 @@ void process_additional_deps(mysize_t global_scopeidx)
         }
         else
         {
-          ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1); // FIXME!
-          ins_ruleid_by_dep(dep->depidx, rule->ruleid); // FIXME!
+          ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1);
+          //ins_ruleid_by_dep(dep->depidx, rule->ruleid);
         }
       }
     }
@@ -1814,7 +1814,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
             else
             {
               ins_ruleid_by_dep2(blk->e[i].depidx, rule->ruleid, 1);
-              ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid);
+              //ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid);
             }
           }
         }
@@ -1841,7 +1841,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
               printf("Omitting-2 ruleid_by_dep for dep %s of rule %s\n", sttable[blk->e[i].depidx].s, sttable[cur_tgtidx].s);
             }
           }
-          ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid); // FIXME!
+          //ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid);
         }
       }
     }
@@ -1922,7 +1922,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
       //printf("<INS>\n");
       ins_ruleid_by_dep2(nameidx, rule->ruleid, 0);
       //printf("</INS>\n");
-      ins_ruleid_by_dep(nameidx, rule->ruleid);
+      //ins_ruleid_by_dep(nameidx, rule->ruleid);
     }
   }
 }
@@ -5817,7 +5817,7 @@ void process_orders(struct stiryy_main *stirmain)
     if (ret == 0)
     {
       ins_ruleid_by_dep2(first, secondrule, 1);
-      ins_ruleid_by_dep(first, secondrule);
+      //ins_ruleid_by_dep(first, secondrule);
     }
     if (debug)
     {
