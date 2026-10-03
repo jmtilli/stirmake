@@ -54,6 +54,7 @@ char *canon_buf(const char *old, char *buf, size_t bufsz)
   size_t idx = 0;
   const char *old2;
   size_t strlen_old = strlen(old);
+  const char *old_end = old + strlen_old;
   int is_abspath = 0;
   if (buf == NULL)
   {
@@ -90,7 +91,7 @@ char *canon_buf(const char *old, char *buf, size_t bufsz)
     old2 = strchr(old, '/');
     if (old2 == NULL)
     {
-      old2 = old + strlen(old);
+      old2 = old_end;
     }
     if (old2 == old)
     {
