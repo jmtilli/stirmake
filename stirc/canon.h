@@ -4,6 +4,7 @@
 size_t strcnt(const char *haystack, char needle);
 
 char *canon(const char *old);
+char *canon_buf(const char *old, char *buf, size_t bufsz);
 
 char *construct_backpath(const char *frontpath);
 

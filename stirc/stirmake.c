@@ -1469,6 +1469,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     size_t fulltgtsz = strlen(tgts[i]) + prefixlen + 2;
     char *fulltgt;
     char *can;
+    char canbuf[1024];
     size_t tgtidx;
     int ruleid;
     struct rule *rule;
@@ -1477,9 +1478,12 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     {
       my_abort();
     }
-    can = canon(fulltgt);
+    can = canon_buf(fulltgt, canbuf, sizeof(canbuf));
     tgtidx = stringtab_add(can);
-    free(can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
     free(fulltgt);
     ruleid = get_ruleid_by_tgt(tgtidx);
     if (ruleid < 0)
@@ -1505,6 +1509,7 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
     {
       size_t fulldepsz = strlen(deps[j]) + prefixlen + 2;
       char *fulldep;
+      char canbuf[1024];
       mysize_t depidx;
       int otherid;
       int ret;
@@ -1514,9 +1519,12 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
       {
         my_abort();
       };
-      can = canon(fulldep);
+      can = canon_buf(fulldep, canbuf, sizeof(canbuf));
       depidx = stringtab_add(can);
-      free(can);
+      if (can != canbuf)
+      {
+        free(can);
+      }
       free(fulldep);
 
       otherid = get_ruleid_by_tgt(depidx);
@@ -4492,6 +4500,7 @@ int deps_remain_calculated = 0;
 void do_clean(char *fwd_path, int objs, int bins)
 {
   size_t i, fp_len;
+  char canbuf[1024];
   int all;
   char *cleanstr = NULL;
   struct linked_list_node *node, *node2, *node3, *nodetmp;
@@ -4567,7 +4576,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     {
       my_abort();
     }
-    char *cparent = canon(parent);
+    char *cparent = canon_buf(parent, canbuf, sizeof(canbuf));
     free(parent);
     parentsz = strlen(cparent) + 4;
     parent = malloc(parentsz);
@@ -4575,7 +4584,10 @@ void do_clean(char *fwd_path, int objs, int bins)
     {
       my_abort();
     }
-    free(cparent);
+    if (cparent != canbuf)
+    {
+      free(cparent);
+    }
 
     if (strncmp(parent, "../", 3) != 0)
     {
@@ -7393,6 +7405,7 @@ int main(int argc, char **argv)
       .fnamenodir = stiryy.main->cdepincludes[i].name,
     };
     size_t j;
+    char canbuf[1024];
     size_t fnamesz =
       strlen(incyy.prefix) + strlen(stiryy.main->cdepincludes[i].name) + 2;
     char *fname = malloc(fnamesz);
@@ -7408,9 +7421,12 @@ int main(int argc, char **argv)
       print_indent();
       printf("reading cdepincludes from %s\n", fname);
     }
-    fnamecanon = canon(fname);
+    fnamecanon = canon_buf(fname, canbuf, sizeof(canbuf));
     stidx = stringtab_add(fnamecanon);
-    free(fnamecanon);
+    if (fnamecanon != canbuf)
+    {
+      free(fnamecanon);
+    }
     sttable[stidx].is_cdepwatch = 1;
     //printf("Is_cdepwatch %s\n", sttable[stidx].s);
     f = fopen(fname, "r");

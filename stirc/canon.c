@@ -6,13 +6,26 @@
 
 void my_abort(void);
 
-char *canon(const char *old)
+char *canon_buf(const char *old, char *buf, size_t bufsz)
 {
-  char *neu = malloc(strlen(old) + 1);
+  char *neu = NULL;
   char *neu2;
   size_t idx = 0;
   const char *old2;
+  size_t strlen_old = strlen(old);
   int is_abspath = 0;
+  if (buf == NULL)
+  {
+    neu = malloc(strlen_old + 1);
+  }
+  else
+  {
+    neu = buf;
+    if (bufsz < strlen_old + 1)
+    {
+      neu = malloc(strlen_old + 1);
+    }
+  }
   if (old[0] == '\0')
   {
     my_abort(); // Must give some path
@@ -117,6 +130,10 @@ char *canon(const char *old)
     neu[1] = '\0';
   }
   return neu;
+}
+char *canon(const char *old)
+{
+  return canon_buf(old, NULL, 0);
 }
 
 size_t strcnt(const char *haystack, char needle)

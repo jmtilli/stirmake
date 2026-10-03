@@ -462,6 +462,7 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
 
 static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -497,7 +498,7 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
   if (rule->depsz >= rule->depcapacity)
   {
@@ -513,10 +514,14 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 }
 static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -554,7 +559,7 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
       my_abort();
     }
   }
-  can = canon(tmp1);
+  can = canon_buf(tmp1, canbuf, sizeof(canbuf));
   if (rule->depsz >= rule->depcapacity)
   {
     newcapacity = 2*rule->depcapacity + 1;
@@ -569,13 +574,17 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
   free(tmp1);
   free(tmp2);
 }
 
 static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const char *curprefix, const char *name)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -597,7 +606,7 @@ static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const cha
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
   if (order->rulecnt >= 2)
   {
@@ -606,11 +615,15 @@ static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const cha
   order->rules[order->rulecnt] = stir_strdup(can); // Let's copy it to compact it
   order->rulesnodir[order->rulecnt] = stir_strdup(name);
   order->rulecnt++;
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 }
 
 static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -633,7 +646,7 @@ static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char 
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
   if (rule->depsz >= rule->depcapacity)
   {
@@ -649,7 +662,10 @@ static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char 
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 }
 
 static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait, int percent_special)
@@ -698,6 +714,7 @@ static inline void stiryy_set_order(struct stiryy *stiryy, const char *name)
 
 static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -714,7 +731,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
   {
     my_abort();
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
   slashessz = strlen(can) + 4;
   slashes = malloc(slashessz);
@@ -729,7 +746,10 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
   {
     my_abort();
   }
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 
   if (rule->targetsz >= rule->targetcapacity)
   {
@@ -765,6 +785,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
 
 static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist, int percent_special)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -803,7 +824,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
         my_abort();
       }
     }
-    can = canon(tmp);
+    can = canon_buf(tmp, canbuf, sizeof(canbuf));
     free(tmp);
     if (rule->targetsz >= rule->targetcapacity)
     {
@@ -817,7 +838,10 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
     rule->targets[rule->targetsz].suffix = NULL;
     rule->targets[rule->targetsz].percent_special = percent_special;
     rule->targetsz++;
-    free(can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
   }
   else
   {
@@ -840,7 +864,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
         my_abort();
       }
     }
-    can = canon(tmp);
+    can = canon_buf(tmp, canbuf, sizeof(canbuf));
     free(tmp);
     if (rule->basesz >= rule->basecapacity)
     {
@@ -851,11 +875,15 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
     rule->bases[rule->basesz].name = stir_strdup(can);
     rule->bases[rule->basesz].namenodir = stir_strdup(tgt);
     rule->basesz++;
-    free(can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
   }
 }
 static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const char *curprefix, const char **tgt, int is_dist)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -896,7 +924,7 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
         my_abort();
       }
     }
-    can = canon(tmp1);
+    can = canon_buf(tmp1, canbuf, sizeof(canbuf));
     if (rule->targetsz >= rule->targetcapacity)
     {
       newcapacity = 2*rule->targetcapacity + 1;
@@ -909,7 +937,10 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
     rule->targets[rule->targetsz].suffix = stir_strdup(tmp2);
     rule->targets[rule->targetsz].percent_special = 0;
     rule->targetsz++;
-    free(can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
     free(tmp1);
     free(tmp2);
   }
@@ -922,6 +953,7 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
 
 static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist)
 {
+  char canbuf[1024];
   if (stirmain->trial)
   {
     return;
@@ -944,7 +976,7 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char 
       my_abort();
     }
   }
-  can = canon(tmp);
+  can = canon_buf(tmp, canbuf, sizeof(canbuf));
   free(tmp);
   if (rule->targetsz >= rule->targetcapacity)
   {
@@ -958,7 +990,10 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char 
   rule->targets[rule->targetsz].suffix = NULL;
   rule->targets[rule->targetsz].percent_special = 0;
   rule->targetsz++;
-  free(can);
+  if (can != canbuf)
+  {
+    free(can);
+  }
 }
 
 static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt, int is_dist, int percent_special)
