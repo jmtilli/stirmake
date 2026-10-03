@@ -166,7 +166,7 @@ int ins_ruleid_by_dep2(mysize_t depidx, int ruleid, int enforce)
     later->cnt++;
     mysize_t tgtidx = ABCE_CONTAINER_OF(rules[ruleid]->tgtlist.node.next, struct stirtgt, llnode)->tgtidx;
     //printf("ins_ruleid_by_dep2 dep %s rule %s\n", sttable[depidx].s, sttable[tgtidx].s);
-    return;
+    return 0;
   }
   if (rules[depruleid]->firstdepblock == NULL)
   {
