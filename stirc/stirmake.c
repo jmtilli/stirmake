@@ -3941,6 +3941,8 @@ void mark_executed(int ruleid, int was_actually_executed)
   else if (!r->is_phony && !r->is_inc && !dry_run)
   {
     struct stat statbuf;
+    struct timespec st_mtim;
+    int statret;
     int seen_pretend = 0;
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
@@ -3953,7 +3955,21 @@ void mark_executed(int ruleid, int was_actually_executed)
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
     {
       struct stirtgt *e = ABCE_CONTAINER_OF(node, struct stirtgt, llnode);
-      if ((was_actually_executed ? lstat(sttable[e->tgtidx].s, &statbuf) != 0 : lstat_cached(e->tgtidx)->ret != 0) && !seen_pretend && !r->is_maybe)
+      if (was_actually_executed)
+      {
+        statret = lstat(sttable[e->tgtidx].s, &statbuf);
+        if (statret == 0)
+        {
+          st_mtim = mtim_from_statbuf(&statbuf);
+        }
+      }
+      else
+      {
+        struct stathashentry *she = lstat_cached(e->tgtidx);
+        statret = she->ret;
+        st_mtim = she->st_mtim;
+      }
+      if (statret != 0 && !seen_pretend && !r->is_maybe)
       {
         fprintf(stderr, "stirmake: *** Target '%s' was not created by rule (directory: '%s').\n",
                sttable[e->tgtidx].s, sttable[r->diridx].s);
@@ -3962,7 +3978,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target '%s' was not created by rule", sttable[e->tgtidx].s);
       }
-      if (r->st_mtim_valid && ts_cmp(mtim_from_statbuf(&statbuf), r->st_mtim) < 0 && !seen_pretend && !r->is_maybe)
+      if (!seen_pretend && !r->is_maybe && r->st_mtim_valid && ts_cmp(st_mtim, r->st_mtim) < 0)
       {
         fprintf(stderr, "stirmake: *** Target '%s' was not updated by rule (directory: '%s').\n",
                sttable[e->tgtidx].s, sttable[r->diridx].s);
