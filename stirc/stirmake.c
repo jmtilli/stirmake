@@ -4044,7 +4044,11 @@ void mark_executed(int ruleid, int was_actually_executed)
       f = fopen(sttable[e->tgtidx].s, "r");
       if (f)
       {
-        incyydoparse(f, &incyy);
+        if (incyymineparse(f, &incyy))
+        {
+          errxit("Invalid cdepincludes format in %s", sttable[e->tgtidx].s);
+          my_abort();
+        }
         for (j = 0; j < incyy.rulesz; j++)
         {
           for (k = 0; k < incyy.rules[j].depsz; k++)
@@ -7446,7 +7450,11 @@ int main(int argc, char **argv)
       my_abort();
     }
     free(fname);
-    incyydoparse(f, &incyy);
+    if (incyymineparse(f, &incyy))
+    {
+      errxit("Invalid cdepincludes format in %s", fname);
+      my_abort();
+    }
     //for (auto it = incyy.rules; it != incyy.rules + incyy.rulesz; it++)
     for (j = 0; j < incyy.rulesz; j++)
     {

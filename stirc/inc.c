@@ -15,11 +15,13 @@ int main(int argc, char **argv)
 {
   FILE *f = fopen("depfile.dep", "r");
   struct incyy incyy = INCYY_EMPTY;
+  incyy.prefix = ".";
   if (!f)
   {
     abort();
   }
-  incyydoparse(f, &incyy);
+  //incyydoparse(f, &incyy);
+  printf("Parsing result: %d\n", incyymineparse(f, &incyy));
   fclose(f);
   return 0;
 }
