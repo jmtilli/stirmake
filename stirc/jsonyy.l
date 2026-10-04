@@ -44,7 +44,7 @@ null return NIL;
 [,] return COMMA;
 
 \n                                { ++yylineno; yycolumn=1; }
-[ \t]                            /* ignore whitespaces */;
+[ \t\r]                            /* ignore whitespaces */;
 .            return ERROR_TOK;
 
 
