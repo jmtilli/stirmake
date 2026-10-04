@@ -79,12 +79,18 @@ echo "#endif" >> git.h
 fi
 
 for a in *.l; do
+  if [ "$a" = "incyy.l" ]; then
+    continue
+  fi
   base="`echo "$a"|sed 's/.l$//g'`"
   if doflex "$base.lex.c" "$base.lex.h"; then
     docmd $FLEX --outfile="$base.lex.c" --header-file="$base.lex.h" "$a" || die "flex"
   fi
 done
 for a in *.y; do
+  if [ "$a" = "incyy.y" ]; then
+    continue
+  fi
   base="`echo "$a"|sed 's/.y$//g'`"
   if dobyacc "$base.tab.c" "$base.tab.h"; then
     docmd $BYACC -d -p "$base" -b "$base" -o "$base.tab.c" "$a" || die "byacc"
