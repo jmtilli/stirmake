@@ -144,6 +144,10 @@ static inline void ruleremain_rm(struct rule *rule)
 static inline int stirdep_ruleid(struct stirdep *d)
 {
   int res;
+  if (abce_likely(d->ruleid == -2))
+  {
+    return -ENOENT;
+  }
   if (abce_likely(d->ruleid >= 0))
   {
     return d->ruleid;
@@ -154,6 +158,7 @@ static inline int stirdep_ruleid(struct stirdep *d)
     d->ruleid = res;
     return res;
   }
+  d->ruleid = -2;
   return -ENOENT;
 }
 

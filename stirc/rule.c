@@ -216,8 +216,9 @@ void calc_deps_remain(struct rule *rule)
   LINKED_LIST_FOR_EACH(node, &rule->deplist)
   {
     struct stirdep *e = ABCE_CONTAINER_OF(node, struct stirdep, llnode);
-    mysize_t depnameidx = e->nameidx;
-    int ruleid = get_ruleid_by_tgt(depnameidx);
+    //mysize_t depnameidx = e->nameidx;
+    //int ruleid = get_ruleid_by_tgt(depnameidx);
+    int ruleid = stirdep_ruleid(e);
     if (ruleid >= 0)
     {
       deps_remain_insert(rule, ruleid);
