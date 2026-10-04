@@ -29,6 +29,7 @@
 #include "stringtab.h"
 #include "stirutils.h"
 #include "statcache.h"
+#include "mygetline.h"
 #include "accesscache.h"
 #include "abce/abcejmalloc.h"
 #include "db.h"
