@@ -3942,6 +3942,7 @@ void mark_executed(int ruleid, int was_actually_executed)
   {
     struct stat statbuf;
     struct timespec st_mtim;
+    off_t st_size = 0;
     int statret;
     int seen_pretend = 0;
     LINKED_LIST_FOR_EACH(node, &r->tgtlist)
@@ -3961,6 +3962,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         if (statret == 0)
         {
           st_mtim = mtim_from_statbuf(&statbuf);
+          st_size = statbuf.st_size;
         }
       }
       else
@@ -3968,6 +3970,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         struct stathashentry *she = lstat_cached(e->tgtidx);
         statret = she->ret;
         st_mtim = she->st_mtim;
+        st_size = she->st_size;
       }
       if (statret != 0 && !seen_pretend && !r->is_maybe)
       {
@@ -3987,7 +3990,10 @@ void mark_executed(int ruleid, int was_actually_executed)
         fprintf(stderr, "stirmake: *** Hint: use @rectgtrule for rules that have targets inside @recdep.\n");
         errxit("Target '%s' was not updated by rule", sttable[e->tgtidx].s);
       }
-      tsszstoretarget(&tsdb, e->tgtidx, mtim_from_statbuf(&statbuf), statbuf.st_size);
+      if (statret == 0)
+      {
+        tsszstoretarget(&tsdb, e->tgtidx, st_mtim, st_size);
+      }
     }
   }
   if (!r->is_inc && !r->is_phony)
