@@ -6409,7 +6409,7 @@ int main(int argc, char **argv)
     int is_sles = 0;
     for (;;)
     {
-      if (getline(&line, &n, f) <= 0)
+      if (mygetline(&line, &n, f) <= 0)
       {
         break;
       }
@@ -6471,7 +6471,7 @@ int main(int argc, char **argv)
     rewind(f);
     for (;;)
     {
-      if (getline(&line, &n, f) <= 0)
+      if (mygetline(&line, &n, f) <= 0)
       {
         break;
       }

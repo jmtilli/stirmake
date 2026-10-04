@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "incyyutils.h"
 #include "incyy.h"
+#include "mygetline.h"
 
 static inline size_t myspn(const char *str)
 {
@@ -144,7 +145,7 @@ int incyymineparse(FILE *f, struct incyy *incyy)
   size_t n2 = 0;
   ssize_t nread;
   ssize_t nread2;
-  while ((nread = getline(&lineptr, &n, f)) >= 0)
+  while ((nread = mygetline(&lineptr, &n, f)) >= 0)
   {
 #if 0
     if (nread && lineptr[nread-1] == '\n')
@@ -171,7 +172,7 @@ int incyymineparse(FILE *f, struct incyy *incyy)
       while (escape)
       {
         escape = 0;
-        nread2 = getline(&lineptr2, &n2, f);
+        nread2 = mygetline(&lineptr2, &n2, f);
 	//printf("READ LINEPTR2: %s\n", lineptr2);
         if (nread2 < 0)
         {
