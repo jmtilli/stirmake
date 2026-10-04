@@ -40,27 +40,25 @@ void my_abort(void);
 static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
 {
   char canbuf[1024];
+  char catbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(incyy->prefix) + strlen(dep) + 2;
-  char *can, *tmp = malloc(sz);
+  char *can, *tmp;
 
   if (dep[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", dep) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat1_buf(dep, catbuf, sizeof(catbuf));
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, dep) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat2_buf(incyy->prefix, dep, catbuf, sizeof(catbuf));
   }
   can = canon_buf(tmp, canbuf, sizeof(canbuf));
-  free(tmp);
+  if (tmp != catbuf)
+  {
+    free(tmp);
+  }
 
   if (rule->depsz >= rule->depcapacity)
   {
@@ -81,27 +79,25 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
 static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
 {
   char canbuf[1024];
+  char catbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
   size_t sz = strlen(incyy->prefix) + strlen(tgt) + 2;
-  char *can, *tmp = malloc(sz);
+  char *can, *tmp;
 
   if (tgt[0] == '/')
   {
-    if (snprintf(tmp, sz, "%s", tgt) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
   }
   else
   {
-    if (snprintf(tmp, sz, "%s/%s", incyy->prefix, tgt) >= (int)sz)
-    {
-      my_abort();
-    }
+    tmp = pathcat2_buf(incyy->prefix, tgt, catbuf, sizeof(catbuf));
   }
   can = canon_buf(tmp, canbuf, sizeof(canbuf));
-  free(tmp);
+  if (tmp != catbuf)
+  {
+    free(tmp);
+  }
 
   if (rule->targetsz >= rule->targetcapacity)
   {
