@@ -21,6 +21,7 @@ ssize_t mygetline(char **lineptr, size_t *n, FILE *f)
       errno = ENOMEM;
       return -1;
     }
+    newptr[0] = '\0';
     *lineptr = newptr;
     *n = newcap;
   }
