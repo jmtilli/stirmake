@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "mygetline.h"
 
+// FIXME what if the line contains '\0' byte? should use getc not fgets
 ssize_t mygetline(char **lineptr, size_t *n, FILE *f)
 {
   char *ret;
