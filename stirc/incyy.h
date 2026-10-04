@@ -43,7 +43,6 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
   char catbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(incyy->prefix) + strlen(dep) + 2;
   char *can, *tmp;
 
   if (dep[0] == '/')
@@ -82,7 +81,6 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
   char catbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
-  size_t sz = strlen(incyy->prefix) + strlen(tgt) + 2;
   char *can, *tmp;
 
   if (tgt[0] == '/')
