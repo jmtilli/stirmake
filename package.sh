@@ -15,7 +15,7 @@ smka git.h || die "Can't create git.h"
 smka jsonyy.lex.c jsonyy.lex.h jsonyy.tab.c jsonyy.tab.h || die "No jsonyy"
 smka stiryy.lex.c stiryy.lex.h stiryy.tab.c stiryy.tab.h || die "No stiryy"
 smka dbyy.lex.c dbyy.lex.h dbyy.tab.c dbyy.tab.h || die "No dbyy"
-smka incyy.lex.c incyy.lex.h incyy.tab.c incyy.tab.h || die "No incyy"
+#smka incyy.lex.c incyy.lex.h incyy.tab.c incyy.tab.h || die "No incyy"
 cd abce
 smkt amyplanyy.lex.c amyplanyy.lex.h amyplanyy.tab.c amyplanyy.tab.h || die "No amyplanyy"
 cd ..
