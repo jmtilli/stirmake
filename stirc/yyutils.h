@@ -28,9 +28,9 @@ int stiryynameparse(const char *fname, struct stiryy *stiryy, int require);
 int stiryydirparse(
   const char *argv0, const char *fname, struct stiryy *stiryy, int require);
 
-struct escaped_string yy_escape_string(char *orig);
+struct escaped_string yy_escape_string(char *orig, char **strendptr);
 
-struct escaped_string yy_escape_string_single(char *orig);
+struct escaped_string yy_escape_string_single(char *orig, char **strendptr);
 
 void file_escape_string(FILE *f, const char *str);
 

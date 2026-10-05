@@ -22,9 +22,9 @@ void incyynameparse(const char *fname, struct incyy *incyy, int require);
 void incyydirparse(
   const char *argv0, const char *fname, struct incyy *incyy, int require);
 
-struct escaped_string yy_escape_string(char *orig);
+struct escaped_string yy_escape_string(char *orig, char **strendptr);
 
-struct escaped_string yy_escape_string_single(char *orig);
+struct escaped_string yy_escape_string_single(char *orig, char **strendptr);
 
 #ifdef __cplusplus
 };

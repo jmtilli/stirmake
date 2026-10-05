@@ -69,7 +69,7 @@ static void *memdup(const void *mem, size_t sz)
   return result;
 }
 
-struct escaped_string yy_escape_string(char *orig)
+struct escaped_string yy_escape_string(char *orig, char **strendptr)
 {
   char *buf = NULL;
   char *result = NULL;
@@ -77,7 +77,11 @@ struct escaped_string yy_escape_string(char *orig)
   size_t j = 0;
   size_t capacity = 0;
   size_t i = 1;
-  while (orig[i] != '"')
+  if (strendptr)
+  {
+    *strendptr = NULL;
+  }
+  while (orig[i] != '"' && orig[i])
   {
     //if (j+2 >= capacity)
     if (j+7 >= capacity)
@@ -190,15 +194,25 @@ struct escaped_string yy_escape_string(char *orig)
     }
     buf = buf2;
   }
+  if (!orig[i])
+  {
+    free(buf);
+    resultstruct.str = NULL;
+    return resultstruct;
+  }
   resultstruct.sz = j;
   buf[j++] = '\0';
   result = memdup(buf, j);
   resultstruct.str = result;
   free(buf);
+  if (strendptr)
+  {
+    *strendptr = &orig[i+1];
+  }
   return resultstruct;
 }
 
-struct escaped_string yy_escape_string_single(char *orig)
+struct escaped_string yy_escape_string_single(char *orig, char **strendptr)
 {
   char *buf = NULL;
   char *result = NULL;
@@ -206,7 +220,11 @@ struct escaped_string yy_escape_string_single(char *orig)
   size_t j = 0;
   size_t capacity = 0;
   size_t i = 1;
-  while (orig[i] != '\'')
+  if (strendptr)
+  {
+    *strendptr = NULL;
+  }
+  while (orig[i] != '\'' && orig[i])
   {
     //if (j+2 >= capacity)
     if (j+7 >= capacity)
@@ -319,11 +337,21 @@ struct escaped_string yy_escape_string_single(char *orig)
     }
     buf = buf2;
   }
+  if (!orig[i])
+  {
+    free(buf);
+    resultstruct.str = NULL;
+    return resultstruct;
+  }
   resultstruct.sz = j;
   buf[j++] = '\0';
   result = memdup(buf, j);
   resultstruct.str = result;
   free(buf);
+  if (strendptr)
+  {
+    *strendptr = &orig[i+1];
+  }
   return resultstruct;
 }
 

@@ -358,8 +358,8 @@ struct CSnippet luaSnippet = {
   return FREEFORM_TOKEN;
 }
 
-<INITIAL,STRICT>\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
-<INITIAL,STRICT>\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
+<INITIAL,STRICT>\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext, NULL); return STRING_LITERAL;
+<INITIAL,STRICT>\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext, NULL); return STRING_LITERAL;
 <INITIAL,STRICT>#[^\n]*  /* ignore */;
 
 <INITIAL,STRICT>"%lua{"             { yy_push_state(PERCENTLUA, yyscanner); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }

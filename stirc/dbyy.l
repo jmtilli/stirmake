@@ -34,8 +34,8 @@
 @v2@ return V2;
 
 
-\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext); return STRING_LITERAL;
-\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext); return STRING_LITERAL;
+\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext, NULL); return STRING_LITERAL;
+\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext, NULL); return STRING_LITERAL;
 #[^\n]*  /* ignore comments */;
 
 \n                                { ++yylineno; yycolumn=1; last_newline_true = 1; return NEWLINE; }
