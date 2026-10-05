@@ -1,5 +1,6 @@
 #include "stringtab.h"
 #include "mymalloc.h"
+#include "wyhash.h"
 
 struct abce_rb_tree_nocmp *st;
 struct sttable_entry *sttable = NULL;
@@ -73,7 +74,7 @@ mysize_t stringtab_get(const char *symbol)
   uint32_t hashval;
   size_t hashloc;
   struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
-  hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
+  hashval = wyhash(symbol, stringlen.len, 0, _wyp);
   hashloc = hashval & (expstrings-1);
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym,
 NULL, &stringlen);
@@ -91,7 +92,7 @@ mysize_t stringtab_add(const char *symbol)
   mysize_t hashloc;
   struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
   struct stringtabentry *stringtabentry;
-  hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
+  hashval = wyhash(symbol, stringlen.len, 0, _wyp);
   hashloc = hashval & (expstrings-1);
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, NULL, &stringlen);
   if (n != NULL)
