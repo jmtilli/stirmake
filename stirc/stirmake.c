@@ -6998,7 +6998,6 @@ int main(int argc, char **argv)
   }
 
   linked_list_head_init(&tsdb.ll);
-  load_db();
   abce_init_opts(&abce, 1);
 #ifdef WITH_LUA
   abce_set_luaopen_caller(&abce, luaopen_stir);
@@ -7033,6 +7032,12 @@ int main(int argc, char **argv)
     expdeps = stirmain.expected_deps;
     //printf("Expdeps: %d\n", (int)expdeps);
   }
+  if (stirmain.expected_strings > 0)
+  {
+    expstrings = stirmain.expected_strings;
+  }
+  st_init();
+  load_db();
 
   stack_conf();
 

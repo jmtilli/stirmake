@@ -1,7 +1,7 @@
 #include "stringtab.h"
 #include "mymalloc.h"
 
-struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
+struct abce_rb_tree_nocmp *st;
 struct sttable_entry *sttable = NULL;
 /*
  * Linux kernel 22.9.2025, 26084 headers, 35778 c files, 6000 directories
@@ -13,8 +13,15 @@ struct sttable_entry *sttable = NULL;
 mysize_t st_cap = 64*1024;
 mysize_t st_cnt;
 size_t stringtab_bytes;
+mysize_t expstrings = STRINGTAB_SIZE;
 
 void errxit(const char *fmt, ...);
+
+void st_init(void)
+{
+  st = malloc(expstrings*sizeof(*st));
+  memset(st, 0, expstrings*sizeof(*st));
+}
 
 void st_grow(void)
 {
@@ -67,7 +74,7 @@ mysize_t stringtab_get(const char *symbol)
   size_t hashloc;
   struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
   hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
-  hashloc = hashval % (sizeof(st)/sizeof(*st));
+  hashloc = hashval & (expstrings-1);
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym,
 NULL, &stringlen);
   if (n != NULL)
@@ -85,7 +92,7 @@ mysize_t stringtab_add(const char *symbol)
   struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
   struct stringtabentry *stringtabentry;
   hashval = abce_murmur_buf(HASH_SEED, symbol, stringlen.len);
-  hashloc = hashval % (sizeof(st)/sizeof(*st));
+  hashloc = hashval & (expstrings-1);
   n = ABCE_RB_TREE_NOCMP_FIND(&st[hashloc], stringtabentry_cmp_asym, NULL, &stringlen);
   if (n != NULL)
   {

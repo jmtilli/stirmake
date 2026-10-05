@@ -63,14 +63,16 @@ struct sttable_entry {
   unsigned is_cdepwatch:1;
 };
 
-extern struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
+//extern struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 extern struct sttable_entry *sttable;
 extern mysize_t st_cap;
 extern mysize_t st_cnt;
 extern mysize_t stringtab_cnt;
 extern size_t stringtab_bytes;
+extern mysize_t expstrings;
 
 
+void st_init(void);
 void st_grow(void);
 void st_compact(void);
 mysize_t stringtab_get(const char *symbol);
