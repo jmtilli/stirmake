@@ -1572,7 +1572,7 @@ void process_additional_deps(mysize_t global_scopeidx)
         rules_capacity = new_capacity;
       }
       rule_cnt++;
-      rule = my_malloc(sizeof(*rule));
+      rule = my_malloc(rulesz());
       rules[rules_size] = rule;
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
@@ -1603,7 +1603,7 @@ void process_additional_deps(mysize_t global_scopeidx)
         rules_capacity = new_capacity;
       }
       rule_cnt++;
-      rule = my_malloc(sizeof(*rule));
+      rule = my_malloc(rulesz());
       rules[rules_size] = rule;
       //rule = &rules[rules_size];
       //printf("adding tgt: %s\n", entry->tgt);
@@ -1703,7 +1703,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         rules_capacity = new_capacity;
       }
       rule_cnt++;
-      rule = my_malloc(sizeof(*rule));
+      rule = my_malloc(rulesz());
       rules[rules_size] = rule;
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
@@ -1744,7 +1744,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         rules_capacity = new_capacity;
       }
       rule_cnt++;
-      rule = my_malloc(sizeof(*rule));
+      rule = my_malloc(rulesz());
       rules[rules_size] = rule;
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
@@ -1788,7 +1788,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
           rules_capacity = new_capacity;
         }
         rule_cnt++;
-        rule = my_malloc(sizeof(*rule));
+        rule = my_malloc(rulesz());
         rules[rules_size] = rule;
         //rule = &rules[rules_size];
         //printf("adding tgt: %s\n", entry->tgt);
@@ -1887,7 +1887,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
     rules_capacity = new_capacity;
   }
   rule_cnt++;
-  rule = my_malloc(sizeof(*rule));
+  rule = my_malloc(rulesz());
   rules[rules_size] = rule;
 
   zero_rule(rule);
@@ -7028,6 +7028,12 @@ int main(int argc, char **argv)
   yy_stored_lineno = -1;
   yy_stored_prefix = NULL;
 
+  if (stirmain.expected_deps > 0)
+  {
+    expdeps = stirmain.expected_deps;
+    //printf("Expdeps: %d\n", (int)expdeps);
+  }
+
   stack_conf();
 
   this_path = calc_forward_path(storcwd, upcnt);
@@ -7824,7 +7830,7 @@ int main(int argc, char **argv)
     printf("  add_dep: %zu %zu\n", (size_t)add_dep_cnt, (size_t)(add_dep_cnt*sizeof(struct add_dep)));
     printf("  add_deps: %zu %zu\n", (size_t)add_deps_cnt, (size_t)(add_deps_cnt*sizeof(struct add_deps)));
     printf("  add_dep_entry_block: %zu %zu\n", (size_t)add_dep_entry_block_cnt, (size_t)(add_dep_entry_block_cnt*sizeof(struct add_dep_entry_block)));
-    printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)(rule_cnt*sizeof(struct rule)));
+    printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)rulesz());
     printf("  ruleid_by_pid: %zu %zu\n", (size_t)ruleid_by_pid_cnt, (size_t)(ruleid_by_pid_cnt*sizeof(struct ruleid_by_pid)));
   }
   if (merge_db())

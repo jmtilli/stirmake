@@ -236,6 +236,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DUMMY_TOK1
 %token DUMMY_TOK2
 
+%token EXPECTEDDEPS
 %token SHELLESCAPE
 %token SHELLESCAPEMULTI
 
@@ -708,6 +709,29 @@ custom_expr0:
     }
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, found);
+  }
+}
+| EXPECTEDDEPS OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    int num = (int)$3.d;
+    unsigned numu = (unsigned)num;
+    if (num <= 0)
+    {
+      stiryyerror(scanner, stiryy, "Expected deps must be positive");
+      YYABORT;
+    }
+    if ((numu & (numu-1)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "Expected deps must be a power of 2");
+      YYABORT;
+    }
+    if (strcmp(stiryy->curprefix, ".") == 0)
+    {
+      stiryy->main->expected_deps = num;
+    }
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
 | DIRUP

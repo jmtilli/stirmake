@@ -58,6 +58,10 @@ struct stirtgt {
  * We shouldn't add any dependencies to a rule whenever is_executing flag is on.
  * XXX or should we? Hard to support dynamic deps without.
  */
+struct rule_end {
+  struct abce_rb_tree_nocmp deps;
+  struct abce_rb_tree_nocmp deps_remain;
+};
 struct rule {
   struct linked_list_node remainllnode;
   struct linked_list_node cleanllnode;
@@ -88,10 +92,10 @@ struct rule {
   int ruleid;
   struct abce_rb_tree_nocmp tgts[TGTS_SIZE];
   struct linked_list_head tgtlist;
-  struct abce_rb_tree_nocmp deps[DEPS_SIZE];
+  //struct abce_rb_tree_nocmp deps[DEPS_SIZE];
   struct linked_list_head deplist;
   struct linked_list_head depremainlist;
-  struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
+  //struct abce_rb_tree_nocmp deps_remain[DEPS_REMAIN_SIZE];
   mysize_t deps_remain_cnt;
   mysize_t wait_remain_cnt;
   mysize_t cmdidx;
@@ -101,8 +105,16 @@ struct rule {
   struct stirdep *waitloc;
   struct ruleid_by_dep_entry_block *firstdepblock;
   struct ruleid_by_dep_entry_block *lastdepblock;
+  struct rule_end deps_and_deps_remain[];
 };
+
+extern mysize_t expdeps; // expected dependency count, must be a power of 2
 extern struct rule **rules; // Needs doubly indirect, otherwise pointers messed up
+
+static inline size_t rulesz(void)
+{
+  return sizeof(struct rule) + expdeps*sizeof(struct rule_end);
+}
 
 void zero_rule(struct rule *rule);
 void calc_deps_remain(struct rule *rule);

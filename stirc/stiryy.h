@@ -271,6 +271,7 @@ struct stiryy_main {
   int parsing;
   int trial;
   int rule_in_progress;
+  int expected_deps;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;

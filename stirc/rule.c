@@ -6,6 +6,8 @@
 
 void errxit(const char *fmt, ...);
 
+mysize_t expdeps = DEPS_SIZE;
+
 struct linked_list_head rules_remain_list =
   STIR_LINKED_LIST_HEAD_INITER(rules_remain_list);
 
@@ -129,8 +131,8 @@ int deps_remain_has(struct rule *rule, int ruleid)
   uint32_t hashval;
   size_t hashloc;
   hashval = abce_nonmurmur32((uint32_t)ruleid);
-  hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
+  hashloc = hashval & (expdeps-1);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_and_deps_remain[hashloc].deps_remain, dep_remain_cmp_asym, NULL, &ruleid);
   return n != NULL;
 }
 
@@ -141,8 +143,8 @@ void deps_remain_forwait(struct rule *rule, int ruleid)
   size_t hashloc;
   struct dep_remain *dep_remain;
   hashval = abce_nonmurmur32((uint32_t)ruleid);
-  hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
+  hashloc = hashval & (expdeps-1);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_and_deps_remain[hashloc].deps_remain, dep_remain_cmp_asym, NULL, &ruleid);
   if (n == NULL)
   {
     abort();
@@ -158,14 +160,14 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   size_t hashloc;
   struct dep_remain *dep_remain;
   hashval = abce_nonmurmur32((uint32_t)ruleid);
-  hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
+  hashloc = hashval & (expdeps-1);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_and_deps_remain[hashloc].deps_remain, dep_remain_cmp_asym, NULL, &ruleid);
   if (n == NULL)
   {
     return;
   }
   dep_remain = ABCE_CONTAINER_OF(n, struct dep_remain, node);
-  abce_rb_tree_nocmp_delete(&rule->deps_remain[hashloc], &dep_remain->node);
+  abce_rb_tree_nocmp_delete(&rule->deps_and_deps_remain[hashloc].deps_remain, &dep_remain->node);
   if (debug)
   {
     linked_list_delete(&dep_remain->llnode);
@@ -187,8 +189,8 @@ int deps_remain_insert(struct rule *rule, int ruleid)
   size_t hashloc;
   struct dep_remain *dep_remain;
   hashval = abce_nonmurmur32((uint32_t)ruleid);
-  hashloc = hashval % (sizeof(rule->deps_remain)/sizeof(*rule->deps_remain));
-  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_remain[hashloc], dep_remain_cmp_asym, NULL, &ruleid);
+  hashloc = hashval & (expdeps-1);
+  n = ABCE_RB_TREE_NOCMP_FIND(&rule->deps_and_deps_remain[hashloc].deps_remain, dep_remain_cmp_asym, NULL, &ruleid);
   if (n != NULL)
   {
     return -EEXIST;
@@ -197,7 +199,7 @@ int deps_remain_insert(struct rule *rule, int ruleid)
   dep_remain = my_malloc(sizeof(struct dep_remain));
   dep_remain->ruleid = ruleid;
   dep_remain->waitcnt = 0;
-  if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_remain[hashloc], dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
+  if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_and_deps_remain[hashloc].deps_remain, dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
   {
     printf("4\n");
     my_abort();
@@ -228,7 +230,7 @@ void calc_deps_remain(struct rule *rule)
 
 void zero_rule(struct rule *rule)
 {
-  memset(rule, 0, sizeof(*rule));
+  memset(rule, 0, rulesz());
   linked_list_head_init(&rule->deplist);
   linked_list_head_init(&rule->tgtlist);
   syncbuf_init(&rule->output);
@@ -283,7 +285,7 @@ int ins_dep(struct rule *rule,
   e->is_inc = !!is_inc;
   e->is_dupe = 0;
   e->ruleid = -1;
-  head = &rule->deps[hash % (sizeof(rule->deps)/sizeof(*rule->deps))];
+  head = &rule->deps_and_deps_remain[hash & (expdeps-1)].deps;
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dep_cmp_sym, NULL, &e->node);
   if (ret == 0)
   {
