@@ -705,13 +705,13 @@ int add_rule_yy(struct stiryy_main *stirmain, struct tgt *tgts, size_t tgtsz,
   stiryy_main_emplace_rule(stirmain, prefix, scopeidx, lineno);
   stirmain->rules[stirmain->rulesz-1].bases = NULL;
   stirmain->rules[stirmain->rulesz-1].basesz = 0;
-  stirmain->rules[stirmain->rulesz-1].basecapacity = 0;
+  stirmain->lastrule_basecapacity = 0;
   stirmain->rules[stirmain->rulesz-1].deps = deps;
   stirmain->rules[stirmain->rulesz-1].depsz = depsz;
-  stirmain->rules[stirmain->rulesz-1].depcapacity = depsz;
+  stirmain->lastrule_depcapacity = depsz;
   stirmain->rules[stirmain->rulesz-1].targets = tgts;
   stirmain->rules[stirmain->rulesz-1].targetsz = tgtsz;
-  stirmain->rules[stirmain->rulesz-1].targetcapacity = tgtsz;
+  stirmain->lastrule_targetcapacity = tgtsz;
   stirmain->rules[stirmain->rulesz-1].shells = *shells;
   //stirmain->rules[stirmain->rulesz-1].scopeidx = scopeidx;
   //stirmain->rules[stirmain->rulesz-1].prefix = prefix;
