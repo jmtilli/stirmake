@@ -27,6 +27,7 @@ int stiryydoparse(FILE *filein, struct stiryy *stiryy)
   stiryyset_in(filein, scanner);
   if (stiryyparse(scanner, stiryy) != 0)
   {
+    stiryylex_destroy(scanner);
     return -EBADMSG;
   }
   stiryylex_destroy(scanner);
