@@ -7840,7 +7840,7 @@ int main(int argc, char **argv)
     printf("  add_dep: %zu %zu\n", (size_t)add_dep_cnt, (size_t)(add_dep_cnt*sizeof(struct add_dep)));
     printf("  add_deps: %zu %zu\n", (size_t)add_deps_cnt, (size_t)(add_deps_cnt*sizeof(struct add_deps)));
     printf("  add_dep_entry_block: %zu %zu\n", (size_t)add_dep_entry_block_cnt, (size_t)(add_dep_entry_block_cnt*sizeof(struct add_dep_entry_block)));
-    printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)rulesz());
+    printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)rule_cnt*rulesz());
     printf("  ruleid_by_pid: %zu %zu\n", (size_t)ruleid_by_pid_cnt, (size_t)(ruleid_by_pid_cnt*sizeof(struct ruleid_by_pid)));
   }
   if (merge_db())
