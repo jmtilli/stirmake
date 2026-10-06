@@ -67,7 +67,7 @@ struct staux_entry {
   uint8_t is_cdepwatch:1;
 };
 
-//extern struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
+extern struct abce_rb_tree_nocmp *st;
 extern struct sttable_entry *sttable;
 extern struct staux_entry *staux;
 extern mysize_t st_cap;

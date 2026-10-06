@@ -7828,7 +7828,7 @@ int main(int argc, char **argv)
     printf("  dbe: %zu %zu\n", (size_t)dbecnt, dbecnt*(size_t)sizeof(struct dbe));
     printf("  tsdbe: %zu %zu\n", (size_t)tsdbecnt, tsdbecnt*(size_t)sizeof(struct tsdbe));
     printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
-    printf("  stringtab: %zu %zu + %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)), (size_t)(st_cap*sizeof(*staux)));
+    printf("  stringtab: %zu %zu + %zu + %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)), (size_t)(st_cap*sizeof(*staux)), (size_t)(expstrings*sizeof(*st)));
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));
     printf("  stirdep: %zu %zu\n", (size_t)stirdep_cnt, (size_t)(stirdep_cnt*sizeof(struct stirdep)));
