@@ -23,6 +23,7 @@ void st_init(void)
 {
   st = malloc(expstrings*sizeof(*st));
   memset(st, 0, expstrings*sizeof(*st));
+  st_cap = expstrings;
 }
 
 void st_grow(void)

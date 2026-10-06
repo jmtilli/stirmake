@@ -6342,19 +6342,6 @@ int main(int argc, char **argv)
 
   do_setrlimit();
 
-  sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
-  if (sttable == NULL)
-  {
-    errxit("Can't mmap sttable");
-    exit(2);
-  }
-  staux = stir_do_mmap_madvise(st_cap*sizeof(*staux));
-  if (staux == NULL)
-  {
-    errxit("Can't mmap staux");
-    exit(2);
-  }
-
   if (my_malloc_init())
   {
     errxit("Can't mmap arena");
@@ -7043,6 +7030,18 @@ int main(int argc, char **argv)
     expstrings = stirmain.expected_strings;
   }
   st_init();
+  sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
+  if (sttable == NULL)
+  {
+    errxit("Can't mmap sttable");
+    exit(2);
+  }
+  staux = stir_do_mmap_madvise(st_cap*sizeof(*staux));
+  if (staux == NULL)
+  {
+    errxit("Can't mmap staux");
+    exit(2);
+  }
   load_db();
 
   stack_conf();
