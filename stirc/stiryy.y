@@ -3525,8 +3525,8 @@ stirrule:
     if (stiryy_check_rule(stiryy) != 0)
     {
       char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule, @detouchrule or @mayberule",
-               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s prefix %s to @rectgtrule, @detouchrule or @mayberule",
+               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].namenodir, stiryy->main->rules[stiryy->main->rulesz - 1].prefix);
       recommend(scanner, stiryy, buf);
     }
     stiryy->main->rule_in_progress = 0;
@@ -3668,8 +3668,8 @@ stirrule:
     if (stiryy_check_rule(stiryy) != 0)
     {
       char buf[2048] = {0};
-      snprintf(buf, sizeof(buf), "Recommend setting rule for %s to @rectgtrule, @detouchrule or @mayberule",
-               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].name);
+      snprintf(buf, sizeof(buf), "Recommend setting rule for %s prefix %s to @rectgtrule, @detouchrule or @mayberule",
+               stiryy->main->rules[stiryy->main->rulesz - 1].targets[0].namenodir, stiryy->main->rules[stiryy->main->rulesz - 1].prefix);
       recommend(scanner, stiryy, buf);
     }
     stiryy->main->rule_in_progress = 0;

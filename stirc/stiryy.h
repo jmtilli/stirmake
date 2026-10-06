@@ -203,7 +203,7 @@ struct cmdsrc {
 };
 
 struct dep {
-  char *name;
+  //char *name;
   char *namenodir;
   // for patrules, it's name or namenodir and wildcard and suffix
   // if suffix is NULL, then wildcard is not used
@@ -214,7 +214,7 @@ struct dep {
   unsigned wait:1;
 };
 struct tgt {
-  char *name;
+  //char *name;
   char *namenodir;
   // for patrules, it's name or namenodir and wildcard and suffix
   // if suffix is NULL, then wildcard is not used
@@ -464,19 +464,20 @@ static inline void stiryy_set_cdepinclude(struct stiryy *stiryy, const char *cd,
 
 static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait, int percent_special)
 {
-  char canbuf[1024];
-  char catbuf[1024];
+  //char canbuf[1024];
+  //char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  char *can, *tmp;
+  //char *can, *tmp;
   if (!rule->ispat || !rule->patfrozen)
   {
     abort();
   }
+#if 0
   if (dep[0] == '/')
   {
     tmp = pathcat1_buf(dep, catbuf, sizeof(catbuf));
@@ -499,13 +500,14 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
   {
     free(tmp);
   }
+#endif
   if (rule->depsz >= stirmain->lastrule_depcapacity)
   {
     newcapacity = 2*stirmain->lastrule_depcapacity + 1;
     rule->deps = (struct dep*)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
     stirmain->lastrule_depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
+  //rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = stir_strdup(dep);
   rule->deps[rule->depsz].suffix = NULL;
   rule->deps[rule->depsz].percent_special = percent_special;
@@ -513,14 +515,16 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
+#if 0
   if (can != canbuf)
   {
     free(can);
   }
+#endif
 }
 static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const char *curprefix, const char **dep, int rec, int orderonly, int wait)
 {
-  char canbuf[1024];
+  //char canbuf[1024];
   char catbuf1[1024];
   char catbuf2[1024];
   if (stirmain->trial)
@@ -529,7 +533,8 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  char *can, *tmp1, *tmp2;
+  //char *can;
+  char *tmp1, *tmp2;
   size_t off = 0;
   if (!rule->ispat || !rule->patfrozen)
   {
@@ -546,14 +551,14 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
     tmp1 = pathcat2_buf(curprefix, dep[0], catbuf1, sizeof(catbuf1));
     tmp2 = pathcat1_buf(dep[2], catbuf2, sizeof(catbuf2));
   }
-  can = canon_buf(tmp1, canbuf, sizeof(canbuf));
+  //can = canon_buf(tmp1, canbuf, sizeof(canbuf));
   if (rule->depsz >= stirmain->lastrule_depcapacity)
   {
     newcapacity = 2*stirmain->lastrule_depcapacity + 1;
     rule->deps = (struct dep*)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
     stirmain->lastrule_depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
+  //rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = stir_strdup(tmp1+off);
   rule->deps[rule->depsz].suffix = stir_strdup(tmp2);
   rule->deps[rule->depsz].percent_special = 0;
@@ -561,10 +566,12 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
+#if 0
   if (can != canbuf)
   {
     free(can);
   }
+#endif
   if (tmp1 != catbuf1)
   {
     free(tmp1);
@@ -616,14 +623,15 @@ static inline void stiryy_main_set_order(struct stiryy_main *stirmain, const cha
 
 static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char *curprefix, const char *dep, int rec, int orderonly, int wait)
 {
-  char canbuf[1024];
-  char catbuf[1024];
+  //char canbuf[1024];
+  //char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
+#if 0
   char *can, *tmp;
   if (dep[0] == '/')
   {
@@ -638,13 +646,14 @@ static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char 
   {
     free(tmp);
   }
+#endif
   if (rule->depsz >= stirmain->lastrule_depcapacity)
   {
     newcapacity = 2*stirmain->lastrule_depcapacity + 1;
     rule->deps = (struct dep*)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
     stirmain->lastrule_depcapacity = newcapacity;
   }
-  rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
+  //rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = stir_strdup(dep);
   rule->deps[rule->depsz].suffix = NULL;
   rule->deps[rule->depsz].percent_special = 0;
@@ -652,10 +661,12 @@ static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char 
   rule->deps[rule->depsz].orderonly = orderonly;
   rule->deps[rule->depsz].wait = wait;
   rule->depsz++;
+#if 0
   if (can != canbuf)
   {
     free(can);
   }
+#endif
 }
 
 static inline void stiryy_set_patdep(struct stiryy *stiryy, const char *dep, int rec, int orderonly, int wait, int percent_special)
@@ -747,7 +758,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
     rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
     stirmain->lastrule_targetcapacity = newcapacity;
   }
-  rule->targets[rule->targetsz].name = stir_strdup(slashes);
+  //rule->targets[rule->targetsz].name = stir_strdup(slashes);
   rule->targets[rule->targetsz].namenodir = stir_strdup(slashesnodir);
   rule->targets[rule->targetsz].suffix = NULL;
   rule->targets[rule->targetsz].percent_special = 0;
@@ -775,15 +786,15 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
 
 static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist, int percent_special)
 {
-  char canbuf[1024];
-  char catbuf[1024];
+  //char canbuf[1024];
+  //char catbuf[1024];
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  char *can, *tmp;
+  //char *can, *tmp;
   if (!rule->ispat)
   {
     printf("rule is not pat\n");
@@ -791,6 +802,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
   }
   if (rule->patfrozen)
   {
+#if 0
     if (tgt[0] == '/')
     {
       tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
@@ -813,22 +825,25 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
     {
       free(tmp);
     }
+#endif
     if (rule->targetsz >= stirmain->lastrule_targetcapacity)
     {
       newcapacity = 2*stirmain->lastrule_targetcapacity + 1;
       rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
       stirmain->lastrule_targetcapacity = newcapacity;
     }
-    rule->targets[rule->targetsz].name = stir_strdup(can);
+    //rule->targets[rule->targetsz].name = stir_strdup(can);
     rule->targets[rule->targetsz].namenodir = stir_strdup(tgt);
     rule->targets[rule->targetsz].is_dist = !!is_dist;
     rule->targets[rule->targetsz].suffix = NULL;
     rule->targets[rule->targetsz].percent_special = percent_special;
     rule->targetsz++;
+#if 0
     if (can != canbuf)
     {
       free(can);
     }
+#endif
   }
   else
   {
@@ -837,6 +852,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
       printf("pattern rule bases cannot contain @disttgt\n");
       my_abort();
     }
+#if 0
     if (tgt[0] == '/')
     {
       tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
@@ -850,24 +866,27 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
     {
       free(tmp);
     }
+#endif
     if (rule->basesz >= stirmain->lastrule_basecapacity)
     {
       newcapacity = 2*stirmain->lastrule_basecapacity + 1;
       rule->bases = (struct tgt*)realloc(rule->bases, sizeof(*rule->bases)*newcapacity);
       stirmain->lastrule_basecapacity = newcapacity;
     }
-    rule->bases[rule->basesz].name = stir_strdup(can);
+    //rule->bases[rule->basesz].name = stir_strdup(can);
     rule->bases[rule->basesz].namenodir = stir_strdup(tgt);
     rule->basesz++;
+#if 0
     if (can != canbuf)
     {
       free(can);
     }
+#endif
   }
 }
 static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const char *curprefix, const char **tgt, int is_dist)
 {
-  char canbuf[1024];
+  //char canbuf[1024];
   char catbuf1[1024];
   char catbuf2[1024];
   if (stirmain->trial)
@@ -876,7 +895,8 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
-  char *can, *tmp1, *tmp2;
+  //char *can;
+  char *tmp1, *tmp2;
   size_t off = 0;
   if (!rule->ispat)
   {
@@ -896,23 +916,25 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
       tmp1 = pathcat2_buf(curprefix, tgt[0], catbuf1, sizeof(catbuf1));
       tmp2 = pathcat1_buf(tgt[2], catbuf2, sizeof(catbuf2));
     }
-    can = canon_buf(tmp1, canbuf, sizeof(canbuf));
+    //can = canon_buf(tmp1, canbuf, sizeof(canbuf));
     if (rule->targetsz >= stirmain->lastrule_targetcapacity)
     {
       newcapacity = 2*stirmain->lastrule_targetcapacity + 1;
       rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
       stirmain->lastrule_targetcapacity = newcapacity;
     }
-    rule->targets[rule->targetsz].name = stir_strdup(can);
+    //rule->targets[rule->targetsz].name = stir_strdup(can);
     rule->targets[rule->targetsz].namenodir = stir_strdup(tmp1+off);
     rule->targets[rule->targetsz].is_dist = !!is_dist;
     rule->targets[rule->targetsz].suffix = stir_strdup(tmp2);
     rule->targets[rule->targetsz].percent_special = 0;
     rule->targetsz++;
+#if 0
     if (can != canbuf)
     {
       free(can);
     }
+#endif
     if (tmp1 != catbuf1)
     {
       free(tmp1);
@@ -931,14 +953,17 @@ static inline void stiryy_main_set_pattgt2(struct stiryy_main *stirmain, const c
 
 static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char *curprefix, const char *tgt, int is_dist)
 {
+#if 0
   char canbuf[1024];
   char catbuf[1024];
+#endif
   if (stirmain->trial)
   {
     return;
   }
   struct stiryyrule *rule = &stirmain->rules[stirmain->rulesz - 1];
   size_t newcapacity;
+#if 0
   char *can, *tmp;
   if (tgt[0] == '/')
   {
@@ -953,22 +978,25 @@ static inline void stiryy_main_set_tgt(struct stiryy_main *stirmain, const char 
   {
     free(tmp);
   }
+#endif
   if (rule->targetsz >= stirmain->lastrule_targetcapacity)
   {
     newcapacity = 2*stirmain->lastrule_targetcapacity + 1;
     rule->targets = (struct tgt*)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
     stirmain->lastrule_targetcapacity = newcapacity;
   }
-  rule->targets[rule->targetsz].name = stir_strdup(can);
+  //rule->targets[rule->targetsz].name = stir_strdup(can);
   rule->targets[rule->targetsz].namenodir = stir_strdup(tgt);
   rule->targets[rule->targetsz].is_dist = !!is_dist;
   rule->targets[rule->targetsz].suffix = NULL;
   rule->targets[rule->targetsz].percent_special = 0;
   rule->targetsz++;
+#if 0
   if (can != canbuf)
   {
     free(can);
   }
+#endif
 }
 
 static inline void stiryy_set_pattgt(struct stiryy *stiryy, const char *tgt, int is_dist, int percent_special)
@@ -1223,6 +1251,7 @@ static inline int stiryy_check_rule(struct stiryy *stiryy)
     return 0;
   }
   struct stiryyrule *rule = &stiryy->main->rules[stiryy->main->rulesz - 1];
+  const char *prefix = rule->prefix;
   size_t j ;
   if (rule->rectgt || rule->detouch)
   {
@@ -1230,19 +1259,71 @@ static inline int stiryy_check_rule(struct stiryy *stiryy)
   }
   for (j = 0; j < rule->depsz; j++)
   {
-    const char *can = rule->deps[j].name;
+    const char *nodir = rule->deps[j].namenodir;
+    char catbuf[1024];
+    char canbuf[1024];
+    char catbuftgt[1024];
+    char canbuftgt[1024];
+    char *can, *cantgt, *tmp;
+    if (!rule->deps[j].rec)
+    {
+      continue;
+    }
+    if (nodir[0] == '/')
+    {
+      tmp = pathcat1_buf(nodir, catbuf, sizeof(catbuf));
+    }
+    else
+    {
+      tmp = pathcat2_buf(prefix, nodir, catbuf, sizeof(catbuf));
+    }
+    can = canon_buf(tmp, canbuf, sizeof(canbuf));
+    if (tmp != catbuf)
+    {
+      free(tmp);
+    }
     if (rule->deps[j].rec)
     {
       size_t i;
       for (i = 0; i < rule->targetsz; i++)
       {
-        if (   strncmp(can, rule->targets[i].name, strlen(can)) == 0
-            && (   rule->targets[i].name[strlen(can)] == '\0'
-                || rule->targets[i].name[strlen(can)] == '/'))
+        const char *tgtnodir = rule->targets[i].namenodir;
+        if (tgtnodir[0] == '/')
         {
+          tmp = pathcat1_buf(tgtnodir, catbuftgt, sizeof(catbuftgt));
+        }
+        else
+        {
+          tmp = pathcat2_buf(prefix, tgtnodir, catbuftgt, sizeof(catbuftgt));
+        }
+        cantgt = canon_buf(tmp, canbuftgt, sizeof(canbuftgt));
+        if (tmp != catbuftgt)
+        {
+          free(tmp);
+        }
+        if (   strncmp(can, cantgt, strlen(can)) == 0
+            && (   cantgt[strlen(can)] == '\0'
+                || cantgt[strlen(can)] == '/'))
+        {
+          if (can != canbuf)
+          {
+            free(can);
+          }
+          if (cantgt != canbuftgt)
+          {
+            free(cantgt);
+          }
           return -1;
         }
+        if (cantgt != canbuftgt)
+        {
+          free(cantgt);
+        }
       }
+    }
+    if (can != canbuf)
+    {
+      free(can);
     }
   }
   return 0;
@@ -1269,19 +1350,19 @@ static inline void stiryy_main_free_rules(struct stiryy_main *stirmain)
   {
     for (j = 0; j < stirmain->rules[i].depsz; j++)
     {
-      free(stirmain->rules[i].deps[j].name);
+      //free(stirmain->rules[i].deps[j].name);
       free(stirmain->rules[i].deps[j].namenodir);
       free(stirmain->rules[i].deps[j].suffix);
     }
     for (j = 0; j < stirmain->rules[i].targetsz; j++)
     {
-      free(stirmain->rules[i].targets[j].name);
+      //free(stirmain->rules[i].targets[j].name);
       free(stirmain->rules[i].targets[j].namenodir);
       free(stirmain->rules[i].targets[j].suffix);
     }
     for (j = 0; j < stirmain->rules[i].basesz; j++)
     {
-      free(stirmain->rules[i].bases[j].name);
+      //free(stirmain->rules[i].bases[j].name);
       free(stirmain->rules[i].bases[j].namenodir);
     }
     free(stirmain->rules[i].bases);

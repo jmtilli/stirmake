@@ -1360,12 +1360,31 @@ unsigned char *better_cycle_detect(int cur, int mark_traversed)
 
 void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
                         struct dep *deps, size_t depsz,
-                        int phony)
+                        int phony, const char *prefix)
 {
+  char canbuf[1024], catbuf[1024];
+  char *tmp, *can;
   size_t i, j;
   for (i = 0; i < tgtsz; i++)
   {
-    mysize_t tgtidx = stringtab_add(tgts[i].name);
+    if (tgts[i].namenodir[0] == '/')
+    {
+      tmp = pathcat1_buf(tgts[i].namenodir, catbuf, sizeof(catbuf));
+    }
+    else
+    {
+      tmp = pathcat2_buf(prefix, tgts[i].namenodir, catbuf, sizeof(catbuf));
+    }
+    can = canon_buf(tmp, canbuf, sizeof(canbuf));
+    if (tmp != catbuf)
+    {
+      free(tmp);
+    }
+    mysize_t tgtidx = stringtab_add(can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
     #if 0
     struct add_deps *entry = add_deps_ensure(tgtidx);
     if (phony)
@@ -1377,7 +1396,24 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
     for (j = 0; j < depsz; j++)
     {
       struct add_dep *add;
-      mysize_t depidx = stringtab_add(deps[j].name);
+      if (deps[j].namenodir[0] == '/')
+      {
+        tmp = pathcat1_buf(deps[j].namenodir, catbuf, sizeof(catbuf));
+      }
+      else
+      {
+        tmp = pathcat2_buf(prefix, deps[j].namenodir, catbuf, sizeof(catbuf));
+      }
+      can = canon_buf(tmp, canbuf, sizeof(canbuf));
+      if (tmp != catbuf)
+      {
+        free(tmp);
+      }
+      mysize_t depidx = stringtab_add(can);
+      if (can != canbuf)
+      {
+        free(can);
+      }
       #if 0
       add = add_dep_ensure(entry, depidx, (mysize_t)-1);
       (void)add;
@@ -1862,6 +1898,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
               char *prefix, mysize_t scopeidx, int lineno,
               const char *meat)
 {
+  char catbuf[1024], canbuf[1024];
   struct rule *rule;
   size_t i;
 
@@ -1878,7 +1915,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
   if (debug)
   {
     print_indent();
-    printf("Rule %s (%s): add_rule\n", tgts[0].name, prefix);
+    printf("Rule %s (%s): add_rule\n", tgts[0].namenodir, prefix);
   }
   if (rules_size >= rules_capacity)
   {
@@ -1914,21 +1951,59 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
 
   for (i = 0; i < tgtsz; i++)
   {
-    mysize_t tgtidx = stringtab_add(tgts[i].name);
-    mysize_t tgtidxnodir = stringtab_add(tgts[i].namenodir);
+    char *tmp, *can;
+    mysize_t tgtidx, tgtidxnodir;
+    if (tgts[i].namenodir[0] == '/')
+    {
+      tmp = pathcat1_buf(tgts[i].namenodir, catbuf, sizeof(catbuf));
+    }
+    else
+    {
+      tmp = pathcat2_buf(prefix, tgts[i].namenodir, catbuf, sizeof(catbuf));
+    }
+    can = canon_buf(tmp, canbuf, sizeof(canbuf));
+    if (tmp != catbuf)
+    {
+      free(tmp);
+    }
+    tgtidx = stringtab_add(can);
+    tgtidxnodir = stringtab_add(tgts[i].namenodir);
     ins_tgt(rule, tgtidx, tgtidxnodir, !!dist, prefix, lineno);
     ins_ruleid_by_tgt(tgtidx, rule->ruleid, prefix, lineno);
+    if (can != canbuf)
+    {
+      free(can);
+    }
   }
   for (i = 0; i < depsz; i++)
   {
-    mysize_t nameidx = stringtab_add(deps[i].name);
-    mysize_t nameidxnodir = stringtab_add(deps[i].namenodir);
+    char *tmp, *can;
+    mysize_t nameidx, nameidxnodir;
+    if (deps[i].namenodir[0] == '/')
+    {
+      tmp = pathcat1_buf(deps[i].namenodir, catbuf, sizeof(catbuf));
+    }
+    else
+    {
+      tmp = pathcat2_buf(prefix, deps[i].namenodir, catbuf, sizeof(catbuf));
+    }
+    can = canon_buf(tmp, canbuf, sizeof(canbuf));
+    if (tmp != catbuf)
+    {
+      free(tmp);
+    }
+    nameidx = stringtab_add(can);
+    nameidxnodir = stringtab_add(deps[i].namenodir);
     if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1, 0) == 0)
     {
       //printf("<INS>\n");
       ins_ruleid_by_dep2(nameidx, rule->ruleid, 0);
       //printf("</INS>\n");
       //ins_ruleid_by_dep(nameidx, rule->ruleid);
+    }
+    if (can != canbuf)
+    {
+      free(can);
     }
   }
 }
@@ -7121,7 +7196,7 @@ int main(int argc, char **argv)
       }
       if (stirmain.rules[i].ispat)
       {
-        char *prefix = stirmain.rules[i].prefix;
+        //char *prefix = stirmain.rules[i].prefix;
         size_t j, k;
         if (stirmain.rules[i].targetsz < 1)
         {
@@ -7129,7 +7204,7 @@ int main(int argc, char **argv)
         }
         for (j = 0; j < stirmain.rules[i].basesz; j++)
         {
-          char *base = stirmain.rules[i].bases[j].name;
+          //char *base = stirmain.rules[i].bases[j].name;
           char *basenodir = stirmain.rules[i].bases[j].namenodir;
           char *tgt = stirmain.rules[i].targets[0].namenodir;
           char *suffix = stirmain.rules[i].targets[0].suffix;
@@ -7165,7 +7240,7 @@ int main(int argc, char **argv)
             meat = malloc(meatsz+1);
             memcpy(meat, basenodir+(loc-tgt), meatsz);
             meat[meatsz] = '\0';
-            tgts[0].name = base;
+            //tgts[0].name = base;
             tgts[0].namenodir = basenodir;
           }
           else if (suffix)
@@ -7186,7 +7261,7 @@ int main(int argc, char **argv)
             meat = malloc(meatsz+1);
             memcpy(meat, basenodir+strlen(tgt), meatsz);
             meat[meatsz] = '\0';
-            tgts[0].name = base;
+            //tgts[0].name = base;
             tgts[0].namenodir = basenodir;
           }
           else
@@ -7200,8 +7275,8 @@ int main(int argc, char **argv)
             char *suffix = stirmain.rules[i].targets[k].suffix;
             size_t exptgtsz; // expanded target size
             char *exptgt;
-            char catbuf[1024];
-            char *namedir;
+            //char catbuf[1024];
+            //char *namedir;
             if (stirmain.rules[i].targets[k].percent_special && strcnt(tgt, '%') == 1)
             {
               loc = strchr(tgt, '%');
@@ -7217,13 +7292,15 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedir = pathcat2_buf(prefix, exptgt, catbuf, sizeof(catbuf));
-              tgts[k].name = canon(namedir);
+              //namedir = pathcat2_buf(prefix, exptgt, catbuf, sizeof(catbuf));
+              //tgts[k].name = canon(namedir);
               tgts[k].namenodir = exptgt;
+#if 0
               if (namedir != catbuf)
               {
                 free(namedir);
               }
+#endif
             }
             else if (suffix)
             {
@@ -7240,13 +7317,15 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedir = pathcat2_buf(prefix, exptgt, catbuf, sizeof(catbuf));
-              tgts[k].name = canon(namedir);
+              //namedir = pathcat2_buf(prefix, exptgt, catbuf, sizeof(catbuf));
+              //tgts[k].name = canon(namedir);
               tgts[k].namenodir = exptgt;
+#if 0
               if (namedir != catbuf)
               {
                 free(namedir);
               }
+#endif
             }
             else
             {
@@ -7256,13 +7335,13 @@ int main(int argc, char **argv)
           }
           for (k = 0; k < stirmain.rules[i].depsz; k++)
           {
-            char catbuf[1024];
+            //char catbuf[1024];
             char *dep = stirmain.rules[i].deps[k].namenodir;
             char *suffix = stirmain.rules[i].deps[k].suffix;
             //char *dep = stirmain.rules[i].deps[k].name;
             size_t expdepsz; // expanded target size
             char *expdep;
-            char *namedir;
+            //char *namedir;
             if (suffix)
             {
               size_t strlen_dep = strlen(dep);
@@ -7278,16 +7357,18 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedir = pathcat2_buf(prefix, expdep, catbuf, sizeof(catbuf));
-              deps[k].name = canon(namedir);
+              //namedir = pathcat2_buf(prefix, expdep, catbuf, sizeof(catbuf));
+              //deps[k].name = canon(namedir);
               deps[k].namenodir = expdep;
               deps[k].rec = stirmain.rules[i].deps[k].rec;
               deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
               deps[k].wait = stirmain.rules[i].deps[k].wait;
+#if 0
               if (namedir != catbuf)
               {
                 free(namedir);
               }
+#endif
             }
             else
             {
@@ -7303,13 +7384,15 @@ int main(int argc, char **argv)
               }
               if (loc == NULL)
               {
-                char *prefixdep;
+                //char *prefixdep;
+#if 0
                 prefixdep = pathcat2_buf(prefix, dep, catbuf, sizeof(catbuf));
-                deps[k].name = canon(prefixdep);
+                //deps[k].name = canon(prefixdep);
                 if (prefixdep != catbuf)
                 {
                   free(prefixdep);
                 }
+#endif
                 deps[k].namenodir = stirmain.rules[i].deps[k].namenodir;
                 deps[k].rec = stirmain.rules[i].deps[k].rec;
                 deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
@@ -7328,16 +7411,18 @@ int main(int argc, char **argv)
               {
                 my_abort();
               }
-              namedir = pathcat2_buf(prefix, expdep, catbuf, sizeof(catbuf));
-              deps[k].name = canon(namedir);
+              //namedir = pathcat2_buf(prefix, expdep, catbuf, sizeof(catbuf));
+              //deps[k].name = canon(namedir);
               deps[k].namenodir = expdep;
               deps[k].rec = stirmain.rules[i].deps[k].rec;
               deps[k].orderonly = stirmain.rules[i].deps[k].orderonly;
               deps[k].wait = stirmain.rules[i].deps[k].wait;
+#if 0
               if (namedir != catbuf)
               {
                 free(namedir);
               }
+#endif
             }
           }
           if (   stirmain.rules[i].iscleanhook
@@ -7413,7 +7498,8 @@ int main(int argc, char **argv)
         printf("ADDING DEP\n");
       }
       add_dep_from_rules(stirmain.rules[i].targets, stirmain.rules[i].targetsz,
-                         stirmain.rules[i].deps, stirmain.rules[i].depsz, 0);
+                         stirmain.rules[i].deps, stirmain.rules[i].depsz, 0,
+                         stirmain.rules[i].prefix);
     }
   }
   if (!ruleid_first_set && optind == argc)

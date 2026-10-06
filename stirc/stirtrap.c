@@ -1007,15 +1007,18 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   for (i = 0; i < tgtsz; i++)
   {
     struct abce_mb *mb = &tgtres->u.area->u.ar.mbs[i];
-    size_t namsz;
+    //size_t namsz;
     struct abce_mb *attr1;
+#if 0
     char *nam;
     char *can;
+#endif
     mbstr = NULL;
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
       my_abort();
     }
+#if 0
     namsz = strlen(abce_mba_str(mbstr->u.area)) + strlen(prefix) + 2;
     nam = malloc(namsz); // FIXME leaks
     if (snprintf(nam, namsz, "%s/%s", prefix, abce_mba_str(mbstr->u.area)) >= (int)namsz)
@@ -1026,6 +1029,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     yytgts[i].name = stir_strdup(can);
     free(nam);
     free(can);
+#endif
     yytgts[i].namenodir = stir_strdup(abce_mba_str(mbstr->u.area));
     yytgts[i].suffix = NULL; // FIXME what should be given?
     yytgts[i].is_dist = 0;
@@ -1038,14 +1042,17 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
   {
     struct abce_mb *mb = &depres->u.area->u.ar.mbs[i];
     struct abce_mb *attr1;
+#if 0
     size_t namsz;
     char *nam;
     char *can;
+#endif
     mbstr = NULL;
     if (abce_tree_get_str(abce, &mbstr, mb, &abce->cachebase[name]) != 0)
     {
       my_abort();
     }
+#if 0
     namsz = strlen(abce_mba_str(mbstr->u.area)) + strlen(prefix) + 2;
     nam = malloc(namsz); // FIXME leaks
     if (snprintf(nam, namsz, "%s/%s", prefix, abce_mba_str(mbstr->u.area)) >= (int)namsz)
@@ -1056,6 +1063,7 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
     yydeps[i].name = stir_strdup(can);
     free(can);
     free(nam);
+#endif
     yydeps[i].namenodir = stir_strdup(abce_mba_str(mbstr->u.area));
     yydeps[i].suffix = NULL; // FIXME what should be given?
     yydeps[i].rec = 0;
