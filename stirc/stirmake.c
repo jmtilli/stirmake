@@ -3184,7 +3184,7 @@ int do_exec(int ruleid)
         {
           continue;
         }
-        if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || sttable[e->nameidx].is_remade)
+        if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || staux[e->nameidx].is_remade)
         {
           if (do_trace)
           {
@@ -4029,9 +4029,9 @@ void mark_executed(int ruleid, int was_actually_executed)
     }
     if (dry_run && was_actually_executed)
     {
-      sttable[e->tgtidx].is_remade = 1;
+      staux[e->tgtidx].is_remade = 1;
     }
-    if (!dry_run && !touchmode && was_actually_executed && sttable[e->tgtidx].is_cdepwatch)
+    if (!dry_run && !touchmode && was_actually_executed && staux[e->tgtidx].is_cdepwatch)
     {
       size_t j, k;
       char *tgt = (e->tgtidxnodir != (mysize_t)-1) ? sttable[e->tgtidxnodir].s : neighpath(sttable[r->diridx].s, sttable[e->tgtidx].s); // RFE is only the second condition after ':' enough?
@@ -6348,6 +6348,12 @@ int main(int argc, char **argv)
     errxit("Can't mmap sttable");
     exit(2);
   }
+  staux = stir_do_mmap_madvise(st_cap*sizeof(*staux));
+  if (staux == NULL)
+  {
+    errxit("Can't mmap staux");
+    exit(2);
+  }
 
   if (my_malloc_init())
   {
@@ -7448,7 +7454,7 @@ int main(int argc, char **argv)
     {
       free(fnamecanon);
     }
-    sttable[stidx].is_cdepwatch = 1;
+    staux[stidx].is_cdepwatch = 1;
     //printf("Is_cdepwatch %s\n", sttable[stidx].s);
     f = fopen(fname, "r");
     if (!f)
@@ -7823,7 +7829,7 @@ int main(int argc, char **argv)
     printf("  dbe: %zu %zu\n", (size_t)dbecnt, dbecnt*(size_t)sizeof(struct dbe));
     printf("  tsdbe: %zu %zu\n", (size_t)tsdbecnt, tsdbecnt*(size_t)sizeof(struct tsdbe));
     printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
-    printf("  stringtab: %zu %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)));
+    printf("  stringtab: %zu %zu + %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)), (size_t)(st_cap*sizeof(*staux)));
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));
     printf("  stirdep: %zu %zu\n", (size_t)stirdep_cnt, (size_t)(stirdep_cnt*sizeof(struct stirdep)));

@@ -59,12 +59,17 @@ static inline int stringtabentry_cmp_sym(struct abce_rb_tree_node *n1, struct ab
 
 struct sttable_entry {
   char *s;
-  unsigned is_remade:1;
-  unsigned is_cdepwatch:1;
+  //unsigned is_remade:1;
+  //unsigned is_cdepwatch:1;
+};
+struct staux_entry {
+  uint8_t is_remade:1;
+  uint8_t is_cdepwatch:1;
 };
 
 //extern struct abce_rb_tree_nocmp st[STRINGTAB_SIZE];
 extern struct sttable_entry *sttable;
+extern struct staux_entry *staux;
 extern mysize_t st_cap;
 extern mysize_t st_cnt;
 extern mysize_t stringtab_cnt;
