@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include "canon.h"
 #include "stirutils.h"
+#include "stiryy.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,12 +18,10 @@ extern "C" {
 
 struct incyyrule {
   char **deps;
-  size_t depsz;
-  size_t depcapacity;
-  char **depsnodir;
+  //char **depsnodir;
   char **targets;
-  size_t targetsz;
-  size_t targetcapacity;
+  mysize_t depsz;
+  mysize_t targetsz;
 };
 
 struct incyy {
@@ -30,8 +29,10 @@ struct incyy {
   size_t rulesz;
   size_t rulecapacity;
   char *prefix;
-  int auto_target;
   char *fnamenodir;
+  mysize_t depcapacity;
+  mysize_t targetcapacity;
+  unsigned auto_target:1;
 };
 #define INCYY_EMPTY {.rules = NULL}
 
@@ -59,15 +60,15 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
     free(tmp);
   }
 
-  if (rule->depsz >= rule->depcapacity)
+  if (rule->depsz >= incyy->depcapacity)
   {
-    newcapacity = 2*rule->depcapacity + 1;
+    newcapacity = 2*incyy->depcapacity + 1;
     rule->deps = (char**)realloc(rule->deps, sizeof(*rule->deps)*newcapacity);
-    rule->depsnodir = (char**)realloc(rule->depsnodir, sizeof(*rule->depsnodir)*newcapacity);
-    rule->depcapacity = newcapacity;
+    //rule->depsnodir = (char**)realloc(rule->depsnodir, sizeof(*rule->depsnodir)*newcapacity);
+    incyy->depcapacity = newcapacity;
   }
   rule->deps[rule->depsz] = stir_strdup(can);
-  rule->depsnodir[rule->depsz] = stir_strdup(dep);
+  //rule->depsnodir[rule->depsz] = stir_strdup(dep);
   rule->depsz++;
   if (can != canbuf)
   {
@@ -97,11 +98,11 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
     free(tmp);
   }
 
-  if (rule->targetsz >= rule->targetcapacity)
+  if (rule->targetsz >= incyy->targetcapacity)
   {
-    newcapacity = 2*rule->targetcapacity + 1;
+    newcapacity = 2*incyy->targetcapacity + 1;
     rule->targets = (char**)realloc(rule->targets, sizeof(*rule->targets)*newcapacity);
-    rule->targetcapacity = newcapacity;
+    incyy->targetcapacity = newcapacity;
   }
   rule->targets[rule->targetsz++] = stir_strdup(can);
   if (can != canbuf)
@@ -120,11 +121,11 @@ static inline void incyy_emplace_rule(struct incyy *incyy)
     incyy->rulecapacity = newcapacity;
   }
   incyy->rules[incyy->rulesz].depsz = 0;
-  incyy->rules[incyy->rulesz].depcapacity = 0;
+  incyy->depcapacity = 0;
   incyy->rules[incyy->rulesz].deps = NULL;
-  incyy->rules[incyy->rulesz].depsnodir = NULL;
+  //incyy->rules[incyy->rulesz].depsnodir = NULL;
   incyy->rules[incyy->rulesz].targetsz = 0;
-  incyy->rules[incyy->rulesz].targetcapacity = 0;
+  incyy->targetcapacity = 0;
   incyy->rules[incyy->rulesz].targets = NULL;
   incyy->rulesz++;
   if (incyy->auto_target)
@@ -142,14 +143,14 @@ static inline void incyy_free(struct incyy *incyy)
     for (j = 0; j < incyy->rules[i].depsz; j++)
     {
       free(incyy->rules[i].deps[j]);
-      free(incyy->rules[i].depsnodir[j]);
+      //free(incyy->rules[i].depsnodir[j]);
     }
     for (j = 0; j < incyy->rules[i].targetsz; j++)
     {
       free(incyy->rules[i].targets[j]);
     }
     free(incyy->rules[i].deps);
-    free(incyy->rules[i].depsnodir);
+    //free(incyy->rules[i].depsnodir);
     free(incyy->rules[i].targets);
   }
   free(incyy->rules);
