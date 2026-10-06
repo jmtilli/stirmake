@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
