@@ -3,13 +3,70 @@
 #include "incyy.h"
 #include "mygetline.h"
 
+static inline size_t whitespacespn(const char *str)
+{
+  size_t len = 0;
+  for (;;)
+  {
+    if (str[len] == '\0' || (str[len] != ' ' && str[len] != '\t')) return len;
+    len++;
+  }
+}
+
+static inline int inset_ascii(char ch)
+{
+  unsigned char uch = (unsigned char)ch;
+  uint64_t set = 0x400000100000601ULL;
+  if (uch == '\\') return 1;
+  if (uch >= 64) return 0;
+  return (set>>uch)&1;
+}
+static inline int inset_set(char ch, const uint64_t set[4])
+{
+  unsigned char uch = (unsigned char)ch;
+  return (set[uch/64]>>(uch%64))&1;
+}
+
+static inline size_t setcspn_ascii(const char *str)
+{
+  size_t len = 0;
+  for (;;)
+  {
+    if (inset_ascii(str[len])) return len;
+    if (inset_ascii(str[len+1])) return len+1;
+    if (inset_ascii(str[len+2])) return len+2;
+    if (inset_ascii(str[len+3])) return len+3;
+    if (inset_ascii(str[len+4])) return len+4;
+    if (inset_ascii(str[len+5])) return len+5;
+    if (inset_ascii(str[len+6])) return len+6;
+    if (inset_ascii(str[len+7])) return len+7;
+    len += 8;
+  }
+}
+static inline size_t setcspn_set(const char *str, const uint64_t set[4])
+{
+  size_t len = 0;
+  for (;;)
+  {
+    if (inset_set(str[len], set)) return len;
+    if (inset_set(str[len+1], set)) return len+1;
+    if (inset_set(str[len+2], set)) return len+2;
+    if (inset_set(str[len+3], set)) return len+3;
+    if (inset_set(str[len+4], set)) return len+4;
+    if (inset_set(str[len+5], set)) return len+5;
+    if (inset_set(str[len+6], set)) return len+6;
+    if (inset_set(str[len+7], set)) return len+7;
+    len += 8;
+  }
+}
+
 static inline size_t myspn(const char *str)
 {
   size_t len = 0;
   for (;;)
   {
     //printf("Iter: %s\n", str+len);
-    len += strspn(str+len, "\t ");
+    len += whitespacespn(str+len);
     if (len && str[len] == '\\' && str[len+1] == '\n')
     {
       len += 2;
@@ -19,13 +76,30 @@ static inline size_t myspn(const char *str)
     return len;
   }
 }
-static inline size_t mycspn(const char *str, int *had_escapes)
+static inline size_t mycspn_ascii(const char *str, int *had_escapes)
 {
   size_t len = 0;
   *had_escapes = 0;
   for (;;)
   {
-    len += strcspn(&str[len], "\t \n:\\");
+    len += setcspn_ascii(&str[len]);
+    if (str[len] == '\\' && str[len+1])
+    {
+      *had_escapes = 1;
+      len += 2;
+      continue;
+    }
+    return len;
+  }
+}
+static inline size_t mycspn_set(const char *str, int *had_escapes,
+                                const uint64_t set[4])
+{
+  size_t len = 0;
+  *had_escapes = 0;
+  for (;;)
+  {
+    len += setcspn_set(&str[len], set);
     if (str[len] == '\\' && str[len+1])
     {
       *had_escapes = 1;
@@ -36,7 +110,12 @@ static inline size_t mycspn(const char *str, int *had_escapes)
   }
 }
 
-int handle_line(char *line, struct incyy *incyy)
+static inline int is_ascii(void)
+{
+  return ('\t' == 9) && (' ' == 32) && ('\n' == 10) && (':' == 58);
+}
+
+int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
 {
   size_t start;
   size_t len;
@@ -52,7 +131,14 @@ int handle_line(char *line, struct incyy *incyy)
   incyy_emplace_rule(incyy);
   while (!had_colon)
   {
-    len = mycspn(line+start, &had_escapes);
+    if (is_ascii())
+    {
+      len = mycspn_ascii(line+start, &had_escapes);
+    }
+    else
+    {
+      len = mycspn_set(line+start, &had_escapes, set);
+    }
     if (line[start+len] == ':')
     {
       had_colon = 1;
@@ -94,7 +180,14 @@ int handle_line(char *line, struct incyy *incyy)
   }
   while (!had_end)
   {
-    len = mycspn(line+start, &had_escapes);
+    if (is_ascii())
+    {
+      len = mycspn_ascii(line+start, &had_escapes);
+    }
+    else
+    {
+      len = mycspn_set(line+start, &had_escapes, set);
+    }
     if (line[start+len] == ':')
     {
       return -1;
@@ -145,6 +238,13 @@ int incyymineparse(FILE *f, struct incyy *incyy)
   size_t n2 = 0;
   ssize_t nread;
   ssize_t nread2;
+  uint64_t set[4] = {0};
+  set['\\'/64] |= 1ULL<<('\\'%64);
+  set['\t'/64] |= 1ULL<<('\t'%64);
+  set['\n'/64] |= 1ULL<<('\n'%64);
+  set[' '/64] |= 1ULL<<(' '%64);
+  set[':'/64] |= 1ULL<<(':'%64);
+  set[0] |= 1;
   while ((nread = mygetline(&lineptr, &n, f)) >= 0)
   {
 #if 0
@@ -223,7 +323,7 @@ int incyymineparse(FILE *f, struct incyy *incyy)
         }
       }
     }
-    if (handle_line(lineptr, incyy) != 0)
+    if (handle_line(lineptr, incyy, set) != 0)
     {
       free(lineptr);
       free(lineptr2);
