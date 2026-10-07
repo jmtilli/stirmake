@@ -22,7 +22,7 @@ char *pathcat1_buf(const char *old, char *buf, size_t bufsz)
       neu = malloc(strlen_old + 1);
     }
   }
-  snprintf(neu, strlen_old + 1, "%s", old);
+  memcpy(neu, old, strlen_old+1);
   return neu;
 }
 char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
@@ -43,7 +43,9 @@ char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
       neu = malloc(bufneed);
     }
   }
-  snprintf(neu, bufneed, "%s/%s", old, old2);
+  memcpy(neu, old, strlen_old);
+  neu[strlen_old] = '/';
+  memcpy(neu+strlen_old+1, old2, strlen_old2+1);
   return neu;
 }
 
