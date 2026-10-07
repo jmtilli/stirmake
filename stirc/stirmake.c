@@ -5222,13 +5222,13 @@ int merge_db_v2(void)
       }
       putc_unlocked('"', f);
       file_escape_string(f, sttable[tsdbe->stringtabidx].s);
-      fputs("\" = ", f);
-      fprintf(f, "%lld", (long long)tsdbe->sz);
-      putc_unlocked(' ', f);
-      fprintf(f, "%lld", (long long)tsdbe->ts.tv_sec);
-      putc_unlocked(' ', f);
-      fprintf(f, "%lld", (long long)tsdbe->ts.tv_nsec);
-      putc_unlocked('\n', f);
+      //fputs("\" = ", f);
+      fprintf(f, "\" = %lld %lld %lld\n", (long long)tsdbe->sz, (long long)tsdbe->ts.tv_sec, (long long)tsdbe->ts.tv_nsec);
+      //putc_unlocked(' ', f);
+      //fprintf(f, "%lld", (long long)tsdbe->ts.tv_sec);
+      //putc_unlocked(' ', f);
+      //fprintf(f, "%lld", (long long)tsdbe->ts.tv_nsec);
+      //putc_unlocked('\n', f);
       continue;
     }
     // dir tgt:
@@ -5242,13 +5242,13 @@ int merge_db_v2(void)
     }
     putc_unlocked('"', f);
     file_escape_string(f, sttable[tsdbe->stringtabidx].s);
-    fputs("\" = ", f);
-    fprintf(f, "%lld", (long long)tsdbe->sznew);
-    putc_unlocked(' ', f);
-    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_sec);
-    putc_unlocked(' ', f);
-    fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec);
-    putc_unlocked('\n', f);
+    //fputs("\" = ", f);
+    fprintf(f, "\" = %lld %lld %lld\n", (long long)tsdbe->sznew, (long long)tsdbe->tsnew.tv_sec, (long long)tsdbe->tsnew.tv_nsec);
+    //putc_unlocked(' ', f);
+    //fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_sec);
+    //putc_unlocked(' ', f);
+    //fprintf(f, "%lld", (long long)tsdbe->tsnew.tv_nsec);
+    //putc_unlocked('\n', f);
   }
   if (ferror(f))
   {
