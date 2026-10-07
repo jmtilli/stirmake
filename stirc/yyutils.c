@@ -825,35 +825,35 @@ void file_escape_string(FILE *f, const char *str)
   for (ptr = str; *ptr;)
   {
     unsigned char uch = (unsigned char)*ptr++;
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
 
     uch = (unsigned char)*(ptr++);
-    if (acceptchars[uch]) putc(uch, f);
+    if (acceptchars[uch]) putc_unlocked(uch, f);
     else if (file_escape_string_slowpath(f, uch)) break;
   }
 }
