@@ -4922,10 +4922,8 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
 FILE *dbf = NULL;
 int dbf_did_exist = 0;
 
-void load_db(void)
+void load_db_part1(void)
 {
-  struct dbyy dbyy = DBYY_EMPTY;
-  size_t i;
   struct flock fl = {.l_type=0};
   int ret;
   int dbfd;
@@ -4957,6 +4955,14 @@ void load_db(void)
     fprintf(stderr, "stirmake: *** Can't lock DB. Other stirmake running? Exiting.\n");
     exit(2);
   }
+}
+void load_db_part2(void)
+{
+  struct dbyy dbyy = DBYY_EMPTY;
+  size_t i;
+  int ret;
+  int dbfd;
+  dbfd = fileno(dbf);
   ret = dbyydoparse(dbf, &dbyy);
   if (!test && ftruncate(dbfd, 0) != 0)
   {
@@ -7066,6 +7072,7 @@ int main(int argc, char **argv)
   }
 
   linked_list_head_init(&tsdb.ll);
+  load_db_part1();
   abce_init_opts(&abce, 1);
 #ifdef WITH_LUA
   abce_set_luaopen_caller(&abce, luaopen_stir);
@@ -7117,7 +7124,7 @@ int main(int argc, char **argv)
     errxit("Can't mmap staux");
     exit(2);
   }
-  load_db();
+  load_db_part2();
 
   stack_conf();
 
