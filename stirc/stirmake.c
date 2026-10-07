@@ -18,7 +18,6 @@
 #include <time.h>
 #include <stdarg.h>
 #include "stircommon.h"
-#include "git.h"
 #include "const.h"
 #include "bypid.h"
 #include "adddep.h"
@@ -4315,7 +4314,7 @@ void stack_conf(void)
 
 void version(char *argv0)
 {
-  fprintf(stderr, "Stirmake %s, %s\n", gitversion, gitshas[0]);
+  fprintf(stderr, "Stirmake %s, %s\n", gitversion_get(), gitversions_head());
   fprintf(stderr, "Copyright (C) 2017-19 Aalto University, 2018, 2020-2026 Juha-Matti Tilli\n");
   fprintf(stderr, "Logo (C) 2019 Juha-Matti Tilli, All right reserved, license not applicable\n");
   fprintf(stderr, "\n");
@@ -4340,16 +4339,6 @@ void version(char *argv0)
 "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\n"
 "FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\n"
 "IN THE SOFTWARE.\n");
-  exit(0);
-}
-
-void gitversions(char *argv0)
-{
-  size_t i;
-  for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
-  {
-    printf("%s\n", gitshas[i]);
-  }
   exit(0);
 }
 

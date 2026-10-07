@@ -32,7 +32,6 @@ typedef void *yyscan_t;
 #include "abce/amyplan.h"
 #include "abce/abceopcodes.h"
 #include "abce/amyplanlocvarctx.h"
-#include "git.h"
 #include <arpa/inet.h>
 #include <stdarg.h>
 
@@ -699,15 +698,8 @@ custom_expr0:
   // built-in constructs inside these, with the previous FUTURE_BUILTIN rule.
   if (amyplanyy_do_emit(amyplanyy))
   {
-    int i;
     int found = 0;
-    for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
-    {
-      if (strcmp($3.str, gitshas[i]) == 0 && strlen($3.str) == $3.sz)
-      {
-        found = 1;
-      }
-    }
+    found = gitshas_has($3.str, $3.sz);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, found);
   }
@@ -1286,15 +1278,8 @@ custom_rule:
 }
 | VERSION OPEN_PAREN STRING_LITERAL CLOSE_PAREN NEWLINE
 {
-  int i;
   int found = 0;
-  for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
-  {
-    if (strcmp($3.str, gitshas[i]) == 0 && strlen($3.str) == $3.sz)
-    {
-      found = 1;
-    }
-  }
+  found = gitshas_has($3.str, $3.sz);
   if (!found)
   {
     fprintf(stderr, "Incompatible version of stirmake installed, expected to contain git SHA1:\n");

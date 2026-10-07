@@ -9,6 +9,7 @@
 #include "yyutils.h"
 #include "stirutils.h"
 #include "pathmax.h"
+#include "git.h"
 
 typedef void *yyscan_t;
 extern int stiryyparse(yyscan_t scanner, struct stiryy *stiryy);
@@ -16,6 +17,42 @@ extern int stiryylex_init(yyscan_t *scanner);
 extern void stiryyset_in(FILE *in_str, yyscan_t yyscanner);
 extern void stiryyset_extra (unsigned int user_defined, yyscan_t yyscanner);
 extern int stiryylex_destroy(yyscan_t yyscanner);
+
+int gitshas_has(const char *needle, size_t needle_len)
+{
+  size_t i;
+  if (strlen(needle) != needle_len)
+  {
+    return 0;
+  }
+  for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
+  {
+    if (strcmp(needle, gitshas[i]) == 0)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+const char *gitversions_head(void)
+{
+  return gitshas[0];
+}
+const char *gitversion_get(void)
+{
+  return gitversion;
+}
+
+void gitversions(char *argv0)
+{
+  size_t i;
+  for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
+  {
+    printf("%s\n", gitshas[i]);
+  }
+  exit(0);
+}
 
 int stiryydoparse(FILE *filein, struct stiryy *stiryy)
 {
