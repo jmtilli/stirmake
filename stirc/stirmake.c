@@ -7548,12 +7548,12 @@ int main(int argc, char **argv)
       errxit("Can't read cdepincludes from %s", fname);
       my_abort();
     }
-    free(fname);
     if (incyymineparse(f, &incyy))
     {
       errxit("Invalid cdepincludes format in %s", fname);
       my_abort();
     }
+    free(fname);
     //for (auto it = incyy.rules; it != incyy.rules + incyy.rulesz; it++)
     for (j = 0; j < incyy.rulesz; j++)
     {
