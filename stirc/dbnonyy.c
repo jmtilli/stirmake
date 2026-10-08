@@ -32,14 +32,16 @@ static struct escaped_string dbyy_escape_string(char *orig, char **strendptr)
   char *result = NULL;
   struct escaped_string resultstruct;
   size_t j = 0;
-  size_t capacity = 0;
+  //size_t capacity = 0;
   size_t i = 1;
   if (strendptr)
   {
     *strendptr = NULL;
   }
+  buf = orig;
   while (orig[i] != '"' && orig[i])
   {
+#if 0
     //if (j+2 >= capacity)
     if (j+7 >= capacity)
     {
@@ -58,6 +60,7 @@ static struct escaped_string dbyy_escape_string(char *orig, char **strendptr)
       }
       buf = buf2;
     }
+#endif
     if (orig[i] != '\\')
     {
       buf[j++] = orig[i++];
@@ -142,6 +145,7 @@ static struct escaped_string dbyy_escape_string(char *orig, char **strendptr)
       i += 2;
     }
   }
+#if 0
   if (j >= capacity)
   {
     char *buf2;
@@ -155,17 +159,19 @@ static struct escaped_string dbyy_escape_string(char *orig, char **strendptr)
     }
     buf = buf2;
   }
+#endif
   if (!orig[i])
   {
-    free(buf);
+    //free(buf);
     resultstruct.str = NULL;
     return resultstruct;
   }
   resultstruct.sz = j;
   buf[j++] = '\0';
-  result = memdup(buf, j);
+  result = buf;
+  //result = memdup(buf, j);
   resultstruct.str = result;
-  free(buf);
+  //free(buf);
   if (strendptr)
   {
     *strendptr = &orig[i+1];
@@ -190,7 +196,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
     int two_strings_already = 0;
     int colon = 0;
     int numcnt = 0;
-    free(first_string);
+    //free(first_string);
     first_string = NULL;
     if (first_line)
     {
@@ -264,8 +270,8 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
 	    //printf("First string: %s\n", first_string);
 	    //printf("Second string: %s\n", es.str);
 	    dbyy_emplace_rule(dbyy, first_string, es.str);
-	    free(es.str);
-	    free(first_string);
+	    //free(es.str);
+	    //free(first_string);
 	    first_string = NULL;
 	    two_strings_already = 1;
 	  }
@@ -278,7 +284,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
 	{
 	  //printf("ARG: %s\n", es.str);
 	  dbyy_add_arg(dbyy, es.str);
-	  free(es.str);
+	  //free(es.str);
 	}
       }
       else if (lineptr[len] == ':')
@@ -345,7 +351,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
 	else if (numcnt == 3)
 	{
 	  dbyy_emplace_tsdb(dbyy, first_string, nums[0], nums[1], nums[2]);
-	  free(first_string);
+	  //free(first_string);
 	  first_string = NULL;
 	}
 	else if (first_string == NULL && numcnt == 0)
