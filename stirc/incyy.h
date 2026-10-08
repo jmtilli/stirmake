@@ -29,7 +29,9 @@ struct incyy {
   size_t rulesz;
   size_t rulecapacity;
   char *prefix;
+  size_t prefixlen;
   char *fnamenodir;
+  size_t fnamenodirlen;
   mysize_t depcapacity;
   mysize_t targetcapacity;
   unsigned auto_target:1;
@@ -38,23 +40,29 @@ struct incyy {
 
 void my_abort(void);
 
-static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
+static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t len)
 {
   char canbuf[1024];
   char catbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
   char *can, *tmp;
+  const char *ctmp;
+  size_t tmplen;
 
-  if (dep[0] == '/')
+  if (dep[0] == '/' || (incyy->prefixlen == 1 && incyy->prefix[0] == '.'))
   {
-    tmp = pathcat1_buf(dep, catbuf, sizeof(catbuf));
+    tmp = catbuf;
+    ctmp = dep;
+    tmplen = len;
   }
   else
   {
-    tmp = pathcat2_buf(incyy->prefix, dep, catbuf, sizeof(catbuf));
+    tmp = pathcat2_buflen(incyy->prefix, incyy->prefixlen, dep, len, catbuf, sizeof(catbuf));
+    ctmp = tmp;
+    tmplen = incyy->prefixlen+1+len;
   }
-  can = canon_buf(tmp, canbuf, sizeof(canbuf));
+  can = canon_buflen(ctmp, tmplen, canbuf, sizeof(canbuf));
   if (tmp != catbuf)
   {
     free(tmp);
@@ -76,23 +84,29 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep)
   }
 }
 
-static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt)
+static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t len)
 {
   char canbuf[1024];
   char catbuf[1024];
   struct incyyrule *rule = &incyy->rules[incyy->rulesz - 1];
   size_t newcapacity;
   char *can, *tmp;
+  const char *ctmp;
+  size_t tmplen;
 
-  if (tgt[0] == '/')
+  if (tgt[0] == '/' || (incyy->prefixlen == 1 && incyy->prefix[0] == '.'))
   {
-    tmp = pathcat1_buf(tgt, catbuf, sizeof(catbuf));
+    tmp = catbuf;
+    ctmp = tgt;
+    tmplen = len;
   }
   else
   {
-    tmp = pathcat2_buf(incyy->prefix, tgt, catbuf, sizeof(catbuf));
+    tmp = pathcat2_buflen(incyy->prefix, incyy->prefixlen, tgt, len, catbuf, sizeof(catbuf));
+    ctmp = tmp;
+    tmplen = incyy->prefixlen+1+len;
   }
-  can = canon_buf(tmp, canbuf, sizeof(canbuf));
+  can = canon_buflen(ctmp, tmplen, canbuf, sizeof(canbuf));
   if (tmp != catbuf)
   {
     free(tmp);
@@ -130,7 +144,7 @@ static inline void incyy_emplace_rule(struct incyy *incyy)
   incyy->rulesz++;
   if (incyy->auto_target)
   {
-    incyy_set_tgt(incyy, incyy->fnamenodir);
+    incyy_set_tgt(incyy, incyy->fnamenodir, incyy->fnamenodirlen);
   }
 }
 

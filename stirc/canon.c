@@ -48,8 +48,32 @@ char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
   memcpy(neu+strlen_old+1, old2, strlen_old2+1);
   return neu;
 }
+char *pathcat2_buflen(const char *old, size_t oldlen, const char *old2, size_t old2len, char *buf, size_t bufsz)
+{
+  size_t strlen_old = (oldlen);
+  size_t strlen_old2 = (old2len);
+  size_t bufneed = strlen_old + strlen_old2 + 2;
+  char *neu = NULL;
+  if (buf == NULL)
+  {
+    neu = malloc(bufneed);
+  }
+  else
+  {
+    neu = buf;
+    if (bufsz < bufneed)
+    {
+      neu = malloc(bufneed);
+    }
+  }
+  memcpy(neu, old, strlen_old);
+  neu[strlen_old] = '/';
+  memcpy(neu+strlen_old+1, old2, strlen_old2);
+  neu[strlen_old+1+strlen_old2] = '\0';
+  return neu;
+}
 
-char *canon_buf(const char *old, char *buf, size_t bufsz)
+char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
 {
   char *neu = NULL;
   char *neu2;
@@ -58,6 +82,10 @@ char *canon_buf(const char *old, char *buf, size_t bufsz)
   size_t strlen_old = strlen(old);
   const char *old_end = old + strlen_old;
   int is_abspath = 0;
+  if (old[strlen_old] != '\0')
+  {
+    my_abort();
+  }
   if (buf == NULL)
   {
     neu = malloc(strlen_old + 1);

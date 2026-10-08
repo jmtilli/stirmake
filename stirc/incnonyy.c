@@ -150,6 +150,7 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
     line[start+len] = '\0';
     if (len != 0)
     {
+      size_t len2 = len;
       if (had_escapes)
       {
         size_t idx;
@@ -170,8 +171,9 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
           }
         }
         *cp = '\0';
+        len2 = cp-(line+start);
       }
-      incyy_set_tgt(incyy, &line[start]);
+      incyy_set_tgt(incyy, &line[start], len2);
       //printf("TARGET: %s\n", &line[start]);
     }
     //start = start+len+1 + myspn(line+start+len+1);
@@ -199,6 +201,7 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
     line[start+len] = '\0';
     if (len != 0)
     {
+      size_t len2 = len;
       if (had_escapes)
       {
         size_t idx;
@@ -219,8 +222,9 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
           }
         }
         *cp = '\0';
+        len2 = cp-(line+start);
       }
-      incyy_set_dep(incyy, &line[start]);
+      incyy_set_dep(incyy, &line[start], len2);
       //printf("DEP: %s\n", &line[start]);
     }
     //start = start+len+1 + myspn(line+start+len+1);

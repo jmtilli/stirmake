@@ -3,11 +3,16 @@
 
 char *pathcat1_buf(const char *old, char *buf, size_t bufsz);
 char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz);
+char *pathcat2_buflen(const char *old, size_t oldlen, const char *old2, size_t old2len, char *buf, size_t bufsz);
 
 size_t strcnt(const char *haystack, char needle);
 
 char *canon(const char *old);
-char *canon_buf(const char *old, char *buf, size_t bufsz);
+char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz);
+static inline char *canon_buf(const char *old, char *buf, size_t bufsz)
+{
+  return canon_buflen(old, strlen(old), buf, bufsz);
+}
 
 char *construct_backpath(const char *frontpath);
 

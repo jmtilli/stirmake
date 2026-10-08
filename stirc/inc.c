@@ -16,6 +16,7 @@ int main(int argc, char **argv)
   FILE *f = fopen("depfile.dep", "r");
   struct incyy incyy = INCYY_EMPTY;
   incyy.prefix = ".";
+  incyy.prefixlen = 1;
   if (!f)
   {
     abort();
