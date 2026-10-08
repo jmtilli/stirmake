@@ -126,6 +126,10 @@ struct escaped_string yy_escape_string(char *orig, char **strendptr)
     {
       char *buf2;
       capacity = 2*capacity+10;
+      if (capacity < 32)
+      {
+        capacity = 32; // initial size
+      }
       buf2 = realloc(buf, capacity);
       if (buf2 == NULL)
       {
@@ -269,6 +273,10 @@ struct escaped_string yy_escape_string_single(char *orig, char **strendptr)
     {
       char *buf2;
       capacity = 2*capacity+10;
+      if (capacity < 32)
+      {
+        capacity = 32; // initial size
+      }
       buf2 = realloc(buf, capacity);
       if (buf2 == NULL)
       {

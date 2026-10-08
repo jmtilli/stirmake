@@ -81,7 +81,13 @@ void st_init(void);
 void st_grow(void);
 void st_compact(void);
 mysize_t stringtab_get(const char *symbol);
-mysize_t stringtab_add(const char *symbol);
+mysize_t stringtab_add_len(const char *symbol, size_t len);
+
+static inline mysize_t stringtab_add(const char *symbol)
+{
+  return stringtab_add_len(symbol, strlen(symbol));
+}
+
 mysize_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen);
 
 #endif

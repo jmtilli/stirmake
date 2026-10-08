@@ -1612,7 +1612,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
       rule->is_inc = 1;
-      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+      rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
       rule->ruleid = (int)rules_size++;
@@ -1645,7 +1645,7 @@ void process_additional_deps(mysize_t global_scopeidx)
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
       rule->is_inc = 1;
-      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+      rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
       rule->ruleid = (int)rules_size++;
@@ -1743,7 +1743,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
       rule->is_inc = 1;
-      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+      rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
       rule->ruleid = (int)rules_size++;
@@ -1784,7 +1784,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
       zero_rule(rule);
       rule->cmd.args = argsdupcnt(null_cmds, 1);
       rule->is_inc = 1;
-      rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+      rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
 
       rule->scopeidx = global_scopeidx;
       rule->ruleid = (int)rules_size++;
@@ -1830,7 +1830,7 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         zero_rule(rule);
         rule->cmd.args = argsdupcnt(null_cmds, 1);
         rule->is_inc = 1;
-        rule->diridx = stringtab_add("."); // FIXME any ill side effects?
+        rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
   
         rule->scopeidx = global_scopeidx;
         rule->ruleid = (int)rules_size++;

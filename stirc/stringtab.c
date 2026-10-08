@@ -106,12 +106,12 @@ NULL, &stringlen);
   return (mysize_t)-1;
 }
 
-mysize_t stringtab_add(const char *symbol)
+mysize_t stringtab_add_len(const char *symbol, size_t len)
 {
   struct abce_rb_tree_node *n;
   uint32_t hashval;
   mysize_t hashloc;
-  struct string_plus_len stringlen = {.str = symbol, .len = strlen(symbol)};
+  struct string_plus_len stringlen = {.str = symbol, .len = len};
   struct stringtabentry *stringtabentry;
   hashval = wyhash(symbol, stringlen.len, 0, _wyp);
   hashloc = hashval & (expstrings-1);
@@ -151,5 +151,5 @@ mysize_t symbol_add(struct stiryy *stiryy, const char *symbol, size_t symlen)
     printf("22\n");
     my_abort(); // RFE what to do?
   }
-  return stringtab_add(symbol);
+  return stringtab_add_len(symbol, symlen);
 }
