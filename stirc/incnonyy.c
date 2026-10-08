@@ -300,6 +300,7 @@ int incyymineparse(FILE *f, struct incyy *incyy)
             return -1;
           }
           lineptr = lineptrtmp;
+          n = newcap;
         }
         memcpy(&lineptr[nread], lineptr2, (size_t)nread2+1);
 	nread += nread2;
