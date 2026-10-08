@@ -4953,7 +4953,8 @@ void load_db_part2(void)
   int ret;
   int dbfd;
   dbfd = fileno(dbf);
-  ret = dbyydoparse(dbf, &dbyy);
+  //ret = dbyydoparse(dbf, &dbyy);
+  ret = dbyymineparse(dbf, &dbyy);
   if (!test && ftruncate(dbfd, 0) != 0)
   {
     fprintf(stderr, "stirmake: *** Can't truncate DB. Exiting.\n");

@@ -74,8 +74,8 @@ $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
               "stirtrap.c", "jsonyyutils.c", "syncbuf.c", "bypid.c", \
               "mymalloc.c", "stringtab.c", "db.c", "stirutils.c", \
               "statcache.c", "bytgt.c", "bydep.c", "adddep.c", "rule.c", \
-              "accesscache.c", "incnonyy.c", "mygetline.c"]
-$(SRC_PROG) = ["stir.c", "inc.c", "stirmake.c", "jsonyytest.c"]
+              "accesscache.c", "incnonyy.c", "mygetline.c", "dbnonyy.c"]
+$(SRC_PROG) = ["stir.c", "inc.c", "stirmake.c", "jsonyytest.c", "dbtest.c"]
 $(SYM) = ["smka", "smkt", "smkp"]
 $(LEX_LIB) = ["stiryy.l", "dbyy.l", "jsonyy.l"]
 
