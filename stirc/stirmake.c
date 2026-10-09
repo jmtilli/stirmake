@@ -4116,6 +4116,7 @@ void mark_executed(int ruleid, int was_actually_executed)
         .fnamenodir = tgt,
       };
       incyy.prefixlen = strlen(incyy.prefix);
+      incyy.fnamenodirlen = strlen(incyy.fnamenodir);
       //printf("Re-read %s\n", sttable[e->tgtidx].s);
       f = fopen(sttable[e->tgtidx].s, "r");
       if (f)
@@ -7521,6 +7522,7 @@ int main(int argc, char **argv)
     char *fname = malloc(fnamesz);
     char *fnamecanon;
     incyy.prefixlen = strlen(incyy.prefix);
+    incyy.fnamenodirlen = strlen(incyy.fnamenodir);
     mysize_t stidx;
     if (snprintf(fname, fnamesz, "%s/%s", incyy.prefix, stiryy.main->cdepincludes[i].name) >= (int)fnamesz)
     {
