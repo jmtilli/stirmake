@@ -134,6 +134,7 @@ mysize_t stringtab_add_len(const char *symbol, size_t len)
   memset(&staux[st_cnt], 0, sizeof(staux[st_cnt]));
   staux[st_cnt].is_remade = 0;
   staux[st_cnt].is_cdepwatch = 0;
+  staux[st_cnt].len = len;
   stringtabentry->idx = st_cnt++;
   stringtab_bytes += stringlen.len+1;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)

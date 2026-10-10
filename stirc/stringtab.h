@@ -63,8 +63,9 @@ struct sttable_entry {
   //unsigned is_cdepwatch:1;
 };
 struct staux_entry {
-  uint8_t is_remade:1;
-  uint8_t is_cdepwatch:1;
+  uint32_t is_remade:1;
+  uint32_t is_cdepwatch:1;
+  uint32_t len:30;
 };
 
 extern struct abce_rb_tree_nocmp *st;

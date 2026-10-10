@@ -40,7 +40,7 @@ struct incyy {
 
 void my_abort(void);
 
-typedef void (*incyy_fn_t)(void *userdata, const char *str);
+typedef void (*incyy_fn_t)(void *userdata, const char *str, size_t len);
 
 static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t len, incyy_fn_t fn, void *userdata)
 {
@@ -51,6 +51,7 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t le
   char *can, *tmp;
   const char *ctmp;
   size_t tmplen;
+  size_t canlen;
 
   if (dep[0] == '/' || (incyy->prefixlen == 1 && incyy->prefix[0] == '.'))
   {
@@ -64,7 +65,7 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t le
     ctmp = tmp;
     tmplen = incyy->prefixlen+1+len;
   }
-  can = canon_buflen(ctmp, tmplen, canbuf, sizeof(canbuf));
+  can = canon_buflen(ctmp, tmplen, canbuf, sizeof(canbuf), &canlen);
   if (tmp != catbuf)
   {
     free(tmp);
@@ -72,7 +73,7 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t le
 
   if (fn)
   {
-    fn(userdata, can);
+    fn(userdata, can, canlen);
     if (can != canbuf)
     {
       free(can);
@@ -105,6 +106,7 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t le
   char *can, *tmp;
   const char *ctmp;
   size_t tmplen;
+  size_t canlen;
 
   if (tgt[0] == '/' || (incyy->prefixlen == 1 && incyy->prefix[0] == '.'))
   {
@@ -118,7 +120,7 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t le
     ctmp = tmp;
     tmplen = incyy->prefixlen+1+len;
   }
-  can = canon_buflen(ctmp, tmplen, canbuf, sizeof(canbuf));
+  can = canon_buflen(ctmp, tmplen, canbuf, sizeof(canbuf), &canlen);
   if (tmp != catbuf)
   {
     free(tmp);
@@ -126,7 +128,7 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t le
 
   if (fn)
   {
-    fn(userdata, can);
+    fn(userdata, can, canlen);
     if (can != canbuf)
     {
       free(can);
@@ -152,7 +154,7 @@ static inline void incyy_emplace_rule(struct incyy *incyy, incyy_fn_t fnrule, in
   size_t newcapacity;
   if (fnrule && fntarget)
   {
-    fnrule(userdata, NULL);
+    fnrule(userdata, NULL, 0);
     if (incyy->auto_target)
     {
       incyy_set_tgt(incyy, incyy->fnamenodir, incyy->fnamenodirlen, fntarget, userdata);

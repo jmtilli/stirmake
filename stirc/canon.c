@@ -73,7 +73,8 @@ char *pathcat2_buflen(const char *old, size_t oldlen, const char *old2, size_t o
   return neu;
 }
 
-char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
+char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz,
+                   size_t *neulen)
 {
   char *neu = NULL;
   char *neu2;
@@ -106,6 +107,10 @@ char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
   {
     neu[0] = '.';
     neu[1] = '\0';
+    if (neulen)
+    {
+      *neulen = 1;
+    }
     return neu;
   }
   neu[0] = '\0';
@@ -194,12 +199,25 @@ char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
   }
   if (is_abspath)
   {
+    if (neulen)
+    {
+      *neulen = idx + 1;
+    }
     return neu - 1;
   }
   if (idx == 0)
   {
     neu[0] = '.';
     neu[1] = '\0';
+    if (neulen)
+    {
+      *neulen = 1;
+    }
+    return neu;
+  }
+  if (neulen)
+  {
+    *neulen = idx;
   }
   return neu;
 }

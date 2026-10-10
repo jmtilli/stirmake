@@ -739,6 +739,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(rule->tgtlist.node.next, struct stirtgt, llnode);
   char *tgt;
+  size_t tgtlen;
   struct linked_list_node *node;
   struct abce_mb scope = abce->cachebase[rule->scopeidx]; // no refup!
   struct abce_mb oldscope = abce->dynscope; // no refup, it's in cache anyway
@@ -762,10 +763,12 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   if (first_tgt->tgtidxnodir != (mysize_t)-1)
   {
     tgt = sttable[first_tgt->tgtidxnodir].s;
+    tgtlen = staux[first_tgt->tgtidxnodir].len;
   }
   else
   {
     tgt = neighpath(sttable[rule->diridx].s, sttable[first_tgt->tgtidx].s);
+    tgtlen = strlen(tgt);
   }
   result = malloc(resultcap * sizeof(*result));
   for (i = 0; i < cmdsrc->itemsz; i++)
@@ -790,7 +793,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         return NULL;
       }
 #endif
-      mbval = abce_mb_cpush_create_string(abce, tgt, strlen(tgt));
+      mbval = abce_mb_cpush_create_string(abce, tgt, tgtlen);
       if (mbval == NULL)
       {
         //abce_mb_refdn(abce, &mbkey);
@@ -808,7 +811,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
 
       if (rule->meatidx != (mysize_t)-1)
       {
-        mbval = abce_mb_cpush_create_string(abce, sttable[rule->meatidx].s, strlen(sttable[rule->meatidx].s));
+        mbval = abce_mb_cpush_create_string(abce, sttable[rule->meatidx].s, staux[rule->meatidx].len);
         if (mbval == NULL)
         {
           //abce_mb_refdn(abce, &mbkey);
@@ -858,7 +861,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
-          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, staux[dep->nameidxnodir].len);
         }
         else
         {
@@ -924,7 +927,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
-          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, staux[dep->nameidxnodir].len);
         }
         else
         {
@@ -990,7 +993,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
-          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
+          mb = abce_mb_cpush_create_string(abce, namenodir, staux[dep->nameidxnodir].len);
         }
         else
         {
@@ -6281,12 +6284,12 @@ struct incyyfnstruct {
   mysize_t tgtstringidxcap;
 };
 
-void incyy_add_rule(void *userdata, const char *str)
+void incyy_add_rule(void *userdata, const char *str, size_t len)
 {
   struct incyyfnstruct *dat = userdata;
   dat->tgtstringidxsz = 0;
 }
-void incyy_add_tgt(void *userdata, const char *str)
+void incyy_add_tgt(void *userdata, const char *str, size_t len)
 {
   struct incyyfnstruct *dat = userdata;
   mysize_t tgtidx;
@@ -6302,16 +6305,16 @@ void incyy_add_tgt(void *userdata, const char *str)
     dat->tgtstringidxs = newbuf;
     dat->tgtstringidxcap = newcap;
   }
-  tgtidx = stringtab_add(str);
+  tgtidx = stringtab_add_len(str, len);
   dat->tgtstringidxs[dat->tgtstringidxsz++] = tgtidx;
   ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, 0, !!dat->auto_phony);
 }
-void incyy_add_dep(void *userdata, const char *str)
+void incyy_add_dep(void *userdata, const char *str, size_t len)
 {
   struct incyyfnstruct *dat = userdata;
   mysize_t i;
   mysize_t depidx;
-  depidx = stringtab_add(str);
+  depidx = stringtab_add_len(str, len);
   for (i = 0; i < dat->tgtstringidxsz; i++)
   {
     mysize_t tgtidx = dat->tgtstringidxs[i];
