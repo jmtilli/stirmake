@@ -19,4 +19,8 @@ char *construct_backpath(const char *frontpath);
 
 char *neighpath(const char *path, const char *file);
 
+char *neighpath_buflen(const char *path, size_t pathlen,
+                       const char *file, size_t filelen,
+                       char *buf, size_t bufsz, size_t *reslen);
+
 #endif

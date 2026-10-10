@@ -734,6 +734,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   struct cmdsrc *cmdsrc = &rule->cmdsrc;
   char ***result = NULL;
   char ***result2 = NULL;
+  char tgtneighbuf[1024];
   size_t resultsz = 0;
   size_t resultcap = 16;
   struct stirtgt *first_tgt =
@@ -767,8 +768,10 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   }
   else
   {
-    tgt = neighpath(sttable[rule->diridx].s, sttable[first_tgt->tgtidx].s);
-    tgtlen = strlen(tgt);
+    tgt = neighpath_buflen(sttable[rule->diridx].s, staux[rule->diridx].len,
+                           sttable[first_tgt->tgtidx].s,
+                           staux[first_tgt->tgtidx].len,
+                           tgtneighbuf, sizeof(tgtneighbuf), &tgtlen);
   }
   result = malloc(resultcap * sizeof(*result));
   for (i = 0; i < cmdsrc->itemsz; i++)
@@ -865,9 +868,19 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         }
         else
         {
-          namenodir = neighpath(sttable[rule->diridx].s, sttable[dep->nameidx].s);
-          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
-          free(namenodir);
+          char namenodirbuf[1024];
+          size_t namenodirlen;
+          namenodir = neighpath_buflen(sttable[rule->diridx].s,
+                                       staux[rule->diridx].len,
+                                       sttable[dep->nameidx].s,
+                                       staux[dep->nameidx].len,
+                                       namenodirbuf, sizeof(namenodirbuf),
+                                       &namenodirlen);
+          mb = abce_mb_cpush_create_string(abce, namenodir, namenodirlen);
+          if (namenodir != namenodirbuf)
+          {
+            free(namenodir);
+          }
         }
         if (mb == NULL)
         {
@@ -931,9 +944,19 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         }
         else
         {
-          namenodir = neighpath(sttable[rule->diridx].s, sttable[dep->nameidx].s);
-          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
-          free(namenodir);
+          char namenodirbuf[1024];
+          size_t namenodirlen;
+          namenodir = neighpath_buflen(sttable[rule->diridx].s,
+                                       staux[rule->diridx].len,
+                                       sttable[dep->nameidx].s,
+                                       staux[dep->nameidx].len,
+                                       namenodirbuf, sizeof(namenodirbuf),
+                                       &namenodirlen);
+          mb = abce_mb_cpush_create_string(abce, namenodir, namenodirlen);
+          if (namenodir != namenodirbuf)
+          {
+            free(namenodir);
+          }
         }
         if (mb == NULL)
         {
@@ -997,9 +1020,19 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         }
         else
         {
-          namenodir = neighpath(sttable[rule->diridx].s, sttable[dep->nameidx].s);
-          mb = abce_mb_cpush_create_string(abce, namenodir, strlen(namenodir));
-          free(namenodir);
+          char namenodirbuf[1024];
+          size_t namenodirlen;
+          namenodir = neighpath_buflen(sttable[rule->diridx].s,
+                                       staux[rule->diridx].len,
+                                       sttable[dep->nameidx].s,
+                                       staux[dep->nameidx].len,
+                                       namenodirbuf, sizeof(namenodirbuf),
+                                       &namenodirlen);
+          mb = abce_mb_cpush_create_string(abce, namenodir, namenodirlen);
+          if (namenodir != namenodirbuf)
+          {
+            free(namenodir);
+          }
         }
         if (mb == NULL)
         {

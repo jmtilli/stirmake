@@ -25,6 +25,25 @@ char *pathcat1_buf(const char *old, char *buf, size_t bufsz)
   memcpy(neu, old, strlen_old+1);
   return neu;
 }
+char *pathcat1_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
+{
+  size_t strlen_old = oldlen;
+  char *neu = NULL;
+  if (buf == NULL)
+  {
+    neu = malloc(strlen_old + 1);
+  }
+  else
+  {
+    neu = buf;
+    if (bufsz < strlen_old + 1)
+    {
+      neu = malloc(strlen_old + 1);
+    }
+  }
+  memcpy(neu, old, strlen_old+1);
+  return neu;
+}
 char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
 {
   size_t strlen_old = strlen(old);
@@ -366,6 +385,125 @@ char *neighpath(const char *path, const char *file)
       free(filecanon);
       result = canon(buf);
       free(buf);
+      return result;
+    }
+    file = (*fileslash) ? (fileslash + 1) : fileslash;
+    path = (*pathslash) ? (pathslash + 1) : pathslash;
+  }
+}
+
+char *neighpath_buflen(const char *path, size_t pathlen,
+                       const char *file, size_t filelen,
+                       char *buf, size_t bufsz, size_t *reslen)
+{
+  char filecanbuf[1024];
+  char pathcanbuf[1024];
+  char catbuf[1024];
+  char *pathcanon, *filecanon;
+  const char *pathslash, *fileslash;
+  if (path[pathlen] != '\0' || file[filelen] != '\0')
+  {
+    my_abort();
+  }
+  if (file[0] == '/' || (path[0] == '.' && pathlen == 1))
+  {
+    char *res;
+    res = pathcat1_buflen(file, filelen, buf, bufsz);
+    *reslen = filelen;
+    return res;
+  }
+  if (strncmp(path, file, pathlen) == 0 && file[pathlen] == '/')
+  {
+    char *res;
+    res = pathcat1_buflen(file+pathlen+1, filelen-pathlen-1, buf, bufsz);
+    *reslen = filelen;
+    return res;
+  }
+  filecanon = canon_buf(file, filecanbuf, sizeof(filecanbuf));
+  if (filecanon == NULL)
+  {
+    return NULL;
+  }
+  pathcanon = canon_buf(path, pathcanbuf, sizeof(pathcanbuf));
+  if (pathcanon == NULL)
+  {
+    if (filecanon != filecanbuf)
+    {
+      free(filecanon);
+    }
+    return NULL;
+  }
+  file = filecanon;
+  path = pathcanon;
+  for (;;)
+  {
+    pathslash = strchr(path, '/');
+    fileslash = strchr(file, '/');
+    if (pathslash == NULL)
+    {
+      pathslash = path + strlen(path);
+    }
+    if (fileslash == NULL)
+    {
+      fileslash = file + strlen(file);
+    }
+    if (   pathslash - path != fileslash - file
+        || pathslash - path == 0
+        || memcmp(path, file, (size_t)(pathslash - path)) != 0)
+    {
+      char *bp = construct_backpath((*path) ? path : ".");
+      size_t strlen_bp;
+      size_t strlen_file;
+      size_t catlen;
+      //size_t bufsiz;
+      char *bufout, *result;
+      if (bp == NULL)
+      {
+        if (pathcanon != pathcanbuf)
+        {
+          free(pathcanon);
+        }
+        if (filecanon != filecanbuf)
+        {
+          free(filecanon);
+        }
+        return NULL;
+      }
+      if (*file == '\0')
+      {
+        file = ".";
+      }
+      strlen_bp = strlen(bp);
+      strlen_file = strlen(file);
+      bufout = pathcat2_buflen(bp, strlen_bp, file, strlen_file, catbuf, sizeof(catbuf));
+      if (bufout == NULL)
+      {
+        free(bp);
+        if (pathcanon != pathcanbuf)
+        {
+          free(pathcanon);
+        }
+        if (filecanon != filecanbuf)
+        {
+          free(filecanon);
+        }
+        return NULL;
+      }
+      catlen = strlen_bp+strlen_file+1;
+      free(bp);
+      if (pathcanon != pathcanbuf)
+      {
+        free(pathcanon);
+      }
+      if (filecanon != filecanbuf)
+      {
+        free(filecanon);
+      }
+      result = canon_buflen(bufout, catlen, buf, bufsz, reslen);
+      if (bufout != catbuf)
+      {
+        free(bufout);
+      }
       return result;
     }
     file = (*fileslash) ? (fileslash + 1) : fileslash;
