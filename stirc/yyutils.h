@@ -13,6 +13,7 @@ int gitshas_has(const char *needle, size_t needle_len);
 const char *gitversions_head(void);
 const char *gitversion_get(void);
 void gitversions(char *argv0);
+void acceptchars_init(void);
 
 int
 engine_stringlist(struct abce *abce,

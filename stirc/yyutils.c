@@ -776,17 +776,17 @@ int add_rule_yy(struct stiryy_main *stirmain, struct tgt *tgts, size_t tgtsz,
 
 static const char *rejectchars[256] = {
 "\\x00", "\\x01", "\\x02", "\\x03", "\\x04", "\\x05", "\\x06", "\\x07",
-"\\x08", "\\t", "\\n", "\\x0b", "\\x0c", "\\r", "\\x0e", "\\x0f",
+"\\x08", "\\x09", "\\x0a", "\\x0b", "\\x0c", "\\x0d", "\\x0e", "\\x0f",
 "\\x10", "\\x11", "\\x12", "\\x13", "\\x14", "\\x15", "\\x16", "\\x17",
 "\\x18", "\\x19", "\\x1a", "\\x1b", "\\x1c", "\\x1d", "\\x1e", "\\x1f",
-"\\x20", "\\x21", "\\\"", "\\x23", "\\x24", "\\x25", "\\x26", "\\'",
+"\\x20", "\\x21", "\\x22", "\\x23", "\\x24", "\\x25", "\\x26", "\\x27",
 "\\x28", "\\x29", "\\x2a", "\\x2b", "\\x2c", "\\x2d", "\\x2e", "\\x2f",
 "\\x30", "\\x31", "\\x32", "\\x33", "\\x34", "\\x35", "\\x36", "\\x37",
 "\\x38", "\\x39", "\\x3a", "\\x3b", "\\x3c", "\\x3d", "\\x3e", "\\x3f",
 "\\x40", "\\x41", "\\x42", "\\x43", "\\x44", "\\x45", "\\x46", "\\x47",
 "\\x48", "\\x49", "\\x4a", "\\x4b", "\\x4c", "\\x4d", "\\x4e", "\\x4f",
 "\\x50", "\\x51", "\\x52", "\\x53", "\\x54", "\\x55", "\\x56", "\\x57",
-"\\x58", "\\x59", "\\x5a", "\\x5b", "\\\\", "\\x5d", "\\x5e", "\\x5f",
+"\\x58", "\\x59", "\\x5a", "\\x5b", "\\x5c", "\\x5d", "\\x5e", "\\x5f",
 "\\x60", "\\x61", "\\x62", "\\x63", "\\x64", "\\x65", "\\x66", "\\x67",
 "\\x68", "\\x69", "\\x6a", "\\x6b", "\\x6c", "\\x6d", "\\x6e", "\\x6f",
 "\\x70", "\\x71", "\\x72", "\\x73", "\\x74", "\\x75", "\\x76", "\\x77",
@@ -816,7 +816,7 @@ static inline int file_escape_string_slowpath(FILE *f, unsigned char uch)
     return 0;
 }
 
-static const uint8_t acceptchars[256] = {
+static uint8_t acceptchars[256] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0-15
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 16-31
   1,0,0,1,1,1,1,0,1,1,1,1,1,1,1,1, // 32-47
@@ -826,6 +826,245 @@ static const uint8_t acceptchars[256] = {
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 96-111
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0, // 112-127
 };
+
+static inline int is_ascii_full()
+{
+  if ('\t' != 9) return 0;
+  if ('\n' != 10) return 0;
+  if ('\r' != 13) return 0;
+  if (' ' != 32) return 0;
+  if ('!' != 33) return 0;
+  if ('"' != 34) return 0;
+  if ('#' != 35) return 0;
+  if ('$' != 36) return 0;
+  if ('%' != 37) return 0;
+  if ('&' != 38) return 0;
+  if ('\'' != 39) return 0;
+  if ('(' != 40) return 0;
+  if (')' != 41) return 0;
+  if ('*' != 42) return 0;
+  if ('+' != 43) return 0;
+  if (',' != 44) return 0;
+  if ('-' != 45) return 0;
+  if ('.' != 46) return 0;
+  if ('/' != 47) return 0;
+  if ('0' != 48) return 0;
+  if ('1' != 49) return 0;
+  if ('2' != 50) return 0;
+  if ('3' != 51) return 0;
+  if ('4' != 52) return 0;
+  if ('5' != 53) return 0;
+  if ('6' != 54) return 0;
+  if ('7' != 55) return 0;
+  if ('8' != 56) return 0;
+  if ('9' != 57) return 0;
+  if (':' != 58) return 0;
+  if (';' != 59) return 0;
+  if ('<' != 60) return 0;
+  if ('=' != 61) return 0;
+  if ('>' != 62) return 0;
+  if ('?' != 63) return 0;
+  if ('@' != 64) return 0;
+  if ('A' != 65) return 0;
+  if ('B' != 66) return 0;
+  if ('C' != 67) return 0;
+  if ('D' != 68) return 0;
+  if ('E' != 69) return 0;
+  if ('F' != 70) return 0;
+  if ('G' != 71) return 0;
+  if ('H' != 72) return 0;
+  if ('I' != 73) return 0;
+  if ('J' != 74) return 0;
+  if ('K' != 75) return 0;
+  if ('L' != 76) return 0;
+  if ('M' != 77) return 0;
+  if ('N' != 78) return 0;
+  if ('O' != 79) return 0;
+  if ('P' != 80) return 0;
+  if ('Q' != 81) return 0;
+  if ('R' != 82) return 0;
+  if ('S' != 83) return 0;
+  if ('T' != 84) return 0;
+  if ('U' != 85) return 0;
+  if ('V' != 86) return 0;
+  if ('W' != 87) return 0;
+  if ('X' != 88) return 0;
+  if ('Y' != 89) return 0;
+  if ('Z' != 90) return 0;
+  if ('[' != 91) return 0;
+  if ('\\' != 92) return 0;
+  if (']' != 93) return 0;
+  if ('^' != 94) return 0;
+  if ('_' != 95) return 0;
+  if ('`' != 96) return 0;
+  if ('a' != 97) return 0;
+  if ('b' != 98) return 0;
+  if ('c' != 99) return 0;
+  if ('d' != 100) return 0;
+  if ('e' != 101) return 0;
+  if ('f' != 102) return 0;
+  if ('g' != 103) return 0;
+  if ('h' != 104) return 0;
+  if ('i' != 105) return 0;
+  if ('j' != 106) return 0;
+  if ('k' != 107) return 0;
+  if ('l' != 108) return 0;
+  if ('m' != 109) return 0;
+  if ('n' != 110) return 0;
+  if ('o' != 111) return 0;
+  if ('p' != 112) return 0;
+  if ('q' != 113) return 0;
+  if ('r' != 114) return 0;
+  if ('s' != 115) return 0;
+  if ('t' != 116) return 0;
+  if ('u' != 117) return 0;
+  if ('v' != 118) return 0;
+  if ('w' != 119) return 0;
+  if ('x' != 120) return 0;
+  if ('y' != 121) return 0;
+  if ('z' != 122) return 0;
+  if ('{' != 123) return 0;
+  if ('|' != 124) return 0;
+  if ('}' != 125) return 0;
+  if ('~' != 126) return 0;
+  return 1;
+}
+
+void acceptchars_init(void)
+{
+  int i;
+  acceptchars['"'] = 0;
+  rejectchars['"'] = "\\\"";
+  acceptchars['\''] = 0;
+  rejectchars['\''] = "\\'";
+  acceptchars['\\'] = 0;
+  rejectchars['\\'] = "\\\\";
+  acceptchars['\n'] = 0;
+  rejectchars['\n'] = "\\n";
+  acceptchars['\r'] = 0;
+  rejectchars['\r'] = "\\r";
+  acceptchars['\t'] = 0;
+  rejectchars['\t'] = "\\t";
+  if (is_ascii_full())
+  {
+    for (i = 0; i < 256; i++)
+    {
+      if (i == '"' || i == '\'' || i == '\\')
+      {
+        continue;
+      }
+      acceptchars[i] = 1;
+    }
+    for (i = 128; i < 256; i++)
+    {
+      acceptchars[i] = 0;
+    }
+    acceptchars['\x7f'] = 0;
+    for (i = 0; i < 32; i++)
+    {
+      acceptchars[i] = 0;
+    }
+  }
+  else
+  {
+    for (i = 0; i < 256; i++)
+    {
+      acceptchars[i] = 0;
+    }
+    acceptchars[' '] = 1;
+    acceptchars['!'] = 1;
+    acceptchars['#'] = 1;
+    acceptchars['$'] = 1;
+    acceptchars['%'] = 1;
+    acceptchars['&'] = 1;
+    acceptchars['('] = 1;
+    acceptchars[')'] = 1;
+    acceptchars['*'] = 1;
+    acceptchars['+'] = 1;
+    acceptchars[','] = 1;
+    acceptchars['-'] = 1;
+    acceptchars['.'] = 1;
+    acceptchars['/'] = 1;
+    acceptchars['0'] = 1;
+    acceptchars['1'] = 1;
+    acceptchars['2'] = 1;
+    acceptchars['3'] = 1;
+    acceptchars['4'] = 1;
+    acceptchars['5'] = 1;
+    acceptchars['6'] = 1;
+    acceptchars['7'] = 1;
+    acceptchars['8'] = 1;
+    acceptchars['9'] = 1;
+    acceptchars[':'] = 1;
+    acceptchars[';'] = 1;
+    acceptchars['<'] = 1;
+    acceptchars['='] = 1;
+    acceptchars['>'] = 1;
+    acceptchars['?'] = 1;
+    acceptchars['@'] = 1;
+    acceptchars['A'] = 1;
+    acceptchars['B'] = 1;
+    acceptchars['C'] = 1;
+    acceptchars['D'] = 1;
+    acceptchars['E'] = 1;
+    acceptchars['F'] = 1;
+    acceptchars['G'] = 1;
+    acceptchars['H'] = 1;
+    acceptchars['I'] = 1;
+    acceptchars['J'] = 1;
+    acceptchars['K'] = 1;
+    acceptchars['L'] = 1;
+    acceptchars['M'] = 1;
+    acceptchars['N'] = 1;
+    acceptchars['O'] = 1;
+    acceptchars['P'] = 1;
+    acceptchars['Q'] = 1;
+    acceptchars['R'] = 1;
+    acceptchars['S'] = 1;
+    acceptchars['T'] = 1;
+    acceptchars['U'] = 1;
+    acceptchars['V'] = 1;
+    acceptchars['W'] = 1;
+    acceptchars['X'] = 1;
+    acceptchars['Y'] = 1;
+    acceptchars['Z'] = 1;
+    acceptchars['['] = 1;
+    acceptchars[']'] = 1;
+    acceptchars['^'] = 1;
+    acceptchars['_'] = 1;
+    acceptchars['`'] = 1;
+    acceptchars['a'] = 1;
+    acceptchars['b'] = 1;
+    acceptchars['c'] = 1;
+    acceptchars['d'] = 1;
+    acceptchars['e'] = 1;
+    acceptchars['f'] = 1;
+    acceptchars['g'] = 1;
+    acceptchars['h'] = 1;
+    acceptchars['i'] = 1;
+    acceptchars['j'] = 1;
+    acceptchars['k'] = 1;
+    acceptchars['l'] = 1;
+    acceptchars['m'] = 1;
+    acceptchars['n'] = 1;
+    acceptchars['o'] = 1;
+    acceptchars['p'] = 1;
+    acceptchars['q'] = 1;
+    acceptchars['r'] = 1;
+    acceptchars['s'] = 1;
+    acceptchars['t'] = 1;
+    acceptchars['u'] = 1;
+    acceptchars['v'] = 1;
+    acceptchars['w'] = 1;
+    acceptchars['x'] = 1;
+    acceptchars['y'] = 1;
+    acceptchars['z'] = 1;
+    acceptchars['{'] = 1;
+    acceptchars['|'] = 1;
+    acceptchars['}'] = 1;
+    acceptchars['~'] = 1;
+  }
+}
 
 void file_escape_string(FILE *f, const char *str)
 {
