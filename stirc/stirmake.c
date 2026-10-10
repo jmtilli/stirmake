@@ -740,7 +740,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   struct stirtgt *first_tgt =
     ABCE_CONTAINER_OF(rule->tgtlist.node.next, struct stirtgt, llnode);
   char *tgt;
-  size_t tgtlen;
+  mysize_t tgtlen;
   struct linked_list_node *node;
   struct abce_mb scope = abce->cachebase[rule->scopeidx]; // no refup!
   struct abce_mb oldscope = abce->dynscope; // no refup, it's in cache anyway
@@ -869,7 +869,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         else
         {
           char namenodirbuf[1024];
-          size_t namenodirlen;
+          mysize_t namenodirlen;
           namenodir = neighpath_buflen(sttable[rule->diridx].s,
                                        staux[rule->diridx].len,
                                        sttable[dep->nameidx].s,
@@ -945,7 +945,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         else
         {
           char namenodirbuf[1024];
-          size_t namenodirlen;
+          mysize_t namenodirlen;
           namenodir = neighpath_buflen(sttable[rule->diridx].s,
                                        staux[rule->diridx].len,
                                        sttable[dep->nameidx].s,
@@ -1021,7 +1021,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         else
         {
           char namenodirbuf[1024];
-          size_t namenodirlen;
+          mysize_t namenodirlen;
           namenodir = neighpath_buflen(sttable[rule->diridx].s,
                                        staux[rule->diridx].len,
                                        sttable[dep->nameidx].s,
@@ -6345,12 +6345,12 @@ struct incyyfnstruct {
   mysize_t tgtstringidxcap;
 };
 
-void incyy_add_rule(void *userdata, const char *str, size_t len)
+void incyy_add_rule(void *userdata, const char *str, mysize_t len)
 {
   struct incyyfnstruct *dat = userdata;
   dat->tgtstringidxsz = 0;
 }
-void incyy_add_tgt(void *userdata, const char *str, size_t len)
+void incyy_add_tgt(void *userdata, const char *str, mysize_t len)
 {
   struct incyyfnstruct *dat = userdata;
   mysize_t tgtidx;
@@ -6370,7 +6370,7 @@ void incyy_add_tgt(void *userdata, const char *str, size_t len)
   dat->tgtstringidxs[dat->tgtstringidxsz++] = tgtidx;
   ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, 0, !!dat->auto_phony);
 }
-void incyy_add_dep(void *userdata, const char *str, size_t len)
+void incyy_add_dep(void *userdata, const char *str, mysize_t len)
 {
   struct incyyfnstruct *dat = userdata;
   mysize_t i;

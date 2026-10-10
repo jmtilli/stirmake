@@ -6,7 +6,7 @@
 
 void my_abort(void);
 
-char *pathcat1_buf(const char *old, char *buf, size_t bufsz)
+char *pathcat1_buf(const char *old, char *buf, mysize_t bufsz)
 {
   size_t strlen_old = strlen(old);
   char *neu = NULL;
@@ -25,7 +25,7 @@ char *pathcat1_buf(const char *old, char *buf, size_t bufsz)
   memcpy(neu, old, strlen_old+1);
   return neu;
 }
-char *pathcat1_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
+char *pathcat1_buflen(const char *old, mysize_t oldlen, char *buf, mysize_t bufsz)
 {
   size_t strlen_old = oldlen;
   char *neu = NULL;
@@ -44,7 +44,7 @@ char *pathcat1_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz)
   memcpy(neu, old, strlen_old+1);
   return neu;
 }
-char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
+char *pathcat2_buf(const char *old, const char *old2, char *buf, mysize_t bufsz)
 {
   size_t strlen_old = strlen(old);
   size_t strlen_old2 = strlen(old2);
@@ -67,7 +67,7 @@ char *pathcat2_buf(const char *old, const char *old2, char *buf, size_t bufsz)
   memcpy(neu+strlen_old+1, old2, strlen_old2+1);
   return neu;
 }
-char *pathcat2_buflen(const char *old, size_t oldlen, const char *old2, size_t old2len, char *buf, size_t bufsz)
+char *pathcat2_buflen(const char *old, mysize_t oldlen, const char *old2, mysize_t old2len, char *buf, mysize_t bufsz)
 {
   size_t strlen_old = (oldlen);
   size_t strlen_old2 = (old2len);
@@ -92,8 +92,8 @@ char *pathcat2_buflen(const char *old, size_t oldlen, const char *old2, size_t o
   return neu;
 }
 
-char *canon_buflen(const char *old, size_t oldlen, char *buf, size_t bufsz,
-                   size_t *neulen)
+char *canon_buflen(const char *old, mysize_t oldlen, char *buf, mysize_t bufsz,
+                   mysize_t *neulen)
 {
   char *neu = NULL;
   char *neu2;
@@ -392,9 +392,9 @@ char *neighpath(const char *path, const char *file)
   }
 }
 
-char *neighpath_buflen(const char *path, size_t pathlen,
-                       const char *file, size_t filelen,
-                       char *buf, size_t bufsz, size_t *reslen)
+char *neighpath_buflen(const char *path, mysize_t pathlen,
+                       const char *file, mysize_t filelen,
+                       char *buf, mysize_t bufsz, mysize_t *reslen)
 {
   char filecanbuf[1024];
   char pathcanbuf[1024];

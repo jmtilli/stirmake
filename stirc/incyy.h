@@ -40,7 +40,7 @@ struct incyy {
 
 void my_abort(void);
 
-typedef void (*incyy_fn_t)(void *userdata, const char *str, size_t len);
+typedef void (*incyy_fn_t)(void *userdata, const char *str, mysize_t len);
 
 static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t len, incyy_fn_t fn, void *userdata)
 {
@@ -51,7 +51,7 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t le
   char *can, *tmp;
   const char *ctmp;
   size_t tmplen;
-  size_t canlen;
+  mysize_t canlen;
 
   if (dep[0] == '/' || (incyy->prefixlen == 1 && incyy->prefix[0] == '.'))
   {
@@ -106,7 +106,7 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t le
   char *can, *tmp;
   const char *ctmp;
   size_t tmplen;
-  size_t canlen;
+  mysize_t canlen;
 
   if (tgt[0] == '/' || (incyy->prefixlen == 1 && incyy->prefix[0] == '.'))
   {

@@ -25,8 +25,6 @@
 extern "C" {
 #endif
 
-typedef uint32_t mysize_t;
-
 void my_abort(void);
 
 extern int yy_stored_lineno;
