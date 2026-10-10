@@ -77,7 +77,7 @@ $(SRC_LIB) = ["yyutils.c", "incyyutils.c", "dbyyutils.c", "canon.c", \
               "accesscache.c", "incnonyy.c", "mygetline.c", "dbnonyy.c"]
 $(SRC_PROG) = ["stir.c", "inc.c", "stirmake.c", "jsonyytest.c", "dbtest.c"]
 $(SYM) = ["smka", "smkt", "smkp"]
-$(LEX_LIB) = ["stiryy.l", "dbyy.l", "jsonyy.l"]
+$(LEX_LIB) = ["stiryy.l", "jsonyy.l"]
 
 # Here starts the portions you probably don't want to modify
 $(YACC_LIB) = @sufsuball($(LEX_LIB), ".l", ".y")

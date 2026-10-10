@@ -82,6 +82,9 @@ for a in *.l; do
   if [ "$a" = "incyy.l" ]; then
     continue
   fi
+  if [ "$a" = "dbyy.l" ]; then
+    continue
+  fi
   base="`echo "$a"|sed 's/.l$//g'`"
   if doflex "$base.lex.c" "$base.lex.h"; then
     docmd $FLEX --outfile="$base.lex.c" --header-file="$base.lex.h" "$a" || die "flex"

@@ -6,10 +6,10 @@ SRC := $(SRC_LIB) stir.c inc.c stirmake.c jsonyytest.c
 BYACC ?= byacc
 FLEX ?= flex
 
-LEX_LIB := stiryy.l dbyy.l jsonyy.l
+LEX_LIB := stiryy.l jsonyy.l
 LEX := $(LEX_LIB)
 
-YACC_LIB := stiryy.y dbyy.y jsonyy.y
+YACC_LIB := stiryy.y jsonyy.y
 YACC := $(YACC_LIB)
 
 LEXGEN_LIB := $(patsubst %.l,%.lex.c,$(LEX_LIB))
@@ -138,24 +138,6 @@ stiryy.tab.h: stiryy.y Makefile
 	$(BYACC) -d -p stiryy -b stiryy -o .tmph.stiryy.tab.c stiryy.y
 	rm .tmph.stiryy.tab.c
 	mv .tmph.stiryy.tab.h stiryy.tab.h
-
-dbyy.lex.d: dbyy.tab.h dbyy.lex.h
-dbyy.lex.o: dbyy.tab.h dbyy.lex.h
-dbyy.tab.d: dbyy.tab.h dbyy.lex.h
-dbyy.tab.o: dbyy.tab.h dbyy.lex.h
-
-dbyy.lex.c: dbyy.l Makefile
-	$(FLEX) --outfile=dbyy.lex.c --header-file=/dev/null dbyy.l
-dbyy.lex.h: dbyy.l Makefile
-	$(FLEX) --outfile=/dev/null --header-file=dbyy.lex.h dbyy.l
-dbyy.tab.c: dbyy.y Makefile
-	$(BYACC) -d -p dbyy -b dbyy -o .tmpc.dbyy.tab.c dbyy.y
-	rm .tmpc.dbyy.tab.h
-	mv .tmpc.dbyy.tab.c dbyy.tab.c
-dbyy.tab.h: dbyy.y Makefile
-	$(BYACC) -d -p dbyy -b dbyy -o .tmph.dbyy.tab.c dbyy.y
-	rm .tmph.dbyy.tab.c
-	mv .tmph.dbyy.tab.h dbyy.tab.h
 
 jsonyy.lex.d: jsonyy.tab.h jsonyy.lex.h
 jsonyy.lex.o: jsonyy.tab.h jsonyy.lex.h
