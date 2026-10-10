@@ -16,6 +16,7 @@ extern "C" {
 #endif
 
 void *my_strdup(const char *str);
+void *my_strdup_len(const char *str, size_t sz);
 void *my_malloc(size_t sz);
 void *my_argstrdup(const char *str);
 void *my_argmalloc(size_t sz);
@@ -28,7 +29,9 @@ struct dbyycmd {
 
 struct dbyyrule {
   char *dir;
+  size_t dirlen;
   char *tgt;
+  size_t tgtlen;
   //struct dbyycmd *cmds;
   //size_t cmdssz;
   //size_t cmdscapacity;
@@ -36,7 +39,9 @@ struct dbyyrule {
 
 struct tsdbentry {
   char *dir;
+  size_t dirlen;
   char *tgt;
+  size_t tgtlen;
   off_t filesz;
   struct timespec ts;
 };
@@ -129,7 +134,7 @@ static inline void dbyy_add_arg(struct dbyy *dbyy, const char *arg)
   cmd->args[cmd->argssz++] = my_argstrdup(arg);
 }
 
-static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const char *tgt)
+static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, size_t dirsz, const char *tgt, size_t tgtsz)
 {
   size_t newcapacity;
   if (dbyy->rulesz >= dbyy->rulecapacity)
@@ -144,13 +149,15 @@ static inline void dbyy_emplace_rule(struct dbyy *dbyy, const char *dir, const c
   //dbyy->rules[dbyy->rulesz].cmds = NULL;
   //dbyy->rules[dbyy->rulesz].dir = my_strdup(dir);
   //dbyy->rules[dbyy->rulesz].tgt = my_strdup(tgt);
-  dbyy->rules[0].dir = my_strdup(dir);
-  dbyy->rules[0].tgt = my_strdup(tgt);
+  dbyy->rules[0].dir = my_strdup_len(dir, dirsz);
+  dbyy->rules[0].dirlen = dirsz;
+  dbyy->rules[0].tgt = my_strdup_len(tgt, tgtsz);
+  dbyy->rules[0].tgtlen = tgtsz;
   dbyy->rulesz = 1;
   //dbyy->rulesz++; // Not needed anymore
 }
 
-static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, off_t filesz, time_t sec, long nsec, dbyy_tsfn_t fn, void *userdata)
+static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, size_t tgtsz, off_t filesz, time_t sec, long nsec, dbyy_tsfn_t fn, void *userdata)
 {
   size_t newcapacity;
   if (dbyy->tssz >= dbyy->tscapacity)
@@ -160,7 +167,8 @@ static inline void dbyy_emplace_tsdb(struct dbyy *dbyy, const char *tgt, off_t f
     dbyy->tscapacity = newcapacity;
   }
   dbyy->tssz = 0;
-  dbyy->tsdb[dbyy->tssz].tgt = my_strdup(tgt);
+  dbyy->tsdb[dbyy->tssz].tgt = my_strdup_len(tgt, tgtsz);
+  dbyy->tsdb[dbyy->tssz].tgtlen = tgtsz;
   dbyy->tsdb[dbyy->tssz].filesz = filesz;
   dbyy->tsdb[dbyy->tssz].ts.tv_sec = sec;
   dbyy->tsdb[dbyy->tssz].ts.tv_nsec = nsec;

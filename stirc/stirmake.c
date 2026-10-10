@@ -4989,8 +4989,8 @@ void dbyy_cmdfn(void *userdata, struct dbyycmd *cmdsbuf, size_t cmdssz,
 {
   struct dbe *dbe = my_malloc(sizeof(struct dbe));
   dbecnt++;
-  dbe->tgtidx = stringtab_add(rule->tgt); // FIXME len
-  dbe->diridx = stringtab_add(rule->dir); // FIXME len
+  dbe->tgtidx = stringtab_add_len(rule->tgt, rule->tgtlen);
+  dbe->diridx = stringtab_add_len(rule->dir, rule->dirlen);
   dbe->cmds = dbyycmd_add(cmdsbuf, cmdssz);
   ins_dbe(&db, dbe);
 }
@@ -4998,7 +4998,7 @@ void dbyy_tsfn(void *userdata, struct tsdbentry *e)
 {
   struct tsdbe *tsdbe = my_malloc(sizeof(struct tsdbe));
   tsdbecnt++;
-  tsdbe->stringtabidx = stringtab_add(e->tgt);
+  tsdbe->stringtabidx = stringtab_add_len(e->tgt, e->tgtlen);
   tsdbe->seen = 0;
   tsdbe->sz = e->filesz;
   tsdbe->ts = e->ts;

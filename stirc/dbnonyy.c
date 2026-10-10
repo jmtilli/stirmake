@@ -184,6 +184,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
 {
   char *lineptr = NULL;
   char *first_string = NULL;
+  size_t first_string_len = 0;
   size_t n = 0;
   ssize_t nread;
   int first_line = 1;
@@ -270,7 +271,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
 	  {
 	    //printf("First string: %s\n", first_string);
 	    //printf("Second string: %s\n", es.str);
-	    dbyy_emplace_rule(dbyy, first_string, es.str);
+	    dbyy_emplace_rule(dbyy, first_string, first_string_len, es.str, es.sz);
 	    //free(es.str);
 	    //free(first_string);
 	    first_string = NULL;
@@ -279,6 +280,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
 	  else
 	  {
 	    first_string = es.str;
+	    first_string_len = es.sz;
 	  }
 	}
 	else
@@ -351,7 +353,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
 	}
 	else if (numcnt == 3)
 	{
-          dbyy_emplace_tsdb(dbyy, first_string, nums[0], nums[1], nums[2],
+          dbyy_emplace_tsdb(dbyy, first_string, first_string_len, nums[0], nums[1], nums[2],
                             tsfn, userdata);
           //free(first_string);
           first_string = NULL;
