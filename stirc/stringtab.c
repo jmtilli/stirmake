@@ -121,9 +121,12 @@ mysize_t stringtab_add_len(const char *symbol, size_t len)
     return ABCE_CONTAINER_OF(n, struct stringtabentry, node)->idx;
   }
   stringtab_cnt++;
-  stringtabentry = my_malloc(sizeof(struct stringtabentry));
-  stringtabentry->string = my_strdup_len(symbol, stringlen.len);
-  stringtabentry->len = stringlen.len;
+  //stringtabentry = my_malloc(sizeof(struct stringtabentry));
+  stringtabentry = my_malloc(sizeof(struct stringtabentry) + stringlen.len + 1);
+  memcpy(stringtabentry->string, symbol, len);
+  stringtabentry->string[len] = '\0';
+  //stringtabentry->string = my_strdup_len(symbol, len);
+  stringtabentry->len = len;
   st_grow();
   if (st_cnt >= st_cap)
   {

@@ -10,9 +10,10 @@
 
 struct stringtabentry {
   struct abce_rb_tree_node node;
-  char *string;
+  //char *string;
   mysize_t len;
   mysize_t idx;
+  char string[];
 };
 
 struct string_plus_len {
