@@ -245,3 +245,11 @@ struct dbe *get_dbe(mysize_t stringtabidx)
   dbe = ABCE_CONTAINER_OF(n, struct dbe, node);
   return dbe;
 }
+
+void zap_dbs(struct db *db, struct tsdb *tsdb)
+{
+  memset(db, 0, sizeof(*db));
+  memset(tsdb, 0, sizeof(*tsdb));
+  linked_list_head_init(&db->ll);
+  linked_list_head_init(&tsdb->ll);
+}

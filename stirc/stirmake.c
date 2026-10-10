@@ -4983,6 +4983,27 @@ void load_db_part1(void)
     exit(2);
   }
 }
+void dbyy_cmdfn(void *userdata, struct dbyycmd *cmdsbuf, size_t cmdssz,
+                struct dbyyrule *rule)
+{
+  struct dbe *dbe = my_malloc(sizeof(struct dbe));
+  dbecnt++;
+  dbe->tgtidx = stringtab_add(rule->tgt); // FIXME len
+  dbe->diridx = stringtab_add(rule->dir); // FIXME len
+  dbe->cmds = dbyycmd_add(cmdsbuf, cmdssz);
+  ins_dbe(&db, dbe);
+}
+void dbyy_tsfn(void *userdata, struct tsdbentry *e)
+{
+  struct tsdbe *tsdbe = my_malloc(sizeof(struct tsdbe));
+  tsdbecnt++;
+  tsdbe->stringtabidx = stringtab_add(e->tgt);
+  tsdbe->seen = 0;
+  tsdbe->sz = e->filesz;
+  tsdbe->ts = e->ts;
+  ins_tsdbe(&tsdb, tsdbe);
+}
+
 void load_db_part2(void)
 {
   struct dbyy dbyy = DBYY_EMPTY;
@@ -4991,7 +5012,7 @@ void load_db_part2(void)
   int dbfd;
   dbfd = fileno(dbf);
   //ret = dbyydoparse(dbf, &dbyy);
-  ret = dbyymineparse(dbf, &dbyy);
+  ret = dbyymineparse(dbf, &dbyy, dbyy_cmdfn, dbyy_tsfn, NULL);
   if (!test && ftruncate(dbfd, 0) != 0)
   {
     fprintf(stderr, "stirmake: *** Can't truncate DB. Exiting.\n");
@@ -5000,8 +5021,11 @@ void load_db_part2(void)
   if (ret)
   {
     fprintf(stderr, "stirmake: *** Incompatible DB version. Truncating.\n");
+    zap_dbs(&db, &tsdb);
+    fseek(dbf, 0, SEEK_END); // switching from read to write must call positioning function
     return;
   }
+#if 0
   for (i = 0; i < dbyy.rulesz; i++)
   {
     struct dbe *dbe = my_malloc(sizeof(struct dbe));
@@ -5011,6 +5035,8 @@ void load_db_part2(void)
     dbe->cmds = dbyycmd_add(dbyy.rules[i].cmds, dbyy.rules[i].cmdssz);
     ins_dbe(&db, dbe);
   }
+#endif
+#if 0
   for (i = 0; i < dbyy.tssz; i++)
   {
     struct tsdbe *tsdbe = my_malloc(sizeof(struct tsdbe));
@@ -5021,6 +5047,7 @@ void load_db_part2(void)
     tsdbe->ts = dbyy.tsdb[i].ts;
     ins_tsdbe(&tsdb, tsdbe);
   }
+#endif
   free(dbyy.rules);
   free(dbyy.tsdb);
   fseek(dbf, 0, SEEK_END); // switching from read to write must call positioning function

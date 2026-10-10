@@ -11,6 +11,14 @@ void errxit(const char *fmt, ...)
 {
 }
 
+void cmdfn(void *userdata, struct dbyycmd *cmdsbuf, size_t cmdssz,
+           struct dbyyrule *rule)
+{
+}
+void tsfn(void *userdata, struct tsdbentry *e)
+{
+}
+
 int main(int argc, char **argv)
 {
   FILE *f = fopen(".stir.db", "r");
@@ -19,7 +27,7 @@ int main(int argc, char **argv)
   {
     abort();
   }
-  printf("Parsing result: %d\n", dbyymineparse(f, &dbyy));
+  printf("Parsing result: %d\n", dbyymineparse(f, &dbyy, cmdfn, tsfn, NULL));
   fclose(f);
   return 0;
 }

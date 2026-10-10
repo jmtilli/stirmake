@@ -179,7 +179,8 @@ static struct escaped_string dbyy_escape_string(char *orig, char **strendptr)
   return resultstruct;
 }
 
-int dbyymineparse(FILE *f, struct dbyy *dbyy)
+int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
+                  dbyy_tsfn_t tsfn, void *userdata)
 {
   char *lineptr = NULL;
   char *first_string = NULL;
@@ -224,7 +225,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
     }
     else if (was_is_cmd)
     {
-      dbyy_post_cmds(dbyy);
+      dbyy_post_cmds(dbyy, cmdfn, userdata);
     }
     was_is_cmd = is_cmd;
     len = whitespacespn(lineptr);
@@ -350,9 +351,10 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
 	}
 	else if (numcnt == 3)
 	{
-	  dbyy_emplace_tsdb(dbyy, first_string, nums[0], nums[1], nums[2]);
-	  //free(first_string);
-	  first_string = NULL;
+          dbyy_emplace_tsdb(dbyy, first_string, nums[0], nums[1], nums[2],
+                            tsfn, userdata);
+          //free(first_string);
+          first_string = NULL;
 	}
 	else if (first_string == NULL && numcnt == 0)
 	{
@@ -375,7 +377,7 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy)
   }
   if (was_is_cmd)
   {
-    dbyy_post_cmds(dbyy);
+    dbyy_post_cmds(dbyy, cmdfn, userdata);
   }
   return 0;
 }

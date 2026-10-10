@@ -60,4 +60,6 @@ void maybe_del_dbe(struct db *db, mysize_t tgtidx);
 void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe);
 void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx);
 
+void zap_dbs(struct db *db, struct tsdb *tsdb);
+
 #endif

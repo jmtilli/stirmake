@@ -11,7 +11,8 @@ extern "C" {
 #endif
 
 int dbyydoparse(FILE *filein, struct dbyy *dbyy);
-int dbyymineparse(FILE *f, struct dbyy *dbyy);
+int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
+                  dbyy_tsfn_t tsfn, void *userdata);
 
 #if !STIR_NO_MEMPARSE
 int dbyydomemparse(char *filedata, size_t filesize, struct dbyy *dbyy);
