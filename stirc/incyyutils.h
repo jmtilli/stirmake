@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 void incyydoparse(FILE *filein, struct incyy *incyy);
-int incyymineparse(FILE *f, struct incyy *incyy);
+int incyymineparse(FILE *f, struct incyy *incyy, incyy_fn_t fnrule, incyy_fn_t fntarget, incyy_fn_t fndep, void *userdata);
 
 #if !STIR_NO_MEMPARSE
 void incyydomemparse(char *filedata, size_t filesize, struct incyy *incyy);

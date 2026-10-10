@@ -40,7 +40,9 @@ struct incyy {
 
 void my_abort(void);
 
-static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t len)
+typedef void (*incyy_fn_t)(void *userdata, const char *str);
+
+static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t len, incyy_fn_t fn, void *userdata)
 {
   char canbuf[1024];
   char catbuf[1024];
@@ -68,6 +70,16 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t le
     free(tmp);
   }
 
+  if (fn)
+  {
+    fn(userdata, can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
+    return;
+  }
+
   if (rule->depsz >= incyy->depcapacity)
   {
     newcapacity = 2*incyy->depcapacity + 1;
@@ -84,7 +96,7 @@ static inline void incyy_set_dep(struct incyy *incyy, const char *dep, size_t le
   }
 }
 
-static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t len)
+static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t len, incyy_fn_t fn, void *userdata)
 {
   char canbuf[1024];
   char catbuf[1024];
@@ -112,6 +124,16 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t le
     free(tmp);
   }
 
+  if (fn)
+  {
+    fn(userdata, can);
+    if (can != canbuf)
+    {
+      free(can);
+    }
+    return;
+  }
+
   if (rule->targetsz >= incyy->targetcapacity)
   {
     newcapacity = 2*incyy->targetcapacity + 1;
@@ -125,9 +147,18 @@ static inline void incyy_set_tgt(struct incyy *incyy, const char *tgt, size_t le
   }
 }
 
-static inline void incyy_emplace_rule(struct incyy *incyy)
+static inline void incyy_emplace_rule(struct incyy *incyy, incyy_fn_t fnrule, incyy_fn_t fntarget, void *userdata)
 {
   size_t newcapacity;
+  if (fnrule && fntarget)
+  {
+    fnrule(userdata, NULL);
+    if (incyy->auto_target)
+    {
+      incyy_set_tgt(incyy, incyy->fnamenodir, incyy->fnamenodirlen, fntarget, userdata);
+    }
+    return;
+  }
   if (incyy->rulesz >= incyy->rulecapacity)
   {
     newcapacity = 2*incyy->rulecapacity + 1;
@@ -144,7 +175,7 @@ static inline void incyy_emplace_rule(struct incyy *incyy)
   incyy->rulesz++;
   if (incyy->auto_target)
   {
-    incyy_set_tgt(incyy, incyy->fnamenodir, incyy->fnamenodirlen);
+    incyy_set_tgt(incyy, incyy->fnamenodir, incyy->fnamenodirlen, fntarget, userdata);
   }
 }
 

@@ -4121,7 +4121,7 @@ void mark_executed(int ruleid, int was_actually_executed)
       f = fopen(sttable[e->tgtidx].s, "r");
       if (f)
       {
-        if (incyymineparse(f, &incyy))
+        if (incyymineparse(f, &incyy, NULL, NULL, NULL, NULL))
         {
           errxit("Invalid cdepincludes format in %s", sttable[e->tgtidx].s);
           my_abort();
@@ -6274,6 +6274,51 @@ void luaopen_stir(lua_State *lua, struct abce *abce, struct abce_mb_area *scope)
 }
 #endif
 
+struct incyyfnstruct {
+  int auto_phony;
+  mysize_t *tgtstringidxs;
+  mysize_t tgtstringidxsz;
+  mysize_t tgtstringidxcap;
+};
+
+void incyy_add_rule(void *userdata, const char *str)
+{
+  struct incyyfnstruct *dat = userdata;
+  dat->tgtstringidxsz = 0;
+}
+void incyy_add_tgt(void *userdata, const char *str)
+{
+  struct incyyfnstruct *dat = userdata;
+  mysize_t tgtidx;
+  if (dat->tgtstringidxsz >= dat->tgtstringidxcap)
+  {
+    mysize_t newcap = 2*dat->tgtstringidxcap + 4;
+    mysize_t *newbuf = realloc(dat->tgtstringidxs, newcap*sizeof(*dat->tgtstringidxs));
+    if (!newbuf)
+    {
+      errxit("Not enough memory");
+      exit(2);
+    }
+    dat->tgtstringidxs = newbuf;
+    dat->tgtstringidxcap = newcap;
+  }
+  tgtidx = stringtab_add(str);
+  dat->tgtstringidxs[dat->tgtstringidxsz++] = tgtidx;
+  ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, 0, !!dat->auto_phony);
+}
+void incyy_add_dep(void *userdata, const char *str)
+{
+  struct incyyfnstruct *dat = userdata;
+  mysize_t i;
+  mysize_t depidx;
+  depidx = stringtab_add(str);
+  for (i = 0; i < dat->tgtstringidxsz; i++)
+  {
+    mysize_t tgtidx = dat->tgtstringidxs[i];
+    ins_add_dep(tgtidx, depidx, (mysize_t)-1, !!dat->auto_phony, 0, !!dat->auto_phony);
+  }
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -7510,6 +7555,9 @@ int main(int argc, char **argv)
   stiryy_main_free_rules(&stirmain);
   for (i = 0; i < stiryy.main->cdepincludesz; i++)
   {
+    struct incyyfnstruct fnstruct = {
+      .auto_phony = !!stiryy.main->cdepincludes[i].auto_phony,
+    };
     struct incyy incyy = {
       .prefix = stiryy.main->cdepincludes[i].prefix,
       .auto_target = stiryy.main->cdepincludes[i].auto_target,
@@ -7553,7 +7601,7 @@ int main(int argc, char **argv)
       errxit("Can't read cdepincludes from %s", fname);
       my_abort();
     }
-    if (incyymineparse(f, &incyy))
+    if (incyymineparse(f, &incyy, incyy_add_rule, incyy_add_tgt, incyy_add_dep, &fnstruct))
     {
       errxit("Invalid cdepincludes format in %s", fname);
       my_abort();

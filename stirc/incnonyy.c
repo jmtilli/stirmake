@@ -115,7 +115,7 @@ static inline int is_ascii(void)
   return ('\t' == 9) && (' ' == 32) && ('\n' == 10) && (':' == 58);
 }
 
-int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
+int handle_line(char *line, struct incyy *incyy, const uint64_t set[4], incyy_fn_t fnrule, incyy_fn_t fntarget, incyy_fn_t fndep, void *userdata)
 {
   size_t start;
   size_t len;
@@ -128,7 +128,7 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
   {
     return 0;
   }
-  incyy_emplace_rule(incyy);
+  incyy_emplace_rule(incyy, fnrule, fntarget, userdata);
   while (!had_colon)
   {
     if (is_ascii())
@@ -173,7 +173,7 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
         *cp = '\0';
         len2 = cp-(line+start);
       }
-      incyy_set_tgt(incyy, &line[start], len2);
+      incyy_set_tgt(incyy, &line[start], len2, fntarget, userdata);
       //printf("TARGET: %s\n", &line[start]);
     }
     //start = start+len+1 + myspn(line+start+len+1);
@@ -224,7 +224,7 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
         *cp = '\0';
         len2 = cp-(line+start);
       }
-      incyy_set_dep(incyy, &line[start], len2);
+      incyy_set_dep(incyy, &line[start], len2, fndep, userdata);
       //printf("DEP: %s\n", &line[start]);
     }
     //start = start+len+1 + myspn(line+start+len+1);
@@ -234,7 +234,7 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4])
   return 0;
 }
 
-int incyymineparse(FILE *f, struct incyy *incyy)
+int incyymineparse(FILE *f, struct incyy *incyy, incyy_fn_t fnrule, incyy_fn_t fntarget, incyy_fn_t fndep, void *userdata)
 {
   char *lineptr = NULL;
   char *lineptr2 = NULL;
@@ -328,7 +328,7 @@ int incyymineparse(FILE *f, struct incyy *incyy)
         }
       }
     }
-    if (handle_line(lineptr, incyy, set) != 0)
+    if (handle_line(lineptr, incyy, set, fnrule, fntarget, fndep, userdata) != 0)
     {
       free(lineptr);
       free(lineptr2);
