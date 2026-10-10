@@ -4937,7 +4937,8 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
     result[i] = my_argmalloc((cmds[i].argssz+1) * sizeof(*(result[i])));
     for (j = 0; j < cmds[i].argssz; j++)
     {
-      result[i][j] = my_argstrdup(cmds[i].args[j]);
+      //result[i][j] = my_argstrdup(cmds[i].args[j]);
+      result[i][j] = cmds[i].args[j]; // These are single-use
     }
     result[i][cmds[i].argssz] = NULL;
   }
