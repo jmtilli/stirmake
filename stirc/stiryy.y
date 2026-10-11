@@ -710,7 +710,7 @@ custom_expr0:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if (usetsdb == 2)
+    if (usetsdb == 2 && strcmp(stiryy->curprefix, ".") == 0)
     {
       usetsdb = 0;
     }
@@ -721,7 +721,7 @@ custom_expr0:
 {
   if (amyplanyy_do_emit(amyplanyy))
   {
-    if (usetsdb == 2)
+    if (usetsdb == 2 && strcmp(stiryy->curprefix, ".") == 0)
     {
       usetsdb = 1;
     }
