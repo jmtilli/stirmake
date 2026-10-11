@@ -160,6 +160,8 @@ jsonyy.tab.h: jsonyy.y Makefile
 stiryy.tab.c: git.h
 stirmake.d: git.h
 stirmake.o: git.h
+yyutils.d: git.h
+yyutils.o: git.h
 
 ifneq (,$(wildcard ../.git/logs/HEAD))
 git.h: ../.git/logs/HEAD

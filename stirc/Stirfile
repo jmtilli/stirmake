@@ -175,6 +175,8 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 @	["ar", "rvs", $@, @@suffilter($^, ".o")]
 
 @deponly: 'stiryy.tab.c': 'git.h'
+@deponly: 'yyutils.o': 'git.h'
+@deponly: 'yyutils.d': 'git.h'
 @deponly: 'stirmake.o': 'git.h'
 @deponly: 'stirmake.d': 'git.h'
 
