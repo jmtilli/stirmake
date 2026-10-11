@@ -53,7 +53,7 @@ wc:
 LUAINCS:=
 LUALIBS:=
 WITH_LUA?=no
-NO_MMAP?=no
+NO_MMAP?=yes
 NO_MEMPARSE?=no
 ifeq ($(WITH_LUA),yes)
   LUAINCS:=$(shell pkg-config --cflags luajit)

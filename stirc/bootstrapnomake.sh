@@ -45,6 +45,7 @@ export CFLAGS="${CFLAGS:--O3 -Wall -Wextra -Wno-unused-parameter -g}"
 export LDFLAGS="${LDFLAGS:-}"
 export STIR_LUAINCS="${STIR_LUAINCS:-}"
 export STIR_LUALIBS="${STIR_LUALIBS:-}"
+export STIR_NO_MMAP="${STIR_NO_MMAP:-1}"
 
 if [ "$STIR_NO_MMAP" != "" -a "$STIR_NO_MMAP" != "0" ]; then
   export CFLAGS="${CFLAGS} -DABCE_NO_MMAP=1 -DSTIR_NO_MMAP=1"
