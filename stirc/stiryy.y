@@ -708,29 +708,35 @@ custom_expr0:
 }
 | USETSDB OPEN_PAREN FALSE CLOSE_PAREN
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     if (usetsdb == 2 && strcmp(stiryy->curprefix, ".") == 0)
     {
       usetsdb = 0;
     }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
 | USETSDB OPEN_PAREN TRUE CLOSE_PAREN
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     if (usetsdb == 2 && strcmp(stiryy->curprefix, ".") == 0)
     {
       usetsdb = 1;
     }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
 | EXPECTEDDEPS OPEN_PAREN NUMBER CLOSE_PAREN
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     int num = (int)$3.d;
     unsigned numu = (unsigned)num;
@@ -748,12 +754,15 @@ custom_expr0:
     {
       stiryy->main->expected_deps = num;
     }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
 | EXPECTEDSTRINGS OPEN_PAREN NUMBER CLOSE_PAREN
 {
-  if (amyplanyy_do_emit(amyplanyy))
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
   {
     int num = (int)$3.d;
     unsigned numu = (unsigned)num;
@@ -771,6 +780,9 @@ custom_expr0:
     {
       stiryy->main->expected_strings = num;
     }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
