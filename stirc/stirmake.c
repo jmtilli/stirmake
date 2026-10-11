@@ -6418,6 +6418,8 @@ int main(int argc, char **argv)
   char *dupargv0 = stir_strdup(argv[0]);
   char *basenm = basename(dupargv0);
 
+  acceptchars_init();
+
   cwd = malloc(cwdcap);
   cwd_sameproj = malloc(cwd_sameprojcap);
   storcwd = malloc(storcwdcap);
