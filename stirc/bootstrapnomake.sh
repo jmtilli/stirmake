@@ -94,6 +94,9 @@ for a in *.y; do
   if [ "$a" = "incyy.y" ]; then
     continue
   fi
+  if [ "$a" = "dbyy.y" ]; then
+    continue
+  fi
   base="`echo "$a"|sed 's/.y$//g'`"
   if dobyacc "$base.tab.c" "$base.tab.h"; then
     docmd $BYACC -d -p "$base" -b "$base" -o "$base.tab.c" "$a" || die "byacc"
