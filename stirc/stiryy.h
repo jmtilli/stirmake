@@ -741,7 +741,7 @@ static inline void stiryy_main_set_cleanhooktgt(struct stiryy_main *stirmain, co
 
   slashesnodirsz = strlen(tgt) + 4;
   slashesnodir = malloc(slashesnodirsz);
-  if (snprintf(slashesnodir, slashesnodirsz, "%s///", can) >= (int)slashesnodirsz)
+  if (snprintf(slashesnodir, slashesnodirsz, "%s///", tgt) >= (int)slashesnodirsz)
   {
     my_abort();
   }
