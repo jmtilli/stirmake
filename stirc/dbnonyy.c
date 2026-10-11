@@ -381,5 +381,6 @@ int dbyymineparse(FILE *f, struct dbyy *dbyy, dbyy_cmdfn_t cmdfn,
   {
     dbyy_post_cmds(dbyy, cmdfn, userdata);
   }
+  free(lineptr);
   return 0;
 }
