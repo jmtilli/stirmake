@@ -1997,6 +1997,21 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
       tmp = pathcat2_buf(prefix, tgts[i].namenodir, catbuf, sizeof(catbuf));
     }
     can = canon_buf(tmp, canbuf, sizeof(canbuf));
+    if (cleanhook || distcleanhook || bothcleanhook)
+    {
+      size_t len = strlen(can);
+      char *can2 = malloc(len+4);
+      memcpy(can2, can, len);
+      can2[len] = '/';
+      can2[len+1] = '/';
+      can2[len+2] = '/';
+      can2[len+3] = '\0';
+      if (can != canbuf)
+      {
+        free(can);
+      }
+      can = can2;
+    }
     if (tmp != catbuf)
     {
       free(tmp);
