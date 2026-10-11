@@ -4925,6 +4925,7 @@ void do_clean(char *fwd_path, int objs, int bins)
     }
   }
   stathashentry_evict_all();
+  accesshashentry_evict_all();
 }
 
 struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
