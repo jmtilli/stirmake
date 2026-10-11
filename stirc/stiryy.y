@@ -19,6 +19,7 @@ typedef void *yyscan_t;
 */
 
 #include "stiryy.h"
+#include "db.h"
 #include "yyutils.h"
 #include "stiryy.tab.h"
 #include "stiryy.lex.h"
@@ -235,6 +236,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DUMMY_TOK1
 %token DUMMY_TOK2
 
+%token USETSDB
 %token EXPECTEDDEPS
 %token EXPECTEDSTRINGS
 %token SHELLESCAPE
@@ -702,6 +704,28 @@ custom_expr0:
     found = gitshas_has($3.str, $3.sz);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, found);
+  }
+}
+| USETSDB OPEN_PAREN FALSE CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if (usetsdb == 2)
+    {
+      usetsdb = 0;
+    }
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
+  }
+}
+| USETSDB OPEN_PAREN TRUE CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    if (usetsdb == 2)
+    {
+      usetsdb = 1;
+    }
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
 | EXPECTEDDEPS OPEN_PAREN NUMBER CLOSE_PAREN

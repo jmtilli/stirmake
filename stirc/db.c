@@ -4,7 +4,7 @@
 #include "stringtab.h"
 #include <stdio.h>
 
-int usetsdb = 1;
+int usetsdb = 2; // 2 = use it but allow Stirfile to modify it
 size_t tsdbecnt;
 
 static inline int tsdbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
