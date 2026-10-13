@@ -156,8 +156,7 @@ void syncbuf_dump(struct syncbuf *buf, int fd)
         }
         if (escapemode)
         {
-          if ((page->meat[i] >= 'A' && page->meat[i] <= 'Z') ||
-              (page->meat[i] >= 'a' && page->meat[i] <= 'z'))
+          if (page->meat[i] >= '\x40' && page->meat[i] <= '\x7E')
           {
             escapemode = 0;
           }
