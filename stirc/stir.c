@@ -5,6 +5,7 @@
 
 int yy_stored_lineno = -1;
 const char *yy_stored_prefix = NULL;
+enum out_sync out_sync;
 
 void *my_strdup(const char *str)
 {
