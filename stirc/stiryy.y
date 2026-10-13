@@ -237,6 +237,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token DUMMY_TOK2
 
 %token USETSDB
+%token OUTSYNC
 %token EXPECTEDDEPS
 %token EXPECTEDSTRINGS
 %token SHELLESCAPE
@@ -704,6 +705,37 @@ custom_expr0:
     found = gitshas_has($3.str, $3.sz);
     amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_DBL);
     amyplanyy_add_double(amyplanyy, found);
+  }
+}
+| OUTSYNC OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial && strcmp(stiryy->curprefix, ".") == 0)
+  {
+    double num = $3.d;
+    if (out_sync == OUT_SYNC_NOT_SET_YET)
+    {
+      if (num == 0)
+      {
+        out_sync = OUT_SYNC_NONE;
+      }
+      else if (num == 2)
+      {
+        out_sync = OUT_SYNC_TARGET;
+      }
+      else if (num == 3)
+      {
+        out_sync = OUT_SYNC_RECURSE;
+      }
+      else
+      {
+        stiryyerror(scanner, stiryy, "Output sync must be 0, 2 or 3");
+        YYABORT;
+      }
+    }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
   }
 }
 | USETSDB OPEN_PAREN FALSE CLOSE_PAREN

@@ -25,6 +25,15 @@
 extern "C" {
 #endif
 
+enum out_sync {
+  OUT_SYNC_NONE = 0,
+  OUT_SYNC_LINE = 1, // unsupported now
+  OUT_SYNC_TARGET = 2,
+  OUT_SYNC_RECURSE = 3,
+  OUT_SYNC_NOT_SET_YET = 4,
+};
+extern enum out_sync out_sync;
+
 void my_abort(void);
 
 extern int yy_stored_lineno;

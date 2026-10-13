@@ -252,14 +252,7 @@ int abce_inited = 0;
 
 int test = 0;
 
-enum out_sync {
-  OUT_SYNC_NONE = 0,
-  OUT_SYNC_LINE = 1, // unsupported now
-  OUT_SYNC_TARGET = 2,
-  OUT_SYNC_RECURSE = 3,
-};
-
-enum out_sync out_sync = OUT_SYNC_NONE;
+enum out_sync out_sync = OUT_SYNC_NOT_SET_YET;
 
 void st_compact(void);
 
@@ -6418,8 +6411,8 @@ int main(int argc, char **argv)
     }
     else
     {
-      fprintf(stderr, "stirmake: invalid output sync mode in MAKEFLAGS, disabling sync\n");
-      out_sync = OUT_SYNC_NONE;
+      fprintf(stderr, "stirmake: invalid output sync mode in MAKEFLAGS, using default\n");
+      out_sync = OUT_SYNC_NOT_SET_YET;
     }
   }
 
@@ -7066,6 +7059,10 @@ int main(int argc, char **argv)
   if (stirmain.expected_strings > 0)
   {
     expstrings = stirmain.expected_strings;
+  }
+  if (out_sync == OUT_SYNC_NOT_SET_YET)
+  {
+    out_sync = OUT_SYNC_NONE;
   }
   st_init();
   sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
