@@ -1583,7 +1583,6 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
       if (ret == 0)
       {
         ins_ruleid_by_dep2(depidx, ruleid, 1);
-        //ins_ruleid_by_dep(depidx, ruleid);
       }
     }
   }
@@ -1735,7 +1734,6 @@ void process_additional_deps_2(mysize_t global_scopeidx)
             else
             {
               ins_ruleid_by_dep2(blk->e[i].depidx, rule->ruleid, 1);
-              //ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid);
             }
           }
         }
@@ -1760,7 +1758,6 @@ void process_additional_deps_2(mysize_t global_scopeidx)
               printf("Omitting-2 ruleid_by_dep for dep %s of rule %s\n", sttable[blk->e[i].depidx].s, sttable[cur_tgtidx].s);
             }
           }
-          //ins_ruleid_by_dep(blk->e[i].depidx, rule->ruleid);
         }
       }
     }
@@ -1888,10 +1885,7 @@ void add_rule(struct tgt *tgts, size_t tgtsz,
     nameidxnodir = stringtab_add(deps[i].namenodir);
     if (ins_dep(rule, nameidx, rule->diridx, nameidxnodir, !!deps[i].rec, !!deps[i].orderonly, !!deps[i].wait, 1, 0) == 0)
     {
-      //printf("<INS>\n");
       ins_ruleid_by_dep2(nameidx, rule->ruleid, 0);
-      //printf("</INS>\n");
-      //ins_ruleid_by_dep(nameidx, rule->ruleid);
     }
     if (can != canbuf)
     {
@@ -5851,7 +5845,6 @@ void process_orders(struct stiryy_main *stirmain)
     if (ret == 0)
     {
       ins_ruleid_by_dep2(first, secondrule, 1);
-      //ins_ruleid_by_dep(first, secondrule);
     }
     if (debug)
     {
@@ -7892,8 +7885,6 @@ int main(int argc, char **argv)
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));
     printf("  stirdep: %zu %zu\n", (size_t)stirdep_cnt, (size_t)(stirdep_cnt*sizeof(struct stirdep)));
     printf("  dep_remain: %zu %zu\n", (size_t)dep_remain_cnt, (size_t)(dep_remain_cnt*sizeof(struct dep_remain)));
-    printf("  ruleid_by_dep_entry: %zu %zu\n", (size_t)ruleid_by_dep_entry_cnt, (size_t)(ruleid_by_dep_entry_cnt*sizeof(struct ruleid_by_dep_entry)));
-    printf("  one_ruleid_by_dep_entry: %zu %zu\n", (size_t)one_ruleid_by_dep_entry_cnt, (size_t)(one_ruleid_by_dep_entry_cnt*sizeof(struct one_ruleid_by_dep_entry)));
     printf("  ruleid_by_dep_entry_block: %zu %zu\n", (size_t)ruleid_by_dep_entry_block_cnt, (size_t)(ruleid_by_dep_entry_block_cnt*sizeof(struct ruleid_by_dep_entry_block)));
     printf("  ruleid_by_dep_entry_block_later: %zu %zu\n", (size_t)ruleid_by_dep_entry_block_later_cnt, (size_t)(ruleid_by_dep_entry_block_later_cnt*sizeof(struct ruleid_by_dep_entry_block_later)));
     printf("  add_dep_entry_block: %zu %zu\n", (size_t)add_dep_entry_block_cnt, (size_t)(add_dep_entry_block_cnt*sizeof(struct add_dep_entry_block)));
