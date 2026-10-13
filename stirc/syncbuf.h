@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "linkedlist.h"
+#include "stirutils.h"
 
 // RFE make variable-sized to use more efficiently 8K or 16K pages
 struct syncbufpage {
@@ -25,5 +26,8 @@ void syncbuf_append(struct syncbuf *buf, const void *data, size_t sz);
 void syncbuf_dump(struct syncbuf *buf, int fd);
 
 size_t writeall(int fd, const void *buf, size_t sz);
+
+extern mysize_t max_syncbufs_cached;
+extern mysize_t cur_syncbufs_cached;
 
 #endif

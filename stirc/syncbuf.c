@@ -8,6 +8,11 @@
 #include "syncbuf.h"
 #include "abce/abce.h"
 
+mysize_t max_syncbufs_cached = 0;
+mysize_t cur_syncbufs_cached = 0;
+
+struct syncbufpage *cache_head = NULL;
+
 void *stir_do_mmap_madvise(size_t bytes);
 
 void stir_do_munmap(void *ptr, size_t bytes);
@@ -15,6 +20,16 @@ void stir_do_munmap(void *ptr, size_t bytes);
 struct syncbufpage *getbuf(void)
 {
   struct syncbufpage *page;
+  if (cache_head && cur_syncbufs_cached)
+  {
+    struct syncbufpage *new_cache_head;
+    memcpy(&new_cache_head, cache_head, sizeof(new_cache_head));
+    page = cache_head;
+    page->meatsz = 0;
+    cache_head = new_cache_head;
+    cur_syncbufs_cached--;
+    return page;
+  }
   page = stir_do_mmap_madvise(sizeof(*page));
   page->meatsz = 0;
   return page;
@@ -22,6 +37,13 @@ struct syncbufpage *getbuf(void)
 
 void putbuf(struct syncbufpage *page)
 {
+  if (cur_syncbufs_cached < max_syncbufs_cached)
+  {
+    memcpy(page, &cache_head, sizeof(cache_head));
+    cache_head = page;
+    cur_syncbufs_cached++;
+    return;
+  }
   stir_do_munmap(page, sizeof(*page));
 }
 

@@ -6831,6 +6831,8 @@ int main(int argc, char **argv)
     usage(argv[0]);
   }
 
+  max_syncbufs_cached = jobcnt * 2 + 8;
+
   recursion_misuse_prevention();
 
   if (!filename_set)
@@ -7890,6 +7892,7 @@ int main(int argc, char **argv)
     printf("  add_dep_entry_block: %zu %zu\n", (size_t)add_dep_entry_block_cnt, (size_t)(add_dep_entry_block_cnt*sizeof(struct add_dep_entry_block)));
     printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)rule_cnt*rulesz());
     printf("  ruleid_by_pid: %zu %zu\n", (size_t)ruleid_by_pid_cnt, (size_t)(ruleid_by_pid_cnt*sizeof(struct ruleid_by_pid)));
+    printf("  syncbuf cache: %zu %zu\n", (size_t)cur_syncbufs_cached, (size_t)(cur_syncbufs_cached*sizeof(struct syncbufpage)));
   }
   if (merge_db())
   {
