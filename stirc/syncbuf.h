@@ -14,11 +14,13 @@ struct syncbufpage {
 
 struct syncbuf {
   struct linked_list_head list;
+  unsigned has_escapes:1;
 };
 
 static inline void syncbuf_init(struct syncbuf *buf)
 {
   linked_list_head_init(&buf->list);
+  buf->has_escapes = 0;
 }
 
 void syncbuf_append(struct syncbuf *buf, const void *data, size_t sz);

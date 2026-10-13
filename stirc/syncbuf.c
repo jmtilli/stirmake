@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include "linkedlist.h"
 #include "syncbuf.h"
+#include "yyutils.h"
 #include "abce/abce.h"
 
 mysize_t max_syncbufs_cached = 0;
@@ -55,6 +56,10 @@ void syncbuf_append(struct syncbuf *buf, const void *data, size_t sz)
   if (sz == 0)
   {
     return;
+  }
+  if (is_ascii_full() && !buf->has_escapes && memchr(data, 27, sz))
+  {
+    buf->has_escapes = 1;
   }
   if (linked_list_is_empty(&buf->list))
   {
@@ -106,6 +111,63 @@ size_t writeall(int fd, const void *buf, size_t sz)
 void syncbuf_dump(struct syncbuf *buf, int fd)
 {
   struct syncbufpage *page;
+  if (is_ascii_full() && buf->has_escapes && !isatty(fd))
+  {
+    int escapemode = 0;
+    int toskip = 0;
+    struct linked_list_node *node;
+    LINKED_LIST_FOR_EACH(node, &buf->list)
+    {
+      size_t off;
+      size_t i;
+      size_t j = 0;
+      size_t start = 0;
+      char *ptr;
+      page = ABCE_CONTAINER_OF(node, struct syncbufpage, llnode);
+      if (toskip)
+      {
+        start = 1;
+        toskip = 0;
+      }
+      for (i = start; i < page->meatsz; i++)
+      {
+        if (page->meat[i] == 27)
+        {
+          if (i+1 == page->meatsz)
+          {
+            struct syncbufpage *nxtpage = NULL;
+            if (node->next != &buf->list.node)
+            {
+              nxtpage = ABCE_CONTAINER_OF(node->next, struct syncbufpage, llnode);
+            }
+            if (nxtpage && nxtpage->meatsz && nxtpage->meat[0] == '[')
+            {
+              toskip = 1;
+              escapemode = 1;
+              continue;
+            }
+          }
+          else if (page->meat[i+1] == '[')
+          {
+            i++;
+            escapemode = 1;
+            continue;
+          }
+        }
+        if (escapemode)
+        {
+          if ((page->meat[i] >= 'A' && page->meat[i] <= 'Z') ||
+              (page->meat[i] >= 'a' && page->meat[i] <= 'z'))
+          {
+            escapemode = 0;
+          }
+          continue;
+        }
+        page->meat[j++] = page->meat[i];
+      }
+      page->meatsz = j;
+    }
+  }
   while (!linked_list_is_empty(&buf->list))
   {
     page = ABCE_CONTAINER_OF(buf->list.node.next, struct syncbufpage, llnode);
