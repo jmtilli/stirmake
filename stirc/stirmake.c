@@ -1420,13 +1420,6 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
     {
       free(can);
     }
-    #if 0
-    struct add_deps *entry = add_deps_ensure(tgtidx);
-    if (phony)
-    {
-      entry->phony = 1;
-    }
-    #endif
     ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony, 0);
     for (j = 0; j < depsz; j++)
     {
@@ -1449,10 +1442,6 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
       {
         free(can);
       }
-      #if 0
-      add = add_dep_ensure(entry, depidx, (mysize_t)-1);
-      (void)add;
-      #endif
       ins_add_dep(tgtidx, depidx, (mysize_t)-1, 0, !!phony, 0);
     }
   }
@@ -1466,25 +1455,11 @@ void add_dep(char **tgts, size_t tgts_sz,
   for (i = 0; i < tgts_sz; i++)
   {
     mysize_t tgtidx = stringtab_add(tgts[i]);
-    #if 0
-    struct add_deps *entry = add_deps_ensure(tgtidx);
-    if (phony)
-    {
-      entry->phony = 1;
-    }
-    #endif
     ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony, !!is_inc);
     for (j = 0; j < deps_sz; j++)
     {
       struct add_dep *add;
       mysize_t depidx = stringtab_add(deps[j]);
-      #if 0
-      add = add_dep_ensure(entry, depidx, (mysize_t)-1);
-      if (auto_phony)
-      {
-        add->auto_phony = 1;
-      }
-      #endif
       ins_add_dep(tgtidx, depidx, (mysize_t)-1, !!auto_phony, !!phony, !!is_inc);
     }
   }
@@ -1615,135 +1590,6 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
   return 0;
 }
 
-void process_additional_deps(mysize_t global_scopeidx)
-{
-  struct linked_list_node *node, *node2;
-  // Auto-phony-adder
-#if 1
-  LINKED_LIST_FOR_EACH(node, &add_deplist)
-  {
-    struct add_deps *entry = ABCE_CONTAINER_OF(node, struct add_deps, llnode);
-    LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
-    {
-      struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      struct rule *rule;
-      int ruleid = get_ruleid_by_tgt(dep->depidx);
-      if (ruleid >= 0)
-      {
-        continue;
-      }
-      if (!dep->auto_phony)
-      {
-        continue;
-      }
-      if (rules_size >= rules_capacity)
-      {
-        size_t new_capacity = 2*rules_capacity + 16;
-        rules = realloc(rules, new_capacity * sizeof(*rules));
-        rules_capacity = new_capacity;
-      }
-      rule_cnt++;
-      rule = my_malloc(rulesz());
-      rules[rules_size] = rule;
-      zero_rule(rule);
-      rule->cmd.args = argsdupcnt(null_cmds, 1);
-      rule->is_inc = 1;
-      rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
-
-      rule->scopeidx = global_scopeidx;
-      rule->ruleid = (int)rules_size++;
-      ins_ruleid_by_tgt(dep->depidx, rule->ruleid, NULL, -1);
-      ins_tgt(rule, dep->depidx, (mysize_t)-1, 0, NULL, -1);
-      rule->is_phony = 0; // is_inc is enough
-      rule->is_rectgt = 0;
-      rule->is_detouch = 0;
-    }
-  }
-#endif
-  LINKED_LIST_FOR_EACH(node, &add_deplist)
-  {
-    struct add_deps *entry = ABCE_CONTAINER_OF(node, struct add_deps, llnode);
-    int ruleid = get_ruleid_by_tgt(entry->tgtidx);
-    struct rule *rule;
-    if (ruleid < 0)
-    {
-      if (rules_size >= rules_capacity)
-      {
-        size_t new_capacity = 2*rules_capacity + 16;
-        rules = realloc(rules, new_capacity * sizeof(*rules));
-        rules_capacity = new_capacity;
-      }
-      rule_cnt++;
-      rule = my_malloc(rulesz());
-      rules[rules_size] = rule;
-      //rule = &rules[rules_size];
-      //printf("adding tgt: %s\n", entry->tgt);
-      zero_rule(rule);
-      rule->cmd.args = argsdupcnt(null_cmds, 1);
-      rule->is_inc = 1;
-      rule->diridx = stringtab_add_len(".", 1); // FIXME any ill side effects?
-
-      rule->scopeidx = global_scopeidx;
-      rule->ruleid = (int)rules_size++;
-      ins_ruleid_by_tgt(entry->tgtidx, rule->ruleid, NULL, -1);
-      ins_tgt(rule, entry->tgtidx, (mysize_t)-1, 0, NULL, -1);
-      LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
-      {
-        struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-	int ret;
-        ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, 0);
-	if (ret == 0)
-	{
-          if (get_ruleid_by_tgt(dep->depidx) < 0)
-          {
-            if (debug)
-            {
-              print_indent();
-              printf("Omitting-1 ruleid_by_dep for dep %s of rule %s\n", sttable[dep->depidx].s, sttable[entry->tgtidx].s);
-            }
-          }
-          else
-          {
-            ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1);
-            //ins_ruleid_by_dep(dep->depidx, rule->ruleid);
-          }
-        }
-      }
-      rule->is_phony = !!entry->phony;
-      rule->is_rectgt = 0;
-      rule->is_detouch = 0;
-      continue;
-    }
-    rule = rules[ruleid];
-    if (entry->phony)
-    {
-      rule->is_phony = 1;
-    }
-    LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
-    {
-      struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
-      int ret;
-      ret = ins_dep(rule, dep->depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, 0);
-      if (ret == 0)
-      {
-        if (get_ruleid_by_tgt(dep->depidx) < 0)
-        {
-          if (debug)
-          {
-            print_indent();
-            printf("Omitting-2 ruleid_by_dep for dep %s of rule %s\n", sttable[dep->depidx].s, sttable[entry->tgtidx].s);
-          }
-        }
-        else
-        {
-          ins_ruleid_by_dep2(dep->depidx, rule->ruleid, 1);
-          //ins_ruleid_by_dep(dep->depidx, rule->ruleid);
-        }
-      }
-    }
-  }
-}
-
 void process_additional_deps_2(mysize_t global_scopeidx)
 {
   struct add_dep_entry_block *blk;
@@ -1872,10 +1718,8 @@ void process_additional_deps_2(mysize_t global_scopeidx)
         rule->ruleid = (int)rules_size++;
         ins_ruleid_by_tgt(cur_tgtidx, rule->ruleid, NULL, -1);
         ins_tgt(rule, cur_tgtidx, (mysize_t)-1, 0, NULL, -1);
-        //LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
         if (blk->e[i].depidx != (mysize_t)-1)
         {
-          //struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
           int ret;
           ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, !!blk->e[i].is_inc);
           if (ret == 0)
@@ -1902,10 +1746,8 @@ void process_additional_deps_2(mysize_t global_scopeidx)
       }
       rule = rules[ruleid];
       rule->is_phony |= (!!blk->e[i].tgt_phony);
-      //LINKED_LIST_FOR_EACH(node2, &entry->add_deplist)
       if (blk->e[i].depidx != (mysize_t)-1)
       {
-        //struct add_dep *dep = ABCE_CONTAINER_OF(node2, struct add_dep, llnode);
         int ret;
         ret = ins_dep(rule, blk->e[i].depidx, rule->diridx, (mysize_t)-1, 0, 0, 0, 0, !!blk->e[i].is_inc);
         if (ret == 0)
@@ -8054,8 +7896,6 @@ int main(int argc, char **argv)
     printf("  one_ruleid_by_dep_entry: %zu %zu\n", (size_t)one_ruleid_by_dep_entry_cnt, (size_t)(one_ruleid_by_dep_entry_cnt*sizeof(struct one_ruleid_by_dep_entry)));
     printf("  ruleid_by_dep_entry_block: %zu %zu\n", (size_t)ruleid_by_dep_entry_block_cnt, (size_t)(ruleid_by_dep_entry_block_cnt*sizeof(struct ruleid_by_dep_entry_block)));
     printf("  ruleid_by_dep_entry_block_later: %zu %zu\n", (size_t)ruleid_by_dep_entry_block_later_cnt, (size_t)(ruleid_by_dep_entry_block_later_cnt*sizeof(struct ruleid_by_dep_entry_block_later)));
-    printf("  add_dep: %zu %zu\n", (size_t)add_dep_cnt, (size_t)(add_dep_cnt*sizeof(struct add_dep)));
-    printf("  add_deps: %zu %zu\n", (size_t)add_deps_cnt, (size_t)(add_deps_cnt*sizeof(struct add_deps)));
     printf("  add_dep_entry_block: %zu %zu\n", (size_t)add_dep_entry_block_cnt, (size_t)(add_dep_entry_block_cnt*sizeof(struct add_dep_entry_block)));
     printf("  rule: %zu %zu\n", (size_t)rule_cnt, (size_t)rule_cnt*rulesz());
     printf("  ruleid_by_pid: %zu %zu\n", (size_t)ruleid_by_pid_cnt, (size_t)(ruleid_by_pid_cnt*sizeof(struct ruleid_by_pid)));
