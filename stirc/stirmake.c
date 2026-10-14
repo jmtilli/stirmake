@@ -4285,6 +4285,7 @@ void recursion_misuse_prevention(void)
   if (pidstr != NULL)
   {
     pid_t pid = (int)atoi(pidstr);
+    was_recursive = 1;
     if (getppid() == pid)
     {
       fprintf(stderr, "stirmake: Seven Processes for the Programmers waiting to type,\n");
@@ -6227,6 +6228,15 @@ void incyy_add_dep(void *userdata, const char *str, mysize_t len)
   }
 }
 
+int isapipe(int fd)
+{
+  if (lseek(fd, 0, SEEK_CUR) == (off_t)-1 && errno == ESPIPE && !isatty(fd))
+  {
+    return 1;
+  }
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
 #if 0
@@ -6399,14 +6409,17 @@ int main(int argc, char **argv)
     else if (outsyncmflag[0] == 'l')
     {
       fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
+      was_recursive_outsync = 1;
       out_sync = OUT_SYNC_TARGET;
     }
     else if (outsyncmflag[0] == 't')
     {
+      was_recursive_outsync = 1;
       out_sync = OUT_SYNC_TARGET;
     }
     else if (outsyncmflag[0] == 'r')
     {
+      was_recursive_outsync = 1;
       out_sync = OUT_SYNC_RECURSE;
     }
     else
@@ -6414,6 +6427,10 @@ int main(int argc, char **argv)
       fprintf(stderr, "stirmake: invalid output sync mode in MAKEFLAGS, using default\n");
       out_sync = OUT_SYNC_NOT_SET_YET;
     }
+  }
+  if (isapipe(1))
+  {
+    output_is_pipe = 1;
   }
 
 #if DEFAULT_CREATE_JOBSERVER_FIFO == 2

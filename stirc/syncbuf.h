@@ -31,5 +31,8 @@ size_t writeall(int fd, const void *buf, size_t sz);
 
 extern mysize_t max_syncbufs_cached;
 extern mysize_t cur_syncbufs_cached;
+extern int was_recursive;
+extern int was_recursive_outsync;
+extern int output_is_pipe;
 
 #endif

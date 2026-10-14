@@ -11,6 +11,9 @@
 
 mysize_t max_syncbufs_cached = 0;
 mysize_t cur_syncbufs_cached = 0;
+int was_recursive = 0;
+int was_recursive_outsync = 0;
+int output_is_pipe = 0;
 
 struct syncbufpage *cache_head = NULL;
 
@@ -111,7 +114,13 @@ size_t writeall(int fd, const void *buf, size_t sz)
 void syncbuf_dump(struct syncbuf *buf, int fd)
 {
   struct syncbufpage *page;
-  if (is_ascii_full() && buf->has_escapes && !isatty(fd))
+  // If isatty(fd), we don't strip, since a terminal supports ANSI color.
+  // If was_recursive && was_recursive_outsync && isapipe(fd) we don't strip
+  // ...since then the parent stirmake strips.
+  // However, output_is_pipe is defined only for fd == 1, which the caller
+  // always fortunately happens to use, so fd != 1, we have to assume that
+  // !output_is_pipe and to strip.
+  if (is_ascii_full() && buf->has_escapes && !isatty(fd) && (!was_recursive || !was_recursive_outsync || (fd != 1 || !output_is_pipe)))
   {
     int escapemode = 0;
     int toskip = 0;
