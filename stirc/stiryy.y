@@ -718,6 +718,10 @@ custom_expr0:
       {
         out_sync = OUT_SYNC_NONE;
       }
+      else if (num == 1)
+      {
+        out_sync = OUT_SYNC_LINE;
+      }
       else if (num == 2)
       {
         out_sync = OUT_SYNC_TARGET;
@@ -728,7 +732,7 @@ custom_expr0:
       }
       else
       {
-        stiryyerror(scanner, stiryy, "Output sync must be 0, 2 or 3");
+        stiryyerror(scanner, stiryy, "Output sync must be 0, 1, 2 or 3");
         YYABORT;
       }
     }
