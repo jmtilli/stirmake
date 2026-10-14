@@ -2312,7 +2312,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
 
   do_makecmd(0, "touch", create_fd, create_make_fd, outpipewr, 1);
   cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, args, 1);
-  if (cmdprint != NULL && create_fd)
+  if (cmdprint != NULL && create_fd && out_sync != OUT_SYNC_LINE)
   {
     syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
   }
@@ -2667,7 +2667,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, &args[3], 1);
   }
-  if (cmdprint != NULL && fd_in_use)
+  if (cmdprint != NULL && fd_in_use && out_sync != OUT_SYNC_LINE)
   {
     syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
   }
@@ -5378,12 +5378,28 @@ int narration = 0;
 fd_set globfds;
 int globmaxfd = -1;
 
+static void *mymemrchr(const void *s, int c, size_t n)
+{
+  unsigned char uc = (unsigned char)c;
+  const unsigned char *us = s;
+  size_t x;
+  for (x = n; x > 0; x--)
+  {
+    if (us[x-1] == uc)
+    {
+      return (void*)&us[x-1];
+    }
+  }
+  return NULL;
+}
+
 void drain_pipe(struct rule *rule, int fdit)
 {
   for (;;)
   {
     char buf[10240];
     ssize_t bytes_read;
+    char *end = NULL;
     bytes_read = read(fdit, buf, sizeof(buf));
     if (bytes_read < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
     {
@@ -5402,7 +5418,20 @@ void drain_pipe(struct rule *rule, int fdit)
       FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
       break;
     }
-    syncbuf_append(&rule->output, buf, (size_t)bytes_read);
+    if (out_sync == OUT_SYNC_LINE)
+    {
+      end = mymemrchr(buf, '\n', (size_t)bytes_read);
+    }
+    if (end)
+    {
+      syncbuf_append(&rule->output, buf, end-buf+1);
+      syncbuf_dump(&rule->output, 1);
+      syncbuf_append(&rule->output, end, bytes_read-(end-buf+1));
+    }
+    else
+    {
+      syncbuf_append(&rule->output, buf, (size_t)bytes_read);
+    }
   }
 }
 
@@ -6408,9 +6437,8 @@ int main(int argc, char **argv)
     }
     else if (outsyncmflag[0] == 'l')
     {
-      fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
       was_recursive_outsync = 1;
-      out_sync = OUT_SYNC_TARGET;
+      out_sync = OUT_SYNC_LINE;
     }
     else if (outsyncmflag[0] == 't')
     {
@@ -6744,8 +6772,7 @@ int main(int argc, char **argv)
       }
       else if (optarg[0] == 'l')
       {
-        fprintf(stderr, "stirmake: line sync not supported, using target sync\n");
-        out_sync = OUT_SYNC_TARGET;
+        out_sync = OUT_SYNC_LINE;
       }
       else if (optarg[0] == 't')
       {
