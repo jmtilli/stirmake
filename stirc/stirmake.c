@@ -2312,7 +2312,7 @@ pid_t spawn_child_touch(int ruleid, int create_fd, int create_make_fd, int *fdou
 
   do_makecmd(0, "touch", create_fd, create_make_fd, outpipewr, 1);
   cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, args, 1);
-  if (cmdprint != NULL && create_fd && out_sync != OUT_SYNC_LINE)
+  if (cmdprint != NULL && create_fd /* && out_sync != OUT_SYNC_LINE */)
   {
     syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
   }
@@ -2667,7 +2667,7 @@ pid_t spawn_child(int ruleid, int create_fd, int create_make_fd, int *fdout)
   {
     cmdprint = print_cmd(sttable[first_tgt->tgtidx].s, dir, &args[3], 1);
   }
-  if (cmdprint != NULL && fd_in_use && out_sync != OUT_SYNC_LINE)
+  if (cmdprint != NULL && fd_in_use /* && out_sync != OUT_SYNC_LINE*/)
   {
     syncbuf_append(&rules[ruleid]->output, cmdprint, strlen(cmdprint));
   }
@@ -5418,7 +5418,7 @@ void drain_pipe(struct rule *rule, int fdit)
       FD_CLR(fdit, &globfds); // don't close yet, FIXME close later!
       break;
     }
-    if (out_sync == OUT_SYNC_LINE)
+    if (0 && out_sync == OUT_SYNC_LINE) // line means a command, not a line!
     {
       end = mymemrchr(buf, '\n', (size_t)bytes_read);
     }
@@ -5710,7 +5710,18 @@ back:
         if (fd >= 0)
         {
           drain_pipe(rules[ruleid], fd);
-          syncbuf_dump(&rules[ruleid]->output, 1);
+          if (out_sync == OUT_SYNC_LINE)
+          {
+            syncbuf_dump(&rules[ruleid]->output, 1);
+          }
+          else if (touchmode && ready_touch(ruleid))
+          {
+            syncbuf_dump(&rules[ruleid]->output, 1);
+          }
+          else if (!touchmode && ready(ruleid))
+          {
+            syncbuf_dump(&rules[ruleid]->output, 1);
+          }
           close(fd);
           FD_CLR(fd, &globfds);
         }
