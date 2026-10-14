@@ -5426,7 +5426,7 @@ void drain_pipe(struct rule *rule, int fdit)
     {
       syncbuf_append(&rule->output, buf, end-buf+1);
       syncbuf_dump(&rule->output, 1);
-      syncbuf_append(&rule->output, end, bytes_read-(end-buf+1));
+      syncbuf_append(&rule->output, end+1, bytes_read-(end-buf+1));
     }
     else
     {
