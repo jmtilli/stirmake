@@ -2081,14 +2081,15 @@ void do_makecmd(int ismake, const char *cmd, int create_fd, int create_make_fd, 
     {
       if (jobserver_fifo)
       {
-        snprintf(env, sizeof(env), " --jobserver-auth=fifo:%s -j -Otarget",
-	         jobserver_fifo);
+        snprintf(env, sizeof(env), " --jobserver-auth=fifo:%s -j -O%s",
+	         jobserver_fifo, out_sync == OUT_SYNC_LINE ? "line" : "target");
       }
       else
       {
-        snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -Otarget",
+        snprintf(env, sizeof(env), " --jobserver-fds=%d,%d --jobserver-auth=%d,%d -j -O%s",
                  jobserver_fd[0], jobserver_fd[1],
-                 jobserver_fd[0], jobserver_fd[1]);
+                 jobserver_fd[0], jobserver_fd[1],
+                 out_sync == OUT_SYNC_LINE ? "line" : "target");
       }
     }
     else
