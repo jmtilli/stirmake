@@ -517,10 +517,10 @@ static inline void stiryy_main_set_patdep(struct stiryy_main *stirmain, const ch
   //rule->deps[rule->depsz].name = stir_strdup(can); // Let's copy it to compact it
   rule->deps[rule->depsz].namenodir = stir_strdup(dep);
   rule->deps[rule->depsz].suffix = NULL;
-  rule->deps[rule->depsz].percent_special = percent_special;
-  rule->deps[rule->depsz].rec = rec;
-  rule->deps[rule->depsz].orderonly = orderonly;
-  rule->deps[rule->depsz].wait = wait;
+  rule->deps[rule->depsz].percent_special = !!percent_special;
+  rule->deps[rule->depsz].rec = !!rec;
+  rule->deps[rule->depsz].orderonly = !!orderonly;
+  rule->deps[rule->depsz].wait = !!wait;
   rule->depsz++;
 #if 0
   if (can != canbuf)
@@ -569,9 +569,9 @@ static inline void stiryy_main_set_patdep2(struct stiryy_main *stirmain, const c
   rule->deps[rule->depsz].namenodir = stir_strdup(tmp1+off);
   rule->deps[rule->depsz].suffix = stir_strdup(tmp2);
   rule->deps[rule->depsz].percent_special = 0;
-  rule->deps[rule->depsz].rec = rec;
-  rule->deps[rule->depsz].orderonly = orderonly;
-  rule->deps[rule->depsz].wait = wait;
+  rule->deps[rule->depsz].rec = !!rec;
+  rule->deps[rule->depsz].orderonly = !!orderonly;
+  rule->deps[rule->depsz].wait = !!wait;
   rule->depsz++;
 #if 0
   if (can != canbuf)
@@ -664,9 +664,9 @@ static inline void stiryy_main_set_dep(struct stiryy_main *stirmain, const char 
   rule->deps[rule->depsz].namenodir = stir_strdup(dep);
   rule->deps[rule->depsz].suffix = NULL;
   rule->deps[rule->depsz].percent_special = 0;
-  rule->deps[rule->depsz].rec = rec;
-  rule->deps[rule->depsz].orderonly = orderonly;
-  rule->deps[rule->depsz].wait = wait;
+  rule->deps[rule->depsz].rec = !!rec;
+  rule->deps[rule->depsz].orderonly = !!orderonly;
+  rule->deps[rule->depsz].wait = !!wait;
   rule->depsz++;
 #if 0
   if (can != canbuf)
@@ -843,7 +843,7 @@ static inline void stiryy_main_set_pattgt(struct stiryy_main *stirmain, const ch
     rule->targets[rule->targetsz].namenodir = stir_strdup(tgt);
     rule->targets[rule->targetsz].is_dist = !!is_dist;
     rule->targets[rule->targetsz].suffix = NULL;
-    rule->targets[rule->targetsz].percent_special = percent_special;
+    rule->targets[rule->targetsz].percent_special = !!percent_special;
     rule->targetsz++;
 #if 0
     if (can != canbuf)
