@@ -15,7 +15,7 @@
 .Op Fl X Ar file
 .Op Fl o Ar file
 .Op Fl r Ar file
-.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl O Ar n | Fl O Ar l | Fl O Ar t | Fl O Ar r
 .Op Fl C Ar dir
 .Op Fl f Ar Stirfile | Fl t | Fl p | Fl a
 .Op Ar target ...
@@ -27,7 +27,7 @@
 .Op Fl X Ar file
 .Op Fl o Ar file
 .Op Fl r Ar file
-.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl O Ar n | Fl O Ar l | Fl O Ar t | Fl O Ar r
 .Op Fl C Ar dir
 .Op Ar target ...
 .Nm smkp
@@ -38,7 +38,7 @@
 .Op Fl X Ar file
 .Op Fl o Ar file
 .Op Fl r Ar file
-.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl O Ar n | Fl O Ar l | Fl O Ar t | Fl O Ar r
 .Op Fl C Ar dir
 .Op Ar target ...
 .Nm smkt
@@ -49,7 +49,7 @@
 .Op Fl X Ar file
 .Op Fl o Ar file
 .Op Fl r Ar file
-.Op Fl O Ar n | Fl O Ar t | Fl O Ar r
+.Op Fl O Ar n | Fl O Ar l | Fl O Ar t | Fl O Ar r
 .Op Fl C Ar dir
 .Op Ar target ...
 .Sh DESCRIPTION
@@ -163,10 +163,12 @@ If a process past the first needs to be forked, but load average is above the
 limit, it is not forked.
 .It Fl n
 Do a dry run, don't build anything
-.It Fl O Ar n | Fl O Ar t | Fl O Ar r
+.It Fl O Ar n | Fl O Ar l | Fl O Ar t | Fl O Ar r
 Do output sync for
 .Ao Ar n Ac
 (nothing),
+.Ao Ar l Ac
+(each command line),
 .Ao Ar t Ac
 (each target),
 .Ao Ar r Ac
@@ -1102,32 +1104,12 @@ To fix this, use the
 .Va @strict
 mode. However, then free-form token support is entirely disabled.
 .It
-Some error codes are translated to
-.Dq "Unknown error"
-instead of a descriptive
-error message.
-.It
 Targets may be deleted even if the list of commands to create such a target is
 empty, when running clean.
 .It
 There are plenty of memory leaks.
 .It
-The output sync feature is a quick undocumented hack and not complete yet.
-.It
 The man page should contain plenty of examples, but it does not.
-.It
-.Nm stirmake
-can be slightly slower for null builds than GNU
-.Xr make 1
-if the GNU
-.Xr make 1
-system is
-extremely well designed. However, who has seen an extremely well designed GNU
-.Xr make 1
-based build system? The author of
-.Nm stirmake
-certainly hasn't seen
-such systems except those done by the author himself.
 .It
 .Va @patrule
 rules cannot use the special
