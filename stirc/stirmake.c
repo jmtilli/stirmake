@@ -7532,7 +7532,7 @@ int main(int argc, char **argv)
     };
     struct incyy incyy = {
       .prefix = stiryy.main->cdepincludes[i].prefix,
-      .auto_target = stiryy.main->cdepincludes[i].auto_target,
+      .auto_target = !!stiryy.main->cdepincludes[i].auto_target,
       .fnamenodir = stiryy.main->cdepincludes[i].name,
     };
     size_t j;
