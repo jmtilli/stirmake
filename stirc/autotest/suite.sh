@@ -18,6 +18,7 @@ runtest "clean"
 runtest "touchmode"
 runtest "headerrm"
 runtest "autotarget"
+runtest "twotarget"
 
 echo "Failure count: $FAILCNT"
 if [ "$FAILTCNT" = 0 ]; then

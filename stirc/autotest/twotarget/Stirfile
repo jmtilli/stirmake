@@ -1,0 +1,12 @@
+@toplevel
+@strict
+
+'tgt1' 'tgt2': 'Stirfile'
+	touch $@
+	touch tgt2
+
+$JUSTSYNTAXTEST=["tgt3", "tgt4"]
+
+$JUSTSYNTAXTEST: 'Stirfile'
+	touch $@
+	touch tgt4
