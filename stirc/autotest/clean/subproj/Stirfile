@@ -6,8 +6,12 @@
 $BIN=["bin"]
 $OBJ=["obj"]
 
-@patrule @distrule: $BIN: '%': 'obj'
-@	["cp", 'obj', $*]
+@phonyrule: '/ph4':
+
+@patrule @distrule: $BIN: '%n': 'obj' '%.txt'
+@	["cp", 'obj', $*."n"]
+
+@phonyrule: 'bi.txt':
 
 @patrule: $OBJ: '%':
 @	["touch", $@]

@@ -14,6 +14,8 @@ $LIST += [@$LIST2]
 @cdepincludes @autophony "statinc2.d.txt"
 @cdepincludes @autotarget "statinc3.d.txt"
 
+@phonyrule: '/ph3':
+
 #@distrule: 'bin':
 #@	["touch", "bin"]
 #
