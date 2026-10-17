@@ -1,0 +1,5 @@
+@toplevel
+#@strict
+
+@phonyrule: 'all': 4e2
+@phonyrule: '4e2':

@@ -1,0 +1,8 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'a'
+
+# Doesn't touch b
+'a' 'b':
+	touch a

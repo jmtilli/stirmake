@@ -1,0 +1,7 @@
+@toplevel
+@strict
+
+$SRC=["foo.c", "foo.h"]
+$OBJ=@sufsuball($SRC, ".c", ".o")
+
+@phonyrule: 'all':

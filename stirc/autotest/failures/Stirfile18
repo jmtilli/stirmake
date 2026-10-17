@@ -1,0 +1,6 @@
+@toplevel
+#@strict
+
+$A=4/2
+
+@phonyrule: 'all':
