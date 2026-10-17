@@ -73,7 +73,7 @@ hookclear
 ../../stirmake -a -bc > /dev/null 2>&1 || die "cmdfail1"
 noobjnobin "err1"
 bothcleanassert "err1"
-(cd subdir; ../../../stirmake -p -ja) > /dev/null 2>&1 || die "cmdfail2"
+(cd subdir; ../../../stirmake -p -ja -s) || die "cmdfail2"
 bothexist "err2"
 (cd subdir; ../../../stirmake -a -bc) > /dev/null 2>&1 || die "cmdfail3"
 noobjnobin "err3"
@@ -81,13 +81,13 @@ bothcleanassert "err3"
 ../../stirmake -a -n > /dev/null 2>&1 || die "cmdfail3A"
 noobjnobin "err3A"
 bothcleanassert "err3A"
-(cd subdir; ../../../stirmake -t -j2 ../all) > /dev/null 2>&1 || die "cmdfail4"
+(cd subdir; ../../../stirmake -t -j2 -s ../all) || die "cmdfail4"
 bothexist "err4"
 hookclear
 ../../stirmake -a -b -ja > /dev/null 2>&1 || die "cmdfail5"
 nobin "err5"
 distcleanassert "err5"
-(cd subproj; ../../../stirmake -p -ja -Ot ../all) > /dev/null 2>&1 || die "cmdfail6"
+(cd subproj; ../../../stirmake -p -ja -Ot -s ../all) || die "cmdfail6"
 bothexist "err6"
 hookclear
 ../../stirmake -a -c -j2 > /dev/null 2>&1 || die "cmdfail7"
@@ -105,7 +105,7 @@ bothexist "err10"
 
 # Test building and cleaning a subdirectory
 ../../stirmake -a -bc > /dev/null 2>&1
-(cd subdir; ../../../stirmake -t) > /dev/null 2>&1
+(cd subdir; ../../../stirmake -t -s)
 if [ -e obj -o -e bin ]; then die "smkt fail 1"; fi
 if [ \! -e subdir/obj -o \! -e subdir/bin ]; then die "smkt fail 2"; fi
 if [ -e subproj/obj -o -e subproj/bin ]; then die "smkt fail 3"; fi
@@ -119,7 +119,7 @@ if [ \! -e obj -o \! -e bin ]; then die "smkt fail 7"; fi
 ../../stirmake -a -bc > /dev/null 2>&1
 noobjnobin "err3"
 hookclear
-../../stirmake -a -T > /dev/null 2>&1
+../../stirmake -a -T -s
 bothexist "err10"
 
 ../../stirmake -a -bc > /dev/null 2>&1
