@@ -15,6 +15,7 @@ runtest()
 }
 
 runtest "clean"
+runtest "touchmode"
 
 echo "Failure count: $FAILCNT"
 if [ "$FAILTCNT" = 0 ]; then

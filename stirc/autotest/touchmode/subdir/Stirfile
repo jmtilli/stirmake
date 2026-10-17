@@ -1,0 +1,45 @@
+@subfile
+#@strict # to test the parser without strict
+
+$BASE = "statinc3"
+$STR = $BASE . '.d.txt'
+$LIST = []
+$LIST2 = [$STR]
+$LIST += [@$LIST2]
+
+@phonyrule: 'all': (['ph2']) $LIST #'../build/a.txt'
+
+# Sadly, this doesn't work with touch mode
+#'../build/a.txt': @orderonly '../build'
+#	touch $@
+#
+#'../build':
+#	mkdir -p $@
+
+@cdepincludes "statinc.d.txt"
+@cdepincludes @ignore "notpresent.d.txt"
+@cdepincludes @autophony "statinc2.d.txt"
+@cdepincludes @autotarget "statinc3.d.txt"
+
+@phonyrule: '/ph3':
+
+#@distrule: 'bin':
+#@	["touch", "bin"]
+#
+#'obj':
+#@	["touch", "obj"]
+$DYNOBJ="obj"
+$GLOBTRUE2=@false
+@call $ADDRULES()
+
+# To test if there are clashes
+@phonyrule: 'CLEAN///':
+
+@bothcleanhook:
+@	["touch", "bothcleanhookexec"]
+
+@cleanhook:
+@	["touch", "cleanhookexec"]
+
+@distcleanhook:
+@	["touch", "distcleanhookexec"]

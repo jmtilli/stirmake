@@ -1,0 +1,93 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'bin' @wait 'obj'
+
+@deponly: 'all': 'subdir/../subdir/all/'
+
+@call @adddeps(['all/'], ['subproj/all/'], {})
+
+$TOUCH="false"
+
+$DELEVAL<>=[@strsub("AtouchB", 1, 6), $@]
+
+$CMDDB={@strupper(@strreverse("hc"."uot")): @chomp(@chomp(@strlower("TOUCH\n")))}
+
+$TOUCH=$CMDDB{(@strwordlist("a TOUCH b", " "))[1]}
+
+@distrule: 'bin':
+@	@noecho $DELEVAL<>
+
+$SHLIST=["obj"]
+
+@mayberule: 'obj': 'ph' 'ph2'
+	$(TOUCH) $(@SHLIST)
+
+@phonyrule: 'ph': 'ph2/.' '/ph3' '/ph4'
+@phonyrule: 'ph2///':
+
+@call @addrule({'tgts': [{'name': @strgsub('XXesXXing', 'XX', 't')}], 'attrs': {'phony': !@false}})
+$WHOLE=@strstrip("   \t   abc123ABC \t \t\t", " \t")
+@call @addrule({'tgts': [{'name': 'testing2'}], 'attrs': {'maybe': (1==@strstr($WHOLE, "123")-2)}})
+
+$GLOBTRUE=@true
+$GLOBTRUE2=@true
+@function $RETC()
+  @return "c"
+@endfunction
+@function $RETONE()
+  @return 1
+@endfunction
+@function $RETNIL()
+@endfunction
+@function $RETMIDDLEARG($a,$interesting,$b)
+  @return $interesting
+@endfunction
+@function $ADDRULES()
+  @locvar $tree = {@L$RETC(): @L$RETONE(), @L$RETMIDDLEARG(@nil,"d",@nil): "ERR"}
+  @locvar $d = @dictprev($tree, @L$RETNIL())
+  @locvar $mprev = @dictprev({"m": 1, "n": 1}, "n")
+  @locvar $m = @dictnext({"l": 1, $mprev: 1}, "l")
+  @locvar $CMD=@strword("a ".(@dictnext($tree, @nil)).($m).($d)." b", " ", 1)
+  @locvar $TGTS=@strset("tGts", ({"a": 1}){}, ("g")[@0])
+  @locvar $AR=["ERR", @["false"], @D$DYNOBJ]
+  @locvar $TGTSVAL = [{"name": @dirup . '/' . @dirdown . '/./' . "bin"}]
+  @locvar $x = \
+           {"tgts": @nil, \
+            "deps": [{"name": @dirupall . '/testing' . @tostring(@strwordcnt("foo bar", " "))}], \
+            "attrs": {"dist": @D$GLOBTRUE}, \
+            "shells": [{"cmd": ["false"], "ignore": @true}, {$CMD: ["touch", "bin"]}]}
+  $x{"tgts"} = $TGTSVAL
+  @addrule(@jsondec(@jsonenc($x)))
+  $AR[1] = "touch"
+  $AR = @filterout($AR, ["ERR", "ERR2"])
+  @addrule({$TGTS: [{"name": @dirupall . '/' . @dirdownall . '/' . "obj"}], \
+            "deps": [{"name": @dirupall . '/./testing'}], \
+            "attrs": {"maybe": @L$GLOBTRUE2}, \
+            "shells": [{"cmds": [$AR], "embed": @L$GLOBTRUE}]})
+@endfunction
+
+# To test if there are clashes
+@phonyrule: 'BOTHCLEAN///':
+
+@bothcleanhook:
+@@	([(["touch", ("bothcleanhookexec")])])
+
+@cleanhook: 'indirection'
+
+$DELEVALTEST=[$TOUCH, @["cleanhookexec"]]
+
+@phonyrule: 'indirection': (@glob('St?rfi*'))
+@	$DELEVALTEST<>
+
+$TOUCHFINAL="touch2"
+
+@distcleanhook:
+@@	([(["touch", ("distcleanhookexec")])])
+
+$FALSY=@false
+
+$TOUCHFINAL="touch"
+
+@dirinclude "subdir"
+@projdirinclude "subproj"
