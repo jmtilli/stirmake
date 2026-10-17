@@ -3,7 +3,12 @@
 
 @phonyrule: 'all': 'bin' @wait 'obj'
 
+@if(@true)
 @deponly: 'all': 'subdir/../subdir/all/'
+@endif
+@if(@false)
+@deponly: 'all': 'NONEXISTENT'
+@endif
 
 @call @adddeps(['all/'], ['subproj/all/'], {})
 
@@ -47,9 +52,30 @@ $WHOLE=@strstrip("   \t   abc123ABC \t \t\t", " \t")
 
 $GLOBTRUE=@true
 $GLOBTRUE2=@true
+@function $RETC()
+  @locvar $pb = @str2pb("c")
+  @return @pb2str($pb, 0, $pb{@})
+@endfunction
+@function $RETONE()
+  @locvar $pb2 = @pbnew()
+  @locvar $pb = @pbnew()
+  $pb2{@} = 4
+  $pb2{@0,@le32} = @abs(@abs(-2))
+  @if($pb2{@0,@be8} != @round(@sqrt(4)))
+    @error("pb2err\n")
+  @endif
+  $pb{@} = 2
+  $pb{@0,@be16} = (@trunc(-1+256.9)+@floor(1.9))*@ceil(0.1)
+  @return $pb{@0,@le8}
+@endfunction
+@function $RETNIL()
+@endfunction
+@function $RETMIDDLEARG($a,$interesting,$b)
+  @return $interesting
+@endfunction
 @function $ADDRULES()
-  @locvar $tree = {"c": 1, "d": "ERR"}
-  @locvar $d = @dictprev($tree, @nil)
+  @locvar $tree = {@L$RETC(): @L$RETONE(), @L$RETMIDDLEARG(@nil,"d",@nil): "ERR"}
+  @locvar $d = @dictprev($tree, @L$RETNIL())
   @locvar $mprev = @dictprev({"m": 1, "n": 1}, "n")
   @locvar $m = @dictnext({"l": 1, $mprev: 1}, "l")
   @locvar $CMD=@strword("a ".(@dictnext($tree, @nil)).($m).($d)." b", " ", 1)
@@ -59,12 +85,20 @@ $GLOBTRUE2=@true
   @locvar $key = @nil
   @locvar $foridx = @nil
   @locvar $val = @nil
+  @locvar $seentypes={}
+  @locvar $alltypes=[@nil,@true,"a",2,[],{},@L$RETNIL,@pbnew(),@fopen("test.sh","r")]
   @locvar $x = \
            {"tgts": @nil, \
             "deps": [{"name": @dirupall . '/testing' . @tostring(@strwordcnt("foo bar", " "))}], \
             "attrs": {"dist": @D$GLOBTRUE}, \
             "shells": [{"cmd": ["false"], "ignore": @true}, {$CMD: ["touch", "bin"]}]}
   $x{"tgts"} = $TGTSVAL
+  @for($foridx=0, $foridx<$alltypes[], $foridx=$foridx+1)
+    @if($seentypes{@?@tostring(@type($alltypes[$foridx]))})
+      @error("Type already seen\n")
+    @endif
+    $seentypes{@tostring(@type($alltypes[$foridx]))}=@true
+  @endfor
   @fordictprev $key, $val ($tree)
     $x{"tgts2"} = @nil
   @endfor
@@ -79,7 +113,11 @@ $GLOBTRUE2=@true
   @if($x{@?"tgts2"})
     @error("foo\n")
   @endif
-  @addrule($x)
+  @if(@jsontest(@jsonenc($x)))
+  @else
+    @error("jsontest\n")
+  @endif
+  @addrule(@jsondec(@jsonenc($x)))
   @fordictprev $key, $val ($tree)
   @endfor
   @while(@false)
@@ -101,11 +139,32 @@ $GLOBTRUE2=@true
   @if($foridx != 5)
     @error("foridx not 5\n")
   @endif
+  $foridx=1
+  @while($foridx<5)
+    $foridx=$foridx+1
+    @continue
+    $foridx=100
+  @endwhile
+  @if($foridx != 5)
+    @error("foridx not 5\n")
+  @endif
+  $foridx=1
+  @while($foridx<5)
+    $foridx=$foridx+1
+    @break
+    $foridx=100
+  @endwhile
+  @if($foridx != 2)
+    @error("foridx not 2\n")
+  @endif
   @for($foridx=1, $foridx<5, $foridx=$foridx+1)
     @break
   @endfor
-  @if($foridx != 1)
+  @if($foridx != @L$RETONE())
     @error("foridx not 1\n")
+  @endif
+  @if(1/2 != 0.5)
+    @error("Division error\n")
   @endif
   $AR = @filterout($AR, [$val, "ERR2"])
   @addrule({$TGTS: [{"name": @dirupall . '/' . @dirdownall . '/' . "obj"}], \
