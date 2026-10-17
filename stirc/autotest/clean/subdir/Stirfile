@@ -8,17 +8,33 @@ $LIST2 = [$STR]
 $LIST += [@$LIST2]
 
 @function $MYCHECK()
+  @locvar $exphat = [ \
+    "ph2", \
+    "statinc3.d.txt", \
+    "../build/a.txt", \
+    "obj" ]
+  @locvar $expplus = [ \
+    "ph2", \
+    "statinc3.d.txt", \
+    "../build/a.txt", \
+    "ph2", \
+    "obj" ]
   @if(@strcmp(@D$@, "all") != 0) # FIXME smkp coredumps if condition reversed
     @error("$@ fail\n")
   @endif
   @if(@strcmp(@D$<, "ph2") != 0)
     @error("$< fail\n")
   @endif
-  #@stdout(@jsonenc(@D$^)) # FIXME incorrect string length
   @if(@D$^[] != 4)
     @error("$^ fail\n")
   @endif
   @if(@D$+[] != 5)
+    @error("$+ fail\n")
+  @endif
+  @if(@strcmp(@jsonenc($exphat), @jsonenc(@D$^)) != 0)
+    @error("$^ fail\n")
+  @endif
+  @if(@strcmp(@jsonenc($expplus), @jsonenc(@D$+)) != 0)
     @error("$+ fail\n")
   @endif
   @return []
