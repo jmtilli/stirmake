@@ -19,7 +19,7 @@ $LIST += [@$LIST2]
     "../build/a.txt", \
     "ph2", \
     "obj" ]
-  @if(@strcmp(@D$@, "all") != 0) # FIXME smkp coredumps if condition reversed
+  @if(@strcmp(@D$@, "all") != 0)
     @error("$@ fail\n")
   @endif
   @if(@strcmp(@D$<, "ph2") != 0)

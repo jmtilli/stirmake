@@ -5755,12 +5755,12 @@ back:
         else
         {
           //ruleremain_rm(rules[ruleid]);
-          mark_executed(ruleid, 1);
           children--;
           if (children != 0)
           {
             write_jobserver();
           }
+          mark_executed(ruleid, 1);
         }
         forkedchildcnt++;
         if (((forkedchildcnt % 10) == 0) && narration)
