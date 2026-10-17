@@ -19,6 +19,8 @@ $LIST += [@$LIST2]
 #
 #'obj':
 #@	["touch", "obj"]
+$DYNOBJ="obj"
+$GLOBTRUE2=@false
 @call $ADDRULES()
 
 # To test if there are clashes

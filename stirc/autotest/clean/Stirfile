@@ -3,37 +3,83 @@
 
 @phonyrule: 'all': 'bin' @wait 'obj'
 
-@deponly: 'all': 'subdir/all'
+@deponly: 'all': 'subdir/../subdir/all/'
 
 @call @adddeps(['all'], ['subproj/all'], {})
 
+$TOUCH="false"
+
+$DELEVAL<>=["touch", $@]
+
+$TOUCH="touch"
+
 @distrule: 'bin':
-@	["touch", "bin"]
+@	@ignore ["false"]
+@	@noecho $DELEVAL<>
+
+$SHLIST=["OBJ.foo"]
+$SHLIST=@sufsuball($SHLIST, ".foo", "")
+$SHLIST=@presuball($SHLIST, "OBJ", "bj")
+$SHLIST=@presuball($SHLIST, "", "o")
 
 @mayberule: 'obj': 'ph' 'ph2'
-@	["touch", "obj"]
+	$(TOUCH) $(@SHLIST)
 
-@phonyrule: 'ph': 'ph2'
-@phonyrule: 'ph2':
+@phonyrule: 'ph': 'ph2/.'
+@phonyrule: 'ph2///':
 
+@call @addrule({'tgts': [{'name': 'testing'}], 'attrs': {'phony': @true}})
+@call @addrule({'tgts': [{'name': 'testing2'}], 'attrs': {'maybe': @true}})
+
+@phonyrule: 'fails':
+@	["false"]
+
+$GLOBTRUE=@true
+$GLOBTRUE2=@true
 @function $ADDRULES()
-  @addrule({"tgts": [{"name": "bin"}], "attrs": {"dist": @true}, "shells": [{"cmd": ["touch", "bin"]}]})
-  @addrule({"tgts": [{"name": "obj"}], "attrs": {"maybe": @true}, "shells": [{"cmd": ["touch", "obj"]}]})
+  @locvar $x = \
+           {"tgts": [{"name": @dirup . '/' . @dirdown . '/./' . "bin"}], \
+            "deps": [{"name": @dirupall . '/testing2'}], \
+            "attrs": {"dist": @D$GLOBTRUE}, \
+            "shells": [{"cmd": ["false"], "ignore": @true}, {"cmd": ["touch", "bin"]}]}
+  @addrule($x)
+  @addrule({"tgts": [{"name": @dirupall . '/' . @dirdownall . '/' . "obj"}], \
+            "deps": [{"name": @dirupall . '/./testing'}], \
+            "attrs": {"maybe": @L$GLOBTRUE2}, \
+            "shells": [{"cmds": [["touch", @D$DYNOBJ]], "embed": @L$GLOBTRUE}]})
 @endfunction
 
 # To test if there are clashes
 @phonyrule: 'BOTHCLEAN///':
 
 @bothcleanhook:
-@	["touch", "bothcleanhookexec"]
+@@	([(["touch", ("bothcleanhookexec")])])
 
 @cleanhook: 'indirection'
 
+$DELEVALTEST=[$TOUCH, @["cleanhookexec"]]
+
 @phonyrule: 'indirection': 'Stirfile'
-@	["touch", "cleanhookexec"]
+@	$DELEVALTEST<>
+
+$TOUCHFINAL="touch2"
 
 @distcleanhook:
-@	["touch", "distcleanhookexec"]
+@	$FN<>
+
+$IMM="distcleanhookexec"
+@function $FN()
+  @locvar $TOCONSTRUCT=[]
+  @append($TOCONSTRUCT, @D$TOUCHFINAL)
+  @appendlist($TOCONSTRUCT, [@I$IMM])
+  @appendlist($TOCONSTRUCT, ["cleanhookexec", "bothcleanhookexec"])
+  $TOCONSTRUCT[-] #pop
+  $TOCONSTRUCT[-] #pop
+  @return $TOCONSTRUCT
+@endfunction
+$IMM=@nil
+
+$TOUCHFINAL="touch"
 
 @dirinclude "subdir"
 @projdirinclude "subproj"
