@@ -19,6 +19,7 @@ noobjnobin()
   if [ -e subdir/obj -o -e subdir/bin ]; then die "$@" BB; fi
   if [ -e subproj/obj -o -e subproj/bin ]; then die "$@" CC; fi
   if [ -e build ]; then die "$@" CC2; fi
+  ../../smka -q bin > /dev/null 2>&1 && die "$@" CC3
 }
 noobj()
 {
@@ -26,6 +27,7 @@ noobj()
   if [ -e subdir/obj -o \! -e subdir/bin ]; then die "$@" BB; fi
   if [ -e subproj/obj -o \! -e subproj/bin ]; then die "$@" CC; fi
   if [ -e build ]; then die "$@" CC2; fi
+  (cd subdir; ../../../smka -C .. -q bin) > /dev/null 2>&1 || die "$@" CC3
 }
 nobin()
 {
@@ -33,6 +35,7 @@ nobin()
   if [ \! -e subdir/obj -o -e subdir/bin ]; then die "$@" BB; fi
   if [ \! -e subproj/obj -o -e subproj/bin ]; then die "$@" CC; fi
   if [ \! -e build/a.txt ]; then die "$@" CC2; fi
+  (cd subdir; ../../../smka -q bin) > /dev/null 2>&1 && die "$@" CC3
 }
 bothexist()
 {
@@ -40,6 +43,7 @@ bothexist()
   if [ \! -e subdir/obj -o \! -e subdir/bin ]; then die "$@" BB; fi
   if [ \! -e subproj/obj -o \! -e subproj/bin ]; then die "$@" CC; fi
   if [ \! -e build/a.txt ]; then die "$@" CC2; fi
+  ../../smka -q bin > /dev/null 2>&1 || die "$@" CC3
 }
 bothcleanassert()
 {
@@ -75,9 +79,12 @@ noobjnobin "err1"
 bothcleanassert "err1"
 (cd subdir; ../../../smkp -ja) > /dev/null 2>&1 || die "cmdfail2"
 bothexist "err2"
-../../smka -bc > /dev/null 2>&1 || die "cmdfail3"
+(cd subdir; ../../../smka -bc) > /dev/null 2>&1 || die "cmdfail3"
 noobjnobin "err3"
 bothcleanassert "err3"
+../../smka -n > /dev/null 2>&1 || die "cmdfail3A"
+noobjnobin "err3A"
+bothcleanassert "err3A"
 (cd subdir; ../../../smkt -j2 ../all) > /dev/null 2>&1 || die "cmdfail4"
 bothexist "err4"
 hookclear
