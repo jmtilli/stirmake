@@ -1,7 +1,13 @@
 @subfile
-@strict
+#@strict # to test the parser without strict
 
-@phonyrule: 'all': 'ph2' 'statinc3.d.txt'
+$BASE = "statinc3"
+$STR = $BASE . '.d.txt'
+$LIST = []
+$LIST2 = [$STR]
+$LIST += [@$LIST2]
+
+@phonyrule: 'all': (['ph2']) $LIST
 
 @cdepincludes "statinc.d.txt"
 @cdepincludes @ignore "notpresent.d.txt"
