@@ -86,7 +86,7 @@ void stiryyerrorfmt(/*YYLTYPE *yylloc,*/ yyscan_t scanner, struct stiryy *stiryy
   va_start(ap, str);
   vsnprintf(buf, (size_t)ret+1, str, ap);
   va_end(ap);
-  if (ret < 0)
+  if (1)
   {
     if (stiryy->dirname == NULL)
     {
