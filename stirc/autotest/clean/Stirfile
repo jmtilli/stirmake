@@ -114,6 +114,19 @@ $GLOBTRUE2=@true
     @endif
     $seentypes{@tostring(@type($alltypes[$foridx]))}=@true
   @endfor
+  $alltypes[0] = @jsondec('null')
+  $alltypes[1] = @jsondec('false')
+  $alltypes[2] = @jsondec('"a\\b\\n\\r\\f\\t\\\\\\"\u0001/\\/"')
+  $alltypes[3] = @jsondec('2')
+  $alltypes[4] = @jsondec('[true,-2.345e6,{},["foo"],[{}, [[[[[[[]]]]]]]]]')
+  $alltypes[5] = @jsondec('{"k1": {"ik": 1, "ik2": 2}, "k2": [], "k3": true}')
+  $seentypes={}
+  @for($foridx=0, $foridx<$alltypes[], $foridx=$foridx+1)
+    @if($seentypes{@?@tostring(@type($alltypes[$foridx]))})
+      @error("Type already seen\n")
+    @endif
+    $seentypes{@tostring(@type($alltypes[$foridx]))}=@true
+  @endfor
   @fordictprev $key, $val ($tree)
     $x{"tgts2"} = @nil
   @endfor
