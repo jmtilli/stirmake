@@ -9,10 +9,10 @@ $LIST += [@$LIST2]
 
 @phonyrule: 'all': (['ph2']) $LIST '../build/a.txt'
 
-'../build/a.txt': @orderonly '../build'
+'../build/a.txt': @orderonly (@dirupall . '/build')
 	touch $@
 
-'../build':
+(@dirup . '/build'):
 	mkdir -p $@
 
 @cdepincludes "statinc.d.txt"
