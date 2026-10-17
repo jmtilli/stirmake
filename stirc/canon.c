@@ -416,7 +416,7 @@ char *neighpath_buflen(const char *path, mysize_t pathlen,
   {
     char *res;
     res = pathcat1_buflen(file+pathlen+1, filelen-pathlen-1, buf, bufsz);
-    *reslen = filelen;
+    *reslen = filelen-pathlen-1;
     return res;
   }
   filecanon = canon_buf(file, filecanbuf, sizeof(filecanbuf));
