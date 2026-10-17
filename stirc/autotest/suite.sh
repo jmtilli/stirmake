@@ -20,6 +20,7 @@ runtest "headerrm"
 runtest "autotarget"
 runtest "twotarget"
 runtest "failures"
+runtest "patrule"
 
 echo "Failure count: $FAILCNT"
 if [ "$FAILTCNT" = 0 ]; then

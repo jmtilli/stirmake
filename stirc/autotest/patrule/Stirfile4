@@ -1,0 +1,15 @@
+@toplevel
+@strict
+$SRC=["a.c", "b.c", "c.c"]
+$OBJ=@sufsuball($SRC, ".c", ".o")
+$DEP=@sufsuball($SRC, ".c", ".d")
+
+@phonyrule: 'all': $OBJ
+
+@patrule @distrule: $OBJ: '%.o': (['%.d', '%.c', 'prefix.%', 'ph3'])
+	touch $@
+
+@phonyrule: 'ph3':
+@phonyrule: 'prefix.%':
+@phonyrule: '%.c':
+@phonyrule: '%.d':

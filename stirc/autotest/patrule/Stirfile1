@@ -1,0 +1,24 @@
+@toplevel
+@strict
+$SRC=["a.c", "b.c", "c.c"]
+$OBJ=@sufsuball($SRC, ".c", ".o")
+$DEP=@sufsuball($SRC, ".c", ".d")
+
+@phonyrule: 'all': $OBJ
+
+@patrule @distrule: $OBJ: '%.o': '%.d' '%.c' 'prefix.%' 'ph3'
+	touch $@
+@patrule: $DEP: '%.d': '%.c' 'prefix.%' 'ph3'
+	touch $@
+
+@phonyrule: 'a.c':
+@phonyrule: 'b.c':
+@phonyrule: 'c.c':
+@phonyrule: 'prefix.a':
+@phonyrule: 'prefix.b':
+@phonyrule: 'prefix.c':
+@phonyrule: 'ph1':
+@phonyrule: 'ph2':
+@phonyrule: 'ph3':
+@phonyrule: 'ph4':
+@phonyrule: 'ph5':
