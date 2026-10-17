@@ -27,7 +27,9 @@
 @bothcleanhook:
 @	["touch", "bothcleanhookexec"]
 
-@cleanhook:
+@cleanhook: 'indirection'
+
+@phonyrule: 'indirection': 'Stirfile'
 @	["touch", "cleanhookexec"]
 
 @distcleanhook:
