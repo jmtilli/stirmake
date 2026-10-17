@@ -13,5 +13,6 @@
 'y.d':
 	echo "y.o: y.h" > y.d
 
-@cdepincludes @autophony @autotarget @ignore "x.d"
-@cdepincludes @autophony @ignore "y.d"
+$ONE="x.d"
+@cdepincludes @autophony @autotarget @ignore $ONE
+@cdepincludes @autophony @ignore (["y.d"])

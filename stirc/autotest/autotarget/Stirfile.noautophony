@@ -13,5 +13,6 @@
 'y.d':
 	echo "y.o: y.h" > y.d
 
-@cdepincludes @ignore @autotarget "x.d"
-@cdepincludes @ignore "y.d"
+$MANY=["x.d"]
+@cdepincludes @ignore @autotarget $MANY
+@cdepincludes @ignore ("y.d")
