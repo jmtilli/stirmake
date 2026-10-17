@@ -1,0 +1,28 @@
+@subfile
+@strict
+
+@phonyrule: 'all': 'ph2' 'statinc3.d.txt'
+
+@cdepincludes "statinc.d.txt"
+@cdepincludes @ignore "notpresent.d.txt"
+@cdepincludes @autophony "statinc2.d.txt"
+@cdepincludes @autotarget "statinc3.d.txt"
+
+#@distrule: 'bin':
+#@	["touch", "bin"]
+#
+#'obj':
+#@	["touch", "obj"]
+@call $ADDRULES()
+
+# To test if there are clashes
+@phonyrule: 'CLEAN///':
+
+@bothcleanhook:
+@	["touch", "bothcleanhookexec"]
+
+@cleanhook:
+@	["touch", "cleanhookexec"]
+
+@distcleanhook:
+@	["touch", "distcleanhookexec"]

@@ -1,0 +1,25 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'bin'
+
+$BIN=["bin"]
+$OBJ=["obj"]
+
+@patrule @distrule: $BIN: '%': 'obj'
+@	["cp", 'obj', $*]
+
+@patrule: $OBJ: '%':
+@	["touch", $@]
+
+# To test if there are clashes
+@phonyrule: 'DISTCLEAN///':
+
+@bothcleanhook:
+@	["touch", "bothcleanhookexec"]
+
+@cleanhook:
+@	["touch", "cleanhookexec"]
+
+@distcleanhook:
+@	["touch", "distcleanhookexec"]

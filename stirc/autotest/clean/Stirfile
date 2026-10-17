@@ -1,0 +1,37 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'bin' @wait 'obj'
+
+@deponly: 'all': 'subdir/all'
+
+@call @adddeps(['all'], ['subproj/all'], {})
+
+@distrule: 'bin':
+@	["touch", "bin"]
+
+@mayberule: 'obj': 'ph' 'ph2'
+@	["touch", "obj"]
+
+@phonyrule: 'ph': 'ph2'
+@phonyrule: 'ph2':
+
+@function $ADDRULES()
+  @addrule({"tgts": [{"name": "bin"}], "attrs": {"dist": @true}, "shells": [{"cmd": ["touch", "bin"]}]})
+  @addrule({"tgts": [{"name": "obj"}], "attrs": {"maybe": @true}, "shells": [{"cmd": ["touch", "obj"]}]})
+@endfunction
+
+# To test if there are clashes
+@phonyrule: 'BOTHCLEAN///':
+
+@bothcleanhook:
+@	["touch", "bothcleanhookexec"]
+
+@cleanhook:
+@	["touch", "cleanhookexec"]
+
+@distcleanhook:
+@	["touch", "distcleanhookexec"]
+
+@dirinclude "subdir"
+@projdirinclude "subproj"
