@@ -7,6 +7,7 @@
 @deponly: 'all': 'subdir/../subdir/all/'
 @endif
 @if(@false)
+@call @thisisafuturebuiltin(1,2,"foo",[],{})
 @deponly: 'all': 'NONEXISTENT'
 @endif
 
