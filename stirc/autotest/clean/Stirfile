@@ -47,7 +47,8 @@ $SHLIST=@presuball($SHLIST, "", "o")
   @call @error("list len err\n")
 @endif
 
-@mayberule: 'obj': 'ph' 'ph2'
+# Test two targets per rule, it's a mayberule so we don't have to make both
+@mayberule: 'notmadetarget' 'obj': 'ph' 'ph2'
 	$(TOUCH) $(@SHLIST)
 
 # Test shell escaping
