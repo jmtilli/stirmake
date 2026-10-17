@@ -18,28 +18,28 @@ noobjnobin()
   if [ -e obj -o -e bin ]; then die "$@" AA; fi
   if [ -e subdir/obj -o -e subdir/bin ]; then die "$@" BB; fi
   if [ -e subproj/obj -o -e subproj/bin ]; then die "$@" CC; fi
-  ../../stirmake -a -q bin > /dev/null 2>&1 && die "$@" CC3
+  ../../stirmake -a -s -q bin && die "$@" CC3
 }
 noobj()
 {
   if [ -e obj -o \! -e bin ]; then die "$@" AA; fi
   if [ -e subdir/obj -o \! -e subdir/bin ]; then die "$@" BB; fi
   if [ -e subproj/obj -o \! -e subproj/bin ]; then die "$@" CC; fi
-  (cd subdir; ../../../stirmake -a -C .. -q bin) > /dev/null 2>&1 || die "$@" CC3
+  (cd subdir; ../../../stirmake -a -C .. -s -q bin) || die "$@" CC3
 }
 nobin()
 {
   if [ \! -e obj -o -e bin ]; then die "$@" AA; fi
   if [ \! -e subdir/obj -o -e subdir/bin ]; then die "$@" BB; fi
   if [ \! -e subproj/obj -o -e subproj/bin ]; then die "$@" CC; fi
-  (cd subdir; ../../../stirmake -a -q bin) > /dev/null 2>&1 && die "$@" CC3
+  (cd subdir; ../../../stirmake -a -s -q bin) && die "$@" CC3
 }
 bothexist()
 {
   if [ \! -e obj -o \! -e bin ]; then die "$@" AA; fi
   if [ \! -e subdir/obj -o \! -e subdir/bin ]; then die "$@" BB; fi
   if [ \! -e subproj/obj -o \! -e subproj/bin ]; then die "$@" CC; fi
-  ../../stirmake -a -q bin > /dev/null 2>&1 || die "$@" CC3
+  ../../stirmake -a -s -q bin || die "$@" CC3
 }
 bothcleanassert()
 {
@@ -70,58 +70,58 @@ cleanassert()
 }
 
 hookclear
-../../stirmake -a -bc > /dev/null 2>&1 || die "cmdfail1"
+../../stirmake -a -bc -s || die "cmdfail1"
 noobjnobin "err1"
 bothcleanassert "err1"
 (cd subdir; ../../../stirmake -p -ja -s) || die "cmdfail2"
 bothexist "err2"
-(cd subdir; ../../../stirmake -a -bc) > /dev/null 2>&1 || die "cmdfail3"
+(cd subdir; ../../../stirmake -a -bc -s) || die "cmdfail3"
 noobjnobin "err3"
 bothcleanassert "err3"
-../../stirmake -a -n > /dev/null 2>&1 || die "cmdfail3A"
+../../stirmake -a -n -s || die "cmdfail3A"
 noobjnobin "err3A"
 bothcleanassert "err3A"
 (cd subdir; ../../../stirmake -t -j2 -s ../all) || die "cmdfail4"
 bothexist "err4"
 hookclear
-../../stirmake -a -b -ja > /dev/null 2>&1 || die "cmdfail5"
+../../stirmake -a -b -ja -s || die "cmdfail5"
 nobin "err5"
 distcleanassert "err5"
 (cd subproj; ../../../stirmake -p -ja -Ot -s ../all) || die "cmdfail6"
 bothexist "err6"
 hookclear
-../../stirmake -a -c -j2 > /dev/null 2>&1 || die "cmdfail7"
+../../stirmake -a -c -j2 -s || die "cmdfail7"
 noobj "err7"
 cleanassert "err7"
-../../stirmake -a -bc -Ol all > /dev/null 2>&1 || die "cmdfail8"
+../../stirmake -a -bc -Ol -s all || die "cmdfail8"
 hookclear
 bothexist "err8"
-../../stirmake -a -bc -j2 -Or all > /dev/null 2>&1 || die "cmdfail9"
+../../stirmake -a -bc -j2 -Or -s all || die "cmdfail9"
 hookclear
 bothexist "err9"
-../../stirmake -a -bc -ja -On all > /dev/null 2>&1 || die "cmdfail10"
+../../stirmake -a -bc -ja -On -s all || die "cmdfail10"
 hookclear
 bothexist "err10"
 
 # Test building and cleaning a subdirectory
-../../stirmake -a -bc > /dev/null 2>&1
+../../stirmake -a -bc -s
 (cd subdir; ../../../stirmake -t -s)
 if [ -e obj -o -e bin ]; then die "smkt fail 1"; fi
 if [ \! -e subdir/obj -o \! -e subdir/bin ]; then die "smkt fail 2"; fi
 if [ -e subproj/obj -o -e subproj/bin ]; then die "smkt fail 3"; fi
 touch bin
 touch obj
-(cd subdir; ../../../stirmake -t -bc) > /dev/null 2>&1
+(cd subdir; ../../../stirmake -t -bc -s)
 if [ -e subdir/obj -o -e subdir/bin ]; then die "smkt fail 6"; fi
 if [ \! -e obj -o \! -e bin ]; then die "smkt fail 7"; fi
 
 # Test touch mode
-../../stirmake -a -bc > /dev/null 2>&1
+../../stirmake -a -bc -s
 noobjnobin "err3"
 hookclear
 ../../stirmake -a -T -s
 bothexist "err10"
 
-../../stirmake -a -bc > /dev/null 2>&1
+../../stirmake -a -bc -s
 hookclear
 echo "OK"

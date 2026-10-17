@@ -7,7 +7,7 @@ $LIST = []
 $LIST2 = [$STR]
 $LIST += [@$LIST2]
 
-@phonyrule: 'all': (['ph2']) $LIST #'../build/a.txt'
+@phonyrule: 'all': 'bin' 'obj'
 
 # Sadly, this doesn't work with touch mode
 #'../build/a.txt': @orderonly '../build'
@@ -15,11 +15,6 @@ $LIST += [@$LIST2]
 #
 #'../build':
 #	mkdir -p $@
-
-@cdepincludes "statinc.d.txt"
-@cdepincludes @ignore "notpresent.d.txt"
-@cdepincludes @autophony "statinc2.d.txt"
-@cdepincludes @autotarget "statinc3.d.txt"
 
 @phonyrule: '/ph3':
 

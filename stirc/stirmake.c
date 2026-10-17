@@ -4734,31 +4734,31 @@ void do_clean(char *fwd_path, int objs, int bins)
         ret = 0;
         if (S_ISREG(statbuf.st_mode))
         {
-          printf("unlink regular: %s\n", name);
+          if (!silent) printf("unlink regular: %s\n", name);
           ret = unlink(name);
         }
         else if (S_ISLNK(statbuf.st_mode))
         {
-          printf("unlink symlink: %s\n", name);
+          if (!silent) printf("unlink symlink: %s\n", name);
           ret = unlink(name);
         }
         else if (S_ISSOCK(statbuf.st_mode))
         {
-          printf("unlink socket: %s\n", name);
+          if (!silent) printf("unlink socket: %s\n", name);
           ret = unlink(name);
         }
         else if (S_ISFIFO(statbuf.st_mode))
         {
-          printf("unlink fifo: %s\n", name);
+          if (!silent) printf("unlink fifo: %s\n", name);
           ret = unlink(name);
         }
         else if (S_ISDIR(statbuf.st_mode))
         {
-          printf("rmdir: %s\n", name);
+          if (!silent) printf("rmdir: %s\n", name);
           ret = rmdir(name);
           if (ret != 0)
           {
-            perror("stirmake: (ignoring) can't rmdir");
+            if (!silent) perror("stirmake: (ignoring) can't rmdir");
             ret = 0;
           }
         }
