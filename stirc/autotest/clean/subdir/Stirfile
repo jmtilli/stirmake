@@ -43,7 +43,22 @@ $LIST += [@$LIST2]
 @phonyrule: 'all': (['ph2']) $LIST '../build/a.txt' 'ph2'
 @@	$MYCHECK()
 
+@function $MYCHECK2()
+  @locvar $exporderonly = [@dirupall . '/build']
+  @if(@D$^[] != 0)
+    @error("$^ fail\n")
+  @endif
+  @if(@D$+[] != 0)
+    @error("$+ fail\n")
+  @endif
+  @if(@strcmp(@jsonenc($exporderonly), @jsonenc(@D$|)) != 0)
+    @error("$| fail\n")
+  @endif
+  @return []
+@endfunction
+
 '../build/a.txt': @orderonly (@dirupall . '/build')
+@@	$MYCHECK2()
 	touch $@
 
 (@dirup . '/build'):
