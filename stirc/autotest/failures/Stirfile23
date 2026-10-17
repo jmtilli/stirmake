@@ -1,0 +1,7 @@
+@toplevel
+@strict
+
+$A=@nil
+$A=@chomp($A)
+
+@phonyrule: 'all':

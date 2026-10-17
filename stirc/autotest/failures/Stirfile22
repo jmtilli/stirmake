@@ -1,0 +1,6 @@
+@toplevel
+@strict
+
+$OUT `= ["./thiscommanddoesnotexist"]
+
+@phonyrule: 'all':

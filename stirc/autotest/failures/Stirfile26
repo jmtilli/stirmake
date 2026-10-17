@@ -1,0 +1,8 @@
+@toplevel
+@strict
+
+$STR="a"
+
+$STR += ["b"]
+
+@phonyrule: 'all':

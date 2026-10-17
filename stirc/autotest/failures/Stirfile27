@@ -1,0 +1,8 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+@if(@version("7e548edc5aa47312a1c517503947aa02e5e20329"))
+@call @error("Version present\n")
+@endif

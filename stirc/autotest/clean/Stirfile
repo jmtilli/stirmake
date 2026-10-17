@@ -275,5 +275,114 @@ $IMM=@nil
 
 $TOUCHFINAL="touch"
 
-@dirinclude "subdir"
+@function $BREAK2($array)
+  @locvar $i = @nil
+  @locvar $j = @nil
+  @for($i = 0, $i < $array[], $i=$i+1)
+    @for($j = 0, $j < 10, $j=$j+1)
+      @if($i == 2 && $j == 2)
+        @break 2
+      @endif
+    @endfor
+    @if($i == 2)
+      @error("Is supposed to be broken out of loop\n")
+    @endif
+  @endfor
+@endfunction
+@call $BREAK2([1, "2", 3.5, @false, @nil])
+
+$STRNUMS = '123456789'
+@if($STRNUMS[@] != 9)
+  @call @error("strlen fail\n")
+@endif
+@if(@strcmp(@strfromchr($STRNUMS[@3]), "4") != 0)
+  @call @error("strfromchr fail\n")
+@endif
+
+$SHORT="012"
+@if(@strcmp(@strrep($SHORT, 3), "012012012") != 0)
+  @call @error("strrep fail\n")
+@endif
+
+$ARRAY=["a.c", "b.h", "c"]
+$C=@eregfilter($ARRAY, @true, "\\.cc?$")
+$CEXP=["a.c"]
+@if(@strcmp(@jsonenc($C), @jsonenc($CEXP)) != 0)
+  @call @error("C\n")
+@endif
+$H=@regfilter($ARRAY, @true, "\\.h$")
+$HEXP=["b.h"]
+@if(@strcmp(@jsonenc($H), @jsonenc($HEXP)) != 0)
+  @call @error("H\n")
+@endif
+$NOC=@eregfilter($ARRAY, @false, "\\.cc?$")
+$NOCEXP=["b.h", "c"]
+@if(@strcmp(@jsonenc($NOC), @jsonenc($NOCEXP)) != 0)
+  @call @error("NOC\n")
+@endif
+$NOH=@regfilter($ARRAY, @false, "\\.h$")
+$NOHEXP=["a.c", "c"]
+@if(@strcmp(@jsonenc($NOH), @jsonenc($NOHEXP)) != 0)
+  @call @error("NOH\n")
+@endif
+
+@function $TREEKEYSIMPL($sorted)
+  @locvar $tree = {}
+  @locvar $i = @nil
+  @locvar $key = @nil
+  @locvar $val = @nil
+  @for($i=0, $i<$sorted[], $i=$i+1)
+    $tree{$sorted[$i]} = $i
+  @endfor
+  @fordictprev $key, $val ($tree)
+    @if(@strcmp($key, $sorted[-]) != 0)
+      @error("TREEKEYS fail\n")
+    @endif
+  @endfor
+@endfunction
+$TREEKEYS=$TREEKEYSIMPL # test function pointer
+@function $TREEKEYSREV($sorted)
+  @locvar $tree = {}
+  @locvar $i = @nil
+  @locvar $key = @nil
+  @locvar $val = @nil
+  @for($i=0, $i<$sorted[], $i=$i+1)
+    $tree{$sorted[$i]} = $i
+  @endfor
+  @fordict $key, $val ($tree)
+    @if(@strcmp($key, $sorted[-]) != 0)
+      @error("TREEKEYSREV fail\n")
+    @endif
+  @endfor
+@endfunction
+
+$X = []
+@beginscope $SCOPE
+  $X += ["a"]
+  @call $TREEKEYS(["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o"])
+  @call $TREEKEYSREV(["n","m","l","k","j","i","h","g","f","e","d","c","b","a"])
+@endscope
+@if($X[] != 0)
+  @call @error("X1\n")
+@endif
+@if(@SC($SCOPE)$X[] != 1)
+  @call @error("XSCOPE\n")
+@endif
+@beginholeyscope
+  $TREEKEYS=@LP$TREEKEYS
+  $TREEKEYSREV=@LP$TREEKEYSREV
+  $X = @LP$X
+  $X += ["b"]
+  @call $TREEKEYS(["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o"])
+  @call $TREEKEYSREV(["n","m","l","k","j","i","h","g","f","e","d","c","b","a"])
+@endscope
+@if($X[] != 0)
+  @call @error("X2\n")
+@endif
+
+@dirinclude @scopename $SUBSCOPE "subdir"
+$SCOPEVAR=$SUBSCOPE
+@if(@strcmp(@SC($SCOPEVAR)$BASE, "statinc3") != 0)
+  @call @error("statinc3\n")
+@endif
 @projdirinclude "subproj"
