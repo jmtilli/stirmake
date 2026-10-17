@@ -7,7 +7,13 @@ $LIST = []
 $LIST2 = [$STR]
 $LIST += [@$LIST2]
 
-@phonyrule: 'all': (['ph2']) $LIST
+@phonyrule: 'all': (['ph2']) $LIST '../build/a.txt'
+
+'../build/a.txt': @orderonly '../build'
+	touch $@
+
+'../build':
+	mkdir -p $@
 
 @cdepincludes "statinc.d.txt"
 @cdepincludes @ignore "notpresent.d.txt"

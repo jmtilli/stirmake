@@ -9,7 +9,7 @@ $OBJ=["obj"]
 @phonyrule: '/ph4':
 
 @patrule @distrule: $BIN: '%n': 'obj' '%.txt'
-@	["cp", 'obj', $*."n"]
+@	["cp", $<, $*."n"]
 
 @phonyrule: 'bi.txt':
 

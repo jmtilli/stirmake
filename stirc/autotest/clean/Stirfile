@@ -25,6 +25,7 @@ $TOUCH=$CMDDB{(@strwordlist("a TOUCH b", " "))[1]}
 
 @distrule: 'bin':
 @	@ignore ["false"]
+@	@noecho ["sh", "-c", "true"]
 @	@noecho $DELEVAL<>
 
 $SHLIST=["ERR.foo", "OBJ.foo", "OBJ.bar"]
@@ -40,8 +41,12 @@ $SHLIST=@presuball($SHLIST, "", "o")
 @mayberule: 'obj': 'ph' 'ph2'
 	$(TOUCH) $(@SHLIST)
 
+# Test shell escaping
+$SHELLESCAPETEST=" a 'b'$foo`cat`" . '" '
 @phonyrule: 'ph': 'ph2/.' '/ph3' '/ph4'
+@	["rm", $SHELLESCAPETEST]
 @phonyrule: 'ph2///':
+	touch $(SHELLESCAPETEST)
 
 @call @addrule({'tgts': [{'name': @strgsub('XXesXXing', 'XX', 't')}], 'attrs': {'phony': !@false}})
 $WHOLE=@strstrip("   \t   abc123ABC \t \t\t", " \t")
@@ -183,7 +188,7 @@ $GLOBTRUE2=@true
 
 $DELEVALTEST=[$TOUCH, @["cleanhookexec"]]
 
-@phonyrule: 'indirection': 'Stirfile'
+@phonyrule: 'indirection': (@glob('St?rfi*'))
 @	$DELEVALTEST<>
 
 $TOUCHFINAL="touch2"
@@ -235,7 +240,9 @@ $IMM=@strlistjoin("clean", $LS)
   @append($TOCONSTRUCT, @D$TOUCHFINAL)
   @appendlist($TOCONSTRUCT, [@I$IMM])
   @appendlist($TOCONSTRUCT, ["cleanhookexec", "bothcleanhookexec"])
-  $TOCONSTRUCT[-] #pop
+  @if(@strcmp($TOCONSTRUCT[-], "bothcleanhookexec") != 0)
+    @error("popfail\n")
+  @endif
   $TOCONSTRUCT[-] #pop
   @return $TOCONSTRUCT
 @endfunction
