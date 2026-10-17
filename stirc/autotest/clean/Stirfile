@@ -10,6 +10,15 @@
 @deponly: 'all': 'NONEXISTENT'
 @endif
 
+$JSONESCAPETEST="a\nb\rc\td\\e\x01f\x7f\b\f\"///'"
+$JSONESCAPETEST2='a\nb\rc\td\\e\x01f\x7f\b\f"///\''
+@if($JSONESCAPETEST[@] != 19)
+  @call @error("String escaping error\n")
+@endif
+@if(@strcmp(@jsondec(@jsonenc($JSONESCAPETEST)), $JSONESCAPETEST2) != 0)
+  @call @error("JSON escaping error\n")
+@endif
+
 @call @adddeps(['all/'], ['subproj/all/'], {})
 
 $TOUCH="false"
