@@ -1,0 +1,6 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+@call @error("Deliberate error\n")

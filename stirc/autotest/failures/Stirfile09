@@ -1,0 +1,9 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+	true
+	true
+	false
+	true
+	true

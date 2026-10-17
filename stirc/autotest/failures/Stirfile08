@@ -1,0 +1,4 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'thisruleisnotavailable'

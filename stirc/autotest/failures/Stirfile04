@@ -1,0 +1,9 @@
+@toplevel
+@strict
+
+@function $FN()
+  @error("Error when evaluating shell commands\n")
+@endfunction
+
+@phonyrule: 'all':
+@@	$FN()

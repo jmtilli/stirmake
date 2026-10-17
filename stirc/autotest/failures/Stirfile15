@@ -1,0 +1,6 @@
+@toplevel
+@strict
+
+@version("thisisnotgithash")
+
+@phonyrule: 'all':

@@ -1,0 +1,10 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+@function $FN()
+  @return $x # local variable not found
+@endfunction
+
+@call $FN()

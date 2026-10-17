@@ -1,0 +1,5 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'all2'
+@phonyrule: 'all2': 'all'

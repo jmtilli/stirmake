@@ -1,0 +1,6 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+@dirinclude 'notavailable'
