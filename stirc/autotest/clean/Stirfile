@@ -1,7 +1,8 @@
 @toplevel
 @strict
 
-@phonyrule: 'all': 'bin' @wait 'obj'
+# Let's check what happens if first dependency has @wait
+@phonyrule: 'all': @wait 'bin' @wait 'obj'
 
 @if(@true)
 @deponly: 'all': 'subdir/../subdir/all/'
