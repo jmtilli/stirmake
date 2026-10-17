@@ -7,7 +7,25 @@ $LIST = []
 $LIST2 = [$STR]
 $LIST += [@$LIST2]
 
-@phonyrule: 'all': (['ph2']) $LIST '../build/a.txt'
+@function $MYCHECK()
+  @if(@strcmp(@D$@, "all") != 0) # FIXME smkp coredumps if condition reversed
+    @error("$@ fail\n")
+  @endif
+  @if(@strcmp(@D$<, "ph2") != 0)
+    @error("$< fail\n")
+  @endif
+  #@stdout(@jsonenc(@D$^)) # FIXME incorrect string length
+  @if(@D$^[] != 4)
+    @error("$^ fail\n")
+  @endif
+  @if(@D$+[] != 5)
+    @error("$+ fail\n")
+  @endif
+  @return []
+@endfunction
+
+@phonyrule: 'all': (['ph2']) $LIST '../build/a.txt' 'ph2'
+@@	$MYCHECK()
 
 '../build/a.txt': @orderonly (@dirupall . '/build')
 	touch $@
