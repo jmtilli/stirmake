@@ -1,6 +1,12 @@
 @toplevel
 @strict
 
+# Test that these new features work
+@call @expecteddeps(64)
+@call @expectedstrings(65536)
+@call @outsync(1)
+@call @usetsdb(@false)
+
 'x.o': 'x.d'
 	touch $@
 'x.d':
