@@ -1,0 +1,9 @@
+@toplevel
+@strict
+
+'x.o': 'x.d'
+	touch $@
+'x.d':
+	echo "x.o: x.h" > x.d
+
+@cdepincludes @autophony @autotarget @ignore "x.d"
