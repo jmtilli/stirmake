@@ -1,0 +1,17 @@
+@toplevel
+@strict
+
+@phonyrule: 'all': 'x.o' 'y.o'
+
+'x.o': 'x.d'
+	touch $@
+'x.d':
+	echo "x.o: x.h" > x.d
+
+'y.o': 'y.d'
+	touch $@
+'y.d':
+	echo "y.o: y.h" > y.d
+
+@cdepincludes @autophony @autotarget "x.d"
+@cdepincludes @autophony "y.d"
