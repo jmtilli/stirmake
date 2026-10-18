@@ -14,6 +14,9 @@ runtest()
   (cd "$1"; ./test.sh) || fail
 }
 
+#export VALGRIND="valgrind --error-exitcode=1"
+export VALGRIND=""
+
 runtest "clean"
 runtest "touchmode"
 runtest "headerrm"

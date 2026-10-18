@@ -70,36 +70,36 @@ cleanassert()
 }
 
 hookclear
-../../stirmake -a -bc -s || die "cmdfail1"
+$VALGRIND ../../stirmake -a -bc -s || die "cmdfail1"
 noobjnobin "err1"
 bothcleanassert "err1"
-(cd subdir; ../../../stirmake -p -ja -s) || die "cmdfail2"
+(cd subdir; $VALGRIND ../../../stirmake -p -ja -s) || die "cmdfail2"
 bothexist "err2"
-(cd subdir; ../../../stirmake -a -bc -s) || die "cmdfail3"
+(cd subdir; $VALGRIND ../../../stirmake -a -bc -s) || die "cmdfail3"
 noobjnobin "err3"
 bothcleanassert "err3"
-../../stirmake -a -n -s || die "cmdfail3A"
+$VALGRIND ../../stirmake -a -n -s || die "cmdfail3A"
 noobjnobin "err3A"
 bothcleanassert "err3A"
-(cd subdir; ../../../stirmake -t -j2 -s ../all) || die "cmdfail4"
+(cd subdir; $VALGRIND ../../../stirmake -t -j2 -s ../all) || die "cmdfail4"
 bothexist "err4"
 hookclear
-../../stirmake -a -b -ja -s || die "cmdfail5"
+$VALGRIND ../../stirmake -a -b -ja -s || die "cmdfail5"
 nobin "err5"
 distcleanassert "err5"
-(cd subproj; ../../../stirmake -p -ja -Ot -s ../all) || die "cmdfail6"
+(cd subproj; $VALGRIND ../../../stirmake -p -ja -Ot -s ../all) || die "cmdfail6"
 bothexist "err6"
 hookclear
-../../stirmake -a -c -j2 -s || die "cmdfail7"
+$VALGRIND ../../stirmake -a -c -j2 -s || die "cmdfail7"
 noobj "err7"
 cleanassert "err7"
-../../stirmake -a -bc -Ol -s all || die "cmdfail8"
+$VALGRIND ../../stirmake -a -bc -Ol -s all || die "cmdfail8"
 hookclear
 bothexist "err8"
-../../stirmake -a -bc -j2 -Or -s all || die "cmdfail9"
+$VALGRIND ../../stirmake -a -bc -j2 -Or -s all || die "cmdfail9"
 hookclear
 bothexist "err9"
-../../stirmake -a -bc -ja -On -s all || die "cmdfail10"
+$VALGRIND ../../stirmake -a -bc -ja -On -s all || die "cmdfail10"
 hookclear
 bothexist "err10"
 

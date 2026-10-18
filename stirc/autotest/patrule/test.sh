@@ -7,8 +7,8 @@ die()
 }
 
 for a in Stirfile*; do
-  ../../stirmake -f "$a" -s || die "$a execution fail"
-  ../../stirmake -f "$a" -bc -s || die "$a clean fail"
+  $VALGRIND ../../stirmake -f "$a" -s || die "$a execution fail"
+  $VALGRIND ../../stirmake -f "$a" -bc -s || die "$a clean fail"
 done
 
 echo "OK"

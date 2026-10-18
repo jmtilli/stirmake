@@ -74,36 +74,36 @@ cleanassert()
 }
 
 hookclear
-../../smka -bc > /dev/null 2>&1 || die "cmdfail1"
+$VALGRIND ../../smka -bc > /dev/null 2>&1 || die "cmdfail1"
 noobjnobin "err1"
 bothcleanassert "err1"
-(cd subdir; ../../../smkp -ja) > /dev/null 2>&1 || die "cmdfail2"
+(cd subdir; $VALGRIND ../../../smkp -ja) > /dev/null 2>&1 || die "cmdfail2"
 bothexist "err2"
-(cd subdir; ../../../smka -bc) > /dev/null 2>&1 || die "cmdfail3"
+(cd subdir; $VALGRIND ../../../smka -bc) > /dev/null 2>&1 || die "cmdfail3"
 noobjnobin "err3"
 bothcleanassert "err3"
-../../smka -n > /dev/null 2>&1 || die "cmdfail3A"
+$VALGRIND ../../smka -n > /dev/null 2>&1 || die "cmdfail3A"
 noobjnobin "err3A"
 bothcleanassert "err3A"
-(cd subdir; ../../../smkt -j2 ../all) > /dev/null 2>&1 || die "cmdfail4"
+(cd subdir; $VALGRIND ../../../smkt -j2 ../all) > /dev/null 2>&1 || die "cmdfail4"
 bothexist "err4"
 hookclear
-../../smka -b -ja > /dev/null 2>&1 || die "cmdfail5"
+$VALGRIND ../../smka -b -ja > /dev/null 2>&1 || die "cmdfail5"
 nobin "err5"
 distcleanassert "err5"
-(cd subproj; ../../../smkp -ja -Ot ../all) > /dev/null 2>&1 || die "cmdfail6"
+(cd subproj; $VALGRIND ../../../smkp -ja -Ot ../all) > /dev/null 2>&1 || die "cmdfail6"
 bothexist "err6"
 hookclear
-../../smka -c -j2 > /dev/null 2>&1 || die "cmdfail7"
+$VALGRIND ../../smka -c -j2 > /dev/null 2>&1 || die "cmdfail7"
 noobj "err7"
 cleanassert "err7"
-../../smka -bc -Ol all > /dev/null 2>&1 || die "cmdfail8"
+$VALGRIND ../../smka -bc -Ol all > /dev/null 2>&1 || die "cmdfail8"
 hookclear
 bothexist "err8"
-../../smka -bc -j2 -Or all > /dev/null 2>&1 || die "cmdfail9"
+$VALGRIND ../../smka -bc -j2 -Or all > /dev/null 2>&1 || die "cmdfail9"
 hookclear
 bothexist "err9"
-../../smka -bc -ja -On all > /dev/null 2>&1 || die "cmdfail10"
+$VALGRIND ../../smka -bc -ja -On all > /dev/null 2>&1 || die "cmdfail10"
 hookclear
 bothexist "err10"
 
