@@ -364,7 +364,7 @@ struct CSnippet luaSnippet = {
 
 <INITIAL,STRICT>\"([^\\\"]|\\.)*\"  yylval->str=yy_escape_string(yytext, NULL); return STRING_LITERAL;
 <INITIAL,STRICT>\'([^\\\']|\\.)*\'  yylval->str=yy_escape_string_single(yytext, NULL); return STRING_LITERAL;
-<INITIAL,STRICT>#[^\n]*\n  { int oldyycolumn = yycolumn; ++yylineno; yycolumn=1; if (oldyycolumn != strlen(yytext)+1) { yyextra &= (~2U); return NEWLINE; } }
+<INITIAL,STRICT>#[^\n]*\n  { int oldyycolumn = yycolumn; ++yylineno; yycolumn=1; if (oldyycolumn != strlen(yytext)+1 || !!(yyextra&2)) { yyextra &= (~2U); return NEWLINE; } }
 <INITIAL,STRICT>#[^\n]*  /* ignore */;
 
 <INITIAL,STRICT>"%lua{"             { yy_push_state(PERCENTLUA, yyscanner); luaSnippet.capacity = 0; luaSnippet.len = 0; luaSnippet.data = NULL; }
