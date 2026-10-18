@@ -380,6 +380,70 @@ $X = []
   @call @error("X2\n")
 @endif
 
+
+# Test path operations
+$ACTUAL=@pathsimplify("foo/../bar")
+$EXPECTED="bar"
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathsimplifyall(["foo/../bar", "foo/./bar"])
+$EXPECTED=["bar", "foo/bar"]
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathdir("foo/../bar")
+$EXPECTED="foo/../"
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathdirall(["foo/../bar", "foo/../bar/"])
+$EXPECTED=["foo/../", "foo/../bar/"]
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathnotdir("foo/../bar")
+$EXPECTED="bar"
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathnotdirall(["foo/../bar", "/foo/../bar/"])
+$EXPECTED=["bar", ""]
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathbasename("foo/../bar.c")
+$EXPECTED="foo/../bar"
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathbasenameall(["foo/../bar.c", "baz.cc"])
+$EXPECTED=["foo/../bar", "baz"]
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathsuffix("foo/../bar.c")
+$EXPECTED=".c"
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+$ACTUAL=@pathsuffixall(["foo/../bar.c", "baz.cc"])
+$EXPECTED=[".c", ".cc"]
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("pathop\n")
+@endif
+
+
+
 @dirinclude @scopename $SUBSCOPE "subdir"
 $SCOPEVAR=$SUBSCOPE
 @if(@strcmp(@SC($SCOPEVAR)$BASE, "statinc3") != 0)
