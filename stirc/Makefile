@@ -62,10 +62,10 @@ endif
 
 ifeq ($(WITH_LUA),yes)
 abce:
-	cd abce && $(MAKE) WITH_LUA=yes LUAINCS="$(LUAINCS)" LUALIBS="$(LUALIBS)"
+	cd abce && $(MAKE) WITH_LUA=yes LUAINCS="$(LUAINCS)" LUALIBS="$(LUALIBS)" CFLAGS="$(CFLAGS)"
 else
 abce:
-	cd abce && $(MAKE)
+	cd abce && $(MAKE) CFLAGS="$(CFLAGS)"
 endif
 
 #CC=gcc
