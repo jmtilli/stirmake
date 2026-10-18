@@ -70,7 +70,7 @@ libobjs=""
 if [ -e ../.git/logs/HEAD ]; then
   echo "#ifndef _GIT_H_" > git.h
   echo "#define _GIT_H_" >> git.h
-  echo "static const char * const gitshas[] = {" >> git.h
+  echo "static const char gitshas[][20] = {" >> git.h
   git log --pretty=format:\"%h\", --abbrev=40|sed 's/\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' >> git.h
   echo "};" >> git.h
   echo -n "static const char * const gitversion = \"" >> git.h
