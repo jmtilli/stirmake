@@ -18,16 +18,46 @@ extern void stiryyset_in(FILE *in_str, yyscan_t yyscanner);
 extern void stiryyset_extra (unsigned int user_defined, yyscan_t yyscanner);
 extern int stiryylex_destroy(yyscan_t yyscanner);
 
+static inline int hexdig(const char ch)
+{
+  if (ch >= '0' && ch <= '9')
+  {
+    return ch-'0';
+  }
+  if (ch == 'A' || ch == 'a') return 10;
+  if (ch == 'B' || ch == 'b') return 11;
+  if (ch == 'C' || ch == 'c') return 12;
+  if (ch == 'D' || ch == 'd') return 13;
+  if (ch == 'E' || ch == 'e') return 14;
+  if (ch == 'F' || ch == 'f') return 15;
+  my_abort();
+  return -1;
+}
+
 int gitshas_has(const char *needle, size_t needle_len)
 {
   size_t i;
+  char rawbuf[20];
   if (strlen(needle) != needle_len)
   {
     return 0;
   }
+  if (needle_len != 40)
+  {
+    return 0;
+  }
+  if (strspn(needle, "0123456789ABCDEFabcdef") != 40)
+  {
+    return 0;
+  }
+  for (i = 0; i < 20; i++)
+  {
+    rawbuf[i] = (hexdig(needle[2*i+0])<<4);
+    rawbuf[i] |= hexdig(needle[2*i+1]);
+  }
   for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
   {
-    if (strcmp(needle, gitshas[i]) == 0)
+    if (memcmp(rawbuf, gitshas[i], 20) == 0)
     {
       return 1;
     }
