@@ -10,6 +10,7 @@
 #include "stirutils.h"
 #include "pathmax.h"
 #include "git.h"
+#include "mymalloc.h"
 
 typedef void *yyscan_t;
 extern int stiryyparse(yyscan_t scanner, struct stiryy *stiryy);
@@ -605,11 +606,11 @@ int do_dirinclude(struct stiryy *stiryy, int noproj, const char *fname, const ch
   stiryy->main->abce->dynscope = abce_mb_create_scope(stiryy->main->abce, ABCE_DEFAULT_SCOPE_SIZE, &oldscope, 0);
   abce_mb_refdn(stiryy->main->abce, &oldscope);
   //printf("projprefix2: %s\n", projprefix2);
-  struct scope_ud ud = {
-    .prefix = prefix2,
-    .prjprefix = projprefix2,
-  };
-  abce_scope_set_userdata(&stiryy->main->abce->dynscope, &ud);
+  // This needs to be valid until the end of the program:
+  struct scope_ud *ud = my_malloc(sizeof(*ud));
+  ud->prefix = prefix2;
+  ud->prjprefix = projprefix2;
+  abce_scope_set_userdata(&stiryy->main->abce->dynscope, ud);
   if (stiryy->main->abce->dynscope.typ == ABCE_T_N)
   {
     my_abort();
