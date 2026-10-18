@@ -1,0 +1,11 @@
+@toplevel
+@strict
+
+@phonyrule: 'all':
+
+$A=1
+
+@beginholeyscope
+  @if($A == 2)
+  @endif
+@endholeyscope

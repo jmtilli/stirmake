@@ -1,0 +1,8 @@
+@toplevel
+@strict
+
+'all':
+	touch all
+
+@cdepincludes @autotarget @ignore 'later.dep'
+@cdepincludes @autophony @autotarget @ignore 'later2.dep'
