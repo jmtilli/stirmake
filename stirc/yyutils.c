@@ -103,10 +103,36 @@ const char *gitversion_get(void)
 
 void gitversions(char *argv0)
 {
+  char locbuf[41];
   size_t i;
   for (i = 0; i < sizeof(gitshas)/sizeof(*gitshas); i++)
   {
-    printf("%s\n", gitshas[i]);
+    snprintf(locbuf, sizeof(locbuf),
+      "%.2x%.2x%.2x%.2x%.2x"
+      "%.2x%.2x%.2x%.2x%.2x"
+      "%.2x%.2x%.2x%.2x%.2x"
+      "%.2x%.2x%.2x%.2x%.2x",
+      (uint8_t)gitshas[i][0],
+      (uint8_t)gitshas[i][1],
+      (uint8_t)gitshas[i][2],
+      (uint8_t)gitshas[i][3],
+      (uint8_t)gitshas[i][4],
+      (uint8_t)gitshas[i][5],
+      (uint8_t)gitshas[i][6],
+      (uint8_t)gitshas[i][7],
+      (uint8_t)gitshas[i][8],
+      (uint8_t)gitshas[i][9],
+      (uint8_t)gitshas[i][10],
+      (uint8_t)gitshas[i][11],
+      (uint8_t)gitshas[i][12],
+      (uint8_t)gitshas[i][13],
+      (uint8_t)gitshas[i][14],
+      (uint8_t)gitshas[i][15],
+      (uint8_t)gitshas[i][16],
+      (uint8_t)gitshas[i][17],
+      (uint8_t)gitshas[i][18],
+      (uint8_t)gitshas[i][19]);
+    printf("%s\n", locbuf);
   }
   exit(0);
 }
