@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "myvalgrind.h"
 
 char *my_arena;
 char *my_arena_ptr;
@@ -21,6 +22,10 @@ void my_abort(void);
 void *my_malloc(size_t sz)
 {
   void *result = my_arena_ptr;
+  if (my_is_running_on_valgrind())
+  {
+    return malloc(sz);
+  }
   if (sz > sizeof_my_arena)
   {
 #if 0

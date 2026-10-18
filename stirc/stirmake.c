@@ -34,6 +34,7 @@
 #include "db.h"
 #include "pathmax.h"
 #include "stirtrap.h"
+#include "myvalgrind.h"
 #include "abce/abcetrees.h"
 #ifdef __linux__
   #ifdef __GLIBC__
@@ -6928,7 +6929,7 @@ int main(int argc, char **argv)
     f = fopen("Stirfile", "r");
     if (f)
     {
-      abce_init_opts(&abce, 1);
+      abce_init_opts(&abce, !my_is_running_on_valgrind());
 #ifdef WITH_LUA
       abce_set_luaopen_caller(&abce, luaopen_stir);
 #endif
@@ -7009,7 +7010,7 @@ int main(int argc, char **argv)
       {
         int ret;
         last_was_toplevel = 1; // unless otherwise proven
-        abce_init_opts(&abce, 1);
+        abce_init_opts(&abce, !my_is_running_on_valgrind());
 #ifdef WITH_LUA
         abce_set_luaopen_caller(&abce, luaopen_stir);
 #endif
@@ -7078,7 +7079,7 @@ int main(int argc, char **argv)
 
   linked_list_head_init(&tsdb.ll);
   load_db_part1();
-  abce_init_opts(&abce, 1);
+  abce_init_opts(&abce, !my_is_running_on_valgrind());
 #ifdef WITH_LUA
   abce_set_luaopen_caller(&abce, luaopen_stir);
 #endif

@@ -54,6 +54,7 @@ LUAINCS:=
 LUALIBS:=
 WITH_LUA?=no
 NO_MMAP?=yes
+VALGRIND_DETECTION?=no
 NO_MEMPARSE?=no
 ifeq ($(WITH_LUA),yes)
   LUAINCS:=$(shell pkg-config --cflags luajit)
@@ -73,6 +74,9 @@ endif
 CC?=cc
 CFLAGS?=-O3 -Wall -Wextra -Wno-unused-parameter -g
 
+ifeq ($(VALGRIND_DETECTION),yes)
+  CFLAGS += -DVALGRIND_DETECTION=1
+endif
 ifeq ($(WITH_LUA),yes)
   CFLAGS += $(LUAINCS) -DWITH_LUA
 else
