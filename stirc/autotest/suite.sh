@@ -22,6 +22,7 @@ runtest "twotarget"
 runtest "failures"
 runtest "patrule"
 runtest "cdeptargetslater"
+runtest "recdep"
 
 echo "Failure count: $FAILCNT"
 if [ "$FAILTCNT" = 0 ]; then

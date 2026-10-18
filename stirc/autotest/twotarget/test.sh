@@ -14,6 +14,7 @@ if [ \! -e 'tgt1' -o \! -e 'tgt2' ]; then
 fi
 ../../smka -s -q tgt1 > /dev/null 2>&1 || die "tgt1 check failed"
 ../../smka -s -q tgt2 > /dev/null 2>&1 || die "tgt2 check failed"
+sleep 0.05
 touch Stirfile
 ../../smka -s -q tgt1 > /dev/null 2>&1 && die "tgt1 check2 failed"
 ../../smka -s -q tgt2 > /dev/null 2>&1 && die "tgt2 check2 failed"

@@ -1,0 +1,17 @@
+@toplevel
+@strict
+
+@detouchrule: 'recdep/lib.a': @recdep 'recdep'
+	touch recdep/obj.o
+	touch recdep/lib.a
+	touch recdep/bin
+
+@cleanhook:
+	rm -f recdep/obj.o
+	rm -f recdep/lib.a
+@distcleanhook:
+	rm -f recdep/bin
+@bothcleanhook:
+	rm -f recdep/obj.o
+	rm -f recdep/lib.a
+	rm -f recdep/bin
