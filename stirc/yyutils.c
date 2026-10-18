@@ -65,9 +65,36 @@ int gitshas_has(const char *needle, size_t needle_len)
   return 0;
 }
 
+char headbuf[41];
+
 const char *gitversions_head(void)
 {
-  return gitshas[0];
+  snprintf(headbuf, sizeof(headbuf),
+    "%.2x%.2x%.2x%.2x%.2x"
+    "%.2x%.2x%.2x%.2x%.2x"
+    "%.2x%.2x%.2x%.2x%.2x"
+    "%.2x%.2x%.2x%.2x%.2x",
+    (uint8_t)gitshas[0][0],
+    (uint8_t)gitshas[0][1],
+    (uint8_t)gitshas[0][2],
+    (uint8_t)gitshas[0][3],
+    (uint8_t)gitshas[0][4],
+    (uint8_t)gitshas[0][5],
+    (uint8_t)gitshas[0][6],
+    (uint8_t)gitshas[0][7],
+    (uint8_t)gitshas[0][8],
+    (uint8_t)gitshas[0][9],
+    (uint8_t)gitshas[0][10],
+    (uint8_t)gitshas[0][11],
+    (uint8_t)gitshas[0][12],
+    (uint8_t)gitshas[0][13],
+    (uint8_t)gitshas[0][14],
+    (uint8_t)gitshas[0][15],
+    (uint8_t)gitshas[0][16],
+    (uint8_t)gitshas[0][17],
+    (uint8_t)gitshas[0][18],
+    (uint8_t)gitshas[0][19]);
+  return headbuf;
 }
 const char *gitversion_get(void)
 {
