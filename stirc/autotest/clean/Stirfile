@@ -381,6 +381,22 @@ $X = []
 @endif
 
 
+$A `= ["echo", "foo bar baz"]
+@if(@strcmp($A, "foo bar baz\n") != 0)
+  @call @error("foo\n")
+@endif
+$A `= ["echo", "-n", "foo bar baz"]
+@if(@strcmp($A, "foo bar baz") != 0)
+  @call @error("foo")
+@endif
+$A ``= ["echo", "foo bar baz"]
+@if($A[] != 3)
+  @call @error("foo\n")
+@endif
+@if(@strcmp($A[0], "foo") != 0 || @strcmp($A[1], "bar") != 0 || @strcmp($A[2], "baz") != 0)
+  @call @error("foo\n")
+@endif
+
 # Test path operations
 $ACTUAL=@pathsimplify("foo/../bar")
 $EXPECTED="bar"
