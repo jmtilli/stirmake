@@ -2,10 +2,59 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <fcntl.h>
 #include "myvalgrind.h"
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define ALIGN (_Alignof(max_align_t))
+#else
+static inline size_t get_max_align_compatibility(void)
+{
+  size_t res = 8;
+  if (sizeof(void*) > res) res *= 2;
+  if (sizeof(void*) > res) res *= 2;
+  if (sizeof(void*) > res) res *= 2;
+  if (sizeof(void*) > res) res *= 2;
+  if (sizeof(void(*)(void)) > res) res *= 2;
+  if (sizeof(void(*)(void)) > res) res *= 2;
+  if (sizeof(void(*)(void)) > res) res *= 2;
+  if (sizeof(void(*)(void)) > res) res *= 2;
+  if (sizeof(ptrdiff_t) > res) res *= 2;
+  if (sizeof(ptrdiff_t) > res) res *= 2;
+  if (sizeof(ptrdiff_t) > res) res *= 2;
+  if (sizeof(ptrdiff_t) > res) res *= 2;
+  if (sizeof(off_t) > res) res *= 2;
+  if (sizeof(off_t) > res) res *= 2;
+  if (sizeof(off_t) > res) res *= 2;
+  if (sizeof(off_t) > res) res *= 2;
+  if (sizeof(size_t) > res) res *= 2;
+  if (sizeof(size_t) > res) res *= 2;
+  if (sizeof(size_t) > res) res *= 2;
+  if (sizeof(size_t) > res) res *= 2;
+  if (sizeof(ssize_t) > res) res *= 2;
+  if (sizeof(ssize_t) > res) res *= 2;
+  if (sizeof(ssize_t) > res) res *= 2;
+  if (sizeof(ssize_t) > res) res *= 2;
+  if (sizeof(long long) > res) res *= 2;
+  if (sizeof(long long) > res) res *= 2;
+  if (sizeof(long long) > res) res *= 2;
+  if (sizeof(long long) > res) res *= 2;
+  if (sizeof(unsigned long long) > res) res *= 2;
+  if (sizeof(unsigned long long) > res) res *= 2;
+  if (sizeof(unsigned long long) > res) res *= 2;
+  if (sizeof(unsigned long long) > res) res *= 2;
+  if (sizeof(double) > res) res *= 2;
+  if (sizeof(double) > res) res *= 2;
+  if (sizeof(double) > res) res *= 2;
+  if (sizeof(double) > res) res *= 2;
+  return res;
+}
+#define ALIGN (get_max_align_compatibility())
+#endif
 
 char *my_arena;
 char *my_arena_ptr;
@@ -45,7 +94,7 @@ void *my_malloc(size_t sz)
     mymemcnt += 1;
     return result;
   }
-  if (my_arena_ptr + (sz+7)/8*8 > my_arena + sizeof_my_arena)
+  if (my_arena_ptr + (sz+ALIGN-1)/ALIGN*ALIGN > my_arena + sizeof_my_arena)
   {
     mymemwaste += (size_t)(my_arena + sizeof_my_arena - my_arena_ptr);
 #if 0
@@ -63,7 +112,7 @@ void *my_malloc(size_t sz)
     }
     my_arena_ptr = my_arena;
     result = my_arena_ptr;
-    my_arena_ptr += (sz+7)/8*8;
+    my_arena_ptr += (sz+ALIGN-1)/ALIGN*ALIGN;
     if (my_arena_ptr > my_arena + sizeof_my_arena)
     {
       //fprintf(stderr, "out of memory\n"); // nondescriptive
@@ -72,11 +121,11 @@ void *my_malloc(size_t sz)
   }
   else
   {
-    my_arena_ptr += (sz+7)/8*8;
+    my_arena_ptr += (sz+ALIGN-1)/ALIGN*ALIGN;
   }
   mymem += sz;
   mymemcnt += 1;
-  mymemwaste += (sz+7)/8*8 - sz;
+  mymemwaste += (sz+ALIGN-1)/ALIGN*ALIGN - sz;
   return result;
 }
 void *my_argmalloc(size_t sz)
