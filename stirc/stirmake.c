@@ -1417,7 +1417,6 @@ void add_dep_from_rules(struct tgt *tgts, size_t tgtsz,
     ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony, 0);
     for (j = 0; j < depsz; j++)
     {
-      struct add_dep *add;
       if (deps[j].namenodir[0] == '/')
       {
         tmp = pathcat1_buf(deps[j].namenodir, catbuf, sizeof(catbuf));
@@ -1452,7 +1451,6 @@ void add_dep(char **tgts, size_t tgts_sz,
     ins_add_dep(tgtidx, (mysize_t)-1, (mysize_t)-1, 0, !!phony, !!is_inc);
     for (j = 0; j < deps_sz; j++)
     {
-      struct add_dep *add;
       mysize_t depidx = stringtab_add(deps[j]);
       ins_add_dep(tgtidx, depidx, (mysize_t)-1, !!auto_phony, !!phony, !!is_inc);
     }
@@ -1586,7 +1584,6 @@ int add_dep_after_parsing_stage(char **tgts, size_t tgtsz,
 void process_additional_deps_2(mysize_t global_scopeidx)
 {
   struct add_dep_entry_block *blk;
-  struct linked_list_node *node, *node2;
   int last_ruleid = -1;
   mysize_t last_tgtidx = (mysize_t)-1;
   // Ensure all targets are present
@@ -3780,7 +3777,7 @@ void reconsider(int ruleid, int ruleid_executed)
 void mark_executed(int ruleid, int was_actually_executed)
 {
   struct rule *r = rules[ruleid];
-  struct linked_list_node *node, *node2;
+  struct linked_list_node *node;
   if (r->is_executed)
   {
     printf("16\n");
@@ -4801,7 +4798,7 @@ int dbf_did_exist = 0;
 void load_db_part1(void)
 {
   struct flock fl = {.l_type=0};
-  int ret;
+  //int ret;
   int dbfd;
   linked_list_head_init(&db.ll);
   if (access(".stir.db", F_OK) == 0)
@@ -4856,7 +4853,7 @@ void dbyy_tsfn(void *userdata, struct tsdbentry *e)
 void load_db_part2(void)
 {
   struct dbyy dbyy = DBYY_EMPTY;
-  size_t i;
+  //size_t i;
   int ret;
   int dbfd;
   dbfd = fileno(dbf);

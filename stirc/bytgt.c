@@ -17,7 +17,6 @@ static inline int ruleid_by_tgt_entry_cmp_asym(const void *strv, struct abce_rb_
 {
   const mysize_t *str = strv;
   struct ruleid_by_tgt_entry *e = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
-  int ret;
   size_t str2;
   str2 = e->tgtidx;
   return sizecmp(*str, str2);
@@ -26,7 +25,6 @@ static inline int ruleid_by_tgt_entry_cmp_sym(struct abce_rb_tree_node *n1, stru
 {
   struct ruleid_by_tgt_entry *e1 = ABCE_CONTAINER_OF(n1, struct ruleid_by_tgt_entry, node);
   struct ruleid_by_tgt_entry *e2 = ABCE_CONTAINER_OF(n2, struct ruleid_by_tgt_entry, node);
-  int ret;
   return sizecmp(e1->tgtidx, e2->tgtidx);
 }
 

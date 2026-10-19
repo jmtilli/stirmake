@@ -127,11 +127,9 @@ void syncbuf_dump(struct syncbuf *buf, int fd)
     struct linked_list_node *node;
     LINKED_LIST_FOR_EACH(node, &buf->list)
     {
-      size_t off;
       size_t i;
       size_t j = 0;
       size_t start = 0;
-      char *ptr;
       page = ABCE_CONTAINER_OF(node, struct syncbufpage, llnode);
       if (toskip)
       {

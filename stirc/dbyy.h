@@ -62,7 +62,7 @@ struct dbyy {
 
 static inline void dbyy_add_cmd(struct dbyy *dbyy)
 {
-  struct dbyyrule *rule = &dbyy->rules[dbyy->rulesz - 1];
+  //struct dbyyrule *rule = &dbyy->rules[dbyy->rulesz - 1];
   size_t newcapacity;
   if (dbyy->cmdssz >= dbyy->cmdscapacity)
   {
@@ -122,7 +122,6 @@ static inline void dbyy_post_cmds(struct dbyy *dbyy,
 
 static inline void dbyy_add_arg(struct dbyy *dbyy, const char *arg)
 {
-  struct dbyyrule *rule = &dbyy->rules[dbyy->rulesz - 1];
   struct dbyycmd *cmd = &dbyy->cmdsbuf[dbyy->cmdssz - 1];
   size_t newcapacity;
   if (cmd->argssz >= cmd->argscapacity)
