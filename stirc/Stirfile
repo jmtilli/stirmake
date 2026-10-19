@@ -142,11 +142,19 @@ $POSIXFUNCLIST="getenv|globfree|raise|free|recv|putchar|abort|unlink|round|".\
 "socketpair|kill|fileno|select|readdir|malloc|fflush|tan|fseek|fchdir|".\
 "setrlimit|realloc|munmap|setlocale|poll|waitpid|wctomb|sysconf|open|".\
 "access|fopen|perror|getopt|sin|strtoul|execvp|asin|glob|getppid|exit|".\
-"fwrite|getrlimit|sqrt|strdup|getc|fork|exp|stat|lstat|fstat|strtoll"
+"fwrite|getrlimit|sqrt|strdup|getc|fork|exp|stat|lstat|fstat|strtoll|".\
+"unsetenv|ungetc|time|system|strstr|strpbrk|strftime|strerror|strcoll|".\
+"srand|rewind|rename|remove|regfree|regexec|regcomp|realpath|rand|pow|".\
+"posix_spawnp|posix_spawn_file_actions_init|posix_spawn_file_actions_adddup2|".\
+"posix_spawn_file_actions_addclose|popen|pclose|mktime|mkstemp|mkfifo|".\
+"memmove|memchr|log2|log10|localtime_r|localtime|gmtime_r|gmtime|".\
+"gettimeofday|getline|funlockfile|ldexp|localeconv|setvbuf|lseek|fputs|".\
+"fgets"
 # Suspicious functions not listed above:
 # - setitimer (deprecated)
 # - madvise/getloadavg (non-POSIX)
 # - utimensat (very recent POSIX, not all systems support this)
+# - getrandom (Linux)
 
 @phonyrule: 'funcs': 'stirmake'
 @	["sh", "-c", \
