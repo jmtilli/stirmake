@@ -460,6 +460,14 @@ $EXPECTED=[".c", ".cc"]
 
 
 
+$ACTUAL=@strlistrmdupes(["a","f","c","b","d","a","e","e","e","b"])
+$EXPECTED=["a","f","c","b","d","e"]
+@if(@strcmp(@jsonenc($ACTUAL),@jsonenc($EXPECTED))!=0)
+  @call @error("strlistrmdupes\n")
+@endif
+
+
+
 @dirinclude @scopename $SUBSCOPE "subdir"
 $SCOPEVAR=$SUBSCOPE
 @if(@strcmp(@SC($SCOPEVAR)$BASE, "statinc3") != 0)

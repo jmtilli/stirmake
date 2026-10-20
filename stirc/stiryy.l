@@ -199,6 +199,7 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@strstr return STRSTR;
 <INITIAL,STRICT>@strrep return STRREP;
 <INITIAL,STRICT>@strlistjoin return STRLISTJOIN;
+<INITIAL,STRICT>@strlistrmdupes return STRLISTRMDUPES;
 <INITIAL,STRICT>@strstrip return STRSTRIP;
 <INITIAL,STRICT>@strsub return STRSUB;
 <INITIAL,STRICT>@strgsub return STRGSUB;
