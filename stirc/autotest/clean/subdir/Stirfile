@@ -37,6 +37,18 @@ $LIST += [@$LIST2]
   @if(@strcmp(@jsonenc($expplus), @jsonenc(@D$+)) != 0)
     @error("$+ fail\n")
   @endif
+  @if(@strcmp(@dirup, "..") != 0)
+    @error("@dirup fail")
+  @endif
+  @if(@strcmp(@dirupall, "..") != 0)
+    @error("@dirupall fail")
+  @endif
+  @if(@strcmp(@dirdown, "subdir") != 0)
+    @error("@dirdown fail")
+  @endif
+  @if(@strcmp(@dirdownall, "subdir") != 0)
+    @error("@dirdownall fail")
+  @endif
   @return []
 @endfunction
 
