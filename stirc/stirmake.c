@@ -1475,7 +1475,9 @@ char **argdup(int ignore, int noecho, int ismake, char **cmdargs)
   result[2] = ismake ? st_make : st_nomake;
   for (i = 0; i < cnt; i++)
   {
-    result[i+3] = my_argstrdup(cmdargs[i]);
+    // These are never freed now so copying is unnecessary
+    //result[i+3] = my_argstrdup(cmdargs[i]);
+    result[i+3] = cmdargs[i];
   }
   result[cnt+3] = NULL;
   return result;

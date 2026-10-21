@@ -19,6 +19,7 @@
 
 void *my_malloc(size_t sz);
 void *my_strdup(const char *str);
+void *my_strdup_len(const char *str, size_t len);
 
 const char *stir_err_to_str(enum abce_errcode code)
 {
@@ -1149,18 +1150,21 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       yyshells[i].ismake = !!boolismake;
       yyshells[i].sz = attr1->u.area->u.ar.size;
       yyshells[i].capacity = attr1->u.area->u.ar.size+1;
-      yyshells[i].u.cmds = // FIXME leaks
-        malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.cmds));
+      // It is not a requirement that these are freeable with free().
+      // Thus, use my_malloc().
+      yyshells[i].u.cmds =
+        my_malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.cmds));
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
         size_t k;
-        yyshells[i].u.cmds[j] = // FIXME leaks
-          malloc(  (attr1->u.area->u.ar.mbs[j].u.area->u.ar.size+1)
+        yyshells[i].u.cmds[j] =
+          my_malloc(  (attr1->u.area->u.ar.mbs[j].u.area->u.ar.size+1)
                  * sizeof(*yyshells[i].u.cmds[j]));
         for (k = 0; k < attr1->u.area->u.ar.mbs[j].u.area->u.ar.size; k++)
         {
-          yyshells[i].u.cmds[j][k] = stir_strdup(
-            abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area));
+          yyshells[i].u.cmds[j][k] = my_strdup_len(
+            abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area),
+              attr1->u.area->u.ar.mbs[j].u.area->u.ar.mbs[k].u.area->u.str.size);
         }
         yyshells[i].u.cmds[j][attr1->u.area->u.ar.mbs[j].u.area->u.ar.size] =
           NULL;
@@ -1182,12 +1186,15 @@ int stir_trap_ruleadd(struct stiryy_main *stirmain,
       yyshells[i].ismake = !!boolismake;
       yyshells[i].sz = attr1->u.area->u.ar.size;
       yyshells[i].capacity = attr1->u.area->u.ar.size+1;
+      // It is not a requirement that these are freeable with free().
+      // Thus, use my_malloc().
       yyshells[i].u.args =
-        malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
+        my_malloc(yyshells[i].capacity*sizeof(*yyshells[i].u.args));
       for (j = 0; j < attr1->u.area->u.ar.size; j++)
       {
-        yyshells[i].u.args[j] = stir_strdup(
-          abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area));
+        yyshells[i].u.args[j] = my_strdup_len(
+          abce_mba_str(attr1->u.area->u.ar.mbs[j].u.area),
+                       attr1->u.area->u.ar.mbs[j].u.area->u.str.size);
       }
       yyshells[i].u.args[attr1->u.area->u.ar.size] = NULL;
     }
