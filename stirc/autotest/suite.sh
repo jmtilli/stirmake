@@ -14,7 +14,7 @@ runtest()
   (cd "$1"; ./test.sh) || fail
 }
 
-#export VALGRIND="valgrind --error-exitcode=5"
+#export VALGRIND="valgrind --error-exitcode=5 --quiet"
 export VALGRIND=""
 
 runtest "clean"
@@ -26,6 +26,7 @@ runtest "failures"
 runtest "patrule"
 runtest "cdeptargetslater"
 runtest "recdep"
+runtest "helpascii"
 
 echo "Failure count: $FAILCNT"
 if [ "$FAILTCNT" = 0 ]; then
