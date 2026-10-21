@@ -58,10 +58,10 @@ if [ "$STIR_NO_MEMPARSE" != "" -a "$STIR_NO_MEMPARSE" != "0" ]; then
   export CFLAGS="${CFLAGS} -DSTIR_NO_MEMPARSE=1"
 fi
 if [ "$STIR_WITH_LUA" != "" -a "$STIR_WITH_LUA" != "0" ]; then
-  if [ "$STIR_LUAINCS" = "" ]; then
+  if [ "$STIR_LUAINCS" = "" ]; then
     export STIR_LUAINCS="$(pkg-config --cflags luajit)"
   fi
-  if [ "$STIR_LUALIBS" = "" ]; then
+  if [ "$STIR_LUALIBS" = "" ]; then
     export STIR_LUALIBS="$(pkg-config --libs luajit)"
   fi
   export CFLAGS="${CFLAGS} ${STIR_LUAINCS} -DWITH_LUA"
