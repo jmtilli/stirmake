@@ -4796,6 +4796,7 @@ struct cmd dbyycmd_add(struct dbyycmd *cmds, size_t cmdssz)
 
 FILE *dbf = NULL;
 int dbf_did_exist = 0;
+int part2_done = 0;
 
 void load_db_part1(void)
 {
@@ -4858,6 +4859,7 @@ void load_db_part2(void)
   //size_t i;
   int ret;
   int dbfd;
+  part2_done = 1;
   dbfd = fileno(dbf);
   //ret = dbyydoparse(dbf, &dbyy);
   ret = dbyymineparse(dbf, &dbyy, dbyy_cmdfn, dbyy_tsfn, NULL);
@@ -5179,6 +5181,10 @@ int merge_db_v2(void)
 }
 int merge_db(void)
 {
+  if (!part2_done)
+  {
+    return 0;
+  }
   if (usetsdb)
   {
     return merge_db_v2();
