@@ -27,6 +27,7 @@ runtest "patrule"
 runtest "cdeptargetslater"
 runtest "recdep"
 runtest "helpascii"
+runtest "isfun"
 
 echo "Failure count: $FAILCNT"
 if [ "$FAILTCNT" = 0 ]; then
