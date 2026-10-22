@@ -42,6 +42,7 @@ struct CSnippet luaSnippet = {
 
 <INITIAL,STRICT>@strict BEGIN(STRICT);
 <INITIAL,STRICT>@expecteddeps  return EXPECTEDDEPS;
+<INITIAL,STRICT>@expectedtotaltargets  return EXPECTEDTOTALTARGETS;
 <INITIAL,STRICT>@expectedstrings  return EXPECTEDSTRINGS;
 <INITIAL,STRICT>@usetsdb  return USETSDB;
 <INITIAL,STRICT>@outsync  return OUTSYNC;

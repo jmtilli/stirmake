@@ -7118,6 +7118,10 @@ int main(int argc, char **argv)
     expdeps = stirmain.expected_deps;
     //printf("Expdeps: %d\n", (int)expdeps);
   }
+  if (stirmain.expected_total_targets > 0)
+  {
+    ruleid_by_tgt_size = stirmain.expected_total_targets;
+  }
   if (stirmain.expected_strings > 0)
   {
     expstrings = stirmain.expected_strings;
@@ -7126,6 +7130,7 @@ int main(int argc, char **argv)
   {
     out_sync = OUT_SYNC_NONE;
   }
+  ruleid_by_tgt_init();
   st_init();
   sttable = stir_do_mmap_madvise(st_cap*sizeof(*sttable));
   if (sttable == NULL)

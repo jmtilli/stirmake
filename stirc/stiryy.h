@@ -280,6 +280,7 @@ struct stiryy_main {
   int rule_in_progress;
   int expected_deps;
   int expected_strings;
+  int expected_total_targets;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;

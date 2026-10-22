@@ -239,6 +239,7 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token USETSDB
 %token OUTSYNC
 %token EXPECTEDDEPS
+%token EXPECTEDTOTALTARGETS
 %token EXPECTEDSTRINGS
 %token SHELLESCAPE
 %token SHELLESCAPEMULTI
@@ -789,6 +790,32 @@ custom_expr0:
     if (strcmp(stiryy->curprefix, ".") == 0)
     {
       stiryy->main->expected_deps = num;
+    }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
+  }
+}
+| EXPECTEDTOTALTARGETS OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
+  {
+    int num = (int)$3.d;
+    unsigned numu = (unsigned)num;
+    if (num <= 0)
+    {
+      stiryyerror(scanner, stiryy, "Expected total targets must be positive");
+      YYABORT;
+    }
+    if ((numu & (numu-1)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "Expected total targets must be a power of 2");
+      YYABORT;
+    }
+    if (strcmp(stiryy->curprefix, ".") == 0)
+    {
+      stiryy->main->expected_total_targets = num;
     }
   }
   if (amyplanyy_do_emit(amyplanyy))

@@ -17,8 +17,10 @@ struct ruleid_by_tgt_entry {
 };
 
 extern mysize_t ruleid_by_tgt_entry_cnt;
+extern mysize_t ruleid_by_tgt_size;
 
 void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int lineno);
 int get_ruleid_by_tgt(mysize_t tgt);
+void ruleid_by_tgt_init(void);
 
 #endif
