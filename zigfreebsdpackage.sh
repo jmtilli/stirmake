@@ -6,12 +6,22 @@ die()
   exit 1
 }
 
-if [ "$1" = "arm64" ]; then
+if [ "$1" = "arm64.14" ]; then
   export CC="zig cc -target aarch64-freebsd.14.0"
   export PKGARCH="arm64-freebsd-14.0"
-elif [ "$1" = "arm32" ]; then
+  export PKGARCHNAME="freebsd:14:aarch64"
+elif [ "$1" = "arm64.15" ]; then
+  export CC="zig cc -target aarch64-freebsd.15.0"
+  export PKGARCH="arm64-freebsd-15.0"
+  export PKGARCHNAME="freebsd:15:aarch64"
+elif [ "$1" = "arm32.14" ]; then
   export CC="zig cc -target arm-freebsd.14.0"
   export PKGARCH="arm32hf-freebsd-14.0"
+  export PKGARCHNAME="freebsd:14:armv7"
+elif [ "$1" = "arm32.15" ]; then
+  export CC="zig cc -target arm-freebsd.15.0"
+  export PKGARCH="arm32hf-freebsd-15.0"
+  export PKGARCHNAME="freebsd:15:armv7"
 elif [ "$1" = "amd64.14" ]; then
   export CC="zig cc -target x86_64-freebsd.14.0"
   export PKGARCH="amd64-freebsd-14.0"
@@ -20,9 +30,14 @@ elif [ "$1" = "amd64.15" ]; then
   export CC="zig cc -target x86_64-freebsd.15.0"
   export PKGARCH="amd64-freebsd-15.0"
   export PKGARCHNAME="freebsd:15:amd64"
-elif [ "$1" = "i386" ]; then
+elif [ "$1" = "i386.14" ]; then
   export CC="zig cc -target x86-freebsd.14.0"
   export PKGARCH="i386-freebsd-14.0"
+  export PKGARCHNAME="freebsd:14:i386"
+elif [ "$1" = "i386.15" ]; then
+  export CC="zig cc -target x86-freebsd.15.0"
+  export PKGARCH="i386-freebsd-15.0"
+  export PKGARCHNAME="freebsd:15:i386"
 else
   die "Unsupported architecture: $1"
 fi
