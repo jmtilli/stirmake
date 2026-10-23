@@ -34,10 +34,6 @@ elif [ "$1" = "i386.14" ]; then
   export CC="zig cc -target x86-freebsd.14.0"
   export PKGARCH="i386-freebsd-14.0"
   export PKGARCHNAME="freebsd:14:i386"
-elif [ "$1" = "i386.15" ]; then
-  export CC="zig cc -target x86-freebsd.15.0"
-  export PKGARCH="i386-freebsd-15.0"
-  export PKGARCHNAME="freebsd:15:i386"
 else
   die "Unsupported architecture: $1"
 fi
