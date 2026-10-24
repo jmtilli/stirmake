@@ -22,10 +22,12 @@ static inline size_t stir_topages(size_t limit)
 #endif
 
 void *my_argmalloc(size_t sz);
+void *my_argmalloc_align(size_t sz, size_t align);
 void *my_argstrdup_len(const char *str, size_t sz);
 void *my_argstrdup(const char *str);
 
 void *my_malloc(size_t sz);
+void *my_malloc_align(size_t sz, size_t align);
 void my_free(void *ptr);
 void *my_strdup_len(const char *str, size_t sz);
 void *my_strdup(const char *str);

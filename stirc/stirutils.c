@@ -130,7 +130,7 @@ char *dir_up(char *old)
 
 char *myitoa(int i)
 {
-  char *res = my_malloc(16);
+  char *res = my_malloc_align(16, 1);
   snprintf(res, 16, "%d", i);
   return res;
 }

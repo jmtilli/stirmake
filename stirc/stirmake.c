@@ -7310,7 +7310,7 @@ int main(int argc, char **argv)
               locp1 = loc+1;
               locp1sz = strlen(locp1);
               exptgtsz = strlen(tgt) - 1 + meatsz;
-              exptgt = my_malloc(exptgtsz + 1);
+              exptgt = my_malloc_align(exptgtsz + 1, 1);
               memcpy(exptgt, tgt, (size_t)(loc-tgt));
               memcpy(&exptgt[(size_t)(loc-tgt)], meat, meatsz);
               memcpy(&exptgt[(size_t)(loc-tgt)+meatsz], locp1, locp1sz);
@@ -7335,7 +7335,7 @@ int main(int argc, char **argv)
               locp1 = suffix;
               locp1sz = strlen(locp1);
               exptgtsz = strlen_tgt + strlen(suffix) + meatsz;
-              exptgt = my_malloc(exptgtsz + 1);
+              exptgt = my_malloc_align(exptgtsz + 1, 1);
               memcpy(exptgt, tgt, strlen_tgt);
               memcpy(&exptgt[strlen_tgt], meat, meatsz);
               memcpy(&exptgt[strlen_tgt+meatsz], locp1, locp1sz);
@@ -7375,7 +7375,7 @@ int main(int argc, char **argv)
               locp1 = suffix;
               locp1sz = strlen(locp1);
               expdepsz = strlen_dep + locp1sz + meatsz;
-              expdep = my_malloc(expdepsz + 1);
+              expdep = my_malloc_align(expdepsz + 1, 1);
               memcpy(expdep, dep, strlen_dep);
               memcpy(&expdep[strlen_dep], meat, meatsz);
               memcpy(&expdep[strlen_dep+meatsz], locp1, locp1sz);
@@ -7429,7 +7429,7 @@ int main(int argc, char **argv)
               locp1 = loc+1;
               locp1sz = strlen(locp1);
               expdepsz = strlen(dep) - 1 + meatsz;
-              expdep = my_malloc(expdepsz + 1);
+              expdep = my_malloc_align(expdepsz + 1, 1);
               memcpy(expdep, dep, (size_t)(loc-dep));
               memcpy(&expdep[loc-dep], meat, meatsz);
               memcpy(&expdep[(size_t)(loc-dep)+meatsz], locp1, locp1sz);

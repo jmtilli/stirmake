@@ -61,7 +61,7 @@ static inline size_t get_max_align_compatibility(void)
 #endif
 
 char *my_arena;
-char *my_arena_ptr;
+size_t my_arena_off;
 size_t sizeof_my_arena;
 size_t argmem;
 size_t argmemcnt;
@@ -72,12 +72,16 @@ size_t mymemwaste;
 void errxit(const char *fmt, ...);
 void my_abort(void);
 
-void *my_malloc(size_t sz)
+void *my_malloc_align(size_t sz, size_t align)
 {
-  void *result = my_arena_ptr;
+  void *result;
   if (my_is_running_on_valgrind())
   {
     return malloc(sz);
+  }
+  if ((align & (align-1)) != 0 || align == 0)
+  {
+    my_abort();
   }
   if (sz > sizeof_my_arena)
   {
@@ -88,7 +92,7 @@ void *my_malloc(size_t sz)
       printf("allocating outside of arena, big allocation, %zu bytes\n", sz);
     }
 #endif
-    result = stir_do_mmap_madvise(sz);
+    result = stir_do_mmap_madvise(sz); // assume alignment is ok
     if (result == NULL)
     {
       fprintf(stderr, "too large alloc, out of memory: %zu bytes\n", sz);
@@ -98,9 +102,22 @@ void *my_malloc(size_t sz)
     mymemcnt += 1;
     return result;
   }
-  if (my_arena_ptr + (sz+ALIGN-1)/ALIGN*ALIGN > my_arena + sizeof_my_arena)
+  if (my_arena_off & (align-1))
   {
-    mymemwaste += (size_t)(my_arena + sizeof_my_arena - my_arena_ptr);
+    size_t move = align - (my_arena_off & (align-1));
+    my_arena_off += move;
+    mymemwaste += move;
+    if (my_arena_off > sizeof_my_arena)
+    {
+      size_t moveback = my_arena_off - sizeof_my_arena;
+      my_arena_off -= moveback;
+      mymemwaste -= moveback;
+    }
+  }
+  result = my_arena + my_arena_off;
+  if (my_arena_off + sz > sizeof_my_arena)
+  {
+    mymemwaste += (size_t)(sizeof_my_arena - my_arena_off);
 #if 0
     if (debug)
     {
@@ -108,16 +125,16 @@ void *my_malloc(size_t sz)
       printf("allocating new arena\n");
     }
 #endif
-    my_arena = stir_do_mmap_madvise(sizeof_my_arena);
+    my_arena = stir_do_mmap_madvise(sizeof_my_arena); // assume alignment is ok
     if (my_arena == NULL)
     {
       errxit("Can't mmap new arena");
       exit(2);
     }
-    my_arena_ptr = my_arena;
-    result = my_arena_ptr;
-    my_arena_ptr += (sz+ALIGN-1)/ALIGN*ALIGN;
-    if (my_arena_ptr > my_arena + sizeof_my_arena)
+    my_arena_off = 0;
+    result = my_arena + my_arena_off;
+    my_arena_off += sz;
+    if (my_arena_off > sizeof_my_arena)
     {
       //fprintf(stderr, "out of memory\n"); // nondescriptive
       my_abort();
@@ -125,17 +142,31 @@ void *my_malloc(size_t sz)
   }
   else
   {
-    my_arena_ptr += (sz+ALIGN-1)/ALIGN*ALIGN;
+    my_arena_off += sz;
   }
   mymem += sz;
   mymemcnt += 1;
-  mymemwaste += (sz+ALIGN-1)/ALIGN*ALIGN - sz;
   return result;
+}
+void *my_malloc(size_t sz)
+{
+  return my_malloc_align(sz, ALIGN);
 }
 void *my_argmalloc(size_t sz)
 {
   void *res;
   res = my_malloc(sz);
+  if (res)
+  {
+    argmem += sz;
+    argmemcnt += 1;
+  }
+  return res;
+}
+void *my_argmalloc_align(size_t sz, size_t align)
+{
+  void *res;
+  res = my_malloc_align(sz, align);
   if (res)
   {
     argmem += sz;
@@ -149,7 +180,7 @@ void my_free(void *ptr)
 }
 void *my_strdup_len(const char *str, size_t sz)
 {
-  char *result = my_malloc(sz + 1);
+  char *result = my_malloc_align(sz + 1, 1);
   memcpy(result, str, sz);
   result[sz] = '\0';
   return result;
@@ -157,13 +188,13 @@ void *my_strdup_len(const char *str, size_t sz)
 void *my_strdup(const char *str)
 {
   size_t sz = strlen(str);
-  void *result = my_malloc(sz + 1);
+  void *result = my_malloc_align(sz + 1, 1);
   memcpy(result, str, sz + 1);
   return result;
 }
 void *my_argstrdup_len(const char *str, size_t sz)
 {
-  char *result = my_argmalloc(sz + 1);
+  char *result = my_argmalloc_align(sz + 1, 1);
   memcpy(result, str, sz);
   result[sz] = '\0';
   return result;
@@ -171,7 +202,7 @@ void *my_argstrdup_len(const char *str, size_t sz)
 void *my_argstrdup(const char *str)
 {
   size_t sz = strlen(str);
-  void *result = my_argmalloc(sz + 1);
+  void *result = my_argmalloc_align(sz + 1, 1);
   memcpy(result, str, sz + 1);
   return result;
 }
@@ -184,7 +215,7 @@ int my_malloc_init(void)
   {
     return -1;
   }
-  my_arena_ptr = my_arena;
+  my_arena_off = 0;
   return 0;
 }
 
