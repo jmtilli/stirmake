@@ -1,10 +1,14 @@
 #!/bin/sh
 
+PKGDIR="packages/"
+
 die()
 {
   echo "$@"
   exit 1
 }
+
+mkdir -p "$PKGDIR" || die "Can't create package directory"
 
 if [ "$1" = "arm64.14" ]; then
   export CC="zig cc -target aarch64-freebsd.14.0"
@@ -124,15 +128,15 @@ rm -rf stirmake-"$vname"
 rm -rf stirmake_"$nonvname"_"$DEBARCH"
 rm -rf stage
 cd "$pwd" || die "Can't chdir back to old directory"
-if [ -e "stirmakebin-$PKGARCH-$vname.tar.gz" ]; then
+if [ -e "$PKGDIR/stirmakebin-$PKGARCH-$vname.tar.gz" ]; then
   die "Package stirmakebin-$PKGARCH-$vname.tar.gz already exists"
 else
-  mv "$tmpdir/stirmakebin-$PKGARCH-$vname.tar.gz" . || die "Can't move package"
+  mv "$tmpdir/stirmakebin-$PKGARCH-$vname.tar.gz" "$PKGDIR"/ || die "Can't move package"
 fi
-if [ -e stirmake-"$nonvname"-"$PKGARCH".pkg ]; then
+if [ -e "$PKGDIR"/stirmake-"$nonvname"-"$PKGARCH".pkg ]; then
   die "Package stirmake-${nonvname}-$PKGARCH.pkg already exists"
 else
-  mv "$tmpdir/stirmake-${nonvname}-$PKGARCH.pkg" . || die "Can't move package"
+  mv "$tmpdir/stirmake-${nonvname}-$PKGARCH.pkg" "$PKGDIR"/ || die "Can't move package"
 fi
 rmdir "$tmpdir" || die "Can't rm temporary dir $tmpdir"
 echo

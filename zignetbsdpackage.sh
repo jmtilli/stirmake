@@ -1,10 +1,14 @@
 #!/bin/sh
 
+PKGDIR="packages/"
+
 die()
 {
   echo "$@"
   exit 1
 }
+
+mkdir -p "$PKGDIR" || die "Can't create package directory"
 
 if [ "$1" = "arm64.10" ]; then
   export CC="zig cc -target aarch64-netbsd.10.1"
@@ -26,6 +30,26 @@ elif [ "$1" = "i386.10" ]; then
   export PKGARCH="i386-netbsd-10.1"
   export MACHINE_ARCH="i386"
   export OS_VERSION="10.1"
+elif [ "$1" = "arm64.11" ]; then
+  export CC="zig cc -target aarch64-netbsd.11.0"
+  export PKGARCH="arm64-netbsd-11.0"
+  export MACHINE_ARCH="aarch64"
+  export OS_VERSION="11.0"
+elif [ "$1" = "arm32.11" ]; then
+  export CC="zig cc -target arm-netbsd.11.0"
+  export PKGARCH="arm32hf-netbsd-11.0"
+  export MACHINE_ARCH="earmv7hf"
+  export OS_VERSION="11.0"
+elif [ "$1" = "amd64.11" ]; then
+  export CC="zig cc -target x86_64-netbsd.11.0"
+  export PKGARCH="amd64-netbsd-11.0"
+  export MACHINE_ARCH="x86_64"
+  export OS_VERSION="11.0"
+elif [ "$1" = "i386.11" ]; then
+  export CC="zig cc -target x86-netbsd.11.0"
+  export PKGARCH="i386-netbsd-11.0"
+  export MACHINE_ARCH="i386"
+  export OS_VERSION="11.0"
 else
   die "Unsupported architecture: $1"
 fi
@@ -121,15 +145,15 @@ rm -rf stirmake-"$vname"
 rm -rf stirmake_"$nonvname"_"$DEBARCH"
 rm -rf stage
 cd "$pwd" || die "Can't chdir back to old directory"
-if [ -e "stirmakebin-$PKGARCH-$vname.tar.gz" ]; then
+if [ -e "$PKGDIR/stirmakebin-$PKGARCH-$vname.tar.gz" ]; then
   die "Package stirmakebin-$PKGARCH-$vname.tar.gz already exists"
 else
-  mv "$tmpdir/stirmakebin-$PKGARCH-$vname.tar.gz" . || die "Can't move package"
+  mv "$tmpdir/stirmakebin-$PKGARCH-$vname.tar.gz" "$PKGDIR"/ || die "Can't move package"
 fi
-if [ -e stirmake-"$nonvname"-"$PKGARCH".tgz ]; then
+if [ -e "$PKGDIR"/stirmake-"$nonvname"-"$PKGARCH".tgz ]; then
   die "Package stirmake-${nonvname}-$PKGARCH.tgz already exists"
 else
-  mv "$tmpdir/stirmake-${nonvname}-$PKGARCH.tgz" . || die "Can't move package"
+  mv "$tmpdir/stirmake-${nonvname}-$PKGARCH.tgz" "$PKGDIR"/ || die "Can't move package"
 fi
 rmdir "$tmpdir" || die "Can't rm temporary dir $tmpdir"
 echo

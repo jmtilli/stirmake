@@ -1,10 +1,14 @@
 #!/bin/sh
 
+PKGDIR="packages/"
+
 die()
 {
   echo "$@"
   exit 1
 }
+
+mkdir -p "$PKGDIR" || die "Can't create package directory"
 
 if [ "$1" = "arm64" ]; then
   export CC="zig cc -target aarch64-linux-gnu.2.17"
@@ -123,20 +127,20 @@ rpmbuild --target="$RPMTGT" -D "_topdir $tmpdir/rpmbuild" -ba "$tmpdir/rpmbuild/
 rm -rf stirmake-"$vname"
 rm -rf stirmake_"$nonvname"_"$DEBARCH"
 cd "$pwd" || die "Can't chdir back to old directory"
-if [ -e "stirmakebin-$PKGARCH-$vname.tar.gz" ]; then
+if [ -e "$PKGDIR/stirmakebin-$PKGARCH-$vname.tar.gz" ]; then
   die "Package stirmakebin-$PKGARCH-$vname.tar.gz already exists"
 else
-  mv "$tmpdir/stirmakebin-$PKGARCH-$vname.tar.gz" . || die "Can't move package"
+  mv "$tmpdir/stirmakebin-$PKGARCH-$vname.tar.gz" "$PKGDIR"/ || die "Can't move package"
 fi
-if [ -e stirmake_"$nonvname"_"$DEBARCH".deb ]; then
+if [ -e "$PKGDIR"/stirmake_"$nonvname"_"$DEBARCH".deb ]; then
   die "Package stirmake_${nonvname}_$DEBARCH.deb already exists"
 else
-  mv "$tmpdir/stirmake_${nonvname}_$DEBARCH.deb" . || die "Can't move package"
+  mv "$tmpdir/stirmake_${nonvname}_$DEBARCH.deb" "$PKGDIR"/ || die "Can't move package"
 fi
-if [ -e stirmake-${nonvnameu}-1.$RPMTGT.rpm ]; then
+if [ -e "$PKGDIR"/stirmake-${nonvnameu}-1.$RPMTGT.rpm ]; then
   die "Package stirmake-${nonvnameu}-1.$RPMTGT.rpm already exists"
 else
-  mv "$tmpdir/rpmbuild/RPMS/$RPMTGT/stirmake-${nonvnameu}-1.$RPMTGT.rpm" . || die "Can't move package"
+  mv "$tmpdir/rpmbuild/RPMS/$RPMTGT/stirmake-${nonvnameu}-1.$RPMTGT.rpm" "$PKGDIR"/ || die "Can't move package"
 fi
 rm -rf "$tmpdir/rpmbuild"
 rmdir "$tmpdir" || die "Can't rm temporary dir $tmpdir"
