@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 struct abce_rb_tree_nocmp accesshash[ACCESSHASH_SIZE_RB];
+mysize_t accesscache_size = ACCESSHASH_SIZE;
 struct accesshashentry *accesshashentries = NULL;
 mysize_t accesshashentriescnt;
 struct linked_list_head accesslrulist =
@@ -19,9 +20,9 @@ void accesscache_init(void)
   if (accesshashentriescnt == 0)
   {
     accesshashentriescnt = ACCESSHASH_SIZE_INIT;
-    if (accesshashentriescnt > ACCESSHASH_SIZE)
+    if (accesshashentriescnt > accesscache_size)
     {
-      accesshashentriescnt = ACCESSHASH_SIZE;
+      accesshashentriescnt = accesscache_size;
     }
   }
   accesshashentries = stir_do_mmap_madvise(accesshashentriescnt*sizeof(*accesshashentries));
@@ -36,9 +37,9 @@ void accesscache_grow(void)
   size_t oldaccesshashentriescnt = accesshashentriescnt;
   size_t i;
   accesshashentriescnt = 2*accesshashentriescnt;
-  if (accesshashentriescnt > ACCESSHASH_SIZE)
+  if (accesshashentriescnt > accesscache_size)
   {
-    accesshashentriescnt = ACCESSHASH_SIZE;
+    accesshashentriescnt = accesscache_size;
   }
   if (accesshashentriescnt == oldaccesshashentriescnt)
   {

@@ -241,6 +241,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token EXPECTEDDEPS
 %token EXPECTEDTOTALTARGETS
 %token EXPECTEDSTRINGS
+%token STATCACHESIZE
+%token ACCESSCACHESIZE
 %token SHELLESCAPE
 %token SHELLESCAPEMULTI
 
@@ -842,6 +844,58 @@ custom_expr0:
     if (strcmp(stiryy->curprefix, ".") == 0)
     {
       stiryy->main->expected_strings = num;
+    }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
+  }
+}
+| STATCACHESIZE OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
+  {
+    int num = (int)$3.d;
+    unsigned numu = (unsigned)num;
+    if (num <= 0)
+    {
+      stiryyerror(scanner, stiryy, "Stat cache size must be positive");
+      YYABORT;
+    }
+    if ((numu & (numu-1)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "Stat cache size must be a power of 2");
+      YYABORT;
+    }
+    if (strcmp(stiryy->curprefix, ".") == 0)
+    {
+      stiryy->main->statcache_size = num;
+    }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
+  }
+}
+| ACCESSCACHESIZE OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
+  {
+    int num = (int)$3.d;
+    unsigned numu = (unsigned)num;
+    if (num <= 0)
+    {
+      stiryyerror(scanner, stiryy, "Access cache size must be positive");
+      YYABORT;
+    }
+    if ((numu & (numu-1)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "Access cache size must be a power of 2");
+      YYABORT;
+    }
+    if (strcmp(stiryy->curprefix, ".") == 0)
+    {
+      stiryy->main->accesscache_size = num;
     }
   }
   if (amyplanyy_do_emit(amyplanyy))

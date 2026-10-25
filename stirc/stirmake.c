@@ -7126,6 +7126,22 @@ int main(int argc, char **argv)
   {
     expstrings = stirmain.expected_strings;
   }
+  if (stirmain.statcache_size > 0)
+  {
+    statcache_size = stirmain.statcache_size;
+    if (statcache_size < STATHASH_SIZE_INIT)
+    {
+      statcache_size = STATHASH_SIZE_INIT;
+    }
+  }
+  if (stirmain.accesscache_size > 0)
+  {
+    accesscache_size = stirmain.accesscache_size;
+    if (accesscache_size < ACCESSHASH_SIZE_INIT)
+    {
+      accesscache_size = ACCESSHASH_SIZE_INIT;
+    }
+  }
   if (out_sync == OUT_SYNC_NOT_SET_YET)
   {
     out_sync = OUT_SYNC_NONE;

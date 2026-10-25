@@ -30,4 +30,6 @@ void accesshash_evict_named(mysize_t nameidx);
 
 int access_cached(mysize_t nameidx);
 
+extern mysize_t accesscache_size;
+
 #endif

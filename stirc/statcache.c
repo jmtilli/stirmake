@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 struct abce_rb_tree_nocmp stathash[STATHASH_SIZE_RB];
-//struct stathashentry stathashentries[STATHASH_SIZE];
+mysize_t statcache_size = STATHASH_SIZE;
 struct stathashentry *stathashentries = NULL;
 mysize_t stathashentriescnt;
 struct linked_list_head statlrulist =
@@ -22,9 +22,9 @@ void statcache_init(void)
   if (stathashentriescnt == 0)
   {
     stathashentriescnt = STATHASH_SIZE_INIT;
-    if (stathashentriescnt > STATHASH_SIZE)
+    if (stathashentriescnt > statcache_size)
     {
-      stathashentriescnt = STATHASH_SIZE;
+      stathashentriescnt = statcache_size;
     }
   }
   stathashentries = stir_do_mmap_madvise(stathashentriescnt*sizeof(*stathashentries));
@@ -39,9 +39,9 @@ void statcache_grow(void)
   size_t oldstathashentriescnt = stathashentriescnt;
   size_t i;
   stathashentriescnt = 2*stathashentriescnt;
-  if (stathashentriescnt > STATHASH_SIZE)
+  if (stathashentriescnt > statcache_size)
   {
-    stathashentriescnt = STATHASH_SIZE;
+    stathashentriescnt = statcache_size;
   }
   if (stathashentriescnt == oldstathashentriescnt)
   {
