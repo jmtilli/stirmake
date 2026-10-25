@@ -89,6 +89,7 @@ echo "URL: https://github.com/Aalto5G/stirmake" >> rpmbuild/SPECS/stirmake.spec 
 echo "Source0: stirmake" >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
 echo "" >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
 echo "%define debug_package %{nil}" >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
+echo "%define __strip /bin/true" >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
 echo "" >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
 echo "%description" >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
 echo "Stirmake, scalable true implementation of recursive make, for easy multi-dir builds." >> rpmbuild/SPECS/stirmake.spec || die "echo fail"
