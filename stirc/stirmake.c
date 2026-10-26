@@ -758,13 +758,13 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
   if (first_tgt->tgtidxnodir != (mysize_t)-1)
   {
     tgt = sttable[first_tgt->tgtidxnodir].s;
-    tgtlen = staux[first_tgt->tgtidxnodir].len;
+    tgtlen = sttable[first_tgt->tgtidxnodir].len;
   }
   else
   {
-    tgt = neighpath_buflen(sttable[rule->diridx].s, staux[rule->diridx].len,
+    tgt = neighpath_buflen(sttable[rule->diridx].s, sttable[rule->diridx].len,
                            sttable[first_tgt->tgtidx].s,
-                           staux[first_tgt->tgtidx].len,
+                           sttable[first_tgt->tgtidx].len,
                            tgtneighbuf, sizeof(tgtneighbuf), &tgtlen);
   }
   result = malloc(resultcap * sizeof(*result));
@@ -808,7 +808,7 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
 
       if (rule->meatidx != (mysize_t)-1)
       {
-        mbval = abce_mb_cpush_create_string(abce, sttable[rule->meatidx].s, staux[rule->meatidx].len);
+        mbval = abce_mb_cpush_create_string(abce, sttable[rule->meatidx].s, sttable[rule->meatidx].len);
         if (mbval == NULL)
         {
           //abce_mb_refdn(abce, &mbkey);
@@ -858,16 +858,16 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
-          mb = abce_mb_cpush_create_string(abce, namenodir, staux[dep->nameidxnodir].len);
+          mb = abce_mb_cpush_create_string(abce, namenodir, sttable[dep->nameidxnodir].len);
         }
         else
         {
           char namenodirbuf[1024];
           mysize_t namenodirlen;
           namenodir = neighpath_buflen(sttable[rule->diridx].s,
-                                       staux[rule->diridx].len,
+                                       sttable[rule->diridx].len,
                                        sttable[dep->nameidx].s,
-                                       staux[dep->nameidx].len,
+                                       sttable[dep->nameidx].len,
                                        namenodirbuf, sizeof(namenodirbuf),
                                        &namenodirlen);
           mb = abce_mb_cpush_create_string(abce, namenodir, namenodirlen);
@@ -934,16 +934,16 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
-          mb = abce_mb_cpush_create_string(abce, namenodir, staux[dep->nameidxnodir].len);
+          mb = abce_mb_cpush_create_string(abce, namenodir, sttable[dep->nameidxnodir].len);
         }
         else
         {
           char namenodirbuf[1024];
           mysize_t namenodirlen;
           namenodir = neighpath_buflen(sttable[rule->diridx].s,
-                                       staux[rule->diridx].len,
+                                       sttable[rule->diridx].len,
                                        sttable[dep->nameidx].s,
-                                       staux[dep->nameidx].len,
+                                       sttable[dep->nameidx].len,
                                        namenodirbuf, sizeof(namenodirbuf),
                                        &namenodirlen);
           mb = abce_mb_cpush_create_string(abce, namenodir, namenodirlen);
@@ -1010,16 +1010,16 @@ char ***cmdsrc_eval(struct abce *abce, struct rule *rule, int *info_printed)
         if (dep->nameidxnodir != (mysize_t)-1)
         {
           namenodir = sttable[dep->nameidxnodir].s;
-          mb = abce_mb_cpush_create_string(abce, namenodir, staux[dep->nameidxnodir].len);
+          mb = abce_mb_cpush_create_string(abce, namenodir, sttable[dep->nameidxnodir].len);
         }
         else
         {
           char namenodirbuf[1024];
           mysize_t namenodirlen;
           namenodir = neighpath_buflen(sttable[rule->diridx].s,
-                                       staux[rule->diridx].len,
+                                       sttable[rule->diridx].len,
                                        sttable[dep->nameidx].s,
-                                       staux[dep->nameidx].len,
+                                       sttable[dep->nameidx].len,
                                        namenodirbuf, sizeof(namenodirbuf),
                                        &namenodirlen);
           mb = abce_mb_cpush_create_string(abce, namenodir, namenodirlen);
@@ -3139,7 +3139,7 @@ int do_exec(int ruleid)
         {
           continue;
         }
-        if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || staux[e->nameidx].is_remade)
+        if (ispretend(sttable[e->nameidx].s, PRETEND_MODIFIED) || sttable[e->nameidx].is_remade)
         {
           if (do_trace)
           {
@@ -3984,9 +3984,9 @@ void mark_executed(int ruleid, int was_actually_executed)
     }
     if (dry_run && was_actually_executed)
     {
-      staux[e->tgtidx].is_remade = 1;
+      sttable[e->tgtidx].is_remade = 1;
     }
-    if (!dry_run && !touchmode && was_actually_executed && staux[e->tgtidx].is_cdepwatch)
+    if (!dry_run && !touchmode && was_actually_executed && sttable[e->tgtidx].is_cdepwatch)
     {
       size_t j, k;
       char *tgt = (e->tgtidxnodir != (mysize_t)-1) ? sttable[e->tgtidxnodir].s : neighpath(sttable[r->diridx].s, sttable[e->tgtidx].s); // RFE is only the second condition after ':' enough?
@@ -7154,12 +7154,6 @@ int main(int argc, char **argv)
     errxit("Can't mmap sttable");
     exit(2);
   }
-  staux = stir_do_mmap_madvise(st_cap*sizeof(*staux));
-  if (staux == NULL)
-  {
-    errxit("Can't mmap staux");
-    exit(2);
-  }
   load_db_part2();
 
   stack_conf();
@@ -7587,7 +7581,7 @@ int main(int argc, char **argv)
     {
       free(fnamecanon);
     }
-    staux[stidx].is_cdepwatch = 1;
+    sttable[stidx].is_cdepwatch = 1;
     //printf("Is_cdepwatch %s\n", sttable[stidx].s);
     f = fopen(fname, "r");
     if (!f)
@@ -7962,7 +7956,7 @@ int main(int argc, char **argv)
     printf("  dbe: %zu %zu\n", (size_t)dbecnt, dbecnt*(size_t)sizeof(struct dbe));
     printf("  tsdbe: %zu %zu\n", (size_t)tsdbecnt, tsdbecnt*(size_t)sizeof(struct tsdbe));
     printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
-    printf("  stringtab: %zu %zu + %zu + %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)), (size_t)(st_cap*sizeof(*staux)), (size_t)(expstrings*sizeof(*st)));
+    printf("  stringtab: %zu %zu + %zu + %zu + %zu\n", (size_t)stringtab_cnt, (size_t)(stringtab_cnt*sizeof(struct stringtabentry)), (size_t)stringtab_bytes, (size_t)(st_cap*sizeof(*sttable)), (size_t)(expstrings*sizeof(*st)));
     printf("  ruleid_by_tgt_entry: %zu %zu\n", (size_t)ruleid_by_tgt_entry_cnt, (size_t)(ruleid_by_tgt_entry_cnt*sizeof(struct ruleid_by_tgt_entry)));
     printf("  tgt: %zu %zu\n", (size_t)tgt_cnt, (size_t)(tgt_cnt*sizeof(struct tgt)));
     printf("  stirdep: %zu %zu\n", (size_t)stirdep_cnt, (size_t)(stirdep_cnt*sizeof(struct stirdep)));

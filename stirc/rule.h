@@ -10,6 +10,7 @@
 #include "bytgt.h"
 #include "const.h"
 #include "syncbuf.h"
+#include "stringtab.h"
 // Just in case something could define st_mtim into something different,
 // we include these 3 headers in all files that access the token st_mtim
 #include <sys/types.h>
@@ -164,13 +165,20 @@ static inline int stirdep_ruleid(struct stirdep *d)
   {
     return d->ruleid;
   }
+  if (sttable[d->nameidx].ruleid == -2 || sttable[d->nameidx].ruleid >= 0)
+  {
+    d->ruleid = sttable[d->nameidx].ruleid;
+    return d->ruleid == -2 ? -ENOENT : d->ruleid;
+  }
   res = get_ruleid_by_tgt(d->nameidx);
   if (abce_likely(res >= 0))
   {
     d->ruleid = res;
+    sttable[d->nameidx].ruleid = res;
     return res;
   }
   d->ruleid = -2;
+  sttable[d->nameidx].ruleid = -2;
   return -ENOENT;
 }
 

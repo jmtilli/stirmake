@@ -4,7 +4,6 @@
 
 struct abce_rb_tree_nocmp *st;
 struct sttable_entry *sttable = NULL;
-struct staux_entry *staux = NULL;
 /*
  * Linux kernel 22.9.2025, 26084 headers, 35778 c files, 6000 directories
  * This gives a bit more than 128*1024 strings (each .c has .o and .d),
@@ -30,7 +29,6 @@ void st_grow(void)
 {
   mysize_t st_newcap = st_cap * 2;
   struct sttable_entry *sttable_new;
-  struct staux_entry *staux_new;
   if (st_cnt < st_cap)
   {
     return;
@@ -44,18 +42,9 @@ void st_grow(void)
   {
     return;
   }
-  staux_new = stir_do_mmap_madvise(st_newcap*sizeof(*staux_new));
-  if (staux_new == NULL)
-  {
-    stir_do_munmap(sttable_new, st_newcap*sizeof(*sttable_new));
-    return;
-  }
   memcpy(sttable_new, sttable, st_cnt*sizeof(*sttable_new));
-  memcpy(staux_new, staux, st_cnt*sizeof(*staux_new));
   stir_do_munmap(sttable, st_cap*sizeof(*sttable));
-  stir_do_munmap(staux, st_cap*sizeof(*staux));
   sttable = sttable_new;
-  staux = staux_new;
   st_cap = st_newcap;
 }
 
@@ -68,20 +57,12 @@ void st_compact(void)
   char *ptr2aux;
   int errno_save;
   size_t bytes_total, bytes_in_use;
-  size_t bytesaux_total, bytesaux_in_use;
   bytes_total = stir_topages(st_cap * sizeof(*sttable));
   bytes_in_use = stir_topages(st_cnt * sizeof(*sttable));
-  bytesaux_total = stir_topages(st_cap * sizeof(*staux));
-  bytesaux_in_use = stir_topages(st_cnt * sizeof(*staux));
   ptr2 = (void*)sttable;
   ptr2 += bytes_in_use;
-  ptr2aux = (void*)staux;
-  ptr2aux += bytesaux_in_use;
   errno_save = errno;
   stir_do_munmap(ptr2, bytes_total - bytes_in_use);
-  errno = errno_save;
-  errno_save = errno;
-  stir_do_munmap(ptr2aux, bytesaux_total - bytesaux_in_use);
   errno = errno_save;
 #endif
   // don't report errors
@@ -134,10 +115,10 @@ mysize_t stringtab_add_len(const char *symbol, size_t len)
     exit(2);
   }
   sttable[st_cnt].s = stringtabentry->string;
-  memset(&staux[st_cnt], 0, sizeof(staux[st_cnt]));
-  staux[st_cnt].is_remade = 0;
-  staux[st_cnt].is_cdepwatch = 0;
-  staux[st_cnt].len = len;
+  sttable[st_cnt].is_remade = 0;
+  sttable[st_cnt].is_cdepwatch = 0;
+  sttable[st_cnt].len = len;
+  sttable[st_cnt].ruleid = -1; // not yet known
   stringtabentry->idx = st_cnt++;
   stringtab_bytes += stringlen.len+1;
   if (abce_rb_tree_nocmp_insert_nonexist(&st[hashloc], stringtabentry_cmp_sym, NULL, &stringtabentry->node) != 0)
