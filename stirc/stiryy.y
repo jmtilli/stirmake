@@ -246,6 +246,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token SHELLESCAPE
 %token SHELLESCAPEMULTI
 
+%token STRLISTRMDUPES
+
 %token <s> SHELL_COMMAND
 %token ATTAB ATATTAB
 
