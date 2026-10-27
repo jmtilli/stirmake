@@ -15,6 +15,7 @@ mysize_t ruleid_by_tgt_entry_cnt;
 
 void ruleid_by_tgt_init(void)
 {
+  return;
   ruleid_by_tgt = malloc(sizeof(*ruleid_by_tgt)*ruleid_by_tgt_size);
   memset(ruleid_by_tgt, 0, sizeof(*ruleid_by_tgt)*ruleid_by_tgt_size);
 }
@@ -40,6 +41,20 @@ void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int line
   struct ruleid_by_tgt_entry *e;
   struct abce_rb_tree_nocmp *head;
   int ret;
+  if (sttable[tgtidx].ruleid >= 0)
+  {
+    if (prefix && lineno >= 0)
+    {
+      errxit("ruleid by tgt %s already exists in rule at prefix %s line %d", sttable[tgtidx].s, prefix, lineno);
+    }
+    else
+    {
+      errxit("ruleid by tgt %s already exists", sttable[tgtidx].s);
+    }
+    exit(2);
+  }
+  sttable[tgtidx].ruleid = ruleid;
+  return;
   ruleid_by_tgt_entry_cnt++;
   e = my_malloc(sizeof(*e));
   e->tgtidx = tgtidx;
@@ -63,9 +78,14 @@ void ins_ruleid_by_tgt(mysize_t tgtidx, int ruleid, const char *prefix, int line
 
 int get_ruleid_by_tgt(mysize_t tgt)
 {
-  uint32_t hash = abce_nonmurmur32(tgt);
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
+  if (sttable[tgt].ruleid < 0)
+  {
+    return -ENOENT;
+  }
+  return sttable[tgt].ruleid;
+  uint32_t hash = abce_nonmurmur32(tgt);
   head = &ruleid_by_tgt[hash & (ruleid_by_tgt_size-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, ruleid_by_tgt_entry_cmp_asym, NULL, &tgt);
   if (n == NULL)

@@ -165,10 +165,15 @@ static inline int stirdep_ruleid(struct stirdep *d)
   {
     return d->ruleid;
   }
-  if (sttable[d->nameidx].ruleid == -2 || sttable[d->nameidx].ruleid >= 0)
+  if (1 || sttable[d->nameidx].ruleid == -2 || sttable[d->nameidx].ruleid >= 0)
   {
     d->ruleid = sttable[d->nameidx].ruleid;
-    return d->ruleid == -2 ? -ENOENT : d->ruleid;
+    if (d->ruleid < 0)
+    {
+      d->ruleid = -2;
+      return -ENOENT;
+    }
+    return d->ruleid;
   }
   res = get_ruleid_by_tgt(d->nameidx);
   if (abce_likely(res >= 0))
