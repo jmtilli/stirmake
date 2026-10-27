@@ -268,7 +268,20 @@ int incyymineparse(FILE *f, struct incyy *incyy, incyy_fn_t fnrule, incyy_fn_t f
           escape = 1;
           continue;
         }
-        if (escape)
+        else if (!escape)
+        {
+          const char *end;
+          end = memchr(&lineptr[i], '\\', nread-1-i);
+          if (end)
+          {
+            i = end-lineptr-1;
+          }
+          else
+          {
+            i = nread-1-1;
+          }
+        }
+        else if (escape)
         {
           escape = 0;
         }
@@ -320,7 +333,20 @@ int incyymineparse(FILE *f, struct incyy *incyy, incyy_fn_t fnrule, incyy_fn_t f
               escape = 1;
               continue;
             }
-            if (escape)
+            else if (!escape)
+            {
+              const char *end;
+              end = memchr(&lineptr2[i], '\\', nread2-1-i);
+              if (end)
+              {
+                i = end-lineptr2-1;
+              }
+              else
+              {
+                i = nread2-1-1;
+              }
+            }
+            else if (escape)
             {
               escape = 0;
             }
