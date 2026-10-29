@@ -33,9 +33,9 @@ struct stirdep {
 
 struct dep_remain {
   struct abce_rb_tree_node node;
-  struct linked_list_node llnode; // only used if debug mode on
   int ruleid;
   int waitcnt;
+  struct linked_list_node llnode[]; // only used if debug mode on
 };
 
 struct stirtgt {

@@ -170,7 +170,7 @@ void deps_remain_erase(struct rule *rule, int ruleid)
   abce_rb_tree_nocmp_delete(&rule->deps_and_deps_remain[hashloc].deps_remain, &dep_remain->node);
   if (debug)
   {
-    linked_list_delete(&dep_remain->llnode);
+    linked_list_delete(&dep_remain->llnode[0]);
   }
   rule->deps_remain_cnt--;
   if (dep_remain->waitcnt < 0 || rule->wait_remain_cnt < (mysize_t)dep_remain->waitcnt)
@@ -196,7 +196,7 @@ int deps_remain_insert(struct rule *rule, int ruleid)
     return -EEXIST;
   }
   dep_remain_cnt++;
-  dep_remain = my_malloc(sizeof(struct dep_remain));
+  dep_remain = my_malloc(sizeof(struct dep_remain) + (debug?sizeof(struct linked_list_node):0));
   dep_remain->ruleid = ruleid;
   dep_remain->waitcnt = 0;
   if (abce_rb_tree_nocmp_insert_nonexist(&rule->deps_and_deps_remain[hashloc].deps_remain, dep_remain_cmp_sym, NULL, &dep_remain->node) != 0)
@@ -206,7 +206,7 @@ int deps_remain_insert(struct rule *rule, int ruleid)
   }
   if (debug)
   {
-    linked_list_add_tail(&dep_remain->llnode, &rule->depremainlist);
+    linked_list_add_tail(&dep_remain->llnode[0], &rule->depremainlist);
   }
   rule->deps_remain_cnt++;
   return 0;
