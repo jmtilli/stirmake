@@ -7953,6 +7953,9 @@ int main(int argc, char **argv)
     printf("  statcache: %zu %zu\n", (size_t)stathashentriescnt, (size_t)stathashentriescnt*sizeof(struct stathashentry));
     printf("  my_malloc all: %zu %zu (+ wasted %zu)\n", (size_t)mymemcnt, (size_t)mymem, (size_t)mymemwaste);
     printf("  abce arena all: %zu \n", (size_t)abce_jmgetarenabytes());
+    printf("  abce bytecode all: %zu \n", (size_t)abce.bytecodecap);
+    printf("  abce object cache all: %zu \n", (size_t)abce.cachecap*sizeof(*abce.cachebase));
+    printf("  abce GC block all: %zu \n", (size_t)abce.gcblockcap*sizeof(*abce.gcblockbase));
     printf("  dbe: %zu %zu\n", (size_t)dbecnt, dbecnt*(size_t)sizeof(struct dbe));
     printf("  tsdbe: %zu %zu\n", (size_t)tsdbecnt, tsdbecnt*(size_t)sizeof(struct tsdbe));
     printf("  argmem: %zu %zu\n", (size_t)argmemcnt, (size_t)argmem);
