@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "incyyutils.h"
+#include "yyutils.h"
 #include "incyy.h"
 #include "mygetline.h"
 
@@ -124,7 +125,8 @@ static inline size_t mycspn_set(const char *str, int *had_escapes,
 
 static inline int is_ascii(void)
 {
-  return ('\t' == 9) && (' ' == 32) && ('\n' == 10) && (':' == 58);
+  return is_ascii_full();
+  //return ('\t' == 9) && (' ' == 32) && ('\n' == 10) && (':' == 58);
 }
 
 int handle_line(char *line, struct incyy *incyy, const uint64_t set[4], incyy_fn_t fnrule, incyy_fn_t fntarget, incyy_fn_t fndep, void *userdata)
