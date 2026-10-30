@@ -5,8 +5,9 @@
 #include "stringtab.h"
 #include <unistd.h>
 
-struct abce_rb_tree_nocmp accesshash[ACCESSHASH_SIZE_RB];
+struct abce_rb_tree_nocmp *accesshash;
 mysize_t accesscache_size = ACCESSHASH_SIZE;
+mysize_t accesshash_size = ACCESSHASH_SIZE_RB;
 struct accesshashentry *accesshashentries = NULL;
 mysize_t accesshashentriescnt;
 struct linked_list_head accesslrulist =
@@ -17,6 +18,8 @@ struct linked_list_head accessfreelist =
 void accesscache_init(void)
 {
   size_t i;
+  accesshash = malloc(accesshash_size*sizeof(*accesshash));
+  memset(accesshash, 0, accesshash_size*sizeof(*accesshash));
   if (accesshashentriescnt == 0)
   {
     accesshashentriescnt = ACCESSHASH_SIZE_INIT;
@@ -59,7 +62,7 @@ static inline void accesshashentry_evict(void)
   struct abce_rb_tree_nocmp *head;
   e = ABCE_CONTAINER_OF(accesslrulist.node.prev, struct accesshashentry, llnode);
   hash = abce_nonmurmur32(e->nameidx);
-  head = &accesshash[hash % (sizeof(accesshash)/sizeof(*accesshash))];
+  head = &accesshash[hash & (accesshash_size-1)];
   linked_list_delete(&e->llnode); 
   abce_rb_tree_nocmp_delete(head, &e->node);
   linked_list_add_head(&e->llnode, &accessfreelist);
@@ -115,7 +118,7 @@ void accesshashentry_evict_all(void)
   size_t i;
   linked_list_head_init(&accesslrulist);
   linked_list_head_init(&accessfreelist);
-  for (i = 0; i < sizeof(accesshash)/sizeof(*accesshash); i++)
+  for (i = 0; i < accesshash_size; i++)
   {
     abce_rb_tree_nocmp_init(&accesshash[i]);
   }
@@ -130,7 +133,7 @@ void accesshash_evict_named(mysize_t nameidx)
   struct abce_rb_tree_node *n;
 
   hash = abce_nonmurmur32(nameidx);
-  head = &accesshash[hash % (sizeof(accesshash)/sizeof(*accesshash))];
+  head = &accesshash[hash & (accesshash_size-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, accesshashentry_cmp_asym, NULL, &nameidx);
   if (n == NULL)
   {
@@ -151,7 +154,7 @@ int access_cached(mysize_t nameidx)
   struct abce_rb_tree_nocmp *head;
   int ret;
   hash = abce_nonmurmur32(nameidx);
-  head = &accesshash[hash % (sizeof(accesshash)/sizeof(*accesshash))];
+  head = &accesshash[hash & (accesshash_size-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, accesshashentry_cmp_asym, NULL, &nameidx);
   if (n != NULL)
   {

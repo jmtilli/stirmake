@@ -283,6 +283,8 @@ struct stiryy_main {
   int expected_total_targets;
   int statcache_size;
   int accesscache_size;
+  int stathash_size;
+  int accesshash_size;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;

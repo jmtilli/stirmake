@@ -6330,9 +6330,6 @@ int main(int argc, char **argv)
   storcwd[0] = '\0';
   curcwd[0] = '\0';
 
-  statcache_init();
-  accesscache_init();
-
   struct sigaction saseg;
   sigemptyset(&saseg.sa_mask);
 #ifdef SA_RESTART
@@ -7142,6 +7139,18 @@ int main(int argc, char **argv)
       accesscache_size = ACCESSHASH_SIZE_INIT;
     }
   }
+  if (stirmain.stathash_size > 0)
+  {
+    stathash_size = stirmain.stathash_size;
+  }
+  if (stirmain.accesshash_size > 0)
+  {
+    accesshash_size = stirmain.accesshash_size;
+  }
+
+  statcache_init();
+  accesscache_init();
+
   if (out_sync == OUT_SYNC_NOT_SET_YET)
   {
     out_sync = OUT_SYNC_NONE;

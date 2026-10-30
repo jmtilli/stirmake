@@ -7,7 +7,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-struct abce_rb_tree_nocmp stathash[STATHASH_SIZE_RB];
+mysize_t stathash_size = STATHASH_SIZE_RB;
+struct abce_rb_tree_nocmp *stathash;
 mysize_t statcache_size = STATHASH_SIZE;
 struct stathashentry *stathashentries = NULL;
 mysize_t stathashentriescnt;
@@ -19,6 +20,8 @@ struct linked_list_head statfreelist =
 void statcache_init(void)
 {
   size_t i;
+  stathash = malloc(stathash_size*sizeof(*stathash));
+  memset(stathash, 0, stathash_size*sizeof(*stathash));
   if (stathashentriescnt == 0)
   {
     stathashentriescnt = STATHASH_SIZE_INIT;
@@ -61,7 +64,7 @@ static inline void stathashentry_evict(void)
   struct abce_rb_tree_nocmp *head;
   e = ABCE_CONTAINER_OF(statlrulist.node.prev, struct stathashentry, llnode);
   hash = abce_nonmurmur32(e->nameidx);
-  head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
+  head = &stathash[hash & (stathash_size-1)];
   linked_list_delete(&e->llnode); 
   abce_rb_tree_nocmp_delete(head, &e->node);
   linked_list_add_head(&e->llnode, &statfreelist);
@@ -117,7 +120,7 @@ void stathashentry_evict_all(void)
   size_t i;
   linked_list_head_init(&statlrulist);
   linked_list_head_init(&statfreelist);
-  for (i = 0; i < sizeof(stathash)/sizeof(*stathash); i++)
+  for (i = 0; i < stathash_size; i++)
   {
     abce_rb_tree_nocmp_init(&stathash[i]);
   }
@@ -132,7 +135,7 @@ void lstat_evict_named(mysize_t nameidx)
   struct abce_rb_tree_node *n;
 
   hash = abce_nonmurmur32(nameidx);
-  head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
+  head = &stathash[hash & (stathash_size-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, &nameidx);
   if (n == NULL)
   {
@@ -154,7 +157,7 @@ struct stathashentry *lstat_cached(mysize_t nameidx)
   int ret;
   struct stat statbuf;
   hash = abce_nonmurmur32(nameidx);
-  head = &stathash[hash % (sizeof(stathash)/sizeof(*stathash))];
+  head = &stathash[hash & (stathash_size-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, stathashentry_cmp_asym, NULL, &nameidx);
   if (n != NULL)
   {

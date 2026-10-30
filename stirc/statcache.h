@@ -38,5 +38,6 @@ void lstat_evict_named(mysize_t nameidx);
 struct stathashentry *lstat_cached(mysize_t nameidx);
 
 extern mysize_t statcache_size;
+extern mysize_t stathash_size;
 
 #endif

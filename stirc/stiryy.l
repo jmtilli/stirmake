@@ -46,6 +46,8 @@ struct CSnippet luaSnippet = {
 <INITIAL,STRICT>@expectedstrings  return EXPECTEDSTRINGS;
 <INITIAL,STRICT>@statcachesize  return STATCACHESIZE;
 <INITIAL,STRICT>@accesscachesize  return ACCESSCACHESIZE;
+<INITIAL,STRICT>@stathashsize  return STATHASHSIZE;
+<INITIAL,STRICT>@accesshashsize  return ACCESSHASHSIZE;
 <INITIAL,STRICT>@usetsdb  return USETSDB;
 <INITIAL,STRICT>@outsync  return OUTSYNC;
 <INITIAL,STRICT>@         return AT;
