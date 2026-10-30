@@ -16,7 +16,7 @@ static inline size_t whitespacespn(const char *str)
 static inline int inset_ascii(char ch)
 {
   unsigned char uch = (unsigned char)ch;
-  uint64_t set = 0x400000100000601ULL;
+  uint64_t set = 0x400001100000601ULL;
   if (uch == '\\') return 1;
   if (uch >= 64) return 0;
   return (set>>uch)&1;
@@ -89,6 +89,12 @@ static inline size_t mycspn_ascii(const char *str, int *had_escapes)
       len += 2;
       continue;
     }
+    if (str[len] == '$' && str[len+1])
+    {
+      *had_escapes = 1;
+      len += 2;
+      continue;
+    }
     return len;
   }
 }
@@ -101,6 +107,12 @@ static inline size_t mycspn_set(const char *str, int *had_escapes,
   {
     len += setcspn_set(&str[len], set);
     if (str[len] == '\\' && str[len+1])
+    {
+      *had_escapes = 1;
+      len += 2;
+      continue;
+    }
+    if (str[len] == '$' && str[len+1])
     {
       *had_escapes = 1;
       len += 2;
@@ -165,6 +177,18 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4], incyy_fn
             }
             *cp++ = line[start + (++idx)];
           }
+          else if (line[start+idx] == '$')
+          {
+            if (idx+1 >= len)
+            {
+              return -1;
+            }
+            if (line[start + idx + 1] != '$')
+            {
+              return -1;
+            }
+            *cp++ = line[start + (++idx)];
+          }
           else
           {
             *cp++ = line[start + idx];
@@ -216,6 +240,18 @@ int handle_line(char *line, struct incyy *incyy, const uint64_t set[4], incyy_fn
             }
             *cp++ = line[start + (++idx)];
           }
+          else if (line[start+idx] == '$')
+          {
+            if (idx+1 >= len)
+            {
+              return -1;
+            }
+            if (line[start + idx + 1] != '$')
+            {
+              return -1;
+            }
+            *cp++ = line[start + (++idx)];
+          }
           else
           {
             *cp++ = line[start + idx];
@@ -248,6 +284,7 @@ int incyymineparse(FILE *f, struct incyy *incyy, incyy_fn_t fnrule, incyy_fn_t f
   set['\n'/64] |= 1ULL<<('\n'%64);
   set[' '/64] |= 1ULL<<(' '%64);
   set[':'/64] |= 1ULL<<(':'%64);
+  set['$'/64] |= 1ULL<<('$'%64);
   set[0] |= 1;
   while ((nread = mygetline(&lineptr, &n, f)) >= 0)
   {
