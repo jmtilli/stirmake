@@ -285,6 +285,8 @@ struct stiryy_main {
   int accesscache_size;
   int stathash_size;
   int accesshash_size;
+  int dbhash_size;
+  int tsdbhash_size;
 
   struct cdepinclude *cdepincludes;
   size_t cdepincludesz;

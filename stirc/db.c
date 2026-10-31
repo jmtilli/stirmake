@@ -7,6 +7,17 @@
 int usetsdb = 2; // 2 = use it but allow Stirfile to modify it
 size_t tsdbecnt;
 
+void db_init(struct db *db)
+{
+  db->byname = malloc(db->sz * sizeof(*db->byname));
+  memset(db->byname, 0, db->sz * sizeof(*db->byname));
+}
+void tsdb_init(struct tsdb *db)
+{
+  db->byname = malloc(db->sz * sizeof(*db->byname));
+  memset(db->byname, 0, db->sz * sizeof(*db->byname));
+}
+
 static inline int tsdbe_cmp_asym(const void *strv, struct abce_rb_tree_node *n2, void *ud)
 {
   const mysize_t *str = strv;
@@ -61,15 +72,15 @@ static inline int dbe_cmp_sym(struct abce_rb_tree_node *n1, struct abce_rb_tree_
   return 0;
 }
 
-struct tsdb tsdb;
-struct db db;
+struct tsdb tsdb = {.sz = DB_SIZE};
+struct db db = {.sz = DB_SIZE};
 
 void maybe_del_tsdbe(struct tsdb *tsdb, mysize_t tgtidx)
 {
   uint32_t hash = abce_nonmurmur32(tgtidx);
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  head = &tsdb->byname[hash & (tsdb->sz-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &tgtidx);
   if (n == NULL)
   {
@@ -84,7 +95,7 @@ void ins_tsdbe(struct tsdb *tsdb, struct tsdbe *tsdbe)
   uint32_t hash = abce_nonmurmur32(tsdbe->stringtabidx);
   struct abce_rb_tree_nocmp *head;
   int ret;
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  head = &tsdb->byname[hash & (tsdb->sz-1)];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, tsdbe_cmp_sym, NULL, &tsdbe->node);
   if (ret != 0)
   {
@@ -110,7 +121,7 @@ void maybe_del_dbe(struct db *db, mysize_t tgtidx)
   uint32_t hash = abce_nonmurmur32(tgtidx);
   struct abce_rb_tree_node *n;
   struct abce_rb_tree_nocmp *head;
-  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
+  head = &db->byname[hash & (db->sz-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &tgtidx);
   if (n == NULL)
   {
@@ -125,7 +136,7 @@ void ins_dbe(struct db *db, struct dbe *dbe)
   uint32_t hash = abce_nonmurmur32(dbe->tgtidx);
   struct abce_rb_tree_nocmp *head;
   int ret;
-  head = &db->byname[hash % (sizeof(db->byname)/sizeof(*db->byname))];
+  head = &db->byname[hash & (db->sz-1)];
   ret = abce_rb_tree_nocmp_insert_nonexist(head, dbe_cmp_sym, NULL, &dbe->node);
   if (ret != 0)
   {
@@ -153,7 +164,7 @@ int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
   //const char *tgtsrc = "source";
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  head = &tsdb->byname[hash & (tsdb->sz-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
 #if 0
   if (get_ruleid_by_tgt(stringtabidx) >= 0)
@@ -190,7 +201,7 @@ int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
   //const char *tgtsrc = "target";
-  head = &tsdb->byname[hash % (sizeof(tsdb->byname)/sizeof(*tsdb->byname))];
+  head = &tsdb->byname[hash & (tsdb->sz-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
   if (n == NULL)
   {
@@ -220,7 +231,7 @@ struct tsdbe *get_tsdbe(mysize_t stringtabidx)
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct tsdbe *tsdbe;
-  head = &tsdb.byname[hash % (sizeof(tsdb.byname)/sizeof(*tsdb.byname))];
+  head = &tsdb.byname[hash & (tsdb.sz-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, tsdbe_cmp_asym, NULL, &stringtabidx);
   if (n == NULL)
   {
@@ -236,7 +247,7 @@ struct dbe *get_dbe(mysize_t stringtabidx)
   struct abce_rb_tree_nocmp *head;
   struct abce_rb_tree_node *n;
   struct dbe *dbe;
-  head = &db.byname[hash % (sizeof(db.byname)/sizeof(*db.byname))];
+  head = &db.byname[hash & (db.sz-1)];
   n = ABCE_RB_TREE_NOCMP_FIND(head, dbe_cmp_asym, NULL, &stringtabidx);
   if (n == NULL)
   {
@@ -248,8 +259,8 @@ struct dbe *get_dbe(mysize_t stringtabidx)
 
 void zap_dbs(struct db *db, struct tsdb *tsdb)
 {
-  memset(db, 0, sizeof(*db));
-  memset(tsdb, 0, sizeof(*tsdb));
+  memset(db->byname, 0, db->sz * sizeof(*db->byname));
+  memset(tsdb->byname, 0, tsdb->sz * sizeof(*tsdb->byname));
   linked_list_head_init(&db->ll);
   linked_list_head_init(&tsdb->ll);
 }

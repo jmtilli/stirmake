@@ -4861,6 +4861,8 @@ void load_db_part2(void)
   int dbfd;
   part2_done = 1;
   dbfd = fileno(dbf);
+  db_init(&db);
+  tsdb_init(&tsdb);
   //ret = dbyydoparse(dbf, &dbyy);
   ret = dbyymineparse(dbf, &dbyy, dbyy_cmdfn, dbyy_tsfn, NULL);
   if (!test && ftruncate(dbfd, 0) != 0)
@@ -7146,6 +7148,14 @@ int main(int argc, char **argv)
   if (stirmain.accesshash_size > 0)
   {
     accesshash_size = stirmain.accesshash_size;
+  }
+  if (stirmain.dbhash_size > 0)
+  {
+    db.sz = stirmain.dbhash_size;
+  }
+  if (stirmain.tsdbhash_size > 0)
+  {
+    tsdb.sz = stirmain.tsdbhash_size;
   }
 
   statcache_init();

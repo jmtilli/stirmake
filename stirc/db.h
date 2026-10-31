@@ -35,18 +35,23 @@ struct dbe {
 };
 
 struct tsdb {
-  struct abce_rb_tree_nocmp byname[DB_SIZE];
+  struct abce_rb_tree_nocmp *byname;
   struct linked_list_head ll;
+  mysize_t sz;
 };
 
 struct db {
-  struct abce_rb_tree_nocmp byname[DB_SIZE];
+  struct abce_rb_tree_nocmp *byname;
   struct linked_list_head ll;
+  mysize_t sz;
 };
 
 extern struct tsdb tsdb;
 extern struct db db;
 extern int usetsdb;
+
+void db_init(struct db *db);
+void tsdb_init(struct tsdb *tsdb);
 
 int tsszstoresource(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz);
 int tsszstoretarget(struct tsdb *tsdb, mysize_t stringtabidx, struct timespec ts, off_t sz);

@@ -245,6 +245,8 @@ void handle_tgt_freeform_token(yyscan_t scanner, struct stiryy *stiryy, const ch
 %token ACCESSCACHESIZE
 %token STATHASHSIZE
 %token ACCESSHASHSIZE
+%token DBHASHSIZE
+%token TSDBHASHSIZE
 %token SHELLESCAPE
 %token SHELLESCAPEMULTI
 
@@ -952,6 +954,58 @@ custom_expr0:
     if (strcmp(stiryy->curprefix, ".") == 0)
     {
       stiryy->main->accesshash_size = num;
+    }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
+  }
+}
+| DBHASHSIZE OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
+  {
+    int num = (int)$3.d;
+    unsigned numu = (unsigned)num;
+    if (num <= 0)
+    {
+      stiryyerror(scanner, stiryy, "DB hash size must be positive");
+      YYABORT;
+    }
+    if ((numu & (numu-1)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "DB hash size must be a power of 2");
+      YYABORT;
+    }
+    if (strcmp(stiryy->curprefix, ".") == 0)
+    {
+      stiryy->main->dbhash_size = num;
+    }
+  }
+  if (amyplanyy_do_emit(amyplanyy))
+  {
+    amyplanyy_add_byte(amyplanyy, ABCE_OPCODE_PUSH_NIL);
+  }
+}
+| TSDBHASHSIZE OPEN_PAREN NUMBER CLOSE_PAREN
+{
+  if (amyplanyy_do_emit(amyplanyy) && !stiryy->main->trial)
+  {
+    int num = (int)$3.d;
+    unsigned numu = (unsigned)num;
+    if (num <= 0)
+    {
+      stiryyerror(scanner, stiryy, "TSDB hash size must be positive");
+      YYABORT;
+    }
+    if ((numu & (numu-1)) != 0)
+    {
+      stiryyerror(scanner, stiryy, "TSDB hash size must be a power of 2");
+      YYABORT;
+    }
+    if (strcmp(stiryy->curprefix, ".") == 0)
+    {
+      stiryy->main->tsdbhash_size = num;
     }
   }
   if (amyplanyy_do_emit(amyplanyy))
