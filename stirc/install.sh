@@ -1,5 +1,20 @@
 #!/bin/sh
 
+# Linux:
+# - /usr/local/share/man (preferred)
+# - /usr/local/man (old standard)
+# - /usr/share/man
+# - ~/.local/share/man (preferred)
+# - ~/.local/man (available for some reason)
+# - /opt/PACKAGENAME/share/man
+# - /opt/man (reserved for sysadmin)
+# MacOS: /usr/local/share/man
+# FreeBSD: /usr/local/man
+# OpenBSD: /usr/local/man
+# NetBSD: /usr/pkg/man, /usr/local/man
+# DragonflyBSD: /usr/local/man
+
+
 if [ '!' -x "stirmake" ]; then
   echo "stirmake not made"
   exit 1
@@ -16,9 +31,50 @@ if [ "a$PREFIX" = "a" ]; then
     RELOGIN=1
   fi
   mkdir -p "$PREFIX"
+  case "$(uname -s)" in
+    Linux)
+      ;;
+    *)
+      echo "Warning: trying to install to $PREFIX under non-Linux"
+      echo "This may not do what you want"
+      ;;
+  esac
 fi
 
 P="$PREFIX"
+PMAN="$PREFIX"
+if [ "$P" = "/usr" -o "$P" = "/usr/" ]; then
+  PMAN="$PREFIX/share"
+elif [ "$ISLOCAL" = 1 ]; then
+  PMAN="$PREFIX/share"
+elif [ "$P" = "/usr/local" -o "$P" = "/usr/local/" ]; then
+  case "$(uname -s)" in
+    Linux)
+      PMAN="$PREFIX/share"
+      ;;
+    Darwin)
+      PMAN="$PREFIX/share"
+      ;;
+  esac
+else
+  case "$P" in
+    */.local)
+      PMAN="$PREFIX/share"
+      ;;
+    */.local/)
+      PMAN="$PREFIX/share"
+      ;;
+    /opt)
+      PMAN="$PREFIX"
+      ;;
+    /opt/)
+      PMAN="$PREFIX"
+      ;;
+    /opt/*)
+      PMAN="$PREFIX/share"
+      ;;
+  esac
+fi
 H="`hostname`"
 
 if [ '!' -w "$P" ]; then
@@ -54,17 +110,17 @@ instsym()
 
 instman()
 {
-  mkdir -p "$P/man/man$2" || exit 1
-  cp "$1.$2" "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" || exit 1
-  mv "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" "$P/man/man$2/$1.$2" || exit 1
+  mkdir -p "$PMAN/man/man$2" || exit 1
+  cp "$1.$2" "$PMAN/man/man$2/.$1.$2.smkinstnew.$$.$H" || exit 1
+  mv "$PMAN/man/man$2/.$1.$2.smkinstnew.$$.$H" "$PMAN/man/man$2/$1.$2" || exit 1
 }
 
 instmansym()
 {
-  mkdir -p "$P/man/man$2" || exit 1
-  if [ "`readlink "$P/man/man$2/$1.$2"`" != "stirmake.1" ]; then
-    ln -s "stirmake.1" "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" || exit 1
-    mv "$P/man/man$2/.$1.$2.smkinstnew.$$.$H" "$P/man/man$2/$1.$2" || exit 1
+  mkdir -p "$PMAN/man/man$2" || exit 1
+  if [ "`readlink "$PMAN/man/man$2/$1.$2"`" != "stirmake.1" ]; then
+    ln -s "stirmake.1" "$PMAN/man/man$2/.$1.$2.smkinstnew.$$.$H" || exit 1
+    mv "$PMAN/man/man$2/.$1.$2.smkinstnew.$$.$H" "$PMAN/man/man$2/$1.$2" || exit 1
   fi
 }
 
